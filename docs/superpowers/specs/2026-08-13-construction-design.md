@@ -546,7 +546,7 @@ surfaces beside the field just left, never as a wall of messages after saving.
 
 | Field | Rule |
 |---|---|
-| Amount | required, non-zero, up to 2 decimals, converted to whole paisa. No maximum a person will meet — anything above Rs 5,000,000 asks for confirmation once rather than being refused, since single plot payments reach Rs 41,475,000. A ceiling of Rs 10,000,000,000 does exist, roughly 1,600× the largest figure in the workbooks, because whole paisa must stay inside `Number.isSafeInteger`. Numeric keypad on phone, commas appear while typing |
+| Amount | required, non-zero, up to 2 decimals, converted to whole paisa. No maximum a person will meet — anything above Rs 5,000,000 asks for confirmation once rather than being refused, since single plot payments reach Rs 41,475,000. A ceiling of Rs 10,000,000,000 does exist — roughly 240× the largest figure in the workbooks — because a bound has to exist somewhere for the `Number.isSafeInteger` check to mean anything rather than being decorative. Nothing in this business approaches it. Numeric keypad on phone, commas appear while typing |
 | Date | required, a real date, not later than today, warns but does not block if earlier than the site's start date |
 | How paid | cheque / cash / transfer / pay order — one must be chosen |
 | Cheque number | required when paying by cheque, not asked for otherwise |
