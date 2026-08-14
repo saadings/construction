@@ -312,10 +312,14 @@ describe('the checks that run before a commit', () => {
     }
   })
 
+  /** The line a `git add -p` was told to leave behind. */
+  const DECLINED = 'EXPERIMENT_NOT_FOR_COMMIT'
+
   /**
-   * A repository with one file staged on purpose and another changed and
-   * deliberately left alone — the ordinary shape of a working tree partway
-   * through something.
+   * A repository in the ordinary shape of a working tree partway through
+   * something: one file staged on purpose, one changed and deliberately left
+   * alone, and one staged in part — which is what `git add -p` leaves behind
+   * when a hunk is accepted and the next one declined.
    */
   function throwawayRepository(): string {
     const dir = mkdtempSync(join(tmpdir(), 'construction-hook-'))
@@ -329,6 +333,7 @@ describe('the checks that run before a commit', () => {
 
     writeFileSync(join(dir, 'meantToCommit.txt'), 'first\n')
     writeFileSync(join(dir, 'halfFinished.txt'), 'first\n')
+    writeFileSync(join(dir, 'partlyStaged.txt'), 'first\n')
     run('add', '.')
     run('commit', '--quiet', '-m', 'first')
 
@@ -336,7 +341,22 @@ describe('the checks that run before a commit', () => {
     run('add', 'meantToCommit.txt')
     writeFileSync(join(dir, 'halfFinished.txt'), 'work in progress\n')
 
+    writeFileSync(join(dir, 'partlyStaged.txt'), 'second\n')
+    run('add', 'partlyStaged.txt')
+    writeFileSync(join(dir, 'partlyStaged.txt'), `second\n${DECLINED}\n`)
+
     return dir
+  }
+
+  /** Runs the real hook, with the slow commands shimmed out. */
+  function runHook(dir: string): void {
+    const bin = shimsFor(dir, ['yarn', 'npx'])
+
+    execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
+    })
   }
 
   function stagedIn(dir: string): Array<string> {
@@ -347,13 +367,13 @@ describe('the checks that run before a commit', () => {
   }
 
   /** Stands in for the slow commands so the hook's staging can be run on its own. */
-  function shimsFor(dir: string, commands: Array<string>): string {
+  function shimsFor(dir: string, commands: Array<string>, status = 0): string {
     const bin = join(dir, 'shims')
-    mkdirSync(bin)
+    mkdirSync(bin, { recursive: true })
 
     for (const command of commands) {
       const path = join(bin, command)
-      writeFileSync(path, '#!/bin/sh\nexit 0\n')
+      writeFileSync(path, `#!/bin/sh\nexit ${status}\n`)
       chmodSync(path, 0o755)
     }
 
@@ -364,15 +384,10 @@ describe('the checks that run before a commit', () => {
     // The real hook, run against a throwaway repository with the fixers and
     // codegen shimmed out. Everything it does to the index is its own.
     const dir = throwawayRepository()
-    const bin = shimsFor(dir, ['yarn', 'npx'])
 
-    execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
-      cwd: dir,
-      encoding: 'utf8',
-      env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
-    })
+    runHook(dir)
 
-    expect(stagedIn(dir)).toEqual(['meantToCommit.txt'])
+    expect(stagedIn(dir)).toEqual(['meantToCommit.txt', 'partlyStaged.txt'])
   })
 
   it('would have caught the sweep this replaced', () => {
@@ -383,7 +398,48 @@ describe('the checks that run before a commit', () => {
 
     execFileSync('git', ['add', '-u'], { cwd: dir })
 
-    expect(stagedIn(dir)).toEqual(['halfFinished.txt', 'meantToCommit.txt'])
+    expect(stagedIn(dir)).toEqual(['halfFinished.txt', 'meantToCommit.txt', 'partlyStaged.txt'])
+  })
+
+  it('leaves out the hunks the person committing left out', () => {
+    // Naming the whole path is not enough. `git add <path>` stages that path's
+    // entire working-tree blob, so re-adding after the fixers put back a hunk
+    // that a `git add -p` had deliberately declined — into a commit whose
+    // author had already looked at it and said no.
+    const dir = throwawayRepository()
+
+    runHook(dir)
+
+    const staged = execFileSync('git', ['diff', '--cached'], { cwd: dir, encoding: 'utf8' })
+
+    expect(staged).not.toContain(DECLINED)
+    // The control: the hunk that was staged is still staged, so a hook that
+    // simply emptied the index would not pass this.
+    expect(staged).toContain('+second')
+    // And the declined hunk is put back rather than thrown away. Losing it
+    // would be a more expensive bug than the one being fixed.
+    expect(readFileSync(join(dir, 'partlyStaged.txt'), 'utf8')).toContain(DECLINED)
+  })
+
+  it('gives the unstaged work back when a check fails', () => {
+    // The hook takes the worktree away for the length of the run, so the case
+    // that matters is the one where it does not reach the end. A refused commit
+    // is ordinary; a refused commit that keeps somebody's afternoon is not.
+    const dir = throwawayRepository()
+    const bin = shimsFor(dir, ['yarn', 'npx'], 1)
+
+    expect(() =>
+      execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
+        cwd: dir,
+        encoding: 'utf8',
+        stdio: 'pipe',
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
+      })
+    ).toThrow()
+
+    expect(readFileSync(join(dir, 'partlyStaged.txt'), 'utf8')).toContain(DECLINED)
+    expect(readFileSync(join(dir, 'halfFinished.txt'), 'utf8')).toBe('work in progress\n')
+    expect(execFileSync('git', ['stash', 'list'], { cwd: dir, encoding: 'utf8' })).toBe('')
   })
 })
 

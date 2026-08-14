@@ -3,6 +3,50 @@
 # sitting in a file nobody meant to commit rides along into the commit.
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
+# Naming the paths is not enough on its own. `git add <path>` stages that
+# path's whole worktree blob, so re-adding after the fixers would put back a
+# hunk that a `git add -p` deliberately left out. Setting the worktree to the
+# index first means there are no such hunks left to sweep in; they come back at
+# the end.
+#
+# It also means typecheck, build and test below run against what is being
+# committed rather than against the worktree, which is what the hook is for.
+#
+# No --include-untracked: it would empty untracked files out of the worktree
+# for the duration and make the pop harder to get right, and `git add -- <path>`
+# over a list of staged paths cannot touch them anyway.
+stashed=no
+if ! git diff --quiet; then
+  git stash push --keep-index --quiet --message 'pre-commit: unstaged work'
+  stashed=$(git rev-parse stash@{0})
+fi
+
+restore() {
+  if [ "$stashed" = no ]; then
+    return 0
+  fi
+
+  # The unstaged work is exactly the difference between the two commits the
+  # stash recorded — what was in the index, and what was in the worktree — so
+  # it goes back as a patch. `git stash pop` would be a three-way merge, and it
+  # conflicts on the very case this exists for: an accepted hunk and a declined
+  # one close together in one file overlap, and the pop leaves conflict markers
+  # in the worktree. Zero context lines so a fixer reformatting elsewhere in
+  # the file cannot make the patch miss.
+  if git diff --binary --unified=0 "$stashed^2" "$stashed" |
+    git apply --unidiff-zero --whitespace=nowarn -; then
+    git stash drop --quiet
+    return 0
+  fi
+
+  # Never half-done. A patch that will not apply leaves the stash where it is,
+  # which is the only copy of that work.
+  echo "The unstaged work could not be put back automatically."
+  echo "It is safe in the most recent stash entry: git stash list"
+  exit 1
+}
+trap restore EXIT
+
 yarn lint:fix
 yarn format:fix
 
