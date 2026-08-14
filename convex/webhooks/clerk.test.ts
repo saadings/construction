@@ -228,12 +228,16 @@ describe('someone the app already holds', () => {
     // Changing your own name or email in Clerk is ordinary, and it is the only
     // event that ever arrives for someone already on file.
     //
-    // Two ways this quietly stops working, both invisible from outside:
+    // Two ways this quietly stops working, both invisible from outside, and
+    // both confirmed to fail here and nowhere else:
     //
-    //   - the switch reaches `user.updated` by falling through from
-    //     `user.created`. One `break` inserted between them — by a linter fix,
-    //     or by anyone who reads a fallthrough as a mistake — sends every
-    //     profile change to `default`, where it is logged and dropped.
+    //   - the `user.updated` label is lost. It carries no body of its own — it
+    //     shares one with `user.created` — so anyone tidying the fallthrough by
+    //     keeping only the case that has the code deletes the handling of every
+    //     profile change with it. They then land in `default`, are logged, and
+    //     are dropped. Note that this is not the same as putting a `break`
+    //     between the two labels: that stops arrivals instead, which the
+    //     control above already catches.
     //
     //   - the mirror stops matching on `externalId` and inserts instead of
     //     patching. Two rows for one Clerk identity make `.unique()` throw, so
