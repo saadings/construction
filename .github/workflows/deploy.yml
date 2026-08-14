@@ -21,6 +21,14 @@ env:
   # The Active LTS line. Written once here rather than repeated in every job,
   # because a pipeline where one job silently runs a different runtime from the
   # rest is a debugging problem nobody expects to have.
+  #
+  # Every setup-node step below carries `package-manager-cache: false`, which is
+  # the one behaviour v5 changed: it caches the package manager by default,
+  # where v4 did not. The probe runs `yarn cache dir` with the Yarn 1.22.22 shim
+  # that ships inside Node, and it runs before `corepack enable` — so Yarn 1
+  # reads `packageManager: yarn@4.13.0` in package.json, refuses to act on a
+  # project it is not the manager for, and the job dies six seconds in on what
+  # reads as a Yarn version problem rather than an action default.
   NODE_VERSION: '24.19.0'
 
 jobs:
@@ -38,6 +46,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -56,6 +65,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -101,6 +111,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -128,6 +139,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -153,6 +165,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -177,6 +190,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -216,6 +230,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
 
       - name: Enable corepack
         run: corepack enable
@@ -366,6 +381,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
 
       - name: Enable corepack
         run: corepack enable

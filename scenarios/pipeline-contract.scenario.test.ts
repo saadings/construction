@@ -398,6 +398,14 @@ describe('the shape of the deploy workflow', () => {
     const setupNode = workflow.match(/actions\/setup-node@v\d+/g) ?? []
     expect(setupNode.length).toBe(pins.length)
     expect([...new Set(setupNode)]).toEqual(['actions/setup-node@v5'])
+
+    // The one behaviour v5 changed: it caches the package manager by default,
+    // where v4 did not. The probe runs `yarn cache dir` with the Yarn 1.22.22
+    // shim inside Node, before `corepack enable`, and Yarn 1 refuses a project
+    // declaring `packageManager: yarn@4.13.0`. Every job died six seconds in,
+    // reading as a Yarn version problem rather than an action default.
+    const cacheOff = workflow.match(/^ +package-manager-cache: false/gm) ?? []
+    expect(cacheOff.length).toBe(setupNode.length)
   })
 
   it('writes the deployment variables on a pull request too, not only on a push', () => {
