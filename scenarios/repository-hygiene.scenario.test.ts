@@ -443,6 +443,71 @@ describe('the checks that run before a commit', () => {
   })
 })
 
+type Manifest = {
+  scripts?: Record<string, string>
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+}
+
+/**
+ * The binaries a manifest's scripts reach for that it has not declared.
+ *
+ * Shell plumbing is not a dependency, and neither is anything a runner is
+ * given: `bash scripts/dev.sh` names a file in this repository and
+ * `npx shadcn@latest` names a package fetched on the spot. Everything else has
+ * to be in `dependencies` or `devDependencies`, or it is resolving by luck —
+ * hoisted out of some other package's tree, where an upgrade can remove it
+ * while `yarn install --immutable` and every job in CI stay green.
+ */
+function undeclaredBinaries(manifest: Manifest): Array<string> {
+  const shell = new Set(['cd', 'cp', 'mv', 'rm', 'mkdir', 'echo', 'set', 'export', 'true'])
+  const runners = new Set(['yarn', 'npx', 'bash', 'sh', 'node'])
+
+  // Where the binary and the package shipping it are named differently.
+  const providedBy: Record<string, string> = { tsc: 'typescript' }
+
+  const invoked = new Set(
+    Object.values(manifest.scripts ?? {})
+      .flatMap((command) => command.split(/&&|\|\||;|\|/))
+      .map((segment) => segment.trim().split(/\s+/)[0])
+      .filter((binary) => binary.length > 0 && !shell.has(binary) && !runners.has(binary))
+  )
+
+  const declared = new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.devDependencies ?? {}),
+  ])
+
+  return [...invoked].filter((binary) => !declared.has(providedBy[binary] ?? binary)).sort()
+}
+
+describe('the commands this project offers', () => {
+  it('declares every binary they run', () => {
+    const manifest = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as Manifest
+
+    expect(undeclaredBinaries(manifest)).toEqual([])
+  })
+
+  it('can see one that is not declared', () => {
+    // The control. An extractor that matched nothing would report a clean
+    // manifest, which is the same answer a correct one gives.
+    expect(
+      undeclaredBinaries({
+        scripts: { broken: 'somethingNobodyInstalled --flag' },
+        devDependencies: { vitest: '^4.0.0' },
+      })
+    ).toEqual(['somethingNobodyInstalled'])
+  })
+
+  it('does not mistake shell plumbing or a runner for a dependency', () => {
+    expect(
+      undeclaredBinaries({
+        scripts: { dev: 'bash scripts/dev.sh', build: 'cd frontend && cp a b', add: 'npx shadcn@latest add' },
+      })
+    ).toEqual([])
+  })
+})
+
 describe('the checks a commit has to get past', () => {
   const manifest = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as {
     scripts: Record<string, string | undefined>
