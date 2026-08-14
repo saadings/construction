@@ -382,6 +382,28 @@ The template validates environment variables through a typed schema, so its
 expected names must be reconciled with these during pass one rather than
 assumed to match.
 
+**Cloudflare.** A dedicated account named "Construction" — confirmed by asking
+Cloudflare, not inferred. `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` are
+set as repository secrets on `saadings/construction`, which is what CI deploys
+with, and also held in `.env.local`.
+
+Two decisions taken knowingly by Nauman, recorded so they read as choices rather
+than oversights:
+
+- **The production token is also kept locally.** It makes deploy problems
+  quicker to diagnose by hand. It also means the standing rule against deploying
+  to production from a local machine rests on discipline rather than on the
+  credential simply being absent.
+- **The credentials are not rotated**, despite having been shared in plain text.
+  The account is dedicated to this project and holds nothing else, which bounds
+  the exposure to this app.
+
+**R2 is not used and its keys are stored nowhere.** The first version has no file
+storage — photo attachments are an explicit non-goal — so object storage
+credentials would be exposure bought for nothing. Worth knowing if they ever are
+needed: R2's access key ID is the API token's own ID, so the two are one
+credential and rotating either rotates both.
+
 Keys live in `.env.local`, which is gitignored from the first commit.
 `CLERK_SECRET_KEY` never reaches client code, and environment files are never
 read aloud or printed.
