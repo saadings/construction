@@ -15,6 +15,7 @@ export const paymentEntry = z
     // Whose money it was. This is the partner split, and it is why two parallel ledgers on one house cannot happen again.
     paidById: zid('people'),
     method: z.enum(['cheque', 'cash', 'transfer', 'payOrder']),
+    // Asked for on cheques only. A pay order carries a number too, but requiring it would block a real payment and costs nothing to leave open.
     reference: chequeNumber.optional(),
     bankAccountId: zid('bankAccounts').optional(),
     note: note.optional(),
@@ -24,7 +25,7 @@ export const paymentEntry = z
     path: ['reference'],
     message: 'Add the cheque number.',
   })
-  // Cheque and transfer only, as the spec has it. A pay order is drawn on an account too, but refusing one for want of a bank would block a real payment on a guess.
+  // Cheque and transfer only. A pay order can be bought over the counter with cash, so it may have no account behind it and asking for one would refuse a payment that really happened.
   .refine((entry) => (entry.method !== 'cheque' && entry.method !== 'transfer') || !!entry.bankAccountId, {
     path: ['bankAccountId'],
     message: 'Say which account this left.',
