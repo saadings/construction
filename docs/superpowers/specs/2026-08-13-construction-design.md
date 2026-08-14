@@ -313,6 +313,40 @@ Deployment identity is confirmed with a self-identifying check against
 `envList` is never called — it returns values, and would print every secret in
 the deployment into the transcript. Individual variables are read with `envGet`.
 
+**Clerk setup.** The project links to Clerk application
+`app_3HtvD50uWRgMamAXhVkdYnROFHm`. The CLI is already installed (1.5.0, via
+Homebrew), so the sequence is:
+
+```bash
+clerk auth login                                    # interactive, browser OAuth
+clerk init --framework tanstack-start --pm yarn \
+           --app app_3HtvD50uWRgMamAXhVkdYnROFHm
+clerk doctor                                        # verify
+```
+
+Three deliberate departures from the supplied Clerk instructions, each with a
+reason:
+
+1. **yarn, not npm.** The instructions default to npm; the standing project rule
+   is yarn. Installed version is Yarn Classic 1.22.22.
+2. **TanStack Start, not Next.js.** The instructions default to Next.js for an
+   empty directory. The stack here is TanStack Start, which `clerk init`
+   supports as a first-class target. Consequently the Next.js proxy-matcher step
+   (`'/__clerk/:path*'`) does not apply and is skipped.
+3. **Scaffolding into a non-empty directory.** The folder already holds `.git`,
+   `.gitignore` and `docs/`, but no `package.json` and no lockfile. Whether
+   `clerk init` scaffolds in place or creates a subdirectory must be confirmed
+   at the moment it runs, not assumed — scaffolding into a subfolder would
+   orphan the repo root.
+
+Because shadcn/ui is in the stack, `@clerk/ui` is installed and its shadcn theme
+applied so Clerk's screens match the rest of the app rather than looking bolted
+on.
+
+Keys live in `.env.local`, which is gitignored from the first commit.
+`CLERK_SECRET_KEY` never reaches client code, and environment files are never
+read aloud or printed.
+
 **Access.** Clerk proves identity; Convex decides reach. Every query and
 mutation runs the same check — does this person hold a role on this site? If
 not, the data never leaves the server. This is a server condition, not a hidden
