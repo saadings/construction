@@ -30,6 +30,7 @@ https://claude.ai/code/artifact/15408f18-a188-499e-83a2-61656ef96d83
 | First version scope | Spending, vendors and what they are owed, money coming in, and client contracts with billing. All four. |
 | Organising principle | Sites first. Sites are the structure the business already thinks in. |
 | Project setup | Personal project. Convex, Clerk, Cloudflare. No company tooling, no company branding. |
+| Codebase base | The `blueprint2` template, taken as code only. Nothing wired to the organisation it came from — every account and deployment is Nauman's. |
 | Convex deployment | Supplied by Nauman. Not created by this project. |
 
 ## Non-goals for the first version
@@ -282,6 +283,48 @@ can go stale or disagree with itself.
 **Stack.** TanStack Start on React, Vite, Tailwind v4, shadcn/ui. Convex for
 data. Clerk for sign-in. Cloudflare Pages with GitHub Actions. Vitest. yarn.
 
+**Base.** The codebase starts from the `blueprint2` template, which is already
+this exact stack wired together. It is taken **as code only** — nothing is
+connected to the organisation the template came from. No shared account, no
+shared Convex team, no shared Cloudflare account, no Jira, no Notion, no
+inherited CI secrets. Every piece of infrastructure is Nauman's own:
+
+| | |
+|---|---|
+| Repository | `saadings/construction`, private |
+| Convex | `dev/saad-nauman`, `production` |
+| Clerk | `secure-goose-32` |
+| Cloudflare | Nauman's own account |
+
+The template supplies four things this spec already asked for, so building them
+by hand would be reinventing patterns that already exist:
+
+- **`authenticatedQuery` and `authenticatedMutation`** with `ctx.identity` — the
+  single shared access-check helper the architecture section calls for
+- **Clerk → Convex account sync** over webhooks, with Svix signature validation
+- **Vitest with `convex-test`** and Testing Library, matching the testing plan
+- CI/CD, ESLint 9, Prettier, Husky, typed environment variables, and theme
+  handling
+
+Because the template already carries the Clerk wiring, **`clerk init` is not
+run.** That also removes the earlier risk of scaffolding into a directory that
+already holds a repository and documents.
+
+**What must be removed, not merely renamed.** A company template carries company
+identifiers in places that are not visible on the surface — deploy scripts, CI
+workflow files, project and account identifiers, package names, environment
+variable names. Pass one includes an explicit audit for these, and the bar is
+that no identifier belonging to the originating organisation survives anywhere
+in the tree, not just that the visible naming reads "construction".
+
+**The Clerk organisation tables are stripped.** The template ships
+`organizations` and `organizationMembers` to mirror Clerk organisations. This app
+grants access through `siteRoles` — a person is a partner *on a site*, not a
+member of a company-wide organisation. Keeping both would leave two membership
+concepts side by side, one of which does no work, which is exactly the sort of
+thing that misleads whoever next reads the schema. Site roles stay; the
+organisation tables and their webhook handlers go.
+
 **Convex deployments.** Both supplied by Nauman, both empty and never deployed
 at the time of writing.
 
@@ -313,35 +356,31 @@ Deployment identity is confirmed with a self-identifying check against
 `envList` is never called — it returns values, and would print every secret in
 the deployment into the transcript. Individual variables are read with `envGet`.
 
-**Clerk setup.** The project links to Clerk application
-`app_3HtvD50uWRgMamAXhVkdYnROFHm`. The CLI is already installed (1.5.0, via
-Homebrew), so the sequence is:
+**Clerk setup.** Clerk application `app_3HtvD50uWRgMamAXhVkdYnROFHm`, instance
+`secure-goose-32`. The template already carries the Clerk integration, so setup
+is configuration rather than scaffolding: supply the keys, point Convex at the
+issuer, create the JWT template.
 
-```bash
-clerk auth login                                    # interactive, browser OAuth
-clerk init --framework tanstack-start --pm yarn \
-           --app app_3HtvD50uWRgMamAXhVkdYnROFHm
-clerk doctor                                        # verify
-```
-
-Three deliberate departures from the supplied Clerk instructions, each with a
-reason:
-
-1. **yarn, not npm.** The instructions default to npm; the standing project rule
-   is yarn. Installed version is Yarn Classic 1.22.22.
-2. **TanStack Start, not Next.js.** The instructions default to Next.js for an
-   empty directory. The stack here is TanStack Start, which `clerk init`
-   supports as a first-class target. Consequently the Next.js proxy-matcher step
-   (`'/__clerk/:path*'`) does not apply and is skipped.
-3. **Scaffolding into a non-empty directory.** The folder already holds `.git`,
-   `.gitignore` and `docs/`, but no `package.json` and no lockfile. Whether
-   `clerk init` scaffolds in place or creates a subdirectory must be confirmed
-   at the moment it runs, not assumed — scaffolding into a subfolder would
-   orphan the repo root.
+`clerk init` is **not** run, and neither is the Next.js proxy-matcher step from
+the supplied Clerk instructions — that step applies only to Next.js, and this is
+TanStack Start. `clerk doctor` is still useful for verifying the result.
 
 Because shadcn/ui is in the stack, `@clerk/ui` is installed and its shadcn theme
 applied so Clerk's screens match the rest of the app rather than looking bolted
 on.
+
+Three environment values are held in `.env.local`, which is gitignored and was
+created with `600` permissions:
+
+```
+VITE_CLERK_PUBLISHABLE_KEY   # public by design
+CLERK_SECRET_KEY             # never reaches client code
+CLERK_FRONTEND_API_URL       # https://secure-goose-32.clerk.accounts.dev
+```
+
+The template validates environment variables through a typed schema, so its
+expected names must be reconciled with these during pass one rather than
+assumed to match.
 
 Keys live in `.env.local`, which is gitignored from the first commit.
 `CLERK_SECRET_KEY` never reaches client code, and environment files are never
@@ -613,8 +652,11 @@ No snapshot tests. No tests that only prove a mock was called.
 The scope is too large for a single sitting, so it is built in four passes. Each
 pass leaves the app working and usable — nothing is half-finished between them.
 
-1. **Foundation and spending.** Project setup, Clerk sign-in, Convex schema,
-   access checks, the shared Zod module, sites, trades, people, and the day-sheet
+1. **Foundation and spending.** Bringing the template in and cutting it loose
+   from its origin — stripping every inherited identifier, removing the
+   organisation tables, pointing it at Nauman's own Convex, Clerk, GitHub and
+   Cloudflare. Then Clerk sign-in working end to end, the Convex schema, access
+   checks, the shared Zod module, sites, trades, people, and the day-sheet
    payment flow with its per-trade totals. At the end of this pass the app
    already replaces the widest part of the workbooks.
 2. **People and what they are owed.** Bills, engagements, the running account
