@@ -4,12 +4,12 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
+import { useEffect } from 'react'
 
 import { env } from '../lib/env'
+import { THEME_INIT_SCRIPT, applyColourScheme, usePrefersDark } from '../lib/theme'
 import type { RouterContext } from '../router'
 import appCss from '../styles.css?url'
-
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -38,9 +38,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   const { convexClient } = Route.useRouteContext()
+  const prefersDark = usePrefersDark()
+
+  // Keeps `<html>` in step with a device that changes while the app is open.
+  // The script in the head only gets the first frame right.
+  useEffect(() => {
+    applyColourScheme(prefersDark)
+  }, [prefersDark])
 
   return (
-    <ClerkProvider appearance={{ baseTheme: dark }}>
+    // Clerk's screens are the only thing a signed-out person can interact
+    // with, so they follow the device like everything else. Pinned to dark
+    // they arrive as a dark panel over a light page on a light phone.
+    <ClerkProvider appearance={{ baseTheme: prefersDark ? dark : undefined }}>
       <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
         <Outlet />
       </ConvexProviderWithClerk>
