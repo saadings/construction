@@ -9,7 +9,7 @@ export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
     case 'user.created':
     // intentional fallthrough
     case 'user.updated':
-      await ctx.runMutation(internal.users.actions.upsert, {
+      await ctx.runMutation(internal.accounts.actions.upsert, {
         data: event.data,
       })
       break
@@ -22,7 +22,7 @@ export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
         break
       }
 
-      await ctx.runMutation(internal.users.actions.remove, {
+      await ctx.runMutation(internal.accounts.actions.remove, {
         clerkUserId,
       })
       break

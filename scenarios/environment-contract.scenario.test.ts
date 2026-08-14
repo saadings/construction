@@ -105,7 +105,7 @@ describe('what the deployment has to be told', () => {
   }
 
   it('names every variable the backend reads', () => {
-    // A variable only Convex reads is invisible to the frontend comparison above, and missing CLERK_WEBHOOK_SECRET empties the users table while sign-up looks complete.
+    // A variable only Convex reads is invisible to the frontend comparison above, and missing CLERK_WEBHOOK_SECRET empties the accounts table while sign-up looks complete.
     const documented = new Set(exampleKeys())
 
     expect(readByTheBackend().filter((name) => !documented.has(name))).toEqual([])

@@ -20,7 +20,7 @@ const probe = {
       return {
         subject: ctx.identity.subject,
         // Reading the database inside the handler proves the context handed on still carries everything Convex put in it.
-        people: (await ctx.db.query('users').collect()).length,
+        people: (await ctx.db.query('accounts').collect()).length,
       }
     },
   }),
@@ -29,7 +29,7 @@ const probe = {
     args: { name: v.string() },
     handler: async (ctx, args) => {
       reached.push('remember')
-      await ctx.db.insert('users', {
+      await ctx.db.insert('accounts', {
         externalId: ctx.identity.subject,
         name: args.name,
         primaryEmail: 'nauman@example.com',
@@ -74,7 +74,7 @@ describe('a caller who is not signed in', () => {
     await expect(t.mutation(remember, { name: 'Nauman' })).rejects.toThrow('Not authenticated')
 
     expect(reached).toEqual([])
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 })
 
@@ -94,7 +94,7 @@ describe('a caller who is signed in', () => {
     const subject = await t.withIdentity({ subject: 'user_x' }).mutation(remember, { name: 'Nauman' })
 
     expect(subject).toBe('user_x')
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toMatchObject([
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toMatchObject([
       { externalId: 'user_x', name: 'Nauman' },
     ])
   })

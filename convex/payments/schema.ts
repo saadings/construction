@@ -16,12 +16,18 @@ export const paymentsSchema = defineTable({
   method: v.union(v.literal('cheque'), v.literal('cash'), v.literal('transfer'), v.literal('payOrder')),
   // The cheque number. There are 7,109 of them across the workbooks.
   reference: v.optional(v.string()),
+  // Which account the money left. Optional here because cash leaves none; a cheque or transfer without one is refused where the rule can be written.
+  bankAccountId: v.optional(v.id('bankAccounts')),
   note: v.optional(v.string()),
   // Outside the contracted scope, which is what LESS EXTRA WORK meant.
   isExtraWork: v.boolean(),
   // Hidden rather than erased, so a disagreement about what was paid can be settled.
   removed: v.boolean(),
   addedByExternalId: v.string(),
+  // Absent until someone changes or removes this. A removal nobody signed is the exact case a disagreement about money turns on.
+  changedByExternalId: v.optional(v.string()),
+  // Milliseconds, matching `_creationTime`. The one moment in this table: it records what a person did, not when money moved.
+  changedAt: v.optional(v.number()),
 })
   .index('bySiteAndDay', ['siteId', 'day'])
   .index('bySiteAndTrade', ['siteId', 'tradeId'])

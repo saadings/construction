@@ -20,7 +20,14 @@ describe('the trades a site can spend on', () => {
   it('separates buying the land from building on it', () => {
     const notBuilding = CANONICAL_TRADES.filter((trade) => !trade.countsAsBuildingCost).map((trade) => trade.name)
 
-    expect(notBuilding).toEqual(['Plot, taxes and commission'])
+    expect(notBuilding).toEqual(['Plot', 'Plot taxes and transfer fees', 'Dealer commission'])
+  })
+
+  it('keeps the land, the government and the agent apart', () => {
+    // One bucket would answer "what did the plot cost" and never "how much was commission". Splitting later means typing ten years in again.
+    const notBuilding = CANONICAL_TRADES.filter((trade) => !trade.countsAsBuildingCost)
+
+    expect(notBuilding).toHaveLength(3)
   })
 
   it('counts ordinary work as building cost', () => {

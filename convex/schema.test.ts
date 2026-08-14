@@ -129,10 +129,13 @@ describe('the shape the money lives in', () => {
         tradeIds.set(trade.name, await ctx.db.insert('trades', { ...trade, position, hidden: false }))
       }
 
+      // The plot arrives as three payments to three people. Splitting it must leave the two totals exactly where they were.
       const spend: Array<[string, number]> = [
         ['Cement', 257048100],
         ['Bricks', 183920000],
-        ['Plot, taxes and commission', 4147500000],
+        ['Plot', 4000000000],
+        ['Plot taxes and transfer fees', 100000000],
+        ['Dealer commission', 47500000],
       ]
 
       for (const [name, amountPaisa] of spend) {
@@ -170,6 +173,128 @@ describe('the shape the money lives in', () => {
 
     // 2,570,481 + 1,839,200 from the workbooks. The plot must not be in it.
     expect(building).toBe(440968100)
+    // 41,475,000, the same figure the single plot column held before it became three.
     expect(land).toBe(4147500000)
+  })
+
+  it('keeps who took a payment out of the ledger, and when', async () => {
+    // Partners disagreeing about money is the reason this exists. A removal nobody signed is the case it turns on.
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+
+    const removed = await t.run(async (ctx) => {
+      const siteId = await aSite(ctx, '359-R, Phase 7')
+      const tradeId = await ctx.db.insert('trades', {
+        name: 'Cement',
+        countsAsBuildingCost: true,
+        position: 3,
+        hidden: false,
+      })
+      const paidById = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const bankAccountId = await ctx.db.insert('bankAccounts', {
+        label: 'Askari 2192',
+        lastFourDigits: '2192',
+        hidden: false,
+      })
+
+      const paymentId = await ctx.db.insert('payments', {
+        siteId,
+        tradeId,
+        paidById,
+        bankAccountId,
+        day: '2025-10-07',
+        amountPaisa: 4915000,
+        method: 'cheque',
+        reference: '3894',
+        isExtraWork: false,
+        removed: false,
+        addedByExternalId: 'user_nauman',
+      })
+
+      await ctx.db.patch('payments', paymentId, {
+        removed: true,
+        changedByExternalId: 'user_partner',
+        changedAt: 1_760_000_000_000,
+      })
+
+      return await ctx.db.get('payments', paymentId)
+    })
+
+    expect(removed?.removed).toBe(true)
+    expect(removed?.changedByExternalId).toBe('user_partner')
+    expect(removed?.changedAt).toBe(1_760_000_000_000)
+    // Who added it is still there. A removal must not overwrite the first signature.
+    expect(removed?.addedByExternalId).toBe('user_nauman')
+  })
+
+  it('stores a bank account already masked, so nothing has to remember to mask it', async () => {
+    // A partner may screenshot any screen. The digits that are not stored cannot leak from one careless component.
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+
+    const account = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('bankAccounts', {
+        label: 'Askari 2192',
+        lastFourDigits: '2192',
+        hidden: false,
+      })
+      return await ctx.db.get('bankAccounts', id)
+    })
+
+    expect(account?.lastFourDigits).toMatch(/^\d{4}$/)
+    // The point is not that the mask is applied but that there is nowhere to put the rest of the number.
+    expect(
+      Object.keys(account ?? {})
+        .filter((key) => !key.startsWith('_'))
+        .sort()
+    ).toEqual(['hidden', 'label', 'lastFourDigits'])
+  })
+
+  it('joins a sign-in to the person it belongs to', async () => {
+    // Signing in resolves to an account; reach resolves to a person holding a role. Without this field the two never meet.
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+
+    const reached = await t.run(async (ctx) => {
+      const personId = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const siteId = await aSite(ctx, '359-R, Phase 7')
+      await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
+
+      await ctx.db.insert('accounts', {
+        externalId: 'user_nauman',
+        name: 'Nauman Saeed',
+        primaryEmail: 'nauman@example.com',
+        otherEmails: [],
+        personId,
+      })
+
+      const account = await ctx.db
+        .query('accounts')
+        .withIndex('byExternalId', (q) => q.eq('externalId', 'user_nauman'))
+        .unique()
+      const whoIsSigningIn = account?.personId
+      if (!whoIsSigningIn) return []
+
+      return await ctx.db
+        .query('siteRoles')
+        .withIndex('bySiteAndPerson', (q) => q.eq('siteId', siteId).eq('personId', whoIsSigningIn))
+        .collect()
+    })
+
+    expect(reached.map((role) => role.capacity)).toEqual(['partner'])
+  })
+
+  it('leaves a fresh sign-in attached to nobody', async () => {
+    // The control. Signing in proves who someone is; it must not be what says which sites they may open.
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+
+    const account = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('accounts', {
+        externalId: 'user_stranger',
+        name: 'A Stranger',
+        primaryEmail: 'stranger@example.com',
+        otherEmails: [],
+      })
+      return await ctx.db.get('accounts', id)
+    })
+
+    expect(account?.personId).toBeUndefined()
   })
 })

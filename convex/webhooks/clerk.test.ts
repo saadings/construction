@@ -75,7 +75,7 @@ describe('events this app has no use for', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 
   it('accepts a membership event, which Clerk sends whenever anyone joins anything', async () => {
@@ -110,7 +110,7 @@ describe('payloads that are not what they claim to be', () => {
 
     // 400 specifically: a 200 mirrors a forged user, a 500 has the sender retrying for days over something that cannot succeed.
     expect(response.status).toBe(400)
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 
   it('turns away a request signed with the wrong secret', async () => {
@@ -122,7 +122,7 @@ describe('payloads that are not what they claim to be', () => {
     )
 
     expect(response.status).toBe(400)
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 
   it('accepts a deletion for a person it never held', async () => {
@@ -157,7 +157,7 @@ describe('a deployment that cannot check anything yet', () => {
 
     // 5xx on purpose — the message is fine, the deployment is not — so Clerk redelivers and the sign-up lands once the secret is set.
     expect(response.status).toBe(500)
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 
   it('does the same for a signing secret that is set but unreadable', async () => {
@@ -168,7 +168,7 @@ describe('a deployment that cannot check anything yet', () => {
     const response = await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_bad_secret')))
 
     expect(response.status).toBe(500)
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 })
 
@@ -181,8 +181,8 @@ describe('the control', () => {
 
     expect(response.status).toBe(200)
 
-    const users = await t.run((ctx) => ctx.db.query('users').collect())
-    expect(users.map((user) => user.externalId)).toEqual(['user_control'])
+    const accounts = await t.run((ctx) => ctx.db.query('accounts').collect())
+    expect(accounts.map((account) => account.externalId)).toEqual(['user_control'])
   })
 })
 
@@ -197,12 +197,12 @@ describe('someone the app already holds', () => {
     expect(response.status).toBe(200)
 
     // One person, carrying the new name.
-    const users = await t.run((ctx) => ctx.db.query('users').collect())
-    expect(users.map((user) => user.name)).toEqual(['Nauman Ahmed'])
+    const accounts = await t.run((ctx) => ctx.db.query('accounts').collect())
+    expect(accounts.map((account) => account.name)).toEqual(['Nauman Ahmed'])
 
     // And the app can still say who he is: a second row makes this throw rather than answer.
     const signedInAsNauman = t.withIdentity({ subject: 'user_nauman' })
-    expect(await signedInAsNauman.query(api.users.actions.current, {})).toMatchObject({ name: 'Nauman Ahmed' })
+    expect(await signedInAsNauman.query(api.accounts.actions.current, {})).toMatchObject({ name: 'Nauman Ahmed' })
   })
 
   it('is let go when their Clerk account is deleted', async () => {
@@ -216,6 +216,6 @@ describe('someone the app already holds', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
   })
 })

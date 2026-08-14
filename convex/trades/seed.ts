@@ -1,6 +1,6 @@
 // Ten years of workbooks accumulated 66 header labels for roughly 45 real trades; this is the merged list.
 
-// False only for money not spent building. Building cost is the sum over the true ones, which replaces subtracting the plot column back out by hand.
+// False only for money not spent building. Building cost is the sum over the true ones, which replaces subtracting the plot columns back out by hand.
 export const CANONICAL_TRADES: Array<{ name: string; countsAsBuildingCost: boolean }> = [
   { name: 'Civil labour', countsAsBuildingCost: true },
   { name: 'Bricks', countsAsBuildingCost: true },
@@ -50,5 +50,8 @@ export const CANONICAL_TRADES: Array<{ name: string; countsAsBuildingCost: boole
   { name: 'Utility bills and authority charges', countsAsBuildingCost: true },
   // The workbooks needed a bucket, and forcing a choice makes people file things in the wrong place.
   { name: 'Other', countsAsBuildingCost: true },
-  { name: 'Plot, taxes and commission', countsAsBuildingCost: false },
+  // Three, not one: one workbook already columned `DEALER COMMISSION` on its own, and once ten years file into one bucket, telling them apart means typing it all in again.
+  { name: 'Plot', countsAsBuildingCost: false },
+  { name: 'Plot taxes and transfer fees', countsAsBuildingCost: false },
+  { name: 'Dealer commission', countsAsBuildingCost: false },
 ]
