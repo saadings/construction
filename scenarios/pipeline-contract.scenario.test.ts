@@ -355,6 +355,15 @@ describe('the shape of the deploy workflow', () => {
     // The second control: push really is still restricted, so the false above means removed rather than never read.
     expect(push!.some((line) => line.includes('branches:'))).toBe(true)
   })
+
+  it('builds the frontend only after the types it imports exist', () => {
+    // This job skipped codegen on the reading that the bundle imported nothing generated: true when written, held by nothing, red the first time a screen called a query.
+    expect(job('build').needs).toContain('convex-codegen')
+    expect(job('build').body).toContain('name: convex-generated')
+
+    // The control: the artifact it downloads is the one codegen publishes, rather than a name that matches nothing.
+    expect(job('convex-codegen').body).toContain('name: convex-generated')
+  })
 })
 
 /** The indented lines under a top-level trigger key, or null when the key is absent. */

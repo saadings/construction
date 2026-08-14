@@ -33,8 +33,9 @@ jobs:
       - name: Format check
         run: yarn format:check
 
-  # The bundle imports nothing from convex/_generated — it reaches the backend by URL — so this waits for no codegen.
+  # The bundle imports `api` out of convex/_generated to call anything, so it cannot be built before those types exist.
   build:
+    needs: [convex-codegen]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -46,6 +47,11 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: yarn install --immutable
+      - name: Download generated types
+        uses: actions/download-artifact@v4
+        with:
+          name: convex-generated
+          path: convex/_generated
       - name: Build
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
