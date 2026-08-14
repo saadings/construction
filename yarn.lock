@@ -4752,6 +4752,7 @@ __metadata:
     clsx: "npm:^2.1.1"
     concurrently: "npm:^9.1.2"
     convex: "npm:^1.32.0"
+    convex-helpers: "npm:^0.1.123"
     convex-test: "npm:^0.0.41"
     dotenv: "npm:^17.3.1"
     eslint: "npm:^9.0.0"
@@ -4784,6 +4785,33 @@ __metadata:
   version: 2.0.0
   resolution: "convert-source-map@npm:2.0.0"
   checksum: 10c0/8f2f7a27a1a011cc6cc88cc4da2d7d0cfa5ee0369508baae3d98c260bb3ac520691464e5bbe4ae7cdf09860c1d69ecc6f70c63c6e7c7f7e3f18ec08484dc7d9b
+  languageName: node
+  linkType: hard
+
+"convex-helpers@npm:^0.1.123":
+  version: 0.1.123
+  resolution: "convex-helpers@npm:0.1.123"
+  peerDependencies:
+    "@standard-schema/spec": ^1.0.0
+    convex: ^1.43.0
+    hono: ^4.0.5
+    react: ^17.0.2 || ^18.0.0 || ^19.0.0
+    typescript: ^5.5 || ^6.0.0 || ^7.0.0
+    zod: ^3.25.0 || ^4.0.0
+  peerDependenciesMeta:
+    "@standard-schema/spec":
+      optional: true
+    hono:
+      optional: true
+    react:
+      optional: true
+    typescript:
+      optional: true
+    zod:
+      optional: true
+  bin:
+    convex-helpers: bin.cjs
+  checksum: 10c0/dcb6cf20242cfea1c228fdf6e94debb4ca7f194e04291a55fce00c74859e2c0a76e77826f75a1774f8493538288552449b915fa251ab244dc01a67f6f4293804
   languageName: node
   linkType: hard
 
