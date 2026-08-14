@@ -187,6 +187,56 @@ describe('the sites on the home screen', () => {
     expect(mine.map((site) => site.name)).toEqual(['1-A, Phase 0'])
   })
 
+  it('carries one number a site, worked out from the payments on it', async () => {
+    const t = convexWithSites()
+    const { siteId } = await t.run(async (ctx) => {
+      const personId = await anAccountFor(ctx, { withAPerson: true })
+      if (!personId) throw new Error('no person')
+
+      const siteId = await ctx.db.insert('sites', {
+        name: '359-R, Phase 7',
+        builtForAClient: false,
+        stage: 'building',
+        hidden: false,
+      })
+      await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
+
+      const tradeId = await ctx.db.insert('trades', {
+        name: 'Cement',
+        countsAsBuildingCost: true,
+        position: 1,
+        hidden: false,
+      })
+
+      for (const [amountPaisa, removed] of [
+        [257048100, false],
+        [183920000, false],
+        // Taken back out, so it is not in the figure but is still there to settle an argument with.
+        [999999900, true],
+      ] as const) {
+        await ctx.db.insert('payments', {
+          siteId,
+          tradeId,
+          paidById: personId,
+          day: '2025-10-07',
+          amountPaisa,
+          method: 'cash',
+          isExtraWork: false,
+          removed,
+          addedByExternalId: SIGNED_IN_AS,
+        })
+      }
+
+      return { siteId }
+    })
+
+    const [row] = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.sites.queries.mine, {})
+
+    expect(row?._id).toBe(siteId)
+    // 2,570,481 + 1,839,200 from the workbooks. Nowhere to type this, and the removed one is not in it.
+    expect(row?.spentPaisa).toBe(440968100)
+  })
+
   it('leaves out a site that has been hidden', async () => {
     const t = convexWithSites()
     await t.run((ctx) => anAccountFor(ctx, { withAPerson: true }))
