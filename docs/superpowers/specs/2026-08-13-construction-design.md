@@ -347,6 +347,46 @@ Keys live in `.env.local`, which is gitignored from the first commit.
 `CLERK_SECRET_KEY` never reaches client code, and environment files are never
 read aloud or printed.
 
+**Clerk instance.** Frontend API `https://secure-goose-32.clerk.accounts.dev`,
+backend API `https://api.clerk.com`. The frontend URL was confirmed
+independently — it is what the publishable key decodes to — rather than taken on
+trust.
+
+**Joining Clerk to Convex.** Convex validates Clerk's JWTs itself; the frontend
+API URL is the issuer domain it needs. Three pieces:
+
+1. `CLERK_JWT_ISSUER_DOMAIN=https://secure-goose-32.clerk.accounts.dev` set as an
+   environment variable **on the Convex deployment**, not only in `.env.local`.
+   Set through the MCP server (`envSet`), never the CLI, and never via `envList`,
+   which returns values and would print every secret in the deployment.
+
+2. `convex/auth.config.ts`:
+
+   ```ts
+   import { AuthConfig } from "convex/server";
+
+   export default {
+     providers: [
+       {
+         domain: process.env.CLERK_JWT_ISSUER_DOMAIN!,
+         applicationID: "convex",
+       },
+     ],
+   } satisfies AuthConfig;
+   ```
+
+   This file is mandatory. Without it `ctx.auth.getUserIdentity()` returns
+   `null` and every access check silently denies — which looks exactly like a
+   permissions bug and is not one.
+
+3. **A JWT template named `convex` in the Clerk dashboard.** `applicationID` is
+   checked against the token's `aud` claim, so the template's name must match
+   exactly. There is no CLI or API route for creating it — Nauman must add it at
+   dashboard.clerk.com under JWT Templates. Auth cannot work until this exists.
+
+The backend API is only needed if the app ever calls Clerk directly to look up
+users. Nothing in the first version requires it.
+
 **Access.** Clerk proves identity; Convex decides reach. Every query and
 mutation runs the same check — does this person hold a role on this site? If
 not, the data never leaves the server. This is a server condition, not a hidden
@@ -588,7 +628,9 @@ Each pass gets its own implementation plan.
 
 ## Open items for Nauman
 
-1. **Permission to `git init` and commit.** The folder is not yet a repository.
+1. **A JWT template named `convex` in the Clerk dashboard.** Blocking, and not
+   automatable — no CLI or API route exists for it. Sign-in will appear to work
+   while every access check silently denies until this is created.
 2. **Partner profit shares.** The workbooks record what each partner happened to
    pay but never state an agreed ratio. Is profit split by capital contributed,
    or by a fixed agreement?
