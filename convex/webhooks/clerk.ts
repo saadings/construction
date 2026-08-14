@@ -15,7 +15,16 @@ export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
       break
 
     case 'user.deleted': {
-      const clerkUserId = event.data.id!
+      const clerkUserId = event.data.id
+      if (clerkUserId === undefined) {
+        // Clerk marks the id optional on a deleted object, so this is possible
+        // rather than merely conceivable. There is no one to remove without it,
+        // and a failure here would only have Clerk sending the same unusable
+        // message back for days.
+        console.warn('Ignored a Clerk user.deleted event that named no one')
+        break
+      }
+
       await ctx.runMutation(internal.users.actions.remove, {
         clerkUserId,
       })
