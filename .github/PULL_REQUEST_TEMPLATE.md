@@ -1,8 +1,6 @@
 ## 📝 Description
 
-Please attach the Jira ticket related to this PR
-
-Jira:
+What changed, and why.
 
 ---
 

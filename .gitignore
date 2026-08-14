@@ -12,16 +12,8 @@ dist
 dist-ssr
 *.local
 
-# Convex config (env vars + DB settings) — contains credentials!
-convex-config.json
-
 # Convex
 convex/_generated/
-
-# .env files
-.env.local
-.env
-*.env
 
 # Editor directories and files
 .vscode/*
@@ -46,38 +38,8 @@ convex/_generated/
 todos.json
 __unconfig*
 
-# Shared AI skill symlinks (created by ai_instructions install script)
-.agents/skills/avoid-feature-creep
-.agents/skills/conventional-commit
-.agents/skills/inter-agent-comms
-.agents/skills/shadcn
-.agents/skills/toggle-convex-prod-access
-.agents/skills/vercel-react-best-practices
-.agents/skills/clerk
-.agents/skills/clerk-backend-api
-.agents/skills/clerk-custom-ui
-.agents/skills/clerk-nextjs-patterns
-.agents/skills/clerk-orgs
-.agents/skills/clerk-setup
-.agents/skills/clerk-testing
-.agents/skills/clerk-webhooks
-.agents/skills/convex
-.agents/skills/convex-agents
-.agents/skills/convex-best-practices
-.agents/skills/convex-component-authoring
-.agents/skills/convex-cron-jobs
-.agents/skills/convex-file-storage
-.agents/skills/convex-functions
-.agents/skills/convex-http-actions
-.agents/skills/convex-migrations
-.agents/skills/convex-realtime
-.agents/skills/convex-schema-validator
-.agents/skills/convex-security-audit
-.agents/skills/convex-security-check
-.agents/skills/tanstack-start-best-practices
-.agents/skills/vite
-.agents/skills/vitest
-
+# Agent skills, which are installed locally rather than committed
+.agents/skills/
 
 # Source workbooks — excluded deliberately.
 # They contain bank account numbers, vendor mobile numbers and named clients'

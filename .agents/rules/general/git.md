@@ -7,8 +7,10 @@ DO NOT COMMIT BY YOURSELF WITHOUT MY APPROVAL!!!
 # Commits on main branch
 
 For all commits on the main branch, use conventional commits in the following format:
-<TYPE>(<CONTEXT>): <SUMMARY> [JIRAKEY]
-e.g.: feature(trucks): The dispatcher needs to know about trucks and driver-truck assignments. [TOWD-5]
+<TYPE>: <SUMMARY>
+e.g.: feat: add sign-in to the landing screen
+
+There is no ticket tracker on this project, so there is no ticket key to append.
 
 # Commits on feature branches
 

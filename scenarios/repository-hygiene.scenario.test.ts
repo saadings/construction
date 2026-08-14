@@ -68,23 +68,50 @@ function everyPathEverCommitted(): Array<string> {
  */
 const CREDENTIAL_SHAPE = /(cfat_|sk_test_|sk_live_|pk_test_|pk_live_|whsec_)[A-Za-z0-9_+/=-]{20,}/
 
-/** Identifiers belonging to the organisation the template was taken from. */
-const ORIGIN_IDENTIFIER = /flatout|blueprint.?2|fsos/i
+/**
+ * Identifiers belonging to the organisation the template was taken from — its
+ * own name, the template's, its infrastructure prefix, and the ticket keys of
+ * the products it builds. The last of those is how the first pass missed the
+ * agent workflows: they carried no company name anywhere, only ticket keys
+ * from another product's tracker, and a search for the company name reported a
+ * clean tree.
+ */
+const ORIGIN_IDENTIFIER = /flatout|blueprint.?2|fsos|towd-[0-9]/i
 
 /**
  * Reads every file a fresh clone would receive and returns the ones matching.
  *
+ * Searches what is staged rather than what is on disk. Those differ during
+ * every commit — this runs in the pre-commit hook — and it is the staged
+ * content that a clone ends up with. Reading the working tree also breaks
+ * outright on a file staged for deletion, which is a very ordinary thing to be
+ * doing when a check like this matters most.
+ *
  * `docs/` is excluded because the design and plan discuss the template by
  * name; those mentions record a decision and are meant to stay. This file is
- * excluded because it necessarily contains the pattern it searches for.
+ * excluded because it necessarily contains the patterns it searches for.
  */
 function trackedFilesMatching(pattern: RegExp): Array<string> {
-  const excluded = /^(docs\/|scenarios\/repository-hygiene\.scenario\.test\.ts$)/
+  const args = ['grep', '--cached', '--files-with-matches', '--extended-regexp', '--null']
+  if (pattern.flags.includes('i')) {
+    args.push('--ignore-case')
+  }
+  args.push('-e', pattern.source, '--', ':!docs/', ':!scenarios/repository-hygiene.scenario.test.ts')
 
-  return git('ls-files', '-z')
-    .split('\0')
-    .filter((path) => path.length > 0 && !excluded.test(path))
-    .filter((path) => pattern.test(readFileSync(join(repoRoot, path), 'utf8')))
+  let matches: string
+  try {
+    matches = git(...args)
+  } catch (error) {
+    // git grep exits 1 on no matches and 2 or above on a real failure. Only
+    // the first is an answer; the rest have to surface, or a broken search
+    // reads exactly like a clean repository.
+    if ((error as { status?: number }).status === 1) {
+      return []
+    }
+    throw error
+  }
+
+  return matches.split('\0').filter((path) => path.length > 0)
 }
 
 describe('secrets and source workbooks', () => {
@@ -183,9 +210,22 @@ describe('the organisation this codebase came from', () => {
   })
 
   it('actually opens the files it searches', () => {
-    // The control. A scan that reads nothing — wrong root, unreadable paths,
-    // an ls-files call returning empty — reports a clean tree either way.
+    // The control. A scan that reads nothing — wrong root, a pathspec that
+    // excludes everything, a search that errors and is swallowed — reports a
+    // clean tree either way.
     expect(trackedFilesMatching(/construction/i).length).toBeGreaterThan(0)
+  })
+
+  it('knows an identifier from a word that merely contains one', () => {
+    // Sensitivity: the shapes these identifiers actually take.
+    expect(ORIGIN_IDENTIFIER.test('flatoutsolutions/github-actions/setup@v1')).toBe(true)
+    expect(ORIGIN_IDENTIFIER.test('feature(trucks): assignments [TOWD-5]')).toBe(true)
+    expect(ORIGIN_IDENTIFIER.test('cloned from blueprint2')).toBe(true)
+
+    // Specificity: a check that fires on ordinary English is a check that gets
+    // deleted, and then the real thing goes through unnoticed.
+    expect(ORIGIN_IDENTIFIER.test('laid the foundation towards the second stage')).toBe(false)
+    expect(ORIGIN_IDENTIFIER.test('a blueprint for the site')).toBe(false)
   })
 })
 
