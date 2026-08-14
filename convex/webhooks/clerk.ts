@@ -39,12 +39,27 @@ export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
 }
 
 export const clerkUsersWebhook = httpAction(async (ctx: ActionCtx, request: Request) => {
-  const event = await validateRequest(request)
-  if (!event) {
-    return new Response('Invalid webhook signature', { status: 400 })
+  const checked = await validateRequest(request)
+
+  switch (checked.outcome) {
+    case 'notFromClerk':
+      // Clerk drops a 4xx. Nothing about this message would pass on a second
+      // attempt, so asking for one only fills the delivery log.
+      return new Response('Invalid webhook signature', { status: 400 })
+
+    case 'nothingToCheckAgainst':
+      // Deliberately a 5xx, which Clerk redelivers with backoff. The signing
+      // secret is missing from this deployment, not from the message, so the
+      // retries land the sign-ups that would otherwise be lost outright once
+      // someone sets it.
+      console.error(
+        'Turned away a Clerk webhook because this deployment has no usable CLERK_WEBHOOK_SECRET. ' +
+          'Set it to the signing secret Clerk showed when the endpoint was created.'
+      )
+      return new Response('This deployment cannot check webhooks yet', { status: 500 })
+
+    case 'fromClerk':
+      await handleClerkEvent(ctx, checked.event)
+      return new Response(null, { status: 200 })
   }
-
-  await handleClerkEvent(ctx, event)
-
-  return new Response(null, { status: 200 })
 })

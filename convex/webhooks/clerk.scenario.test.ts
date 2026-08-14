@@ -171,6 +171,37 @@ describe('payloads that are not what they claim to be', () => {
   })
 })
 
+describe('a deployment that cannot check anything yet', () => {
+  it('asks Clerk to come back when no signing secret is set, rather than crashing', async () => {
+    // The signing secret is set on the deployment by hand and by CI, so there
+    // is a window where it is not there at all. Svix throws from its
+    // constructor on an empty secret, and that throw used to travel straight
+    // out of the handler.
+    vi.stubEnv('CLERK_WEBHOOK_SECRET', undefined)
+    const t = convexWithClerkWebhook()
+
+    const response = await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_before_setup')))
+
+    // 5xx on purpose: this message is fine, the deployment is not. Clerk
+    // redelivers, so the sign-up lands once the secret is set instead of being
+    // lost outright.
+    expect(response.status).toBe(500)
+    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+  })
+
+  it('does the same for a signing secret that is set but unreadable', async () => {
+    // A truncated or mistyped value fails inside svix's base64 decoding, which
+    // is a different throw from the empty one and took the same route out.
+    vi.stubEnv('CLERK_WEBHOOK_SECRET', 'whsec_not base64 at all')
+    const t = convexWithClerkWebhook()
+
+    const response = await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_bad_secret')))
+
+    expect(response.status).toBe(500)
+    expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
+  })
+})
+
 describe('the control', () => {
   it('lets a real user through, so the empty tables above mean something', async () => {
     // Every assertion that nothing happened is worthless if nothing can happen.
