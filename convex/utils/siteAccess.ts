@@ -46,7 +46,9 @@ export async function siteReachableBy(
   return roles.some((role) => role.capacity === 'partner') ? personId : null
 }
 
-// Declared here rather than asked of the caller, so no site-scoped function can be written without the site it is scoped to.
+// Declared here rather than asked of the caller, so a function written through these wrappers cannot be missing the site it is scoped to.
+
+// It does not stop anyone declaring `siteId` on a bare `authenticatedQuery` and reaching around the check, which typechecks and lints today: a scan of the tree closes that, not a type.
 type WithSiteId<ArgsValidator extends PropertyValidators> = ArgsValidator & { siteId: VId<Id<'sites'>> }
 
 // Naming the site separately from the rest is what lets the wrappers read it: a mapped type over a type parameter has no properties yet.
