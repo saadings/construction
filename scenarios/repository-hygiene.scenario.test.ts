@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 /**
  * Checks that only mean anything against the real repository, so they run
@@ -278,6 +279,90 @@ describe('the package manager', () => {
     // The control. Both files that declare one say yarn; if this found
     // nothing, the check above would be reading past them entirely.
     expect(trackedFilesMatching(/"packageManager": *"yarn/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('the checks that run before a commit', () => {
+  const throwaways: Array<string> = []
+
+  afterEach(() => {
+    while (throwaways.length > 0) {
+      rmSync(throwaways.pop()!, { recursive: true, force: true })
+    }
+  })
+
+  /**
+   * A repository with one file staged on purpose and another changed and
+   * deliberately left alone — the ordinary shape of a working tree partway
+   * through something.
+   */
+  function throwawayRepository(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'construction-hook-'))
+    throwaways.push(dir)
+
+    const run = (...args: Array<string>) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' })
+
+    run('init', '--quiet')
+    run('config', 'user.email', 'checks@example.invalid')
+    run('config', 'user.name', 'Checks')
+
+    writeFileSync(join(dir, 'meantToCommit.txt'), 'first\n')
+    writeFileSync(join(dir, 'halfFinished.txt'), 'first\n')
+    run('add', '.')
+    run('commit', '--quiet', '-m', 'first')
+
+    writeFileSync(join(dir, 'meantToCommit.txt'), 'second\n')
+    run('add', 'meantToCommit.txt')
+    writeFileSync(join(dir, 'halfFinished.txt'), 'work in progress\n')
+
+    return dir
+  }
+
+  function stagedIn(dir: string): Array<string> {
+    return execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: dir, encoding: 'utf8' })
+      .split('\n')
+      .filter((line) => line.length > 0)
+      .sort()
+  }
+
+  /** Stands in for the slow commands so the hook's staging can be run on its own. */
+  function shimsFor(dir: string, commands: Array<string>): string {
+    const bin = join(dir, 'shims')
+    mkdirSync(bin)
+
+    for (const command of commands) {
+      const path = join(bin, command)
+      writeFileSync(path, '#!/bin/sh\nexit 0\n')
+      chmodSync(path, 0o755)
+    }
+
+    return bin
+  }
+
+  it('stage only what the person committing chose to stage', () => {
+    // The real hook, run against a throwaway repository with the fixers and
+    // codegen shimmed out. Everything it does to the index is its own.
+    const dir = throwawayRepository()
+    const bin = shimsFor(dir, ['yarn', 'npx'])
+
+    execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
+    })
+
+    expect(stagedIn(dir)).toEqual(['meantToCommit.txt'])
+  })
+
+  it('would have caught the sweep this replaced', () => {
+    // The control, and the reason the check above is worth having: `git add
+    // -u` after the fixers takes every modified file with it, so a change
+    // half-written in another file lands in a commit that never mentions it.
+    const dir = throwawayRepository()
+
+    execFileSync('git', ['add', '-u'], { cwd: dir })
+
+    expect(stagedIn(dir)).toEqual(['halfFinished.txt', 'meantToCommit.txt'])
   })
 })
 

@@ -1,11 +1,22 @@
+# Only the paths already staged are staged again after the fixers run. A bare
+# `git add -u` sweeps in every other modified file, so half-finished work
+# sitting in a file nobody meant to commit rides along into the commit.
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
 yarn lint:fix
 yarn format:fix
 
-git add -u
+if [ -n "$staged" ]; then
+  printf '%s\n' "$staged" | tr '\n' '\0' | xargs -0 git add --
+fi
 
 # Refreshes convex/_generated so the checks below read current types. It needs
 # a linked deployment, and not having one is no reason to refuse a commit —
 # what follows is the gate, and CI generates its own copy either way.
+#
+# Its own typecheck is disabled here because `yarn typecheck` below covers the
+# backend properly and reports failures as failures, rather than as a codegen
+# step that could equally have fallen over on a missing deployment.
 npx convex codegen --typecheck disable || echo "Left the generated Convex types as they are."
 
 yarn typecheck
