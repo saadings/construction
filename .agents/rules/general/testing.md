@@ -9,9 +9,9 @@ Every code change MUST include tests. Do NOT ship code without tests. If tests a
 ## Unit Tests
 
 - Every new module, function, or non-trivial code change MUST have unit tests.
-- Tests live in `convex/__tests__/` (backend) or `frontend/__tests__/` (frontend).
+- Test files sit next to the module they cover, not in a separate tree.
 - Use **Vitest** (`describe`, `it`, `expect`). Do NOT use Jest, Mocha, or any other test framework.
-- Name test files `<module>.test.ts` (e.g., `polylineInterpolation.test.ts`).
+- Name test files `<module>.test.ts` beside `<module>.ts` (e.g., `convex/utils/auth.test.ts` beside `convex/utils/auth.ts`).
 
 ### What to test
 
@@ -30,7 +30,7 @@ Every code change MUST include tests. Do NOT ship code without tests. If tests a
 
 - Write integration tests when code crosses system boundaries: Convex functions calling other functions, multi-step pipelines, event-driven flows, or external API interactions.
 - Integration test files use the `.integration.test.ts` or `.scenario.test.ts` suffix.
-- Mock external API calls (Google Maps, OpenAI, Twilio, Towbook) — never make real API calls in tests.
+- Mock external API calls — never make real ones in tests. The services this project talks to are Clerk, Convex and Cloudflare.
 
 ## When to Write Tests
 

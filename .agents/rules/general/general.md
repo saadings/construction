@@ -16,9 +16,11 @@ If something doesn't work right away, don't give up and definitely don't remove 
 - When creating a feature branch, make sure that that feature branch absolutely does not track the origin main branch, because that is outrageously dangerous. A feature branch ALWAYS needs to have its own tracking branch!
 - DO NOT use "git commit --no-verify" as that defeats the purpose of pre-commit hooks!!!
 
-# CLI Credentials
+# Credentials
 
-Use the credentials in .vscode/settings.json.
+This project's credentials live in `.env.local`, which is gitignored, and in
+this repository's GitHub secrets. There is no other place to look, and no
+credential is ever to be written anywhere else — see Security below.
 
 # Browser
 
@@ -38,15 +40,6 @@ BAD DESIGN: POST /events/delete --> GOOD DESIGN: DELETE /events/{eventId}
 # Package Manager
 
 Use yarn as the package manager, not npm.
-
-# Pulumi
-
-NEVER EVER run `pulumi up --yes`!!!
-
-# AWS
-
-- We use AWS SSO via `aws configure sso`. Use the AWS_PROFILE defined in .vscode/settings.json.
-- If the AWS session is expired, don't give up or find workarounds but simply run `aws sso login`.
 
 # Deployment
 
