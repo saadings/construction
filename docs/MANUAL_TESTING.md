@@ -446,18 +446,19 @@ Run them from `~/Desktop/construction`, one at a time.
 | `yarn lint:check`   | common mistakes and sloppy patterns across every file            | prints **nothing at all** and returns you to the prompt                            |
 | `yarn format:check` | everything is laid out the same way                              | `Checking formatting...` then `All matched files use Prettier code style!`          |
 | `yarn typecheck`    | nothing is being used in a way that does not fit                 | prints **nothing at all** and returns you to the prompt                            |
-| `yarn test`         | the app's own tests                                              | `Test Files  3 passed (3)` and `Tests  23 passed (23)`                             |
-| `yarn test:scenario`| the tests guarding the setup itself — secrets, workbooks, wiring | `Test Files  3 passed (3)` and `Tests  30 passed (30)`                             |
+| `yarn test`         | the app's own tests                                              | `Test Files  7 passed (7)` and `Tests  40 passed (40)`                             |
+| `yarn test:scenario`| the tests guarding the setup itself — secrets, workbooks, wiring | `Test Files  3 passed (3)` and `Tests  58 passed (58)`                             |
 | `yarn build`        | the app can be packaged up for real use                          | ends with `[prerender] Prerendered 1 pages:` and `[prerender] - /`                  |
 
-All six pass right now. That was confirmed immediately before this document was
-written, on this Mac, with the wording above copied from what actually printed.
+All six pass right now, on this Mac. The two counts are there so you can tell a
+real run from one that stopped early; read them together with the note below
+rather than as a number to match exactly.
 
 Two things worth knowing so they do not alarm you:
 
 - **Nothing printed is the good outcome** for the first and third. Those tools
   only speak up when something is wrong. Silence is the pass.
-- **The two test counts will grow.** As more of the app gets built, 23 and 30
+- **The two test counts will grow.** As more of the app gets built, 40 and 58
   climb. The number is not the point — what matters is that the word next to it
   is `passed` and that no line says `failed`.
 
