@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitesSiteIdDayRoute = SitesSiteIdDayRouteImport.update({
+  id: '/sites/$siteId/day',
+  path: '/sites/$siteId/day',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/sites/$siteId/day': typeof SitesSiteIdDayRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/sites/$siteId/day': typeof SitesSiteIdDayRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/sites/$siteId/day': typeof SitesSiteIdDayRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/sites/$siteId/day'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/sites/$siteId/day'
+  id: '__root__' | '/' | '/sites/$siteId/day'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sites/$siteId/day': {
+      id: '/sites/$siteId/day'
+      path: '/sites/$siteId/day'
+      fullPath: '/sites/$siteId/day'
+      preLoaderRoute: typeof SitesSiteIdDayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SitesSiteIdDayRoute: SitesSiteIdDayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

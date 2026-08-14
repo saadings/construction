@@ -27,6 +27,22 @@ export function paisaToRupees(paisa: number): number {
   return paisa / 100
 }
 
+// Commas appear as an amount is typed, so the screen matches the workbooks before anything is saved.
+
+// Half-typed text has to survive, because a lone "." is on the way to "0.5" and refusing it mid-keystroke is a form fighting the person filling it in.
+export function groupWhileTyping(typed: string): string {
+  const digitsOnly = typed.replace(/[^\d.]/g, '')
+  const [whole = '', ...rest] = digitsOnly.split('.')
+
+  const grouped = whole === '' ? '' : Number(whole).toLocaleString('en-US')
+  if (rest.length === 0) {
+    return grouped
+  }
+
+  // Only ever two, because that is what a paisa is, and the rest is a slip nobody meant.
+  return `${grouped}.${rest.join('').slice(0, 2)}`
+}
+
 export function formatPaisa(paisa: number): string {
   const negative = paisa < 0
   const absolute = Math.abs(paisa)
