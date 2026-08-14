@@ -1,9 +1,11 @@
 import { execFileSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
+
+import { readWorkflow, runStepsIn, workflowFiles } from './workflowFile'
 
 /**
  * Checks that only mean anything against the real repository, so they run
@@ -37,6 +39,23 @@ function git(...args: Array<string>): string {
     // clean history.
     maxBuffer: 512 * 1024 * 1024,
   })
+}
+
+/**
+ * Every history-based check below asks what this repository has ever
+ * committed. A shallow clone answers with the working tree and looks
+ * identical to a clean history, so the question has to be asked directly —
+ * a commit count cannot distinguish a truncated clone from a young repo.
+ *
+ * The subject line is read from `--format=%s` rather than from a patch stream.
+ * A patch stream carries the content of every tracked file, this one included,
+ * so a control looking for a literal written here is satisfied by its own
+ * source: in a depth-1 clone of this branch, `git log -p --all` matched the
+ * old control twice with a single grafted commit behind it.
+ */
+function assertHistoryIsPresent(): void {
+  expect(git('rev-parse', '--is-shallow-repository').trim()).toBe('false')
+  expect(git('log', '--all', '--format=%s')).toContain('bring in the application codebase')
 }
 
 /** True when git would refuse to add this path. Untracked paths only. */
@@ -176,6 +195,8 @@ describe('secrets and source workbooks', () => {
     // .gitignore does nothing for a file that is already tracked, and nothing
     // at all for one committed before the rule existed. The question is what
     // has ever been in a commit, not what is in the tree today.
+    assertHistoryIsPresent()
+
     const leaked = everyPathEverCommitted().filter(
       (path) => /\.xlsx?$/i.test(path) || (/(^|\/)\.env/.test(path) && !path.endsWith('.env.example'))
     )
@@ -184,11 +205,11 @@ describe('secrets and source workbooks', () => {
   })
 
   it('has never committed anything shaped like a credential', () => {
-    const history = git('log', '-p', '--all')
-
     // The control: history has to be readable before "no matches" means
     // anything. An empty stream and a clean stream look the same.
-    expect(history).toContain('bring in the application codebase')
+    assertHistoryIsPresent()
+
+    const history = git('log', '-p', '--all')
 
     const offending = history
       .split('\n')
@@ -366,21 +387,49 @@ describe('the checks that run before a commit', () => {
   })
 })
 
-describe('the deploy pipeline', () => {
-  const workflows = join(repoRoot, '.github', 'workflows')
+describe('the checks a commit has to get past', () => {
+  const manifest = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')) as {
+    scripts: Record<string, string | undefined>
+  }
 
-  const actionReferences = readdirSync(workflows)
-    .filter((name) => /\.ya?ml$/.test(name))
-    .flatMap((name) =>
-      readFileSync(join(workflows, name), 'utf8')
-        .split('\n')
-        .map((text, index) => ({ file: name, line: index + 1, text }))
-        .filter(({ text }) => /^\s*(-\s+)?uses:/.test(text))
-        .map((entry) => ({
-          ...entry,
-          action: entry.text.replace(/^\s*(-\s+)?uses:\s*/, '').trim(),
-        }))
-    )
+  it('installs the hook under the lifecycle script yarn actually runs', () => {
+    // Yarn 4 does not run `prepare` for the root workspace, which is the name
+    // husky's own instructions give. Under that name nothing installs the hook,
+    // no commit is gated, and every check in this repository still passes —
+    // including the one below it, which runs the hook as a file rather than
+    // through git.
+    expect(manifest.scripts.postinstall).toBe('husky')
+    expect(manifest.scripts.prepare).toBeUndefined()
+  })
+
+  it('still runs every check in the pipeline, not only in the hook', () => {
+    const commands = workflowFiles(repoRoot)
+      .flatMap(({ text }) => runStepsIn(text))
+      .join('\n')
+
+    for (const check of ['yarn format:check', 'yarn lint:check', 'yarn typecheck', 'yarn test', 'yarn test:scenario']) {
+      expect(commands).toContain(check)
+    }
+
+    // The controls. A reader that stopped seeing run steps would report every
+    // check missing rather than pass on an empty set — but a reader matching
+    // far too much would pass on anything, so both directions are pinned.
+    expect(runStepsIn(readWorkflow(repoRoot, 'deploy.yml')).length).toBeGreaterThanOrEqual(15)
+    expect(commands).not.toContain('yarn nonexistent:check')
+  })
+})
+
+describe('the deploy pipeline', () => {
+  const actionReferences = workflowFiles(repoRoot).flatMap(({ name, text }) =>
+    text
+      .split('\n')
+      .map((line, index) => ({ file: name, line: index + 1, text: line }))
+      .filter(({ text: line }) => /^\s*(-\s+)?uses:/.test(line))
+      .map((entry) => ({
+        ...entry,
+        action: entry.text.replace(/^\s*(-\s+)?uses:\s*/, '').trim(),
+      }))
+  )
 
   it('reaches only for actions this repository can resolve', () => {
     // The template called a composite action living in a private repository

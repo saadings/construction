@@ -8,6 +8,15 @@ on:
     branches:
       - main
 
+concurrency:
+  # Pushes to main queue rather than overlap: sync-secrets writing to the
+  # production deployment while another run's `convex deploy` is in flight is
+  # the race the needs-edge below only prevents inside a single run. Wrangler
+  # can finish out of order too, leaving the older commit live with both runs
+  # green.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # ============================================
   # Phase I — CI Checks (always run, in parallel)
@@ -26,7 +35,14 @@ jobs:
       - name: Format check
         run: yarn format:check
 
+  # `npx convex codegen` below is not a local operation: with a deploy key in
+  # scope it uploads the function definitions and validates
+  # convex/auth.config.ts against the deployment's own environment. That file
+  # reads CLERK_FRONTEND_API_URL, which sync-secrets is what writes — so these
+  # three jobs wait for it. `format` deliberately does not, so a formatting
+  # mistake still fails in under a minute.
   lint:
+    needs: [sync-secrets]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -52,6 +68,7 @@ jobs:
         run: yarn typecheck
 
   build:
+    needs: [sync-secrets]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -85,9 +102,14 @@ jobs:
           retention-days: 1
 
   test:
+    needs: [sync-secrets]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The scenario suite asks what this repository has ever committed.
+          # A depth-1 clone answers that question with the working tree.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22.21.1'
@@ -108,12 +130,20 @@ jobs:
       - name: Run scenario tests
         run: yarn test:scenario
 
-  # ── Sync secrets to Convex (parallel with CI checks) ──
-  # Runs alongside lint/build/test so it adds zero wall-clock time.
+  # ── Sync secrets to Convex ──
   # Must complete before deploy-backend to avoid the Convex
-  # "Environment variables have changed during push" race condition.
+  # "Environment variables have changed during push" race condition, and before
+  # lint/build/test because `convex codegen` validates the auth config against
+  # the variables this job writes.
+  #
+  # It runs for pull requests as well as pushes, which means pull request CI
+  # writes to the production deployment. Deliberate, and only safe because the
+  # values come from repository secrets — a pull request run writes the same
+  # bytes a push would — there are no forks to hand `secrets.*` to anyone
+  # untrusted, and the derivation below refuses a malformed key before anything
+  # is written. The better long-term shape is a Convex preview deploy key for
+  # `pull_request`, which is a larger change than this one.
   sync-secrets:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -165,30 +195,27 @@ jobs:
             return 1
           }
 
-          # The publishable key carries the Clerk host as base64 with a trailing
-          # '$', and Clerk ships it unpadded. Every decoder drops an incomplete
-          # final group, so without restoring the padding the host loses its
-          # last character — "…accounts.de" rather than "…accounts.dev". Convex
-          # accepts that happily and then rejects every token signed by the real
-          # instance, which reads as a permissions bug and is not one.
-          raw=${CLERK_PUBLISHABLE_KEY#pk_*_}
-          padded=$raw
-          while [ $((${#padded} % 4)) -ne 0 ]; do
-            padded="${padded}="
+          # Every value is checked before any of them is written. The step used
+          # to discover a missing secret partway down the list, after it had
+          # already put other values on the production deployment.
+          missing=
+          for name in CONVEX_DEPLOY_KEY CLERK_PUBLISHABLE_KEY CLERK_WEBHOOK_SECRET CLERK_SECRET_KEY; do
+            if [ -z "${!name:-}" ]; then
+              missing="$missing $name"
+            fi
           done
-          decoded=$(printf '%s' "$padded" | base64 -d)
-
-          # Re-encoding has to land back on what we started with. A decoder that
-          # dropped the last group produces something shorter, and this is the
-          # only place that difference is ever visible.
-          if [ "$(printf '%s' "$decoded" | base64 | tr -d '=\n')" != "$raw" ]; then
-            echo "The Clerk host could not be read back out of the publishable key."
+          if [ -n "$missing" ]; then
+            echo "✗ No value for:$missing — refusing to write a partial set of variables"
             exit 1
           fi
 
-          CLERK_FAPI=${decoded%\$}
+          # In a script rather than inline because the derivation needs testing:
+          # the guard in set_convex_env cannot catch a bad value while the
+          # caller puts a prefix in front of it, and an empty key used to reach
+          # the deployment as the eight characters `https://`.
+          CLERK_FRONTEND_API_URL=$(bash scripts/clerkFrontendApiUrl.sh)
 
-          set_convex_env "CLERK_FRONTEND_API_URL" "https://$CLERK_FAPI"
+          set_convex_env "CLERK_FRONTEND_API_URL" "$CLERK_FRONTEND_API_URL"
           set_convex_env "CLERK_WEBHOOK_SECRET" "$CLERK_WEBHOOK_SECRET"
           set_convex_env "CLERK_SECRET_KEY" "$CLERK_SECRET_KEY"
           set_convex_env "CLERK_PUBLISHABLE_KEY" "$CLERK_PUBLISHABLE_KEY"
@@ -244,8 +271,15 @@ jobs:
             backend=true
           fi
 
+          # scripts/ counts as frontend because scripts/convexUrl.sh is the sole
+          # producer of the address compiled into the bundle, and nothing
+          # downstream ever looks at that address again. A commit fixing it used
+          # to report frontend=false, skip the deploy, and let the corrected
+          # artifact expire — every job green, production still on the old
+          # address. It is deliberately not counted as backend: `convex deploy`
+          # reads nothing from there.
           frontend=false
-          if changed_matches '^frontend/' || changed_matches "$shared" ||
+          if changed_matches '^frontend/' || changed_matches '^scripts/' || changed_matches "$shared" ||
             changed_matches '^(tsconfig\.app\.json|components\.json)$'; then
             frontend=true
           fi
@@ -283,9 +317,20 @@ jobs:
   # ============================================
   # Phase III — Deploy Frontend to Cloudflare Pages
   # ============================================
+  # Ordered after deploy-backend rather than beside it. The frontend job is two
+  # steps and the backend job is a full install plus a deploy, so run in
+  # parallel the frontend always won: a push adding a Convex function and the UI
+  # that calls it served "Could not find public function" until the backend
+  # caught up, and a backend deploy that failed left new UI live against the old
+  # backend with nothing anywhere to roll it back.
+  #
+  # The condition is what keeps a frontend-only push deploying: deploy-backend
+  # is skipped then, and a job whose dependency was skipped is skipped too
+  # unless it says otherwise. Naming both acceptable results rather than
+  # excluding failure also rules out cancelled.
   deploy-frontend:
-    needs: [detect-changes, build]
-    if: github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true'
+    needs: [detect-changes, build, deploy-backend]
+    if: ${{ !cancelled() && github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact
