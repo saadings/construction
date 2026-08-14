@@ -1,14 +1,35 @@
 // @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
+import { makeFunctionReference } from 'convex/server'
 import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
 import { api } from '../_generated/api'
+import { mutation } from '../_generated/server'
 import type { MutationCtx } from '../_generated/server'
 import schema from '../schema'
 
 const SIGNED_IN_AS = 'user_nauman'
+
+// Does what `start` does, in the same order, and then fails. A site written without its role would be one nobody can open and nobody can see.
+const probe = {
+  startThenFail: mutation({
+    args: {},
+    handler: async (ctx) => {
+      const personId = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const siteId = await ctx.db.insert('sites', {
+        name: '359-R, Phase 7',
+        builtForAClient: false,
+        stage: 'building',
+        hidden: false,
+      })
+      await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
+
+      throw new Error('after both writes')
+    },
+  }),
+}
 
 // Vite's glob leaves out the directory the test itself sits in, so this directory's own functions are named rather than swept up.
 function convexWithSites() {
@@ -16,6 +37,7 @@ function convexWithSites() {
     ...import.meta.glob('../**/*.*s'),
     '../sites/mutations.ts': () => import('./mutations'),
     '../sites/queries.ts': () => import('./queries'),
+    '../sites/startProbe.ts': () => Promise.resolve(probe),
   })
 }
 
@@ -64,6 +86,21 @@ describe('starting a site', () => {
 
     const held = await t.run((ctx) => ctx.db.query('siteRoles').collect())
     expect(held).toMatchObject([{ personId, siteId, capacity: 'partner' }])
+  })
+
+  it('writes the site and the role together or not at all', async () => {
+    // If the site landed and the role did not, the result is a house nobody can open and nobody can see, with no screen that could repair it.
+    const t = convexWithSites()
+    const startThenFail = makeFunctionReference<'mutation', Record<string, never>, null>(
+      'sites/startProbe:startThenFail'
+    )
+
+    await expect(t.mutation(startThenFail, {})).rejects.toThrow('after both writes')
+
+    expect(await t.run((ctx) => ctx.db.query('sites').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.query('siteRoles').collect())).toEqual([])
+    // The control: the person written before the site is gone too, so this is one transaction rolling back and not a site that was never written.
+    expect(await t.run((ctx) => ctx.db.query('people').collect())).toEqual([])
   })
 
   it('tidies what was typed before storing it', async () => {
