@@ -1,14 +1,4 @@
-/**
- * What someone lands on when the address they followed matches no screen.
- *
- * Deliberately a plain link rather than a routed one: this is the screen shown
- * because the router did not recognise where it was asked to go, and a whole
- * fresh load back to the start is the one way back that cannot depend on it.
- *
- * The copy carries no status code and no term from the machinery. Someone
- * reaching this is already stuck, and "404" tells them nothing they can act
- * on — where to go next does.
- */
+// Shown when an address matches no screen; the way out is a plain link, because the router is what just failed.
 export function NotFound() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 p-6">

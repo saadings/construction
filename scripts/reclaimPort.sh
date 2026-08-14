@@ -1,17 +1,5 @@
 #!/usr/bin/env bash
-#
-# Frees a TCP port, saying what it is stopping before it stops it.
-#
-# This was `lsof -ti:PORT | xargs kill -9 2>/dev/null || true` inline in
-# dev.sh. Port 3000 is the most contended port on a developer machine, and that
-# line sent SIGKILL to whatever held it — another project's server, a database
-# tunnel, a debugger — with no check that the process had anything to do with
-# this repository, and with the error output discarded so nothing was ever said
-# about it. The banner then printed as though it had been a clean start.
-#
-# SIGKILL cannot be caught, so nothing killed that way gets to flush, close a
-# socket or remove a lock file. TERM first gives it the chance; KILL is kept
-# for whatever ignores that.
+# Frees a TCP port, naming each process before it stops it, and sending TERM before KILL so it can close cleanly.
 set -euo pipefail
 
 port=${1:-}

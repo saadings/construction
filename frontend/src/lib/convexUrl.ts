@@ -1,17 +1,6 @@
 import { z } from 'zod'
 
-/**
- * A Convex deployment address, and nothing else.
- *
- * `z.string().url()` — which this replaced — accepts `https://.convex.cloud`
- * and `https://construction`. Both are what a mis-derived deployment address
- * actually looks like when a key is parsed wrongly, so the permissive check
- * would have let the app boot and then fail against an address that cannot
- * resolve. Requiring a real hostname turns that into a refusal to start, with
- * a sentence saying what to fix.
- *
- * Localhost is allowed so a locally-run backend still works.
- */
+// A Convex deployment address and nothing else: `z.string().url()` accepts `https://.convex.cloud`, which cannot resolve.
 const CONVEX_HOSTNAME = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+convex\.cloud$|^(localhost|127\.0\.0\.1)$/i
 
 export const convexUrl = z.url({

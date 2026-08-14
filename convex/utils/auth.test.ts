@@ -8,22 +8,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import schema from '../schema'
 import { authenticatedMutation, authenticatedQuery } from './auth'
 
-/**
- * The two wrappers every access-controlled function in this app will be built
- * on, exercised the way a real caller meets them: through registration, arg
- * validation, the identity check and into a handler that touches the database.
- *
- * They had no call sites and no tests, so nothing here failed. The cost of that
- * lands entirely on the first person to use them — the wrappers add `identity`
- * to the context and a type assertion then replaced the whole signature with
- * one that has never heard of it, so the documented example did not compile.
- *
- * What matters most is that a refusal happens *before* the handler body. A
- * wrapper that threw afterwards would produce the same error message while
- * having already read or written on behalf of someone who was never signed in,
- * so every rejection here is checked against a side effect that must not have
- * happened rather than against the message alone.
- */
+// Every rejection is checked against a side effect that must not have happened: a wrapper throwing after the handler gives the same message.
 
 /** Handler bodies push their name here, so "refused" can be told from "ran, then threw". */
 const reached: Array<string> = []
@@ -34,8 +19,7 @@ const probe = {
       reached.push('whoIsAsking')
       return {
         subject: ctx.identity.subject,
-        // Reading the database inside the handler is what proves the context
-        // handed on still carries everything Convex put in it.
+        // Reading the database inside the handler proves the context handed on still carries everything Convex put in it.
         people: (await ctx.db.query('users').collect()).length,
       }
     },
@@ -56,11 +40,7 @@ const probe = {
   }),
 }
 
-/**
- * The probe functions are registered as a module rather than written to a file
- * under `convex/`. A file there is deployed and publicly callable, and a test
- * fixture is not something this app should be answering calls on in production.
- */
+// Registered as a module, not written under `convex/`: a file there is deployed and publicly callable.
 function convexWithProbe() {
   return convexTest(schema, {
     ...import.meta.glob('../**/*.*s'),
@@ -120,8 +100,7 @@ describe('a caller who is signed in', () => {
   })
 
   it('sees the database the wrapper was given, not an empty one', async () => {
-    // The context is passed on as a copy rather than by mutating what Convex
-    // handed in, so this is where dropping something in the copy would show.
+    // The context is passed on as a copy, so this is where dropping something in that copy would show.
     const t = convexWithProbe()
     const signedIn = t.withIdentity({ subject: 'user_x' })
 
@@ -133,9 +112,7 @@ describe('a caller who is signed in', () => {
 
 describe('the arguments a wrapped function declares', () => {
   it('are still validated', async () => {
-    // The wrapper hands `args` through to the handler. If it stopped passing
-    // the validators to Convex, every declared argument would silently become
-    // optional and unchecked.
+    // If the wrapper stopped passing validators to Convex, every declared argument would silently become optional.
     const t = convexWithProbe()
 
     await expect(t.withIdentity({ subject: 'user_x' }).mutation(rememberBadly, { name: 7 })).rejects.toThrow()
@@ -143,8 +120,7 @@ describe('the arguments a wrapped function declares', () => {
   })
 
   it('may be omitted entirely', async () => {
-    // The control: the validator rejects the call above for its type rather
-    // than for having arguments at all, and a handler declaring none still runs.
+    // The control: the call above is rejected for its type, not for having arguments, and a handler declaring none still runs.
     const t = convexWithProbe()
 
     await expect(t.withIdentity({ subject: 'user_x' }).query(whoIsAsking, {})).resolves.toBeDefined()

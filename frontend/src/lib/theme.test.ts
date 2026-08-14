@@ -4,19 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { THEME_INIT_SCRIPT, applyColourScheme, usePrefersDark } from './theme'
 
-/**
- * The app has no theme control, so the device is the whole answer. Two things
- * can go wrong quietly:
- *
- *   - the device changes — a phone flipping to dark at sunset — and the app
- *     stays as it was, because nothing was listening
- *   - the script that runs before first paint and the code that runs after
- *     hydration disagree, so the page is painted one way and then corrected,
- *     which reads as a flicker rather than as a fault
- *
- * Both are asserted against the real `<html>` element rather than against
- * what the functions were called with.
- */
+// The device is the whole answer, so both quiet failures — nothing listening, and head script disagreeing with hydration — are asserted on the real `<html>`.
 
 type SchemeListener = () => void
 
@@ -83,8 +71,7 @@ describe('following the device', () => {
   })
 
   it('stops listening once the app is gone', () => {
-    // Without this every navigation would leave another listener behind on a
-    // media query that outlives the component.
+    // Without this every navigation leaves another listener on a media query that outlives the component.
     const device = stubDevicePreference(false)
 
     const { unmount } = renderHook(() => usePrefersDark())
@@ -116,10 +103,7 @@ describe('what gets put on the page', () => {
 })
 
 describe('the script that runs before the first paint', () => {
-  // It cannot import anything — it runs before the bundle exists — so it
-  // restates what applyColourScheme does. These check the restatement still
-  // agrees, in both directions. If it ever stops, the page is painted one
-  // colour and corrected to the other a moment later.
+  // It restates applyColourScheme because it runs before the bundle exists; these check the restatement still agrees both ways.
   it.each([true, false])('leaves the page exactly as the app would, device dark: %s', (prefersDark) => {
     stubDevicePreference(prefersDark)
 
@@ -141,9 +125,7 @@ describe('the script that runs before the first paint', () => {
   })
 
   it('actually runs, rather than failing quietly into its own catch', () => {
-    // The control. The script swallows anything that throws — a missing
-    // matchMedia on an old browser must not stop the page — which is also how
-    // a script that does nothing at all would look.
+    // The control: the script swallows anything that throws, which is also how a script doing nothing at all would look.
     stubDevicePreference(true)
     document.documentElement.className = ''
 

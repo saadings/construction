@@ -40,16 +40,13 @@ function RootComponent() {
   const { convexClient } = Route.useRouteContext()
   const prefersDark = usePrefersDark()
 
-  // Keeps `<html>` in step with a device that changes while the app is open.
-  // The script in the head only gets the first frame right.
+  // Keeps `<html>` in step with a device that changes while the app is open; the head script only gets the first frame.
   useEffect(() => {
     applyColourScheme(prefersDark)
   }, [prefersDark])
 
   return (
-    // Clerk's screens are the only thing a signed-out person can interact
-    // with, so they follow the device like everything else. Pinned to dark
-    // they arrive as a dark panel over a light page on a light phone.
+    // Clerk's screens follow the device too; pinned to dark they arrive as a dark panel over a light page.
     <ClerkProvider appearance={{ baseTheme: prefersDark ? dark : undefined }}>
       <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
         <Outlet />

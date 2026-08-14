@@ -4,76 +4,31 @@ import type { ObjectType, PropertyValidators } from 'convex/values'
 import type { DataModel } from '../_generated/dataModel'
 import { mutation, query } from '../_generated/server'
 
-/**
- * What the wrappers below hand their handler: everything Convex provides, plus
- * the identity of the person who was checked on the way in.
- *
- * Written out as types rather than asserted onto the builder. A type assertion
- * replaces the expression's type outright, so asserting these functions to be
- * `QueryBuilder`/`MutationBuilder` erased the one thing they add — those
- * builders declare a plain `GenericQueryCtx`, which has no `identity` — and the
- * example in this file's own documentation did not compile against it.
- */
+// Written as types, never asserted onto the builder: an `as QueryBuilder` erases the `identity` these wrappers exist to add.
 export type AuthenticatedQueryCtx = GenericQueryCtx<DataModel> & { identity: UserIdentity }
 export type AuthenticatedMutationCtx = GenericMutationCtx<DataModel> & { identity: UserIdentity }
 
-/**
- * Like `query`, but refuses the call unless the caller is signed in. The
- * handler receives the verified identity on its context.
- *
- * @example
- * ```ts
- * export const myQuery = authenticatedQuery({
- *   args: { siteId: v.string() },
- *   handler: async (ctx, args) => {
- *     // ctx.identity is guaranteed to be non-null here
- *     console.log(ctx.identity.subject, args.siteId)
- *     return await ctx.db.query('users').collect()
- *   },
- * })
- * ```
- */
+// Like `query`, but refuses the call unless the caller is signed in, handing the handler the verified identity.
 export function authenticatedQuery<ArgsValidator extends PropertyValidators, Output>(fn: {
   args?: ArgsValidator
   handler: (ctx: AuthenticatedQueryCtx, args: ObjectType<ArgsValidator>) => Promise<Output>
 }) {
-  // The type arguments are given rather than inferred. Convex works out how
-  // many arguments a handler takes with a conditional type over the validators,
-  // and a conditional cannot resolve while the validators are still a type
-  // parameter — so inference settles on "either zero or one", which no concrete
-  // handler matches. Naming them keeps the registered function's argument types
-  // derived from the validators for whoever calls it.
+  // Type arguments given, not inferred: Convex counts handler arguments with a conditional that cannot resolve over a type parameter.
   return query<ArgsValidator, void, Promise<Output>, [ObjectType<ArgsValidator>]>({
-    // Declaring no arguments is declaring an empty set of validators, and an
-    // empty object is one whatever `ArgsValidator` turns out to be.
+    // Declaring no arguments is declaring an empty set of validators.
     args: fn.args ?? ({} as ArgsValidator),
     handler: async (ctx, args) => {
       const identity = await ctx.auth.getUserIdentity()
       if (!identity) {
         throw new Error('Not authenticated')
       }
-      // Spread rather than `Object.assign(ctx, …)`: the context belongs to
-      // Convex, and adding a field to it reaches back into the caller's object.
+      // Spread, not `Object.assign(ctx, …)`: the context is Convex's, and writing to it reaches back into the caller.
       return await fn.handler({ ...ctx, identity }, args)
     },
   })
 }
 
-/**
- * Like `mutation`, but refuses the call unless the caller is signed in. The
- * handler receives the verified identity on its context.
- *
- * @example
- * ```ts
- * export const myMutation = authenticatedMutation({
- *   args: { name: v.string() },
- *   handler: async (ctx, args) => {
- *     console.log(ctx.identity.subject)
- *     await ctx.db.insert('users', { name: args.name })
- *   },
- * })
- * ```
- */
+// Like `mutation`, but refuses the call unless the caller is signed in, handing the handler the verified identity.
 export function authenticatedMutation<ArgsValidator extends PropertyValidators, Output>(fn: {
   args?: ArgsValidator
   handler: (ctx: AuthenticatedMutationCtx, args: ObjectType<ArgsValidator>) => Promise<Output>

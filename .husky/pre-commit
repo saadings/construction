@@ -1,20 +1,7 @@
-# Only the paths already staged are staged again after the fixers run. A bare
-# `git add -u` sweeps in every other modified file, so half-finished work
-# sitting in a file nobody meant to commit rides along into the commit.
+# Only the already-staged paths are re-staged after the fixers: a bare `git add -u` sweeps in every other modified file.
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
-# Naming the paths is not enough on its own. `git add <path>` stages that
-# path's whole worktree blob, so re-adding after the fixers would put back a
-# hunk that a `git add -p` deliberately left out. Setting the worktree to the
-# index first means there are no such hunks left to sweep in; they come back at
-# the end.
-#
-# It also means typecheck, build and test below run against what is being
-# committed rather than against the worktree, which is what the hook is for.
-#
-# No --include-untracked: it would empty untracked files out of the worktree
-# for the duration and make the pop harder to get right, and `git add -- <path>`
-# over a list of staged paths cannot touch them anyway.
+# The worktree is set to the index first, so re-adding cannot sweep back a hunk that `git add -p` deliberately left out.
 stashed=no
 if ! git diff --quiet; then
   git stash push --keep-index --quiet --message 'pre-commit: unstaged work'
@@ -26,21 +13,14 @@ restore() {
     return 0
   fi
 
-  # The unstaged work is exactly the difference between the two commits the
-  # stash recorded — what was in the index, and what was in the worktree — so
-  # it goes back as a patch. `git stash pop` would be a three-way merge, and it
-  # conflicts on the very case this exists for: an accepted hunk and a declined
-  # one close together in one file overlap, and the pop leaves conflict markers
-  # in the worktree. Zero context lines so a fixer reformatting elsewhere in
-  # the file cannot make the patch miss.
+  # Back as a patch, not `git stash pop`: a three-way merge conflicts on exactly the accepted-and-declined-hunk case this exists for.
   if git diff --binary --unified=0 "$stashed^2" "$stashed" |
     git apply --unidiff-zero --whitespace=nowarn -; then
     git stash drop --quiet
     return 0
   fi
 
-  # Never half-done. A patch that will not apply leaves the stash where it is,
-  # which is the only copy of that work.
+  # Never half-done: a patch that will not apply leaves the stash alone, which is the only copy of that work.
   echo "The unstaged work could not be put back automatically."
   echo "It is safe in the most recent stash entry: git stash list"
   exit 1
@@ -54,13 +34,7 @@ if [ -n "$staged" ]; then
   printf '%s\n' "$staged" | tr '\n' '\0' | xargs -0 git add --
 fi
 
-# Refreshes convex/_generated so the checks below read current types. It needs
-# a linked deployment, and not having one is no reason to refuse a commit —
-# what follows is the gate, and CI generates its own copy either way.
-#
-# Its own typecheck is disabled here because `yarn typecheck` below covers the
-# backend properly and reports failures as failures, rather than as a codegen
-# step that could equally have fallen over on a missing deployment.
+# Refreshes convex/_generated when a deployment is linked; not having one is no reason to refuse a commit, since CI generates its own.
 npx convex codegen --typecheck disable || echo "Left the generated Convex types as they are."
 
 yarn typecheck
