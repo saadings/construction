@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { DECLINED, discardThrowaways, gitIn, inThrowaway, runHook, stagedIn, throwawayRepository } from './throwaway'
 import { readWorkflow, runStepsIn, workflowFiles } from './workflowFile'
 
 // Ways this repository becomes unsafe or unbuildable with no application code changing, each carrying a control: a search matching nothing and a clean tree are byte-identical.
@@ -206,76 +206,7 @@ describe('the package manager', () => {
 })
 
 describe('the checks that run before a commit', () => {
-  const throwaways: Array<string> = []
-
-  afterEach(() => {
-    while (throwaways.length > 0) {
-      rmSync(throwaways.pop()!, { recursive: true, force: true })
-    }
-  })
-
-  /** The line a `git add -p` was told to leave behind. */
-  const DECLINED = 'EXPERIMENT_NOT_FOR_COMMIT'
-
-  // A tree partway through something: one file staged, one deliberately left alone, and one staged in part as `git add -p` leaves it.
-  function throwawayRepository(): string {
-    const dir = mkdtempSync(join(tmpdir(), 'construction-hook-'))
-    throwaways.push(dir)
-
-    const run = (...args: Array<string>) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' })
-
-    run('init', '--quiet')
-    run('config', 'user.email', 'checks@example.invalid')
-    run('config', 'user.name', 'Checks')
-
-    writeFileSync(join(dir, 'meantToCommit.txt'), 'first\n')
-    writeFileSync(join(dir, 'halfFinished.txt'), 'first\n')
-    writeFileSync(join(dir, 'partlyStaged.txt'), 'first\n')
-    run('add', '.')
-    run('commit', '--quiet', '-m', 'first')
-
-    writeFileSync(join(dir, 'meantToCommit.txt'), 'second\n')
-    run('add', 'meantToCommit.txt')
-    writeFileSync(join(dir, 'halfFinished.txt'), 'work in progress\n')
-
-    writeFileSync(join(dir, 'partlyStaged.txt'), 'second\n')
-    run('add', 'partlyStaged.txt')
-    writeFileSync(join(dir, 'partlyStaged.txt'), `second\n${DECLINED}\n`)
-
-    return dir
-  }
-
-  /** Runs the real hook, with the slow commands shimmed out. */
-  function runHook(dir: string): void {
-    const bin = shimsFor(dir, ['yarn', 'npx'])
-
-    execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
-      cwd: dir,
-      encoding: 'utf8',
-      env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
-    })
-  }
-
-  function stagedIn(dir: string): Array<string> {
-    return execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: dir, encoding: 'utf8' })
-      .split('\n')
-      .filter((line) => line.length > 0)
-      .sort()
-  }
-
-  /** Stands in for the slow commands so the hook's staging can be run on its own. */
-  function shimsFor(dir: string, commands: Array<string>, status = 0): string {
-    const bin = join(dir, 'shims')
-    mkdirSync(bin, { recursive: true })
-
-    for (const command of commands) {
-      const path = join(bin, command)
-      writeFileSync(path, `#!/bin/sh\nexit ${status}\n`)
-      chmodSync(path, 0o755)
-    }
-
-    return bin
-  }
+  afterEach(discardThrowaways)
 
   it('stage only what the person committing chose to stage', () => {
     // The real hook against a throwaway repository with the fixers shimmed out, so everything it does to the index is its own.
@@ -290,7 +221,7 @@ describe('the checks that run before a commit', () => {
     // The control: `git add -u` after the fixers takes every modified file, so half-written work lands in a commit that never mentions it.
     const dir = throwawayRepository()
 
-    execFileSync('git', ['add', '-u'], { cwd: dir })
+    gitIn(dir, 'add', '-u')
 
     expect(stagedIn(dir)).toEqual(['halfFinished.txt', 'meantToCommit.txt', 'partlyStaged.txt'])
   })
@@ -301,7 +232,7 @@ describe('the checks that run before a commit', () => {
 
     runHook(dir)
 
-    const staged = execFileSync('git', ['diff', '--cached'], { cwd: dir, encoding: 'utf8' })
+    const staged = gitIn(dir, 'diff', '--cached')
 
     expect(staged).not.toContain(DECLINED)
     // The control: the staged hunk is still staged, so a hook that emptied the index would not pass this.
@@ -313,22 +244,78 @@ describe('the checks that run before a commit', () => {
   it('gives the unstaged work back when a check fails', () => {
     // The hook takes the worktree away for the run, so what matters is the case where it never reaches the end.
     const dir = throwawayRepository()
-    const bin = shimsFor(dir, ['yarn', 'npx'], 1)
 
-    expect(() =>
-      execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
-        cwd: dir,
-        encoding: 'utf8',
-        stdio: 'pipe',
-        env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` },
-      })
-    ).toThrow()
+    expect(() => runHook(dir, { failing: true })).toThrow()
 
     expect(readFileSync(join(dir, 'partlyStaged.txt'), 'utf8')).toContain(DECLINED)
     expect(readFileSync(join(dir, 'halfFinished.txt'), 'utf8')).toBe('work in progress\n')
-    expect(execFileSync('git', ['stash', 'list'], { cwd: dir, encoding: 'utf8' })).toBe('')
+    expect(gitIn(dir, 'stash', 'list')).toBe('')
+  })
+
+  it('names, at every one of them, which repository it means', () => {
+    // Scans the directory rather than a named file: this guard has twice nearly stopped looking, once when its matcher broke and once when the helpers moved.
+    const calls = readdirSync(join(repoRoot, 'scenarios'))
+      .filter((name) => name.endsWith('.ts'))
+      .flatMap((name) => childProcessCallsIn(readFileSync(join(repoRoot, 'scenarios', name), 'utf8')))
+
+    const unaimed = calls.filter(
+      (call) => !call.includes('cwd: repoRoot') && !call.includes('inThrowaway(') && !call.includes('rev-parse')
+    )
+
+    expect(unaimed).toEqual([])
+    // The control. A matcher finding nothing passes the line above, and so does a guard pointed at the wrong place.
+    expect(calls.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('leaves this repository untouched even when git points every command at it', () => {
+    // The hostile environment is passed in, never assigned to process.env — assigning it manufactures the hazard on a plain checkout.
+    const dir = throwawayRepository()
+    const hostile = {
+      ...process.env,
+      GIT_DIR: gitDirOfThisRepository(),
+      GIT_INDEX_FILE: join(gitDirOfThisRepository(), 'index'),
+    }
+
+    const before = stateOfThisRepository()
+    execFileSync('git', ['add', '-u'], { cwd: dir, env: inThrowaway(dir, hostile) })
+
+    // HEAD and the tracked count, not file contents: the damage leaves every file on disk untouched.
+    expect(stateOfThisRepository()).toEqual(before)
   })
 })
+
+// Counts parentheses rather than stopping at the first one: nested join(...) calls truncate a naive match before its env is visible.
+function childProcessCallsIn(source: string): Array<string> {
+  const calls: Array<string> = []
+
+  for (const match of source.matchAll(/execFileSync\(/g)) {
+    let depth = 0
+    let index = match.index + match[0].length - 1
+
+    for (; index < source.length; index += 1) {
+      if (source[index] === '(') depth += 1
+      if (source[index] === ')') depth -= 1
+      if (depth === 0) break
+    }
+
+    calls.push(source.slice(match.index, index + 1))
+  }
+
+  return calls
+}
+
+function gitDirOfThisRepository(): string {
+  return execFileSync('git', ['rev-parse', '--absolute-git-dir'], { cwd: repoRoot, encoding: 'utf8' }).trim()
+}
+
+function stateOfThisRepository(): { head: string; tracked: number } {
+  return {
+    head: git('rev-parse', 'HEAD').trim(),
+    tracked: git('ls-files')
+      .split('\n')
+      .filter((line) => line.length > 0).length,
+  }
+}
 
 type Manifest = {
   scripts?: Record<string, string>
