@@ -1,8 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { accessSync, constants, readFileSync } from 'node:fs'
+import { accessSync, chmodSync, constants, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { discardThrowaways, inThrowaway, stagedIn, throwawayRepository } from './throwaway'
 
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
@@ -66,5 +68,60 @@ describe('the gate every commit has to pass', () => {
     ).scripts
 
     for (const gate of GATES) expect(scripts).toHaveProperty(gate.replace('yarn ', ''))
+  })
+})
+
+describe('what the gate does to work it was not asked to commit', () => {
+  afterEach(discardThrowaways)
+
+  // Tracked, modified and deliberately unstaged: it stands in for another session's work in a shared tree.
+  const BYSTANDER = 'halfFinished.txt'
+  const IN_PROGRESS = 'work in progress\n'
+
+  /** Every value the bystander held at the moments the gate reached for a command, read from inside the run. */
+  function contentSeenDuringTheRun(dir: string): Array<string> {
+    const bin = join(dir, 'watching')
+    const witness = join(dir, 'witness.txt')
+    const bystander = join(dir, BYSTANDER)
+
+    mkdirSync(bin, { recursive: true })
+
+    for (const command of ['yarn', 'npx']) {
+      const script = [
+        '#!/bin/sh',
+        `cat "${bystander}" >> "${witness}" 2>/dev/null || printf 'GONE\\n' >> "${witness}"`,
+        'exit 0',
+        '',
+      ].join('\n')
+      writeFileSync(join(bin, command), script)
+      chmodSync(join(bin, command), 0o755)
+    }
+
+    execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      env: { ...inThrowaway(dir), PATH: `${bin}:${inThrowaway(dir).PATH ?? ''}` },
+    })
+
+    return readFileSync(witness, 'utf8')
+      .split('\n')
+      .filter((line) => line.length > 0)
+  }
+
+  it('never takes it out of the tree, not even for the length of a check', () => {
+    const dir = throwawayRepository()
+
+    const seen = contentSeenDuringTheRun(dir)
+
+    // The control: the gate really did reach for its commands, so an empty list would mean nothing was watched rather than nothing moved.
+    expect(seen.length).toBeGreaterThanOrEqual(3)
+
+    // Restored-afterwards and never-touched are identical once the hook has exited, which is why this is asserted from inside the run.
+    expect([...new Set(seen)]).toEqual([IN_PROGRESS.trimEnd()])
+
+    // And it is still there at the end, still unstaged, exactly as it was.
+    expect(readFileSync(join(dir, BYSTANDER), 'utf8')).toBe(IN_PROGRESS)
+    expect(stagedIn(dir)).not.toContain(BYSTANDER)
   })
 })

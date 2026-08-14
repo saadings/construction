@@ -1,43 +1,46 @@
 # Only the already-staged paths are re-staged after the fixers: a bare `git add -u` sweeps in every other modified file.
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
-# The worktree is set to the index first, so re-adding cannot sweep back a hunk that `git add -p` deliberately left out.
-stashed=no
-if ! git diff --quiet; then
-  git stash push --keep-index --quiet --message 'pre-commit: unstaged work'
-  stashed=$(git rev-parse stash@{0})
+# The checks run against a throwaway checkout of the index rather than against this tree, which is never stashed or modified.
+gate=$(mktemp -d)
+# shellcheck disable=SC2064
+trap "rm -rf '$gate'" EXIT
+
+git checkout-index -a -f --prefix="$gate/"
+
+# None of these are in the index — installed, generated, and deliberately never committed — and the checks below need all three.
+ln -s "$PWD/node_modules" "$gate/node_modules"
+if [ -d convex/_generated ]; then
+  mkdir -p "$gate/convex"
+  ln -s "$PWD/convex/_generated" "$gate/convex/_generated"
+fi
+# Linked rather than copied, so no secret is ever written to a second place on disk.
+if [ -f .env.local ]; then
+  ln -s "$PWD/.env.local" "$gate/.env.local"
 fi
 
-restore() {
-  if [ "$stashed" = no ]; then
-    return 0
+(cd "$gate" && yarn lint:fix && yarn format:fix)
+
+# Fixer output returns to the index always, and to the worktree only where it already matched, so nothing unstaged is lost.
+for path in $staged; do
+  [ -f "$gate/$path" ] || continue
+
+  mode=$(git ls-files --stage -- "$path" | cut -d' ' -f1)
+  [ -n "$mode" ] || continue
+
+  blob=$(git hash-object -w -- "$gate/$path")
+  [ "$blob" = "$(git rev-parse ":$path")" ] && continue
+
+  if git diff --quiet -- "$path"; then
+    cp "$gate/$path" "$path"
   fi
-
-  # Back as a patch, not `git stash pop`: a three-way merge conflicts on exactly the accepted-and-declined-hunk case this exists for.
-  if git diff --binary --unified=0 "$stashed^2" "$stashed" |
-    git apply --unidiff-zero --whitespace=nowarn -; then
-    git stash drop --quiet
-    return 0
-  fi
-
-  # Never half-done: a patch that will not apply leaves the stash alone, which is the only copy of that work.
-  echo "The unstaged work could not be put back automatically."
-  echo "It is safe in the most recent stash entry: git stash list"
-  exit 1
-}
-trap restore EXIT
-
-yarn lint:fix
-yarn format:fix
-
-if [ -n "$staged" ]; then
-  printf '%s\n' "$staged" | tr '\n' '\0' | xargs -0 git add --
-fi
+  git update-index --cacheinfo "$mode,$blob,$path"
+done
 
 # Refreshes convex/_generated when a deployment is linked; not having one is no reason to refuse a commit, since CI generates its own.
 npx convex codegen --typecheck disable || echo "Left the generated Convex types as they are."
 
-yarn typecheck
-yarn build
-yarn test
+(cd "$gate" && yarn typecheck && yarn build && yarn test)
+
+# Run here rather than in the throwaway: this suite's subject is the repository itself, and reads git history and the index directly.
 yarn test:scenario
