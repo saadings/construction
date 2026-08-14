@@ -68,7 +68,8 @@ for an own build, still to collect for a client job.
 Name, then two figures side by side (out and in), then four sections:
 
 - **Where the money went** — trades with totals, tapping through to the payments
-- **People on this site** — who is on which trade, agreed / paid / left
+- **People on this site** — who is on which trade, and for each of them agreed,
+  billed, paid, and the balance still standing
 - **Money coming in** — partner money, client payments, sale
 - **Billing** — client sites only. Stages, billed, received, due.
 
@@ -81,10 +82,36 @@ the site and date. A running total for the sitting stays at the top.
 This matches how the work actually happens: one cheque run on a Tuesday
 touching eight trades.
 
+### Recording what someone is owed
+
+The **+** button offers two things, not one: money going out, and a bill coming
+in. A bill is the shorter form — who, which site, which trade, how much, their
+bill number if there is one.
+
+Bills are entirely optional. Most spending will never have one recorded against
+it, and the app never asks for one before letting a payment through. They exist
+for the people whose outstanding actually needs watching — the tile supplier
+carrying 763,701, the kitchen fitter carrying 770,000 — not for every bag of
+cement.
+
+A bill can also be raised from inside a person's account, which is where the
+question "what does he still have coming?" usually gets asked.
+
 ### People
 
-Everyone who gets paid, across all sites. Tapping one shows their trade, phone,
-and every site they have worked on with amounts.
+Everyone you deal with, across all sites. Tapping one opens **their account** —
+a statement in date order showing everything they have billed, everything they
+have been paid, and the balance after each line, exactly the way the
+`MR FARAN ACCOUNT` sheet reads today.
+
+The account spans every site. A steel supplier delivering to two sites has one
+account with one balance, because that is how the debt actually works — not two
+half-balances that have to be added up in someone's head.
+
+The balance runs both ways. A positive balance is money owed to them; a negative
+one means they are holding an advance. Advances are common enough in the
+workbooks (`ADV`, `BL PMT`) that the app must treat a credit balance as normal
+rather than as an error.
 
 ### More
 
@@ -92,9 +119,13 @@ Account, partners, setting up a site, the trade list.
 
 ## Data model
 
-Thirteen tables. One rule governs the shape: **nothing that can be added up is
+Fourteen tables. One rule governs the shape: **nothing that can be added up is
 ever stored.** Every total that is a formula today becomes a calculation; every
 total that is hand-typed today also becomes a calculation.
+
+Money has two sides throughout: what is **owed** to someone, and what has been
+**paid** to them. The workbooks only ever recorded the second, which is why what
+a vendor is owed had to be kept as a separate hand-maintained list.
 
 ### people
 
@@ -138,7 +169,50 @@ answer, no special column, and it cannot break when a trade is added at the end.
 
 A person put on a trade at a site, with what was agreed — a lump sum, or a rate
 and a unit. This is the workbooks' vendor sub-header rows becoming real data.
-Paid, remaining and over/under are calculated, never stored.
+
+An engagement records only what was **agreed**. What was billed and what was paid
+are separate and frequently differ from it and from each other, which is the
+whole point of the 199-M variance sheet.
+
+### bills
+
+What a person is owed. Date, person, site, trade, amount, their own bill or
+challan number, and a description.
+
+This is the half the workbooks never held properly. Without it, a
+subcontractor's outstanding can only be guessed at as agreed-minus-paid, which
+works for Akram on a lump sum and fails completely for a steel supplier
+delivering load after load with no fixed contract.
+
+Three separate figures exist for every subcontractor and all three are needed:
+
+| | Comes from | Example |
+|---|---|---|
+| Agreed | the engagement | Akram, civil labour, 300,000 |
+| Billed | bills raised | 340,000 once extra work landed |
+| Paid | payments | 325,000 so far |
+
+The spread between agreed and billed is what the 199-M sheet labels *"due to
+extra work or redoing"*. The spread between billed and paid is the balance.
+
+**Payments settle the balance, not specific bills.** In practice money goes out
+on account — 50,000 to the tile fixer, not against bill number seven. Chasing a
+bill-by-bill match would be bookkeeping the business does not actually do. A
+payment may optionally be linked to a bill for the cases where it matters, but
+it is never required.
+
+### The person account
+
+Not a table. A person's account is their bills and their payments in date order
+with a running balance, derived on read and spanning every site.
+
+Positive means money is owed to them. Negative means they hold an advance, which
+is normal and appears throughout the workbooks as `ADV` and `BL PMT`.
+
+**Market payables become a calculation.** The register kept by hand in the Khalid
+Mirza file — Dura Tiles 763,701, Kabinet King 770,000, totalling 1,591,701 — is
+simply the sum of everyone's outstanding balance. It stops being a list someone
+has to remember to update.
 
 ### payments
 
@@ -198,9 +272,10 @@ rendered in full, since a partner may screenshot any screen.
 
 ### Derived, never stored
 
-Site totals, trade breakdowns, what a vendor has left, what a client owes, each
-partner's position, and profit on sale. None of it is stored, so none of it can
-go stale or disagree with itself.
+Site totals, trade breakdowns, every person's running balance, market payables,
+the agreed-versus-billed-versus-paid spread per engagement, what a client owes,
+each partner's position, and profit on sale. None of it is stored, so none of it
+can go stale or disagree with itself.
 
 ## Architecture
 
@@ -348,6 +423,10 @@ surfaces beside the field just left, never as a wall of messages after saving.
 | Covered area | positive, between 100 and 20,000 square feet |
 | Contract stages | each 0–100, and the set must total exactly 100 |
 | Contract rate | positive |
+| Bill amount | required, positive, same paisa handling as a payment |
+| Bill person | required — a bill always belongs to someone, unlike a payment, which may go to a one-off shop |
+| Bill site and trade | both required, so a bill lands in the right place on the right site |
+| Bill reference | optional; their bill or challan number, free text, capped |
 
 ### Cross-field rules
 
@@ -360,6 +439,9 @@ enforced and where the workbooks actually went wrong.
 - The extra-work flag cannot be set on plot and taxes
 - A client payment tied to a stage cannot exceed that stage
 - Actual area must be recorded before a re-measurement bill can be raised
+- A payment linked to a bill cannot exceed what is left unsettled on that bill.
+  An unlinked payment has no such limit, because paying someone more than they
+  have billed is an advance, not a mistake
 
 ### Messages
 
@@ -397,6 +479,17 @@ Forcing a choice makes people file things in the wrong place.
 shown plainly as money coming back rather than as a minus sign to be squinted
 at.
 
+**An advance is not an error.** Paying someone before they have billed anything
+puts their account in credit. The app says so in plain words — *"Akram is
+holding 50,000 in advance"* — rather than warning about a negative balance. The
+workbooks are full of `ADV` and `BL PMT`; this is ordinary practice, not an
+exception to be flagged.
+
+**A person can be paid without any bill at all.** Bills are not a precondition
+for paying someone. Most day-to-day spending will never have a bill recorded
+against it, and the app must not nag for one. Bills exist for the people whose
+outstanding actually needs watching.
+
 **Contract stages always total the contract.** Stage amounts are computed in
 paisa with the final stage absorbing the remainder, so fourteen stages sum to
 exactly the contract value.
@@ -416,16 +509,24 @@ Vitest, written alongside the code. Four areas, ordered by cost of being wrong.
 2. **Money conversion.** Rupees to paisa and back, round-tripped.
    `6,057,704.50` must survive exactly.
 3. **The calculations that replaced the formulas.** Building cost versus plot
-   cost, what a vendor has left, a partner's position, milestone rounding, a
-   client's outstanding balance.
+   cost, a person's running balance in date order, market payables, the
+   agreed/billed/paid spread, a partner's position, milestone rounding, and a
+   client's outstanding balance. Balances are tested across sites and through a
+   credit position, since an advance must come out negative rather than clamped
+   at zero.
 4. **Access.** A person with no role on a site receives nothing, tested at the
    Convex function level with `convex-test`, not by hiding a button.
 
 **Golden test against reality.** Figures lifted from the workbooks are used as
-test fixtures — the 82 payments whose `TOTAL` row is already known, and one
-own-build site where building cost, plot cost and profit are all known. They are
-fed through the app's calculations and asserted to produce the same totals the
-sheets produce.
+test fixtures:
+
+- the 82 payments whose `TOTAL` row is already known
+- one own-build site where building cost, plot cost and profit are all known
+- the Khalid Mirza market-payables register — thirteen named balances totalling
+  1,591,701, which the app must reach by calculation rather than by being told
+
+They are fed through the app's calculations and asserted to produce the same
+totals the sheets produce.
 
 This is not migration. The numbers live in the test suite, never in the app's
 data. Their purpose is to prove the replacement against figures the business
@@ -442,8 +543,9 @@ pass leaves the app working and usable — nothing is half-finished between them
    access checks, the shared Zod module, sites, trades, people, and the day-sheet
    payment flow with its per-trade totals. At the end of this pass the app
    already replaces the widest part of the workbooks.
-2. **People and what they are owed.** Engagements, agreed versus paid versus
-   left, the cross-site people view.
+2. **People and what they are owed.** Bills, engagements, the running account
+   per person with its balance, market payables as a calculation, and the
+   agreed-versus-billed-versus-paid spread on every engagement.
 3. **Money coming in.** Partner capital, sale proceeds, and the profit figure
    that depends on them.
 4. **Client jobs.** Contracts, stages, billing, re-measurement, extra-work bills.
