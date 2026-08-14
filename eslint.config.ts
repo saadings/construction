@@ -5,9 +5,21 @@ import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
+import { singleLineComments } from './eslint-rules/singleLineComments'
+
+const local = { rules: { 'single-line-comments': singleLineComments } }
+
 export default defineConfig([
   {
-    ignores: ['dist', 'frontend/dist', 'convex/_generated', '.yarn', '.agents'],
+    // `.claude` holds another branch's whole checkout: linted, it reports that branch's problems as this one's.
+    ignores: ['dist', 'frontend/dist', 'convex/_generated', '.yarn', '.agents', '.claude'],
+  },
+  {
+    // Reported as you type, in TypeScript only; the scenario suite covers YAML, shell and CSS as well.
+    files: ['**/*.{js,mjs,cjs,ts,tsx,mts,cts}'],
+    ignores: ['frontend/src/routeTree.gen.ts'],
+    plugins: { local },
+    rules: { 'local/single-line-comments': 'error' },
   },
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx,mts,cts}'],

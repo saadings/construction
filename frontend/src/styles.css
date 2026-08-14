@@ -139,19 +139,7 @@ body {
     color: var(--foreground);
   }
 
-  /*
-   * The hand cursor is the affordance that says a thing can be clicked, and
-   * Tailwind's preflight sets no cursor for `button` — so anything without a
-   * rule falls back to the arrow the browser draws over text.
-   *
-   * Stated once here rather than per element. Per element is the version that
-   * drifts: the next interactive component arrives from `yarn shadcn:add`,
-   * which emits no cursor utility, and nobody notices until a screen has a
-   * button that does not look like one.
-   *
-   * Anything disabled is deliberately left out. Its cursor is how someone
-   * finds out it will not respond before clicking it.
-   */
+  /* Once here, never per element: shadcn emits no cursor utility, and anything disabled is left out on purpose. */
   button:not(:disabled),
   [role='button']:not([aria-disabled='true']),
   [role='menuitem']:not([aria-disabled='true']),

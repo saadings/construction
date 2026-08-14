@@ -1,7 +1,4 @@
-// This file reads `import.meta.env`, which only exists once Vite's ambient
-// types are loaded. Declared here rather than left to whichever tsconfig
-// happens to pull the file in, because the scenario tests import it from a
-// project that has no reason to know about Vite.
+// Declared here because the scenario tests import this from a project that has no reason to know about Vite.
 /// <reference types="vite/client" />
 import { createEnv } from '@t3-oss/env-core'
 import { z } from 'zod'
@@ -11,15 +8,10 @@ import { convexUrl } from './convexUrl'
 export const env = createEnv({
   server: {},
 
-  /**
-   * The prefix that client-side variables must have. This is enforced both at
-   * a type-level and at runtime.
-   */
+  // The prefix client-side variables must carry, enforced in the types and at runtime.
   clientPrefix: 'VITE_',
 
-  /**
-   * Variables that should be available on both the client and server.
-   */
+  // Available on both the client and the server.
   shared: {
     VITE_CONVEX_URL: convexUrl,
   },
@@ -29,24 +21,9 @@ export const env = createEnv({
     VITE_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   },
 
-  /**
-   * What object holds the environment variables at runtime. This is usually
-   * `process.env` or `import.meta.env`.
-   */
+  // What holds the variables at runtime.
   runtimeEnv: import.meta.env,
 
-  /**
-   * By default, this library will feed the environment variables directly to
-   * the Zod validator.
-   *
-   * This means that if you have an empty string for a value that is supposed
-   * to be a number (e.g. `PORT=` in a ".env" file), Zod will incorrectly flag
-   * it as a type mismatch violation. Additionally, if you have an empty string
-   * for a value that is supposed to be a string with a default value (e.g.
-   * `DOMAIN=` in an ".env" file), the default value will never be applied.
-   *
-   * In order to solve these issues, we recommend that all new projects
-   * explicitly specify this option as true.
-   */
+  // Without this, `VAR=` in a .env file reaches Zod as "" and reads as a type error rather than as absent.
   emptyStringAsUndefined: true,
 })

@@ -4,17 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { NotFound } from './NotFound'
 
-/**
- * The screen someone reaches by following an address that no longer opens
- * anything — a bookmark to a removed site, a link pasted out of a message a
- * year old.
- *
- * Two things are asserted, and neither is about how it looks. It has to say
- * what to do next, because a dead end is the one thing a lost person cannot
- * work around. And it has to say it in the words the business uses: this
- * screen previously led with `404`, which names a fault in the machinery to
- * someone who only wanted their sites back.
- */
+// Asserts what the dead end says, not how it looks: a way onward, in the words the business uses rather than `404`.
 
 /** The words the design rules keep off every screen, including this one. */
 const MACHINERY = new RegExp(
@@ -55,8 +45,7 @@ describe('the screen for an address that opens nothing', () => {
     const { container } = render(<NotFound />)
     const shown = container.textContent
 
-    // Guards against an empty read passing both checks below. A screen that
-    // rendered nothing at all would contain no forbidden word either.
+    // Guards the checks below against an empty read: a screen rendering nothing contains no forbidden word either.
     expect(shown.length).toBeGreaterThan(20)
 
     expect(MACHINERY.test(shown)).toBe(false)
@@ -64,8 +53,7 @@ describe('the screen for an address that opens nothing', () => {
   })
 
   it('would catch wording that had slipped back into the machinery', () => {
-    // The control. Both patterns have to fire on something, or the test above
-    // passes on the strength of a regular expression that matches nothing.
+    // The control: both patterns must fire on something, or the test above passes on a regex that matches nothing.
     expect(STATUS_CODE.test('404 - Page Not Found')).toBe(true)
     expect(MACHINERY.test('That record could not be found.')).toBe(true)
 

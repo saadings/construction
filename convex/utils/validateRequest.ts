@@ -1,14 +1,7 @@
 import type { WebhookEvent } from '@clerk/backend'
 import { Webhook } from 'svix'
 
-/**
- * What came of trying to check an incoming request.
- *
- * The two failures are kept apart because they call for opposite answers. A
- * signature that does not match is the sender's problem and will never match
- * however many times it is sent. A signing secret this deployment does not
- * have is our problem, and the very same message succeeds once it does.
- */
+// The two failures stay apart because they need opposite answers: a bad signature never succeeds, a missing secret will.
 export type WebhookCheck =
   | { outcome: 'fromClerk'; event: WebhookEvent }
   | { outcome: 'notFromClerk' }
@@ -39,10 +32,7 @@ export async function validateRequest(req: Request): Promise<WebhookCheck> {
     return { outcome: 'notFromClerk' }
   }
 
-  // Built here rather than at module load, and outside the verification catch
-  // below, so a deployment that has no signing secret is answered rather than
-  // crashed through. Svix throws from its constructor on an absent or
-  // unreadable secret, and that throw used to escape the handler entirely.
+  // Built here, not at module load: svix throws from its constructor on a missing secret, and that throw escaped the handler.
   let webhook: Webhook
   try {
     webhook = new Webhook(process.env.CLERK_WEBHOOK_SECRET ?? '')

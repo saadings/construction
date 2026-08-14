@@ -1,17 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-/**
- * Enough of a reader for the questions the scenario suites ask of a workflow
- * file: which jobs there are, what each one waits for, and what each step runs.
- *
- * Line-based rather than a YAML parse, because the repository has no YAML
- * dependency and adding one to answer "does this job wait for that job" is a
- * larger commitment than the question deserves. What it costs is that a parser
- * which stops matching reports an empty workflow, which reads exactly like a
- * clean one — so every suite using this carries a control asserting it found
- * something, the same discipline the rest of these files use.
- */
+// Line-based rather than a YAML parse, so every suite using it carries a control: a parser that stops matching reports an empty workflow.
 
 /** Every workflow file GitHub would read, in the order the directory lists them. */
 export function workflowFiles(repoRoot: string): Array<{ name: string; text: string }> {
@@ -38,11 +28,7 @@ export type WorkflowJob = {
   runs: Array<string>
 }
 
-/**
- * The jobs of a workflow, each sliced from its `  <name>:` header to the next
- * thing at that indentation — the next job, a comment between jobs, or a
- * top-level key.
- */
+/** Each job sliced from its `  <name>:` header to the next thing at that indentation. */
 export function jobsIn(text: string): Array<WorkflowJob> {
   const lines = text.split('\n')
   const jobs: Array<{ name: string; lines: Array<string> }> = []
@@ -72,8 +58,7 @@ export function jobsIn(text: string): Array<WorkflowJob> {
       continue
     }
     if (/^ {2}\S/.test(line)) {
-      // A comment or another key at job depth — whatever it is, the job before
-      // it has ended.
+      // A comment or another key at job depth: whatever it is, the job before it has ended.
       current = undefined
       continue
     }
@@ -109,9 +94,7 @@ function needsIn(body: string): Array<string> {
     return splitNames(inline)
   }
 
-  // The block form, which this file does not currently use. Reading it anyway
-  // so that rewriting `needs:` into a list cannot make a check that asks what a
-  // job waits for pass by finding nothing.
+  // The block form, unused today, read anyway so rewriting `needs:` into a list cannot make a check pass by finding nothing.
   const block: Array<string> = []
   for (const line of lines.slice(index + 1)) {
     const entry = /^ {4,}-[ \t]+(.*)$/.exec(line)

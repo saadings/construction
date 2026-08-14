@@ -7,26 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { readWorkflow, runStepsIn, workflowFiles } from './workflowFile'
 
-/**
- * Checks that only mean anything against the real repository, so they run
- * against real git rather than a fixture.
- *
- * Nothing here is about whether the app works. Each one is a way this
- * repository quietly becomes unsafe or unbuildable without a single line of
- * application code changing:
- *
- *   - a bank statement or a credential reaches git history, where it is public
- *     forever in practice, because rewriting shared history is not a real option
- *   - an identifier belonging to the organisation the template came from
- *     survives, so this codebase is not actually cut loose from it
- *   - the pipeline reaches for an action this repository cannot resolve, and
- *     every job dies on its first step
- *
- * Every check carries a control that proves the instrument can see a failure.
- * A search that silently matches nothing and a repository that is genuinely
- * clean produce byte-identical output, so a bare "no matches" is worth nothing
- * on its own.
- */
+// Ways this repository becomes unsafe or unbuildable with no application code changing, each carrying a control: a search matching nothing and a clean tree are byte-identical.
 
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
@@ -34,25 +15,12 @@ function git(...args: Array<string>): string {
   return execFileSync('git', args, {
     cwd: repoRoot,
     encoding: 'utf8',
-    // Whole-history diffs are far larger than the default 1 MB buffer, and
-    // overflowing it throws rather than truncating — which would look like a
-    // clean history.
+    // Whole-history diffs exceed the default 1 MB buffer, and overflowing throws rather than truncating into a clean-looking history.
     maxBuffer: 512 * 1024 * 1024,
   })
 }
 
-/**
- * Every history-based check below asks what this repository has ever
- * committed. A shallow clone answers with the working tree and looks
- * identical to a clean history, so the question has to be asked directly —
- * a commit count cannot distinguish a truncated clone from a young repo.
- *
- * The subject line is read from `--format=%s` rather than from a patch stream.
- * A patch stream carries the content of every tracked file, this one included,
- * so a control looking for a literal written here is satisfied by its own
- * source: in a depth-1 clone of this branch, `git log -p --all` matched the
- * old control twice with a single grafted commit behind it.
- */
+// Asked directly because a shallow clone answers with the working tree, and read from `--format=%s` because a patch stream lets this file's own source satisfy the control.
 function assertHistoryIsPresent(): void {
   expect(git('rev-parse', '--is-shallow-repository').trim()).toBe('false')
   expect(git('log', '--all', '--format=%s')).toContain('bring in the application codebase')
@@ -76,65 +44,19 @@ function everyPathEverCommitted(): Array<string> {
     .filter((line) => line.length > 0)
 }
 
-/**
- * The prefixes of the credentials this project actually holds: a Cloudflare
- * API token, the Clerk secret and publishable keys, and the Clerk webhook
- * signing secret.
- *
- * The trailing run of token characters is the load-bearing part. Without it
- * this matches the implementation plan, which names these prefixes while
- * explaining how to search for them, and a check that cries wolf is a check
- * that gets deleted — which is how the real thing goes unnoticed later.
- */
+// The trailing run of token characters is load-bearing: without it this matches the plan that merely names these prefixes.
 const CREDENTIAL_SHAPE = /(cfat_|sk_test_|sk_live_|pk_test_|pk_live_|whsec_)[A-Za-z0-9_+/=-]{20,}/
 
-/**
- * Identifiers belonging to the organisation the template was taken from — its
- * own name, the template's, its infrastructure prefix, and the ticket keys of
- * the products it builds. The last of those is how the first pass missed the
- * agent workflows: they carried no company name anywhere, only ticket keys
- * from another product's tracker, and a search for the company name reported a
- * clean tree.
- */
+// Ticket keys are in here because the agent workflows carried no company name at all, so a scan on the name reported a clean tree.
 const ORIGIN_IDENTIFIER = /flatout|blueprint.?2|fsos|towd-[0-9]/i
 
-/**
- * The template's own name, standing alone.
- *
- * The pattern above deliberately requires the `2`, because `blueprint` is an
- * ordinary English word and a check that fires on ordinary English is a check
- * that gets deleted. That narrowing is also exactly what let the banner
- * printed on every `yarn dev` go on announcing the template this codebase was
- * cut loose from, while the scan above reported a clean tree.
- *
- * So the bare word is banned in code as well. This app's vocabulary is sites,
- * trades, people and payments and has never needed it. If a screen ever does,
- * that should be a decision someone makes on purpose, and this is where they
- * will be asked to make it.
- */
+// The pattern above needs the `2` so it cannot fire on ordinary English, and that narrowing is what let the `yarn dev` banner keep naming the template.
 const TEMPLATE_NAME = /blueprint/i
 
-/**
- * A committed instruction to reach for npm. `frontend/.cta.json` carried one,
- * which the next `create-tsrouter-app` run would have obeyed — leaving a
- * package-lock.json beside yarn.lock for `yarn install --immutable` in CI to
- * disagree with.
- */
+// A committed instruction to reach for npm: `.cta.json` carried one, which would leave a package-lock.json beside yarn.lock.
 const NPM_AS_PACKAGE_MANAGER = /"packageManager": *"npm/
 
-/**
- * Reads every file a fresh clone would receive and returns the ones matching.
- *
- * Searches what is staged rather than what is on disk. Those differ during
- * every commit — this runs in the pre-commit hook — and it is the staged
- * content that a clone ends up with. Reading the working tree also breaks
- * outright on a file staged for deletion, which is a very ordinary thing to be
- * doing when a check like this matters most.
- *
- * `docs/` is excluded because the design and plan discuss the template by
- * name; those mentions record a decision and are meant to stay. This file is
- * excluded because it necessarily contains the patterns it searches for.
- */
+// Searches staged content, not the working tree, because that is what a clone receives; `docs/` and this file are excluded on purpose.
 function trackedFilesMatching(pattern: RegExp): Array<string> {
   const args = ['grep', '--cached', '--files-with-matches', '--extended-regexp', '--null']
   if (pattern.flags.includes('i')) {
@@ -146,9 +68,7 @@ function trackedFilesMatching(pattern: RegExp): Array<string> {
   try {
     matches = git(...args)
   } catch (error) {
-    // git grep exits 1 on no matches and 2 or above on a real failure. Only
-    // the first is an answer; the rest have to surface, or a broken search
-    // reads exactly like a clean repository.
+    // git grep exits 1 on no matches and 2+ on real failure; only the first is an answer, and the rest must surface.
     if ((error as { status?: number }).status === 1) {
       return []
     }
@@ -178,23 +98,18 @@ describe('secrets and source workbooks', () => {
   })
 
   it('can tell an ignored path from one that is not', () => {
-    // The control. Without it, a `check-ignore` invocation that always
-    // reported "ignored" — wrong directory, wrong flag — would make the test
-    // above pass while .gitignore was empty.
+    // The control: a `check-ignore` that always reported "ignored" would pass the test above against an empty .gitignore.
     expect(isIgnored('package.json')).toBe(false)
     expect(isIgnored('convex/schema.ts')).toBe(false)
   })
 
   it('keeps the example environment file committable', () => {
-    // `.env.*` ignores everything; a single `!.env.example` negation is all
-    // that keeps the one file people are meant to copy from disappearing.
+    // `.env.*` ignores everything, and one `!.env.example` negation is all that keeps the file people copy from.
     expect(isIgnored('.env.example')).toBe(false)
   })
 
   it('has never committed a workbook or an environment file', () => {
-    // .gitignore does nothing for a file that is already tracked, and nothing
-    // at all for one committed before the rule existed. The question is what
-    // has ever been in a commit, not what is in the tree today.
+    // .gitignore does nothing for an already-tracked file, so the question is what has ever been committed, not what is here today.
     assertHistoryIsPresent()
 
     const leaked = everyPathEverCommitted().filter(
@@ -205,8 +120,7 @@ describe('secrets and source workbooks', () => {
   })
 
   it('has never committed anything shaped like a credential', () => {
-    // The control: history has to be readable before "no matches" means
-    // anything. An empty stream and a clean stream look the same.
+    // The control: an empty stream and a clean stream look the same, so history has to be readable first.
     assertHistoryIsPresent()
 
     const history = git('log', '-p', '--all')
@@ -215,29 +129,24 @@ describe('secrets and source workbooks', () => {
       .split('\n')
       .map((line) => CREDENTIAL_SHAPE.exec(line))
       .filter((match) => match !== null)
-      // Names the kind of credential and nothing else. A failure message that
-      // quotes the match would put the secret into the terminal, into CI logs
-      // and into whatever transcript is watching.
+      // Names the kind of credential only: quoting the match would put the secret into CI logs and any watching transcript.
       .map((match) => `a ${match[1]} credential, ${match[0].length} characters long`)
 
     expect(offending).toEqual([])
   })
 
   it('recognises a credential and ignores prose that merely names one', () => {
-    // Sensitivity: assembled at runtime so this file never itself contains a
-    // string shaped like a real credential.
+    // Sensitivity, assembled at runtime so this file holds no string shaped like a real credential.
     expect(CREDENTIAL_SHAPE.test(`sk_test_${'K3n9Qw'.repeat(8)}`)).toBe(true)
     expect(CREDENTIAL_SHAPE.test(`cfat_${'a1B2c3'.repeat(8)}`)).toBe(true)
 
-    // Specificity: these two lines are really in this repository's history.
-    // If the pattern flagged them the check would be noise from day one.
+    // Specificity: these two lines really are in this history, and flagging them would make the check noise from day one.
     expect(CREDENTIAL_SHAPE.test("git log -p --all | grep -cE 'cfat_|sk_test_|pk_test_|CONVEX_DEPLOY'")).toBe(false)
     expect(CREDENTIAL_SHAPE.test('value: <the whsec_... value from Step 2>')).toBe(false)
   })
 
   it('keeps real values out of the one environment file that is committed', () => {
-    // The example is the single env file in git, which makes it the one place
-    // a real key can be typed in as a helpful default and shipped.
+    // The example is the only env file in git, so it is the one place a real key gets typed in as a helpful default.
     const example = readFileSync(join(repoRoot, '.env.example'), 'utf8')
 
     const filledIn = example
@@ -256,9 +165,7 @@ describe('the organisation this codebase came from', () => {
   })
 
   it('actually opens the files it searches', () => {
-    // The control. A scan that reads nothing — wrong root, a pathspec that
-    // excludes everything, a search that errors and is swallowed — reports a
-    // clean tree either way.
+    // The control: a scan reading nothing — wrong root, everything excluded, a swallowed error — reports a clean tree too.
     expect(trackedFilesMatching(/construction/i).length).toBeGreaterThan(0)
   })
 
@@ -268,17 +175,13 @@ describe('the organisation this codebase came from', () => {
     expect(ORIGIN_IDENTIFIER.test('feature(trucks): assignments [TOWD-5]')).toBe(true)
     expect(ORIGIN_IDENTIFIER.test('cloned from blueprint2')).toBe(true)
 
-    // Specificity: a check that fires on ordinary English is a check that gets
-    // deleted, and then the real thing goes through unnoticed.
+    // Specificity: a check firing on ordinary English gets deleted, and then the real thing goes through unnoticed.
     expect(ORIGIN_IDENTIFIER.test('laid the foundation towards the second stage')).toBe(false)
     expect(ORIGIN_IDENTIFIER.test('a blueprint for the site')).toBe(false)
   })
 
   it('no longer answers to the name of the template either', () => {
-    // The one the pattern above is written not to catch. It survived in the
-    // banner `yarn dev` prints, which is the single line a developer sees on
-    // every run — the last place a codebase should still be naming somewhere
-    // else.
+    // The one the pattern above is written not to catch, and it survived in the banner `yarn dev` prints on every run.
     expect(trackedFilesMatching(TEMPLATE_NAME)).toEqual([])
   })
 
@@ -297,8 +200,7 @@ describe('the package manager', () => {
   })
 
   it('can see a package manager declaration when there is one', () => {
-    // The control. Both files that declare one say yarn; if this found
-    // nothing, the check above would be reading past them entirely.
+    // The control: both files that declare one say yarn, so finding nothing means the check above reads past them.
     expect(trackedFilesMatching(/"packageManager": *"yarn/).length).toBeGreaterThan(0)
   })
 })
@@ -315,12 +217,7 @@ describe('the checks that run before a commit', () => {
   /** The line a `git add -p` was told to leave behind. */
   const DECLINED = 'EXPERIMENT_NOT_FOR_COMMIT'
 
-  /**
-   * A repository in the ordinary shape of a working tree partway through
-   * something: one file staged on purpose, one changed and deliberately left
-   * alone, and one staged in part — which is what `git add -p` leaves behind
-   * when a hunk is accepted and the next one declined.
-   */
+  // A tree partway through something: one file staged, one deliberately left alone, and one staged in part as `git add -p` leaves it.
   function throwawayRepository(): string {
     const dir = mkdtempSync(join(tmpdir(), 'construction-hook-'))
     throwaways.push(dir)
@@ -381,8 +278,7 @@ describe('the checks that run before a commit', () => {
   }
 
   it('stage only what the person committing chose to stage', () => {
-    // The real hook, run against a throwaway repository with the fixers and
-    // codegen shimmed out. Everything it does to the index is its own.
+    // The real hook against a throwaway repository with the fixers shimmed out, so everything it does to the index is its own.
     const dir = throwawayRepository()
 
     runHook(dir)
@@ -391,9 +287,7 @@ describe('the checks that run before a commit', () => {
   })
 
   it('would have caught the sweep this replaced', () => {
-    // The control, and the reason the check above is worth having: `git add
-    // -u` after the fixers takes every modified file with it, so a change
-    // half-written in another file lands in a commit that never mentions it.
+    // The control: `git add -u` after the fixers takes every modified file, so half-written work lands in a commit that never mentions it.
     const dir = throwawayRepository()
 
     execFileSync('git', ['add', '-u'], { cwd: dir })
@@ -402,10 +296,7 @@ describe('the checks that run before a commit', () => {
   })
 
   it('leaves out the hunks the person committing left out', () => {
-    // Naming the whole path is not enough. `git add <path>` stages that path's
-    // entire working-tree blob, so re-adding after the fixers put back a hunk
-    // that a `git add -p` had deliberately declined — into a commit whose
-    // author had already looked at it and said no.
+    // Naming the path is not enough: `git add <path>` stages its whole blob, putting back a hunk the author already declined.
     const dir = throwawayRepository()
 
     runHook(dir)
@@ -413,18 +304,14 @@ describe('the checks that run before a commit', () => {
     const staged = execFileSync('git', ['diff', '--cached'], { cwd: dir, encoding: 'utf8' })
 
     expect(staged).not.toContain(DECLINED)
-    // The control: the hunk that was staged is still staged, so a hook that
-    // simply emptied the index would not pass this.
+    // The control: the staged hunk is still staged, so a hook that emptied the index would not pass this.
     expect(staged).toContain('+second')
-    // And the declined hunk is put back rather than thrown away. Losing it
-    // would be a more expensive bug than the one being fixed.
+    // And the declined hunk comes back rather than being thrown away, which would be a costlier bug than the one being fixed.
     expect(readFileSync(join(dir, 'partlyStaged.txt'), 'utf8')).toContain(DECLINED)
   })
 
   it('gives the unstaged work back when a check fails', () => {
-    // The hook takes the worktree away for the length of the run, so the case
-    // that matters is the one where it does not reach the end. A refused commit
-    // is ordinary; a refused commit that keeps somebody's afternoon is not.
+    // The hook takes the worktree away for the run, so what matters is the case where it never reaches the end.
     const dir = throwawayRepository()
     const bin = shimsFor(dir, ['yarn', 'npx'], 1)
 
@@ -449,16 +336,7 @@ type Manifest = {
   devDependencies?: Record<string, string>
 }
 
-/**
- * The binaries a manifest's scripts reach for that it has not declared.
- *
- * Shell plumbing is not a dependency, and neither is anything a runner is
- * given: `bash scripts/dev.sh` names a file in this repository and
- * `npx shadcn@latest` names a package fetched on the spot. Everything else has
- * to be in `dependencies` or `devDependencies`, or it is resolving by luck —
- * hoisted out of some other package's tree, where an upgrade can remove it
- * while `yarn install --immutable` and every job in CI stay green.
- */
+// Binaries the scripts reach for and the manifest has not declared, which resolve by luck out of some other package's tree until an upgrade removes them.
 function undeclaredBinaries(manifest: Manifest): Array<string> {
   const shell = new Set(['cd', 'cp', 'mv', 'rm', 'mkdir', 'echo', 'set', 'export', 'true'])
   const runners = new Set(['yarn', 'npx', 'bash', 'sh', 'node'])
@@ -489,8 +367,7 @@ describe('the commands this project offers', () => {
   })
 
   it('can see one that is not declared', () => {
-    // The control. An extractor that matched nothing would report a clean
-    // manifest, which is the same answer a correct one gives.
+    // The control: an extractor matching nothing reports a clean manifest, the same answer a correct one gives.
     expect(
       undeclaredBinaries({
         scripts: { broken: 'somethingNobodyInstalled --flag' },
@@ -514,11 +391,7 @@ describe('the checks a commit has to get past', () => {
   }
 
   it('installs the hook under the lifecycle script yarn actually runs', () => {
-    // Yarn 4 does not run `prepare` for the root workspace, which is the name
-    // husky's own instructions give. Under that name nothing installs the hook,
-    // no commit is gated, and every check in this repository still passes —
-    // including the one below it, which runs the hook as a file rather than
-    // through git.
+    // Yarn 4 does not run `prepare`, the name husky's own instructions give, so nothing installs the hook and every check still passes.
     expect(manifest.scripts.postinstall).toBe('husky')
     expect(manifest.scripts.prepare).toBeUndefined()
   })
@@ -532,9 +405,7 @@ describe('the checks a commit has to get past', () => {
       expect(commands).toContain(check)
     }
 
-    // The controls. A reader that stopped seeing run steps would report every
-    // check missing rather than pass on an empty set — but a reader matching
-    // far too much would pass on anything, so both directions are pinned.
+    // The controls, pinned in both directions: a reader seeing nothing and one matching everything both pass otherwise.
     expect(runStepsIn(readWorkflow(repoRoot, 'deploy.yml')).length).toBeGreaterThanOrEqual(15)
     expect(commands).not.toContain('yarn nonexistent:check')
   })
@@ -564,10 +435,7 @@ describe('clickable things look clickable', () => {
   }
 
   it('says so once, centrally', () => {
-    // Tailwind's preflight sets no cursor for `button`, so anything without a
-    // rule falls back to the arrow the browser draws for text. Stating it per
-    // element is the version that drifts: the next interactive element arrives
-    // from `yarn shadcn:add`, which emits no cursor utility at all.
+    // Tailwind's preflight sets no cursor for `button`, and per-element is the version that drifts, since shadcn emits no cursor utility.
     const base = baseLayer()
 
     expect(base).toContain('cursor: pointer')
@@ -577,8 +445,7 @@ describe('clickable things look clickable', () => {
   })
 
   it('is not restated on individual elements', () => {
-    // The helper excludes this file, so the pattern's own source cannot satisfy
-    // the search — the same trap the history control fell into.
+    // The helper excludes this file, so the pattern's own source cannot satisfy the search.
     expect(trackedFilesMatching(/cursor-pointer/)).toEqual([])
   })
 
@@ -601,13 +468,7 @@ describe('the deploy pipeline', () => {
   )
 
   it('reaches only for actions this repository can resolve', () => {
-    // The template called a composite action living in a private repository
-    // belonging to another organisation. Every job failed on its first step,
-    // and nothing in the workflow file looked wrong.
-    //
-    // Owner allowlist rather than a request to GitHub on purpose: the private
-    // action resolved perfectly well for whoever had access to it, which is
-    // exactly why it survived into this repository unnoticed.
+    // An owner allowlist rather than a request to GitHub, because the template's private action resolved fine for whoever had access to it.
     const unresolvable = actionReferences
       .filter(({ action }) => !/^(actions|cloudflare)\//.test(action))
       .map(({ file, line, action }) => `${file}:${line} ${action}`)
@@ -616,8 +477,42 @@ describe('the deploy pipeline', () => {
   })
 
   it('finds the action references it is checking', () => {
-    // The control. If the line pattern stopped matching, every workflow would
-    // pass the check above by having nothing in it.
+    // The control: if the line pattern stopped matching, every workflow would pass above by having nothing in it.
     expect(actionReferences.length).toBeGreaterThanOrEqual(5)
   })
+})
+
+describe('a worktree opened inside the repository', () => {
+  const worktrees = join(repoRoot, '.claude', 'worktrees')
+  const nested = join(worktrees, 'probe')
+  const probe = join(nested, 'nested.scenario.test.ts')
+  const control = join(repoRoot, 'scenarios', 'control.scenario.test.ts')
+
+  afterEach(() => {
+    rmSync(nested, { recursive: true, force: true })
+    rmSync(control, { force: true })
+  })
+
+  it('is neither committed with this branch nor read as part of it', () => {
+    const body = "import { it } from 'vitest'\n\nit('placeholder', () => {})\n"
+
+    mkdirSync(nested, { recursive: true })
+    writeFileSync(probe, body)
+    writeFileSync(control, body)
+
+    // An agent session's worktree is another branch's whole checkout, one `git add -A` away from being committed here.
+    expect(isIgnored('.claude/worktrees/probe/nested.scenario.test.ts')).toBe(true)
+
+    const collected = execFileSync('npx', ['vitest', 'list', '--config', 'vitest.scenario.config.ts'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+
+    // The control, and why this is a probe rather than a config read: a `vitest list` printing nothing satisfies the assertion below just as well.
+    expect(collected).toContain('control.scenario.test.ts')
+
+    // Left in, every scenario runs twice, the second time against work not in this commit.
+    expect(collected).not.toContain('nested.scenario.test.ts')
+  }, 60_000)
 })

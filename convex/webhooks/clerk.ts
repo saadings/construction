@@ -17,10 +17,7 @@ export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
     case 'user.deleted': {
       const clerkUserId = event.data.id
       if (clerkUserId === undefined) {
-        // Clerk marks the id optional on a deleted object, so this is possible
-        // rather than merely conceivable. There is no one to remove without it,
-        // and a failure here would only have Clerk sending the same unusable
-        // message back for days.
+        // Clerk marks the id optional on a deleted object, and failing here would only have it redeliver for days.
         console.warn('Ignored a Clerk user.deleted event that named no one')
         break
       }
@@ -32,8 +29,7 @@ export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
     }
 
     default:
-      // Organisation events land here. This app grants access through site
-      // roles, so there is nothing to mirror.
+      // Organisation events land here; access comes from site roles, so there is nothing to mirror.
       console.log('Ignored Clerk webhook event', event.type)
   }
 }
@@ -43,15 +39,11 @@ export const clerkUsersWebhook = httpAction(async (ctx: ActionCtx, request: Requ
 
   switch (checked.outcome) {
     case 'notFromClerk':
-      // Clerk drops a 4xx. Nothing about this message would pass on a second
-      // attempt, so asking for one only fills the delivery log.
+      // Clerk drops a 4xx, and nothing about this message would pass on a retry.
       return new Response('Invalid webhook signature', { status: 400 })
 
     case 'nothingToCheckAgainst':
-      // Deliberately a 5xx, which Clerk redelivers with backoff. The signing
-      // secret is missing from this deployment, not from the message, so the
-      // retries land the sign-ups that would otherwise be lost outright once
-      // someone sets it.
+      // Deliberately a 5xx: Clerk redelivers it, so the sign-ups land once someone sets the secret.
       console.error(
         'Turned away a Clerk webhook because this deployment has no usable CLERK_WEBHOOK_SECRET. ' +
           'Set it to the signing secret Clerk showed when the endpoint was created.'

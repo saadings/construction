@@ -41,6 +41,12 @@ __unconfig*
 # Agent skills, which are installed locally rather than committed
 .agents/skills/
 
+# Worktrees an agent session opens inside the repository. Another branch's
+# whole tree lives here: untracked it is one `git add -A` away from being
+# committed into this branch, and the test globs below read it as if it were
+# this checkout.
+.claude/worktrees/
+
 # Source workbooks — excluded deliberately.
 # They contain bank account numbers, vendor mobile numbers and named clients'
 # financial records. Kept local; not pushed to a third party.

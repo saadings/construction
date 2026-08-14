@@ -7,32 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../_generated/api'
 import schema from '../schema'
 
-/**
- * The Clerk webhook as Clerk actually meets it: a signed HTTP request arriving
- * at `/webhooks/clerk`, through signature validation, the router and the
- * handler, ending in a status code and whatever it left behind in `users`.
- *
- * The status code is half the point. Clerk reads it to decide what to do next:
- *
- *   - 2xx — delivered, forget it
- *   - anything else — retry, with backoff, for days
- *
- * So an event this app has no interest in must still be answered with a 200.
- * A handler that throws on one turns a single organisation event into an
- * endless stream of redeliveries, and this app deleted the organisation tables
- * precisely so it would never look at those events again.
- *
- * The other half is which person the app ends up holding. Everything is
- * asserted through what came back and what is in the table, never through
- * which internal mutation happened to be called — that wiring is free to
- * change, and the behaviour here is not.
- */
+// The webhook as Clerk meets it — signed request, status code, table contents — never through which internal mutation ran.
 
-/**
- * Assembled rather than written out, so this file never contains a string
- * shaped like a real signing secret — the repository-hygiene scan reads git
- * history for exactly that shape and would be right to flag it.
- */
+// Assembled, never written out, so this file holds no string shaped like a real signing secret for the hygiene scan to flag.
 const SIGNING_SECRET = `whsec_${btoa('construction scenario tests')}`
 
 function clerkRequest(event: unknown, options: { secret?: string; signed?: boolean } = {}): RequestInit {
@@ -113,8 +90,7 @@ describe('events this app has no use for', () => {
   })
 
   it('accepts an event type it has never heard of', async () => {
-    // Clerk adds event types over time, and an endpoint subscribed by mistake
-    // receives them without warning. An unfamiliar name is not an emergency.
+    // Clerk adds event types over time, and an unfamiliar name is not an emergency.
     const t = convexWithClerkWebhook()
 
     const response = await t.fetch(
@@ -132,9 +108,7 @@ describe('payloads that are not what they claim to be', () => {
 
     const response = await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_forged'), { signed: false }))
 
-    // 400, specifically. A 200 would mirror a forged user into the app, and a
-    // 500 would have the sender trying again for days over something that can
-    // never succeed.
+    // 400 specifically: a 200 mirrors a forged user, a 500 has the sender retrying for days over something that cannot succeed.
     expect(response.status).toBe(400)
     expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
   })
@@ -152,8 +126,7 @@ describe('payloads that are not what they claim to be', () => {
   })
 
   it('accepts a deletion for a person it never held', async () => {
-    // Ordinary: a Clerk account deleted before the webhook was wired up, or a
-    // redelivery of one already handled. Nothing to remove is not a failure.
+    // Ordinary — an account deleted before the webhook was wired up, or a redelivery — and nothing to remove is not a failure.
     const t = convexWithClerkWebhook()
 
     const response = await t.fetch(
@@ -165,10 +138,7 @@ describe('payloads that are not what they claim to be', () => {
   })
 
   it('accepts a deletion that arrives with no one named in it', async () => {
-    // Clerk marks the id optional on a deleted object. The handler used to
-    // assert it was there, so this payload reached a mutation that requires a
-    // string, threw, and answered 500 — to a message that would never succeed
-    // however many times Clerk sent it back.
+    // Clerk marks the id optional on a deleted object; asserting it was there answered 500 to a message that could never succeed.
     const t = convexWithClerkWebhook()
 
     const response = await t.fetch('/webhooks/clerk', clerkRequest({ type: 'user.deleted', data: {} }))
@@ -179,25 +149,19 @@ describe('payloads that are not what they claim to be', () => {
 
 describe('a deployment that cannot check anything yet', () => {
   it('asks Clerk to come back when no signing secret is set, rather than crashing', async () => {
-    // The signing secret is set on the deployment by hand and by CI, so there
-    // is a window where it is not there at all. Svix throws from its
-    // constructor on an empty secret, and that throw used to travel straight
-    // out of the handler.
+    // There is a window where the signing secret is not set at all, and svix throws from its constructor on an empty one.
     vi.stubEnv('CLERK_WEBHOOK_SECRET', undefined)
     const t = convexWithClerkWebhook()
 
     const response = await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_before_setup')))
 
-    // 5xx on purpose: this message is fine, the deployment is not. Clerk
-    // redelivers, so the sign-up lands once the secret is set instead of being
-    // lost outright.
+    // 5xx on purpose — the message is fine, the deployment is not — so Clerk redelivers and the sign-up lands once the secret is set.
     expect(response.status).toBe(500)
     expect(await t.run((ctx) => ctx.db.query('users').collect())).toEqual([])
   })
 
   it('does the same for a signing secret that is set but unreadable', async () => {
-    // A truncated or mistyped value fails inside svix's base64 decoding, which
-    // is a different throw from the empty one and took the same route out.
+    // A truncated value fails inside svix's base64 decoding, a different throw from the empty one that took the same route out.
     vi.stubEnv('CLERK_WEBHOOK_SECRET', 'whsec_not base64 at all')
     const t = convexWithClerkWebhook()
 
@@ -210,8 +174,7 @@ describe('a deployment that cannot check anything yet', () => {
 
 describe('the control', () => {
   it('lets a real user through, so the empty tables above mean something', async () => {
-    // Every assertion that nothing happened is worthless if nothing can happen.
-    // This is the one test here that proves the pipeline works at all.
+    // Every assertion that nothing happened is worthless if nothing can happen; this is the one proving the pipeline works.
     const t = convexWithClerkWebhook()
 
     const response = await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_control')))
@@ -225,24 +188,7 @@ describe('the control', () => {
 
 describe('someone the app already holds', () => {
   it('is updated in place when their details change, not added a second time', async () => {
-    // Changing your own name or email in Clerk is ordinary, and it is the only
-    // event that ever arrives for someone already on file.
-    //
-    // Two ways this quietly stops working, both invisible from outside, and
-    // both confirmed to fail here and nowhere else:
-    //
-    //   - the `user.updated` label is lost. It carries no body of its own — it
-    //     shares one with `user.created` — so anyone tidying the fallthrough by
-    //     keeping only the case that has the code deletes the handling of every
-    //     profile change with it. They then land in `default`, are logged, and
-    //     are dropped. Note that this is not the same as putting a `break`
-    //     between the two labels: that stops arrivals instead, which the
-    //     control above already catches.
-    //
-    //   - the mirror stops matching on `externalId` and inserts instead of
-    //     patching. Two rows for one Clerk identity make `.unique()` throw, so
-    //     the very next thing that asks who is signed in fails. The person is
-    //     locked out of the whole app, and nothing in Clerk looks wrong.
+    // Fails here and nowhere else if the `user.updated` fallthrough label is tidied away, or if the mirror inserts instead of patching.
     const t = convexWithClerkWebhook()
     await t.fetch('/webhooks/clerk', clerkRequest(userEvent('user.created', 'user_nauman')))
 
@@ -254,19 +200,13 @@ describe('someone the app already holds', () => {
     const users = await t.run((ctx) => ctx.db.query('users').collect())
     expect(users.map((user) => user.name)).toEqual(['Nauman Ahmed'])
 
-    // And the app can still say who he is. This is the part that actually
-    // hurts: a second row makes this throw rather than answer.
+    // And the app can still say who he is: a second row makes this throw rather than answer.
     const signedInAsNauman = t.withIdentity({ subject: 'user_nauman' })
     expect(await signedInAsNauman.query(api.users.actions.current, {})).toMatchObject({ name: 'Nauman Ahmed' })
   })
 
   it('is let go when their Clerk account is deleted', async () => {
-    // How a partner who has left is taken off. The two deletion tests above
-    // both stop short of a person who is really there — one names nobody, the
-    // other names a stranger — so neither ever reaches the removal itself.
-    //
-    // If it fails, it fails as a 500, and Clerk sends the same deletion back
-    // for days while the person stays in everyone's list.
+    // The two deletion tests above name nobody and a stranger, so neither ever reaches the removal itself.
     const t = convexWithClerkWebhook()
     await t.fetch('/webhooks/clerk', clerkRequest(userCreated('user_departed')))
 

@@ -1,16 +1,5 @@
 #!/usr/bin/env tsx
-/**
- * Setup Cloudflare Pages Project
- *
- * Creates a Cloudflare Pages project if it doesn't already exist.
- * Requires CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID environment
- * variables (reads from .env.local or process env).
- *
- * Usage:
- *   npx tsx scripts/setupCloudflareProject.ts
- *   npx tsx scripts/setupCloudflareProject.ts --project-name my-project
- *   npx tsx scripts/setupCloudflareProject.ts --production-branch main
- */
+// Creates the Cloudflare Pages project if it does not exist, reading CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID from .env.local.
 import { resolve } from 'path'
 
 import { config } from 'dotenv'

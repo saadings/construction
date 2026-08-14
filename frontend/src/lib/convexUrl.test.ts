@@ -6,10 +6,7 @@ const accepts = (value: string) => convexUrl.safeParse(value).success
 
 describe('the address the app is told to talk to', () => {
   describe('addresses a mis-derived deployment key actually produces', () => {
-    // Each of these is what VITE_CONVEX_URL becomes when a deploy key of an
-    // unexpected shape is parsed for its deployment name. They all parse as
-    // URLs, which is why a plain url() check let them through, and none of
-    // them resolves to anything.
+    // What VITE_CONVEX_URL becomes when an unexpected key shape is parsed: all valid URLs, none of them resolvable.
     it.each([
       ['a key whose name half was empty', 'https://.convex.cloud'],
       ['a project key, which has no deployment name', 'https://construction'],
@@ -20,8 +17,7 @@ describe('the address the app is told to talk to', () => {
   })
 
   it('refuses an address pointing somewhere that is not Convex', () => {
-    // A copy-paste of the wrong URL should stop the app, not send every
-    // query for the family's accounts to a third party.
+    // A copy-paste of the wrong URL should stop the app, not send the family's accounts to a third party.
     expect(accepts('https://evil.example.com')).toBe(false)
   })
 
@@ -46,8 +42,7 @@ describe('the address the app is told to talk to', () => {
 
     const message = result.error.issues[0]?.message ?? ''
     expect(message).toContain('VITE_CONVEX_URL')
-    // The person reading this is not a developer. "Invalid url" tells them
-    // nothing they can act on.
+    // The person reading this is not a developer, and "Invalid url" tells them nothing they can act on.
     expect(message).not.toMatch(/invalid|expected|received|string/i)
   })
 })
