@@ -12,7 +12,14 @@ const CLIENT_FACING = ['query', 'mutation', 'authenticatedQuery', 'authenticated
 /** These do the check themselves, which is the whole reason they exist. */
 const SITE_SCOPED = ['siteQuery', 'siteMutation']
 
-export type DeclaredFunction = { file: string; name: string; wrapper: string; declaresSiteId: boolean }
+export type DeclaredFunction = {
+  file: string
+  name: string
+  wrapper: string
+  declaresSiteId: boolean
+  args: string
+  body: string
+}
 
 function convexFiles(): Array<string> {
   const walk = (dir: string): Array<string> =>
@@ -36,12 +43,14 @@ function bodyFrom(source: string, openingBrace: number): string {
   return source.slice(openingBrace)
 }
 
-/** `siteId` inside the declared arguments, never `ctx.siteId` in a handler, which is what a checked function reads. */
-function declaresSiteId(body: string): boolean {
-  const args = /\bargs:\s*\{/.exec(body)
-  if (!args) return false
+/** The declared arguments only. `ctx.siteId` in a handler is what a checked function reads, so the body is the wrong place to look. */
+function argsIn(body: string): string {
+  const inline = /\bargs:\s*\{/.exec(body)
+  if (inline) return bodyFrom(body, inline.index + inline[0].length - 1)
 
-  return /\bsiteId\s*:/.test(bodyFrom(body, args.index + args[0].length - 1))
+  // `args: typedIn` names a list declared elsewhere. Unreadable from here, and unreadable must not read as harmless.
+  const named = /\bargs:\s*(\w+)/.exec(body)
+  return named ? `declared elsewhere as ${named[1]}` : ''
 }
 
 export function declaredFunctionsIn(file: string, source: string): Array<DeclaredFunction> {
@@ -49,7 +58,8 @@ export function declaredFunctionsIn(file: string, source: string): Array<Declare
 
   for (const match of source.matchAll(/export const (\w+) = (\w+)\(\{/g)) {
     const body = bodyFrom(source, match.index + match[0].length - 1)
-    found.push({ file, name: match[1], wrapper: match[2], declaresSiteId: declaresSiteId(body) })
+    const args = argsIn(body)
+    found.push({ file, name: match[1], wrapper: match[2], declaresSiteId: /\bsiteId\s*:/.test(args), args, body })
   }
 
   return found
@@ -58,6 +68,23 @@ export function declaredFunctionsIn(file: string, source: string): Array<Declare
 /** A function a phone can call that names a site and never asks whether the caller may open it. */
 export function skippingTheCheck(declared: Array<DeclaredFunction>): Array<DeclaredFunction> {
   return declared.filter((fn) => fn.declaresSiteId && CLIENT_FACING.includes(fn.wrapper))
+}
+
+const WRITES = ['mutation', 'authenticatedMutation', 'siteMutation']
+
+/** Convex constrains an id or a literal by shape; it cannot say a name is not blank, so those values need parsing. */
+const A_VALUE_CONVEX_CANNOT_CONSTRAIN = /v\.(string|number)\s*\(/
+
+/** `args: typedIn` and `{ personId, ...typedIn }` both hide their list, and unreadable must not read as harmless. */
+const A_LIST_DECLARED_ELSEWHERE = /declared elsewhere as|\.\.\.\w+/
+
+const UNCONSTRAINED = new RegExp(`${A_VALUE_CONVEX_CANNOT_CONSTRAIN.source}|${A_LIST_DECLARED_ELSEWHERE.source}`)
+
+/** A write that takes a value Convex cannot constrain and stores it without Zod ever seeing it. */
+export function storingWhatWasNeverParsed(declared: Array<DeclaredFunction>): Array<DeclaredFunction> {
+  return declared.filter(
+    (fn) => WRITES.includes(fn.wrapper) && UNCONSTRAINED.test(fn.args) && !/\bchecked\s*\(/.test(fn.body)
+  )
 }
 
 const THE_BYPASS = `
@@ -69,6 +96,44 @@ export const bypass = authenticatedQuery({
   args: { siteId: v.id('sites') },
   handler: async (ctx, args) => {
     return await ctx.db.get('sites', args.siteId)
+  },
+})
+`
+
+const THE_UNPARSED_WRITE = `
+export const rename = siteMutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch('sites', ctx.siteId, { name: args.name })
+  },
+})
+`
+
+const A_PARSED_WRITE = `
+export const edit = siteMutation({
+  args: typedIn,
+  handler: async (ctx, args) => {
+    const details = checked(siteInput, args)
+
+    await ctx.db.patch('sites', ctx.siteId, details)
+  },
+})
+`
+
+const A_WRITE_TAKING_ONLY_AN_ID = `
+export const hide = authenticatedMutation({
+  args: { personId: v.id('people') },
+  handler: async (ctx, { personId }) => {
+    await ctx.db.patch('people', personId, { hidden: true })
+  },
+})
+`
+
+const A_WRITE_SPREADING_A_LIST = `
+export const edit = authenticatedMutation({
+  args: { personId: v.id('people'), ...typedIn },
+  handler: async (ctx, args) => {
+    await ctx.db.patch('people', args.personId, { name: args.name })
   },
 })
 `
@@ -119,6 +184,47 @@ describe('deciding who may open a site', () => {
 
     expect(real.length).toBeGreaterThan(0)
     expect(skippingTheCheck(real)).toEqual([])
+  })
+
+  it('is not the only thing a wrapper leaves to discipline', () => {
+    // Same shape as the bypass above, one surface along: `checked()` makes parsing easy without making unparsed impossible.
+    const unparsed = storingWhatWasNeverParsed(
+      declaredFunctionsIn('convex/sites/uncheckedProbe.ts', THE_UNPARSED_WRITE)
+    )
+
+    expect(unparsed.map((fn) => fn.name)).toEqual(['rename'])
+  })
+
+  it('leaves a write that parses what it was given alone', () => {
+    // Verbatim from the sites mutations, which do call `checked`. Flagging these would make the rule useless.
+    const parsed = declaredFunctionsIn('convex/sites/mutations.ts', A_PARSED_WRITE)
+
+    expect(parsed.map((fn) => fn.name)).toEqual(['edit'])
+    expect(storingWhatWasNeverParsed(parsed)).toEqual([])
+  })
+
+  it('will not take an argument list it cannot read as harmless', () => {
+    // `args: typedIn` names a list declared elsewhere, so `sites.edit` and `sites.start` are unreadable from here.
+    const unreadable = declaredFunctionsIn('convex/sites/mutations.ts', A_PARSED_WRITE.replace(/const details.*\n/, ''))
+
+    expect(storingWhatWasNeverParsed(unreadable).map((fn) => fn.name)).toEqual(['edit'])
+  })
+
+  it('sees a list spread into otherwise readable arguments', () => {
+    // Found by running this guard over the real mutations: `{ personId: v.id('people'), ...typedIn }` names no string and hides one.
+    const spread = storingWhatWasNeverParsed(
+      declaredFunctionsIn('convex/people/mutations.ts', A_WRITE_SPREADING_A_LIST)
+    )
+
+    expect(spread.map((fn) => fn.name)).toEqual(['edit'])
+  })
+
+  it('leaves a write whose arguments Convex can already constrain alone', () => {
+    // `people.hide` takes an id and nothing else. Convex settles an id by shape, so there is nothing for Zod to say about it.
+    const idOnly = declaredFunctionsIn('convex/people/mutations.ts', A_WRITE_TAKING_ONLY_AN_ID)
+
+    expect(idOnly.map((fn) => fn.name)).toEqual(['hide'])
+    expect(storingWhatWasNeverParsed(idOnly)).toEqual([])
   })
 
   it('reads a site out of the declared arguments, not out of a handler', () => {
