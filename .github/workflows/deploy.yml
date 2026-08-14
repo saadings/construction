@@ -4,9 +4,8 @@ on:
   push:
     branches:
       - main
+  # Every pull request, whatever it targets. `branches:` here filters the base, so a stacked PR got no run at all and read as green.
   pull_request:
-    branches:
-      - main
 
 concurrency:
   # Runs against a branch queue rather than overlap: the needs edges only order jobs inside one run.
