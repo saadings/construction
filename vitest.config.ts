@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
       projects: [
         { test: { ...shared, name: 'convex', include: ['convex/**/*.test.ts'], environment: 'edge-runtime' } },
         { test: { ...shared, name: 'frontend', include: ['frontend/**/*.test.{ts,tsx}'], environment: 'jsdom' } },
+        // Plain node: this half runs on both sides, so it must not depend on anything either runtime provides.
+        { test: { ...shared, name: 'shared', include: ['shared/**/*.test.ts'], environment: 'node' } },
       ],
     },
   }
