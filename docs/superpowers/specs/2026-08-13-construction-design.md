@@ -546,7 +546,7 @@ surfaces beside the field just left, never as a wall of messages after saving.
 
 | Field | Rule |
 |---|---|
-| Amount | required, non-zero, up to 2 decimals, converted to whole paisa. No hard maximum — anything above Rs 5,000,000 asks for confirmation once rather than being refused, since single plot payments reach Rs 41,475,000. Numeric keypad on phone, commas appear while typing |
+| Amount | required, non-zero, up to 2 decimals, converted to whole paisa. No maximum a person will meet — anything above Rs 5,000,000 asks for confirmation once rather than being refused, since single plot payments reach Rs 41,475,000. A ceiling of Rs 10,000,000,000 does exist — roughly 240× the largest figure in the workbooks — because a bound has to exist somewhere for the `Number.isSafeInteger` check to mean anything rather than being decorative. Nothing in this business approaches it. Numeric keypad on phone, commas appear while typing |
 | Date | required, a real date, not later than today, warns but does not block if earlier than the site's start date |
 | How paid | cheque / cash / transfer / pay order — one must be chosen |
 | Cheque number | required when paying by cheque, not asked for otherwise |
@@ -692,9 +692,28 @@ Each pass gets its own implementation plan.
 
 ## Open items for Nauman
 
-1. **A JWT template named `convex` in the Clerk dashboard.** Blocking, and not
-   automatable — no CLI or API route exists for it. Sign-in will appear to work
-   while every access check silently denies until this is created.
+1. ~~**A JWT template named `convex` in the Clerk dashboard.**~~ **Resolved
+   2026-08-15.** Created on `secure-goose-32` with claims `{"aud": "convex"}`,
+   RS256, 60s lifetime, 5s clock skew.
+
+   Two corrections to what this item used to say, both of which cost time:
+
+   - **It is automatable.** `POST /v1/jwt_templates` exists in the Clerk Backend
+     API, taking `name` and `claims`. The claim that no CLI or API route exists
+     was wrong.
+   - **The Clerk dashboard's "Connect Clerk with Convex" integration is not a
+     substitute.** That integration adds `aud: "convex"` to Clerk's *session
+     token*, and it was enabled the whole time. But `ConvexProviderWithClerk` in
+     `convex@1.32.0` hardcodes `getToken({ template: "convex" })` and never reads
+     the session token, so the integration alone authenticates nothing. Seeing
+     "Enabled" in that dashboard is not evidence that this code path works. If
+     the provider is ever changed to call `getToken()` with no template, the
+     template becomes the redundant half instead — check the installed source,
+     not either dashboard.
+
+   Still unproven either way: a real minted token reaching a Convex query with an
+   access check passing. The issuer half is confirmed — `CLERK_FRONTEND_API_URL`
+   reads `https://secure-goose-32.clerk.accounts.dev` on the dev deployment.
 2. **Partner profit shares.** The workbooks record what each partner happened to
    pay but never state an agreed ratio. Is profit split by capital contributed,
    or by a fixed agreement?
