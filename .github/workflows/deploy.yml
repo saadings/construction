@@ -168,25 +168,54 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
+      # Full history so the previous commit is available to diff against.
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            backend:
-              - 'convex/**'
-              - 'package.json'
-              - 'yarn.lock'
-              - 'tsconfig.json'
-              - 'tsconfig.node.json'
-            frontend:
-              - 'frontend/**'
-              - 'package.json'
-              - 'yarn.lock'
-              - 'tsconfig.json'
-              - 'tsconfig.app.json'
-              - 'tsconfig.node.json'
-              - 'components.json'
+          fetch-depth: 0
+
+      # Does with git what a third-party paths-filter action was doing, so the
+      # pipeline depends only on actions/ and cloudflare/. Same path lists.
+      - name: Detect which parts changed
+        id: filter
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # First push to a branch reports an all-zero previous commit, and a
+          # force-push can leave one that no longer exists. Either way there is
+          # nothing to compare against, so deploy everything rather than guess.
+          if [ -z "$BEFORE" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "No previous commit to compare against — treating everything as changed."
+            changed=$(git ls-files)
+          else
+            changed=$(git diff --name-only "$BEFORE" "$AFTER")
+          fi
+
+          echo "Changed files:"
+          echo "$changed"
+
+          changed_matches() {
+            printf '%s\n' "$changed" | grep -qE "$1"
+          }
+
+          shared='^(package\.json|yarn\.lock|tsconfig\.json|tsconfig\.node\.json)$'
+
+          backend=false
+          if changed_matches '^convex/' || changed_matches "$shared"; then
+            backend=true
+          fi
+
+          frontend=false
+          if changed_matches '^frontend/' || changed_matches "$shared" ||
+            changed_matches '^(tsconfig\.app\.json|components\.json)$'; then
+            frontend=true
+          fi
+
+          echo "backend=$backend" >>"$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >>"$GITHUB_OUTPUT"
+          echo "backend=$backend  frontend=$frontend"
 
   # ============================================
   # Phase III — Deploy Backend to Convex
@@ -232,5 +261,5 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME }}
