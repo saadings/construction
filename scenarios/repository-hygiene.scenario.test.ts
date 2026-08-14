@@ -79,6 +79,30 @@ const CREDENTIAL_SHAPE = /(cfat_|sk_test_|sk_live_|pk_test_|pk_live_|whsec_)[A-Z
 const ORIGIN_IDENTIFIER = /flatout|blueprint.?2|fsos|towd-[0-9]/i
 
 /**
+ * The template's own name, standing alone.
+ *
+ * The pattern above deliberately requires the `2`, because `blueprint` is an
+ * ordinary English word and a check that fires on ordinary English is a check
+ * that gets deleted. That narrowing is also exactly what let the banner
+ * printed on every `yarn dev` go on announcing the template this codebase was
+ * cut loose from, while the scan above reported a clean tree.
+ *
+ * So the bare word is banned in code as well. This app's vocabulary is sites,
+ * trades, people and payments and has never needed it. If a screen ever does,
+ * that should be a decision someone makes on purpose, and this is where they
+ * will be asked to make it.
+ */
+const TEMPLATE_NAME = /blueprint/i
+
+/**
+ * A committed instruction to reach for npm. `frontend/.cta.json` carried one,
+ * which the next `create-tsrouter-app` run would have obeyed — leaving a
+ * package-lock.json beside yarn.lock for `yarn install --immutable` in CI to
+ * disagree with.
+ */
+const NPM_AS_PACKAGE_MANAGER = /"packageManager": *"npm/
+
+/**
  * Reads every file a fresh clone would receive and returns the ones matching.
  *
  * Searches what is staged rather than what is on disk. Those differ during
@@ -226,6 +250,34 @@ describe('the organisation this codebase came from', () => {
     // deleted, and then the real thing goes through unnoticed.
     expect(ORIGIN_IDENTIFIER.test('laid the foundation towards the second stage')).toBe(false)
     expect(ORIGIN_IDENTIFIER.test('a blueprint for the site')).toBe(false)
+  })
+
+  it('no longer answers to the name of the template either', () => {
+    // The one the pattern above is written not to catch. It survived in the
+    // banner `yarn dev` prints, which is the single line a developer sees on
+    // every run — the last place a codebase should still be naming somewhere
+    // else.
+    expect(trackedFilesMatching(TEMPLATE_NAME)).toEqual([])
+  })
+
+  it('recognises the template name in the shapes it took', () => {
+    expect(TEMPLATE_NAME.test('echo " BLUEPRINT DEV"')).toBe(true)
+    expect(TEMPLATE_NAME.test('cloned from blueprint2')).toBe(true)
+
+    expect(TEMPLATE_NAME.test('sites, trades, people and what they are owed')).toBe(false)
+  })
+})
+
+describe('the package manager', () => {
+  it('is never given away to npm by something committed here', () => {
+    expect(trackedFilesMatching(NPM_AS_PACKAGE_MANAGER)).toEqual([])
+    expect(git('ls-files', '--', '*package-lock.json').trim()).toBe('')
+  })
+
+  it('can see a package manager declaration when there is one', () => {
+    // The control. Both files that declare one say yarn; if this found
+    // nothing, the check above would be reading past them entirely.
+    expect(trackedFilesMatching(/"packageManager": *"yarn/).length).toBeGreaterThan(0)
   })
 })
 

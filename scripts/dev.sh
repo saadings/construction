@@ -28,7 +28,7 @@ lsof -ti:"$FRONTEND_PORT" | xargs kill -9 2>/dev/null || true
 
 echo ""
 echo "===================================="
-echo " BLUEPRINT DEV"
+echo " CONSTRUCTION DEV"
 echo " Workbench: $WORKBENCH_NAME"
 echo " Frontend:  http://localhost:$FRONTEND_PORT"
 echo "===================================="
