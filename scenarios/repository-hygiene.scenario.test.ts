@@ -621,3 +621,46 @@ describe('the deploy pipeline', () => {
     expect(actionReferences.length).toBeGreaterThanOrEqual(5)
   })
 })
+
+describe('a worktree opened inside the repository', () => {
+  const worktrees = join(repoRoot, '.claude', 'worktrees')
+  const nested = join(worktrees, 'probe')
+  const probe = join(nested, 'nested.scenario.test.ts')
+  const control = join(repoRoot, 'scenarios', 'control.scenario.test.ts')
+
+  afterEach(() => {
+    rmSync(nested, { recursive: true, force: true })
+    rmSync(control, { force: true })
+  })
+
+  it('is neither committed with this branch nor read as part of it', () => {
+    const body = "import { it } from 'vitest'\n\nit('placeholder', () => {})\n"
+
+    mkdirSync(nested, { recursive: true })
+    writeFileSync(probe, body)
+    writeFileSync(control, body)
+
+    // An agent session's worktree is a whole checkout of some other branch
+    // sitting inside this one. Untracked, it is one `git add -A` away from
+    // being committed here.
+    expect(isIgnored('.claude/worktrees/probe/nested.scenario.test.ts')).toBe(true)
+
+    const collected = execFileSync('npx', ['vitest', 'list', '--config', 'vitest.scenario.config.ts'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+
+    // The control, and the reason this is a probe file rather than a reading of
+    // the config: the identical file inside scenarios/ is collected. Without
+    // it, a `vitest list` that printed nothing — wrong config, wrong directory,
+    // a non-zero exit — would satisfy the assertion below while every scenario
+    // in that worktree still ran.
+    expect(collected).toContain('control.scenario.test.ts')
+
+    // Left in, each of those scenarios runs twice, the second time against work
+    // that is not in this commit, so the suite goes red or green on somebody
+    // else's changes.
+    expect(collected).not.toContain('nested.scenario.test.ts')
+  }, 60_000)
+})

@@ -26,7 +26,11 @@ export default defineConfig(({ mode }) => {
       env,
       // ONLY include scenario tests
       include: ['**/*.scenario.test.ts'],
-      exclude: ['**/node_modules/**', '**/dist/**'],
+      // `.claude/worktrees/` holds a checkout of some other branch. Left in,
+      // every scenario runs twice — once against this tree and once against
+      // work that is not in this commit — so a run goes red or green on
+      // somebody else's changes.
+      exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**'],
     },
   }
 })

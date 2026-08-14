@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
 
   // Projects inherit neither of these, and losing the scenario exclusion would
   // pull the suites that shell out to git into every `yarn test`.
-  const shared = { env, exclude: ['**/node_modules/**', '**/dist/**', '**/*.scenario.test.ts'] }
+  const shared = { env, exclude: ['**/node_modules/**', '**/dist/**', '**/.claude/**', '**/*.scenario.test.ts'] }
 
   return {
     test: {

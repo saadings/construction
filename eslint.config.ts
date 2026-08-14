@@ -7,7 +7,11 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig([
   {
-    ignores: ['dist', 'frontend/dist', 'convex/_generated', '.yarn', '.agents'],
+    // `.claude` holds worktrees an agent session opened inside the repository —
+    // a whole checkout of another branch. Linted, it reports that branch's
+    // problems against this one: `eslint .` failed here on four errors in files
+    // no commit on this branch contains.
+    ignores: ['dist', 'frontend/dist', 'convex/_generated', '.yarn', '.agents', '.claude'],
   },
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx,mts,cts}'],
