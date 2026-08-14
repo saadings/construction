@@ -168,10 +168,12 @@ describe('the port the dev server takes back', () => {
     return child.pid
   }
 
-  afterEach(() => {
+  afterEach(async () => {
     const holder = holderOf()
     if (holder.length > 0) {
       run('bash', ['-c', `kill -9 ${holder.split('\n').join(' ')} 2>/dev/null || true`])
+      // `kill` returns before the kernel releases the socket, and every test here opens by asserting the port is free.
+      expect(await until(() => holderOf() === '')).toBe(true)
     }
     rmSync(marker, { force: true })
   })
