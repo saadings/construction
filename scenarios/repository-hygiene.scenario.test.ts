@@ -540,6 +540,54 @@ describe('the checks a commit has to get past', () => {
   })
 })
 
+describe('clickable things look clickable', () => {
+  /** The body of the first `@layer base` block, brace-matched rather than guessed at. */
+  function baseLayer(): string {
+    const styles = readFileSync(join(repoRoot, 'frontend', 'src', 'styles.css'), 'utf8')
+    const start = styles.indexOf('@layer base')
+    expect(start).toBeGreaterThanOrEqual(0)
+
+    let depth = 0
+    for (let index = styles.indexOf('{', start); index < styles.length; index += 1) {
+      if (styles[index] === '{') {
+        depth += 1
+      }
+      if (styles[index] === '}') {
+        depth -= 1
+        if (depth === 0) {
+          return styles.slice(start, index + 1)
+        }
+      }
+    }
+
+    throw new Error('The @layer base block in frontend/src/styles.css is not closed')
+  }
+
+  it('says so once, centrally', () => {
+    // Tailwind's preflight sets no cursor for `button`, so anything without a
+    // rule falls back to the arrow the browser draws for text. Stating it per
+    // element is the version that drifts: the next interactive element arrives
+    // from `yarn shadcn:add`, which emits no cursor utility at all.
+    const base = baseLayer()
+
+    expect(base).toContain('cursor: pointer')
+    for (const selector of ['button:not(:disabled)', "[role='button']", 'a[href]']) {
+      expect(base).toContain(selector)
+    }
+  })
+
+  it('is not restated on individual elements', () => {
+    // The helper excludes this file, so the pattern's own source cannot satisfy
+    // the search — the same trap the history control fell into.
+    expect(trackedFilesMatching(/cursor-pointer/)).toEqual([])
+  })
+
+  it('would notice the utility if it came back', () => {
+    // The control for the search above.
+    expect(trackedFilesMatching(/cursor: pointer/).length).toBeGreaterThan(0)
+  })
+})
+
 describe('the deploy pipeline', () => {
   const actionReferences = workflowFiles(repoRoot).flatMap(({ name, text }) =>
     text

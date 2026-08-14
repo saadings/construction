@@ -12,12 +12,12 @@ function Home() {
       <Show when="signed-out">
         <div className="flex gap-3">
           <SignInButton mode="modal">
-            <button className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer rounded-lg px-6 py-2 font-medium transition-colors">
+            <button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-6 py-2 font-medium transition-colors">
               Sign in
             </button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <button className="border-border hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-lg border px-6 py-2 font-medium transition-colors">
+            <button className="border-border hover:bg-accent hover:text-accent-foreground rounded-lg border px-6 py-2 font-medium transition-colors">
               Create an account
             </button>
           </SignUpButton>

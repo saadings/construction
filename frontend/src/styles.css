@@ -138,4 +138,40 @@ body {
     background-color: var(--background);
     color: var(--foreground);
   }
+
+  /*
+   * The hand cursor is the affordance that says a thing can be clicked, and
+   * Tailwind's preflight sets no cursor for `button` — so anything without a
+   * rule falls back to the arrow the browser draws over text.
+   *
+   * Stated once here rather than per element. Per element is the version that
+   * drifts: the next interactive component arrives from `yarn shadcn:add`,
+   * which emits no cursor utility, and nobody notices until a screen has a
+   * button that does not look like one.
+   *
+   * Anything disabled is deliberately left out. Its cursor is how someone
+   * finds out it will not respond before clicking it.
+   */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='menuitem']:not([aria-disabled='true']),
+  [role='menuitemcheckbox']:not([aria-disabled='true']),
+  [role='menuitemradio']:not([aria-disabled='true']),
+  [role='tab']:not([aria-disabled='true']),
+  [role='option']:not([aria-disabled='true']),
+  [role='checkbox']:not([aria-disabled='true']),
+  [role='radio']:not([aria-disabled='true']),
+  [role='switch']:not([aria-disabled='true']),
+  [role='link']:not([aria-disabled='true']),
+  a[href],
+  summary,
+  label[for],
+  select:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  input[type='submit']:not(:disabled),
+  input[type='button']:not(:disabled),
+  input[type='reset']:not(:disabled) {
+    cursor: pointer;
+  }
 }
