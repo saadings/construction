@@ -1,4 +1,4 @@
-import { OrganizationSwitcher, Show, SignInButton, UserButton } from '@clerk/tanstack-react-start'
+import { Show, SignInButton, UserButton } from '@clerk/tanstack-react-start'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({ component: Home })
@@ -17,12 +17,7 @@ function Home() {
       </Show>
 
       <Show when="signed-in">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-3">
-            <OrganizationSwitcher />
-            <UserButton />
-          </div>
-        </div>
+        <UserButton />
       </Show>
     </div>
   )

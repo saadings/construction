@@ -1,13 +1,10 @@
+import type { WebhookEvent } from '@clerk/backend'
+
 import { internal } from '../_generated/api'
-import { httpAction } from '../_generated/server'
+import { type ActionCtx, httpAction } from '../_generated/server'
 import { validateRequest } from '../utils/validateRequest'
 
-export const clerkUsersWebhook = httpAction(async (ctx, request) => {
-  const event = await validateRequest(request)
-  if (!event) {
-    return new Response('Invalid webhook signature', { status: 400 })
-  }
-
+export async function handleClerkEvent(ctx: ActionCtx, event: WebhookEvent) {
   switch (event.type) {
     case 'user.created':
     // intentional fallthrough
@@ -25,39 +22,20 @@ export const clerkUsersWebhook = httpAction(async (ctx, request) => {
       break
     }
 
-    case 'organization.created':
-    // intentional fallthrough
-    case 'organization.updated':
-      await ctx.runMutation(internal.organizations.actions.upsert, {
-        data: event.data,
-      })
-      break
-
-    case 'organization.deleted': {
-      const clerkOrgId = event.data.id!
-      await ctx.runMutation(internal.organizations.actions.remove, {
-        clerkOrgId,
-      })
-      break
-    }
-
-    case 'organizationMembership.created':
-    // intentional fallthrough
-    case 'organizationMembership.updated':
-      await ctx.runMutation(internal.organizationMembers.actions.upsert, {
-        data: event.data,
-      })
-      break
-
-    case 'organizationMembership.deleted':
-      await ctx.runMutation(internal.organizationMembers.actions.remove, {
-        data: event.data,
-      })
-      break
-
     default:
+      // Organisation events land here. This app grants access through site
+      // roles, so there is nothing to mirror.
       console.log('Ignored Clerk webhook event', event.type)
   }
+}
+
+export const clerkUsersWebhook = httpAction(async (ctx: ActionCtx, request: Request) => {
+  const event = await validateRequest(request)
+  if (!event) {
+    return new Response('Invalid webhook signature', { status: 400 })
+  }
+
+  await handleClerkEvent(ctx, event)
 
   return new Response(null, { status: 200 })
 })
