@@ -43,6 +43,10 @@ jobs:
         run: npx convex codegen
       - name: Lint
         run: yarn lint:check
+      # Nothing else in the pipeline reads the types: vite build strips them
+      # without checking them, and convex codegen is told to skip the check.
+      - name: Typecheck
+        run: yarn typecheck
 
   build:
     runs-on: ubuntu-latest
@@ -95,8 +99,12 @@ jobs:
         run: npx convex codegen
       - name: Run tests
         run: yarn test
-      - name: Run integration tests
-        run: yarn test:integration
+      # The checks that catch a credential reaching git history, an identifier
+      # from the template's organisation surviving, an unresolvable action in
+      # this workflow, and the webhook status codes Clerk reads. They only
+      # protect anything if something other than a person runs them.
+      - name: Run scenario tests
+        run: yarn test:scenario
 
   # ── Sync secrets to Convex (parallel with CI checks) ──
   # Runs alongside lint/build/test so it adds zero wall-clock time.

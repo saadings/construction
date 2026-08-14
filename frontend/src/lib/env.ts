@@ -1,3 +1,8 @@
+// This file reads `import.meta.env`, which only exists once Vite's ambient
+// types are loaded. Declared here rather than left to whichever tsconfig
+// happens to pull the file in, because the scenario tests import it from a
+// project that has no reason to know about Vite.
+/// <reference types="vite/client" />
 import { createEnv } from '@t3-oss/env-core'
 import { z } from 'zod'
 

@@ -2,8 +2,13 @@ yarn lint:fix
 yarn format:fix
 
 git add -u
-npx convex codegen --typecheck disable
 
+# Refreshes convex/_generated so the checks below read current types. It needs
+# a linked deployment, and not having one is no reason to refuse a commit —
+# what follows is the gate, and CI generates its own copy either way.
+npx convex codegen --typecheck disable || echo "Left the generated Convex types as they are."
+
+yarn typecheck
 yarn build
 yarn test
-yarn test:integration
+yarn test:scenario
