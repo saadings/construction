@@ -26,6 +26,7 @@
     "vitest.config.ts",
     "vitest.scenario.config.ts",
     "vitest.integration.config.ts",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "scenarios/**/*.ts"
   ]
 }
