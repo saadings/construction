@@ -338,4 +338,37 @@ describe('the shape of the deploy workflow', () => {
     // format runs no codegen, so making it wait only puts the cheapest check behind a write to the deployment.
     expect(job('format').needs).toEqual([])
   })
+
+  it('runs for a pull request whatever branch it targets', () => {
+    const pullRequest = triggerBody(workflow, 'pull_request')
+    const push = triggerBody(workflow, 'push')
+
+    // Load-bearing controls: a null reading as "no branches filter" is how this test first passed with the filter still in place.
+    expect(pullRequest).not.toBeNull()
+    expect(push).not.toBeNull()
+
+    // `branches:` here filters the base, so a pull request stacked on another branch got no run at all and read as green.
+    expect(pullRequest!.some((line) => line.includes('branches:'))).toBe(false)
+
+    // The second control: push really is still restricted, so the false above means removed rather than never read.
+    expect(push!.some((line) => line.includes('branches:'))).toBe(true)
+  })
 })
+
+/** The indented lines under a top-level trigger key, or null when the key is absent. */
+function triggerBody(text: string, key: string): Array<string> | null {
+  const lines = text.split('\n')
+  const start = lines.findIndex((line) => line === `  ${key}:`)
+  if (start === -1) return null
+
+  const body: Array<string> = []
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]
+    if (line.trim() === '' || line.trimStart().startsWith('#')) continue
+    // Anything at this key's own depth or shallower has ended it, which is what stops a sibling trigger being read as its child.
+    if (!/^ {4}/.test(line)) break
+    body.push(line)
+  }
+
+  return body
+}
