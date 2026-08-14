@@ -17,17 +17,27 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # The Active LTS line. Written once here rather than repeated in every job,
+  # because a pipeline where one job silently runs a different runtime from the
+  # rest is a debugging problem nobody expects to have.
+  NODE_VERSION: '24.19.0'
+
 jobs:
   # ============================================
-  # Phase I — CI Checks (always run, in parallel)
+  # Phase I — CI Checks
   # ============================================
+
+  # Nothing to wait for: prettier reads the tree and nothing else. Kept ahead of
+  # every other job so a formatting mistake fails in well under a minute rather
+  # than behind a write to the deployment.
   format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22.21.1'
+          node-version: ${{ env.NODE_VERSION }}
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -35,54 +45,21 @@ jobs:
       - name: Format check
         run: yarn format:check
 
-  # `npx convex codegen` below is not a local operation: with a deploy key in
-  # scope it uploads the function definitions and validates
-  # convex/auth.config.ts against the deployment's own environment. That file
-  # reads CLERK_FRONTEND_API_URL, which sync-secrets is what writes — so these
-  # three jobs wait for it. `format` deliberately does not, so a formatting
-  # mistake still fails in under a minute.
-  lint:
-    needs: [sync-secrets]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.21.1'
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Generate Convex types
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: npx convex codegen
-      - name: Lint
-        run: yarn lint:check
-      # The only step that reads the types. `vite build` strips them without
-      # checking, and `convex codegen` only checks the backend as a side
-      # effect of its default --typecheck mode, which is not a gate anyone
-      # should be relying on. It runs after codegen because the backend cannot
-      # be checked until convex/_generated exists.
-      - name: Typecheck
-        run: yarn typecheck
-
+  # The frontend bundle imports nothing out of convex/_generated — it reaches
+  # the backend over the wire, by URL — so this does not wait for codegen. It is
+  # the longest job in Phase I, and putting it behind the Convex round-trip
+  # would add that round-trip to the critical path for no gain.
   build:
-    needs: [sync-secrets]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22.21.1'
+          node-version: ${{ env.NODE_VERSION }}
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
         run: yarn install --immutable
-      - name: Generate Convex types
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: npx convex codegen
       - name: Build
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
@@ -101,18 +78,29 @@ jobs:
           path: frontend/dist/client
           retention-days: 1
 
-  test:
+  # Generated once and handed to the three jobs that read it, rather than run
+  # again inside each of them. convex/_generated/ is gitignored, so lint, test
+  # and typecheck cannot start without it — but it is the same output every
+  # time, and producing it three times meant three uploads to the deployment
+  # per run.
+  #
+  # It waits for sync-secrets because `npx convex codegen` is not a local
+  # operation: with a deploy key in scope it uploads the function definitions
+  # and validates convex/auth.config.ts against the deployment's own
+  # environment. That file reads CLERK_FRONTEND_API_URL, which sync-secrets is
+  # the only thing that writes. The variable happens to be set on the
+  # deployment today, so the edge looks removable — it is not. Drop it and the
+  # next variable added to the auth config fails every pull request until
+  # something merges to main, which is exactly how this pipeline was broken
+  # before.
+  convex-codegen:
     needs: [sync-secrets]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
         with:
-          # The scenario suite asks what this repository has ever committed.
-          # A depth-1 clone answers that question with the working tree.
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.21.1'
+          node-version: ${{ env.NODE_VERSION }}
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -121,6 +109,83 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: npx convex codegen
+      - name: Upload generated types
+        uses: actions/upload-artifact@v4
+        with:
+          name: convex-generated
+          path: convex/_generated
+          retention-days: 1
+          # codegen writing nothing would otherwise hand the three jobs below an
+          # empty directory, and each would fail on a missing module rather than
+          # here, where the cause is legible.
+          if-no-files-found: error
+
+  lint:
+    needs: [convex-codegen]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Download generated types
+        uses: actions/download-artifact@v4
+        with:
+          name: convex-generated
+          path: convex/_generated
+      - name: Lint
+        run: yarn lint:check
+
+  # Its own job rather than a step of lint. It is the only thing in the pipeline
+  # that reads the generated types as types — `vite build` strips them without
+  # checking, and `convex codegen` only checks the backend as a side effect of
+  # its default --typecheck mode, which is not a gate anyone should rely on.
+  # Behind lint it reported as a lint failure; here it reports as itself.
+  typecheck:
+    needs: [convex-codegen]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Download generated types
+        uses: actions/download-artifact@v4
+        with:
+          name: convex-generated
+          path: convex/_generated
+      - name: Typecheck
+        run: yarn typecheck
+
+  test:
+    needs: [convex-codegen]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The scenario suite asks what this repository has ever committed.
+          # A depth-1 clone answers that question with the working tree.
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Download generated types
+        uses: actions/download-artifact@v4
+        with:
+          name: convex-generated
+          path: convex/_generated
       - name: Run tests
         run: yarn test
       # The checks that catch a credential reaching git history, an identifier
@@ -131,10 +196,9 @@ jobs:
         run: yarn test:scenario
 
   # ── Sync secrets to Convex ──
-  # Must complete before deploy-backend to avoid the Convex
-  # "Environment variables have changed during push" race condition, and before
-  # lint/build/test because `convex codegen` validates the auth config against
-  # the variables this job writes.
+  # Ahead of deploy-backend to avoid the Convex "Environment variables have
+  # changed during push" race condition, and ahead of convex-codegen because
+  # codegen validates the auth config against the variables this job writes.
   #
   # It runs for pull requests as well as pushes, which means pull request CI
   # writes to the production deployment. Deliberate, and only safe because the
@@ -149,9 +213,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22.21.1'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Enable corepack
         run: corepack enable
@@ -225,7 +289,7 @@ jobs:
   #            (only after all CI checks pass)
   # ============================================
   detect-changes:
-    needs: [format, lint, build, test]
+    needs: [format, build, lint, typecheck, test]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
@@ -299,9 +363,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22.21.1'
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Enable corepack
         run: corepack enable
@@ -317,20 +381,16 @@ jobs:
   # ============================================
   # Phase III — Deploy Frontend to Cloudflare Pages
   # ============================================
-  # Ordered after deploy-backend rather than beside it. The frontend job is two
-  # steps and the backend job is a full install plus a deploy, so run in
-  # parallel the frontend always won: a push adding a Convex function and the UI
-  # that calls it served "Could not find public function" until the backend
-  # caught up, and a backend deploy that failed left new UI live against the old
-  # backend with nothing anywhere to roll it back.
-  #
-  # The condition is what keeps a frontend-only push deploying: deploy-backend
-  # is skipped then, and a job whose dependency was skipped is skipped too
-  # unless it says otherwise. Naming both acceptable results rather than
-  # excluding failure also rules out cancelled.
+  # Runs beside deploy-backend rather than behind it, by decision: the two
+  # deploys are independent and the frontend reaches the backend by URL, so
+  # neither build depends on the other's output. The exposure this accepts is a
+  # push that adds a Convex function together with the UI calling it — the
+  # frontend is the shorter job and will win, so that UI is live against a
+  # backend that has not caught up yet, and a failed backend deploy leaves it
+  # live against the old one.
   deploy-frontend:
-    needs: [detect-changes, build, deploy-backend]
-    if: ${{ !cancelled() && github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true' && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') }}
+    needs: [detect-changes, build]
+    if: github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Download build artifact

@@ -302,16 +302,24 @@ describe('the shape of the deploy workflow', () => {
     expect(test.body).toContain('fetch-depth: 0')
   })
 
-  it('does not put a frontend live ahead of the backend it calls', () => {
+  it('only deploys a frontend it has the artifact for', () => {
     const frontend = job('deploy-frontend')
+    const build = job('build')
 
     expect(frontend.body).toContain('wrangler-action')
 
-    expect(frontend.needs).toEqual(['detect-changes', 'build', 'deploy-backend'])
-    // A frontend-only push skips deploy-backend, and a job whose dependency was
-    // skipped is skipped too unless the condition says otherwise. Ordering the
-    // two without this trades one silent failure for another.
-    expect(frontend.condition).toContain('needs.deploy-backend.result')
+    // deploy-frontend publishes what build uploaded, and nothing else produces
+    // that artifact. Without the edge the download races the upload and the
+    // deploy fails on an artifact that does not exist yet.
+    expect(frontend.needs).toContain('build')
+    expect(build.body).toContain('name: frontend-build')
+    expect(frontend.body).toContain('name: frontend-build')
+
+    // build only uploads on a push, so a deploy that could run on anything else
+    // would be downloading nothing. Both sides of that pairing are asserted
+    // rather than assumed.
+    expect(build.body).toContain("if: github.event_name == 'push'")
+    expect(frontend.condition).toContain("github.event_name == 'push'")
   })
 
   it('queues runs against the same branch rather than overlapping them', () => {
@@ -341,21 +349,55 @@ describe('the shape of the deploy workflow', () => {
     expect(backendMatcher[0]).not.toContain('^scripts/')
   })
 
-  it('waits for the deployment to hold the variables codegen validates against', () => {
+  it('generates the Convex types once and hands them to the jobs that read them', () => {
+    const codegen = jobs.filter((candidate) => candidate.runs.some((step) => step.includes('npx convex codegen')))
+
+    // Both the control and the point of the job. Codegen used to be a step
+    // inside lint, build and test, uploading the function definitions to the
+    // deployment three times a run. A reader that stopped seeing run steps
+    // fails here on an empty list rather than passing with nothing to check.
+    expect(codegen.map(({ name }) => name)).toEqual(['convex-codegen'])
+
     // `npx convex codegen` is not a local operation. With a deploy key in scope
     // it uploads the function definitions and validates convex/auth.config.ts
     // against the deployment's own environment. The variable that file reads is
-    // written by sync-secrets, so a job running codegen first dies on state
-    // nothing in this file makes visible.
-    const codegen = jobs.filter((candidate) => candidate.runs.some((step) => step.includes('npx convex codegen')))
+    // written by sync-secrets, so running codegen first dies on state nothing
+    // in this file makes visible.
+    expect(codegen[0].needs).toContain('sync-secrets')
+    expect(codegen[0].body).toContain('name: convex-generated')
 
-    // The control. Three jobs run codegen, so a reader that stopped seeing run
-    // steps fails here rather than passing with nothing to check.
-    expect(codegen.length).toBeGreaterThanOrEqual(3)
+    // convex/_generated/ is gitignored, so a job that reads it without waiting
+    // for the artifact fails on a missing module — the same class of invisible
+    // dependency, one step further down.
+    for (const name of ['lint', 'typecheck', 'test']) {
+      expect(job(name).needs).toContain('convex-codegen')
+      expect(job(name).body).toContain('name: convex-generated')
+    }
+  })
 
-    const unordered = codegen.filter((candidate) => !candidate.needs.includes('sync-secrets')).map(({ name }) => name)
+  it('runs every job on one Node, and on a version that still gets fixes', () => {
+    const declared = /^ {2}NODE_VERSION: '(\d+)\.\d+\.\d+'$/m.exec(workflow)
 
-    expect(unordered).toEqual([])
+    // The control. Everything below reads this capture, so a renamed or
+    // reformatted variable has to fail here rather than silently skip.
+    expect(declared).not.toBeNull()
+
+    // Node ships long-term support on even majors only. An odd one is a Current
+    // release: it stops getting fixes when the next major opens, which is not
+    // something to find out from a runner.
+    expect(Number(declared![1]) % 2).toBe(0)
+
+    // One declaration, read everywhere. A job pinning its own version is how a
+    // pipeline ends up running two runtimes and nobody notices.
+    const pins = workflow.match(/^ +node-version: .*$/gm) ?? []
+    expect(pins.length).toBeGreaterThanOrEqual(6)
+    expect(pins.every((pin) => pin.includes('${{ env.NODE_VERSION }}'))).toBe(true)
+
+    // setup-node v4 runs its own code on Node 20, which the runners have
+    // deprecated and now force onto 24 with a warning on every job.
+    const setupNode = workflow.match(/actions\/setup-node@v\d+/g) ?? []
+    expect(setupNode.length).toBe(pins.length)
+    expect([...new Set(setupNode)]).toEqual(['actions/setup-node@v5'])
   })
 
   it('writes the deployment variables on a pull request too, not only on a push', () => {
