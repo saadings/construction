@@ -66,13 +66,12 @@ jobs:
       - name: Build
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-          NODE_ENV: ${{ vars.ENVIRONMENT }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
-          VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
         run: |
+          set -euo pipefail
           DEPLOY_NAME=$(echo "$CONVEX_DEPLOY_KEY" | sed 's/.*:\(.*\)|.*/\1/')
           export VITE_CONVEX_URL="https://${DEPLOY_NAME}.convex.cloud"
-          echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL (NODE_ENV=$NODE_ENV)"
+          echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL"
           yarn build
       - name: Upload build artifact
         if: github.event_name == 'push'
@@ -135,30 +134,57 @@ jobs:
           CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
         run: |
+          # Without pipefail the last command in a pipeline decides the status,
+          # which is how a decode that fails halfway through still reports
+          # success and puts a broken value on the deployment.
+          set -euo pipefail
+
           set_convex_env() {
             local key=$1
             local value=$2
-            if [ -n "$value" ]; then
-              local max_attempts=3
-              local attempt=1
-              while [ $attempt -le $max_attempts ]; do
-                if echo "$value" | npx convex env set "$key"; then
-                  echo "✓ $key"
-                  return 0
-                fi
-                if [ $attempt -lt $max_attempts ]; then
-                  sleep $((2 ** attempt))
-                fi
-                attempt=$((attempt + 1))
-              done
-              echo "✗ Failed to set $key"
+            if [ -z "$value" ]; then
+              echo "✗ $key has no value — refusing to leave it unset silently"
               return 1
             fi
+            local max_attempts=3
+            local attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if echo "$value" | npx convex env set "$key"; then
+                echo "✓ $key"
+                return 0
+              fi
+              if [ $attempt -lt $max_attempts ]; then
+                sleep $((2 ** attempt))
+              fi
+              attempt=$((attempt + 1))
+            done
+            echo "✗ Failed to set $key"
+            return 1
           }
 
-          CLERK_FAPI=$(echo "$CLERK_PUBLISHABLE_KEY" | sed 's/pk_[a-z]*_//' | base64 -d | tr -d '$')
+          # The publishable key carries the Clerk host as base64 with a trailing
+          # '$', and Clerk ships it unpadded. Every decoder drops an incomplete
+          # final group, so without restoring the padding the host loses its
+          # last character — "…accounts.de" rather than "…accounts.dev". Convex
+          # accepts that happily and then rejects every token signed by the real
+          # instance, which reads as a permissions bug and is not one.
+          raw=${CLERK_PUBLISHABLE_KEY#pk_*_}
+          padded=$raw
+          while [ $((${#padded} % 4)) -ne 0 ]; do
+            padded="${padded}="
+          done
+          decoded=$(printf '%s' "$padded" | base64 -d)
 
-          set_convex_env "ENVIRONMENT" "${{ vars.ENVIRONMENT }}"
+          # Re-encoding has to land back on what we started with. A decoder that
+          # dropped the last group produces something shorter, and this is the
+          # only place that difference is ever visible.
+          if [ "$(printf '%s' "$decoded" | base64 | tr -d '=\n')" != "$raw" ]; then
+            echo "The Clerk host could not be read back out of the publishable key."
+            exit 1
+          fi
+
+          CLERK_FAPI=${decoded%\$}
+
           set_convex_env "CLERK_FRONTEND_API_URL" "https://$CLERK_FAPI"
           set_convex_env "CLERK_WEBHOOK_SECRET" "$CLERK_WEBHOOK_SECRET"
           set_convex_env "CLERK_SECRET_KEY" "$CLERK_SECRET_KEY"
@@ -265,9 +291,13 @@ jobs:
           name: frontend-build
           path: dist
 
+      # The project name is written out rather than read from a repository
+      # variable. This repository has none set, and an empty --project-name is
+      # the sort of thing wrangler only complains about after the build has
+      # already passed. It matches the default in scripts/setupCloudflareProject.ts.
       - name: Deploy Frontend to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME }}
+          command: pages deploy dist --project-name=construction
