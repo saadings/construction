@@ -6,6 +6,8 @@
 import { createEnv } from '@t3-oss/env-core'
 import { z } from 'zod'
 
+import { convexUrl } from './convexUrl'
+
 export const env = createEnv({
   server: {},
 
@@ -19,7 +21,7 @@ export const env = createEnv({
    * Variables that should be available on both the client and server.
    */
   shared: {
-    VITE_CONVEX_URL: z.string().url(),
+    VITE_CONVEX_URL: convexUrl,
   },
 
   client: {

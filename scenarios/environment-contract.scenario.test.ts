@@ -28,11 +28,21 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
 /**
- * A value that satisfies every shape the loader currently asks for — a URL is
- * also a non-empty string — so this test never has to restate the schema it is
- * checking. Restating it is the drift it exists to catch.
+ * A single value that satisfies every shape the loader currently asks for, so
+ * this test never has to restate the schema it is checking. Restating it is the
+ * drift it exists to catch.
+ *
+ * It has to be a Convex address, because the strictest shape the loader asks
+ * for is `VITE_CONVEX_URL`, which refuses anything that is not one — a bare
+ * `https://example.invalid/placeholder` used to pass here only because the
+ * check was loose enough to accept `https://.convex.cloud` as well.
+ *
+ * A Convex address is also a non-empty string, which is all the other variables
+ * require. If a future variable wants a shape this cannot satisfy, this
+ * constant is where that shows up, and it should move to one placeholder per
+ * variable rather than be loosened back.
  */
-const PLACEHOLDER = 'https://example.invalid/placeholder'
+const PLACEHOLDER = 'https://placeholder.convex.cloud'
 
 function exampleKeys(): Array<string> {
   return readFileSync(join(repoRoot, '.env.example'), 'utf8')
