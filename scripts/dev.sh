@@ -24,7 +24,7 @@ case "$WORKBENCH_NAME" in
 esac
 
 
-lsof -ti:"$FRONTEND_PORT" | xargs kill -9 2>/dev/null || true
+bash "$SCRIPT_DIR/reclaimPort.sh" "$FRONTEND_PORT"
 
 echo ""
 echo "===================================="

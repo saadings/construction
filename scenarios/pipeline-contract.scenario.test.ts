@@ -1,8 +1,9 @@
-import { execFileSync } from 'node:child_process'
-import { rmSync, writeFileSync } from 'node:fs'
+import { execFileSync, spawn } from 'node:child_process'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { type WorkflowJob, jobsIn, readWorkflow } from './workflowFile'
 
@@ -169,6 +170,109 @@ describe('the check that reads the types', () => {
       rmSync(canary, { force: true })
     }
   }, 180_000)
+})
+
+describe('the port the dev server takes back', () => {
+  // High enough to be nobody's default, and asserted free before it is used.
+  const port = 45871
+  const marker = join(tmpdir(), 'construction-reclaim-port.marker')
+
+  function holderOf(): string {
+    return run('bash', ['-c', `lsof -ti:${port} || true`]).output.trim()
+  }
+
+  async function until(condition: () => boolean): Promise<boolean> {
+    const deadline = Date.now() + 5_000
+    while (Date.now() < deadline) {
+      if (condition()) {
+        return true
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25))
+    }
+    return false
+  }
+
+  /**
+   * A listener on the port. By default it writes a marker from its TERM
+   * handler, which is impossible under `kill -9`; `stubborn` makes it swallow
+   * TERM instead, which is the case the escalation exists for.
+   */
+  function startVictim(stubborn = false): number {
+    const onTerm = stubborn
+      ? '() => {}'
+      : `() => { require('fs').writeFileSync(${JSON.stringify(marker)}, 'terminated'); process.exit(0) }`
+
+    const child = spawn(
+      process.execPath,
+      ['-e', `require('net').createServer().listen(${port}, '127.0.0.1'); process.on('SIGTERM', ${onTerm})`],
+      { detached: true, stdio: 'ignore' }
+    )
+    child.unref()
+
+    if (child.pid === undefined) {
+      throw new Error('the victim process did not start')
+    }
+    return child.pid
+  }
+
+  afterEach(() => {
+    const holder = holderOf()
+    if (holder.length > 0) {
+      run('bash', ['-c', `kill -9 ${holder.split('\n').join(' ')} 2>/dev/null || true`])
+    }
+    rmSync(marker, { force: true })
+  })
+
+  it('names what it is about to stop, and lets it stop cleanly', async () => {
+    expect(holderOf()).toBe('')
+    const pid = startVictim()
+    expect(await until(() => holderOf().length > 0)).toBe(true)
+
+    const result = run('bash', ['scripts/reclaimPort.sh', String(port)])
+
+    expect(result.status).toBe(0)
+    // Destroying a process without saying which one is the whole complaint:
+    // `2>/dev/null || true` meant the banner printed as though it were a clean
+    // start, whatever had just been killed.
+    expect(result.output).toContain(String(pid))
+    // The marker exists only if TERM was delivered and the handler got to run.
+    expect(await until(() => existsSync(marker))).toBe(true)
+    expect(await until(() => holderOf() === '')).toBe(true)
+  })
+
+  it('kills what will not stop, and names that too', async () => {
+    expect(holderOf()).toBe('')
+    const pid = startVictim(true)
+    expect(await until(() => holderOf().length > 0)).toBe(true)
+
+    const result = run('bash', ['scripts/reclaimPort.sh', String(port)])
+
+    expect(result.status).toBe(0)
+    expect(result.output).toContain('KILL')
+    expect(result.output).toContain(String(pid))
+    expect(await until(() => holderOf() === '')).toBe(true)
+    // TERM was ignored, so the handler never wrote anything.
+    expect(existsSync(marker)).toBe(false)
+  })
+
+  it('says nothing when nobody is on the port', async () => {
+    expect(holderOf()).toBe('')
+
+    const result = run('bash', ['scripts/reclaimPort.sh', String(port)])
+
+    expect(result.status).toBe(0)
+    expect(result.output.trim()).toBe('')
+    await Promise.resolve()
+  })
+
+  it('is what the dev server uses', () => {
+    // Otherwise the script above is correct and unreached, and port 3000 is
+    // still being cleared with a SIGKILL nobody is told about.
+    const dev = readFileSync(join(repoRoot, 'scripts', 'dev.sh'), 'utf8')
+
+    expect(dev).toContain('reclaimPort.sh')
+    expect(dev).not.toContain('kill -9')
+  })
 })
 
 describe('the shape of the deploy workflow', () => {
