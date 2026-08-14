@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { ConvexError } from 'convex/values'
 import { useState } from 'react'
@@ -21,6 +21,8 @@ function ADayOnSite() {
   const people = useQuery(api.people.queries.list, {})
   const accounts = useQuery(api.bankAccounts.queries.list, {})
   const record = useMutation(api.payments.mutations.record)
+  const addAccount = useMutation(api.bankAccounts.mutations.add)
+  const router = useRouter()
 
   const [day, setDay] = useState(todayOnThisDevice)
   const [saving, setSaving] = useState(false)
@@ -41,8 +43,8 @@ function ADayOnSite() {
 
     try {
       await record({ ...forSite, entries: drafts.map((draft) => asAnEntry(draft, day)) })
-      // Everything went in together, so the sitting starts again empty rather than showing what is already saved.
-      window.location.assign(`/sites/${siteId}`)
+      // The router, never a page load: he has just committed a day's work and wants to watch the number move, not a white flash and a re-fetch.
+      await router.navigate({ to: '/' })
     } catch (thrown) {
       setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
     } finally {
@@ -61,6 +63,7 @@ function ADayOnSite() {
       saving={saving}
       refusal={refusal}
       onPutIn={putThemIn}
+      onAddAccount={async (label, number) => await addAccount({ label, number })}
     />
   )
 }
@@ -73,11 +76,17 @@ function Waiting() {
   )
 }
 
+// One screen for both answers, because whether the house is gone or was never yours is exactly what the server refuses to leak, and saying "not yours" alone would undo that by admitting it is there.
 function NotYours() {
   return (
-    <main className="bg-background flex min-h-dvh flex-col items-center justify-center gap-2 p-6 text-center">
-      <p className="text-foreground font-display text-2xl">This site is not one of yours.</p>
-      <p className="text-muted-foreground">Ask Nauman to put you on it.</p>
+    <main className="bg-background flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center">
+      <p className="text-foreground font-display text-2xl">Nothing to open here.</p>
+      <p className="text-muted-foreground max-w-xs">
+        This house may have been put away, or you may not be on it. Ask Nauman.
+      </p>
+      <Link to="/" className="text-primary pt-2 font-medium">
+        Back to your sites
+      </Link>
     </main>
   )
 }

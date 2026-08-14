@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 
 import { cn } from '../../lib/utils'
+import { AddAnAccount } from './AddAnAccount'
 import { Field, Line, Lines, Picker } from './Field'
 import { MoneyLine } from './MoneyLine'
 import type { Draft } from './sitting'
@@ -30,6 +31,7 @@ export type DaySheetProps = {
   saving: boolean
   refusal: string | null
   onPutIn: (drafts: Array<Draft>) => void
+  onAddAccount: (label: string, number: string) => Promise<Account['_id']>
 }
 
 function niceDay(day: string): string {
@@ -58,6 +60,7 @@ export function DaySheet({
   saving,
   refusal,
   onPutIn,
+  onAddAccount,
 }: DaySheetProps) {
   const [done, setDone] = useState<Array<Draft>>([])
   const [draft, setDraft] = useState<Draft>(anEmptyDraft())
@@ -252,22 +255,25 @@ export function DaySheet({
           ) : null}
 
           {asksForBank(draft.method) ? (
-            <Field
-              label="Which account"
-              hint={accounts.length === 0 ? 'No accounts yet. Add one under More.' : undefined}
-            >
+            <Field label="Which account">
               <Picker
                 value={draft.bankAccountId}
                 onChange={(event) => change({ bankAccountId: pickedFrom(accounts, event.target.value) })}
                 aria-label="Which account"
               >
-                <option value="">Pick one</option>
+                <option value="">{accounts.length === 0 ? 'No accounts yet' : 'Pick one'}</option>
                 {accounts.map((account) => (
                   <option key={account._id} value={account._id}>
                     {account.label}
                   </option>
                 ))}
               </Picker>
+              {/* Offered here rather than named somewhere else, so a half-typed sitting survives adding one. */}
+              <AddAnAccount
+                onAdd={async (label, number) => {
+                  change({ bankAccountId: await onAddAccount(label, number) })
+                }}
+              />
             </Field>
           ) : null}
 
