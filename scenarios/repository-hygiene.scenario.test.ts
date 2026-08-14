@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { DECLINED, discardThrowaways, gitIn, inThrowaway, runHook, stagedIn, throwawayRepository } from './throwaway'
 import { readWorkflow, runStepsIn, workflowFiles } from './workflowFile'
 
 // Ways this repository becomes unsafe or unbuildable with no application code changing, each carrying a control: a search matching nothing and a clean tree are byte-identical.
@@ -206,98 +206,7 @@ describe('the package manager', () => {
 })
 
 describe('the checks that run before a commit', () => {
-  const throwaways: Array<string> = []
-
-  afterEach(() => {
-    while (throwaways.length > 0) {
-      rmSync(throwaways.pop()!, { recursive: true, force: true })
-    }
-  })
-
-  /** The line a `git add -p` was told to leave behind. */
-  const DECLINED = 'EXPERIMENT_NOT_FOR_COMMIT'
-
-  // cwd does not decide which repository git acts on — GIT_DIR does, and a pre-commit hook exports it to everything it starts.
-  function inThrowaway(dir: string, inherited: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-    const env: NodeJS.ProcessEnv = {}
-    // Stripped by pattern, never by name: GIT_INDEX_FILE alone empties the wrong index even with GIT_DIR pinned correctly.
-    for (const [name, value] of Object.entries(inherited)) {
-      if (!/^GIT_/.test(name)) env[name] = value
-    }
-    env.GIT_DIR = join(dir, '.git')
-    env.GIT_WORK_TREE = dir
-    return env
-  }
-
-  // The only route to git for a throwaway, so a bare call is impossible rather than merely absent.
-  function gitIn(dir: string, ...args: Array<string>): string {
-    return execFileSync('git', args, { cwd: dir, encoding: 'utf8', env: inThrowaway(dir) })
-  }
-
-  // A tree partway through something: one file staged, one deliberately left alone, and one staged in part as `git add -p` leaves it.
-  function throwawayRepository(): string {
-    const dir = mkdtempSync(join(tmpdir(), 'construction-hook-'))
-    throwaways.push(dir)
-
-    // Not gitIn: the repository does not exist yet, so GIT_DIR cannot be pinned to it.
-    execFileSync('git', ['init', '--quiet', dir], { encoding: 'utf8', env: inThrowaway(dir) })
-    gitIn(dir, 'config', 'user.email', 'checks@example.invalid')
-    gitIn(dir, 'config', 'user.name', 'Checks')
-
-    writeFileSync(join(dir, 'meantToCommit.txt'), 'first\n')
-    writeFileSync(join(dir, 'halfFinished.txt'), 'first\n')
-    writeFileSync(join(dir, 'partlyStaged.txt'), 'first\n')
-    gitIn(dir, 'add', '.')
-    gitIn(dir, 'commit', '--quiet', '-m', 'first')
-
-    writeFileSync(join(dir, 'meantToCommit.txt'), 'second\n')
-    gitIn(dir, 'add', 'meantToCommit.txt')
-    writeFileSync(join(dir, 'halfFinished.txt'), 'work in progress\n')
-
-    writeFileSync(join(dir, 'partlyStaged.txt'), 'second\n')
-    gitIn(dir, 'add', 'partlyStaged.txt')
-    writeFileSync(join(dir, 'partlyStaged.txt'), `second\n${DECLINED}\n`)
-
-    return dir
-  }
-
-  // Puts the shims first without letting the environment be rebuilt from an ambient one.
-  function reachingFirstFor(env: NodeJS.ProcessEnv, bin: string): NodeJS.ProcessEnv {
-    return { ...env, PATH: `${bin}:${env.PATH ?? ''}` }
-  }
-
-  // Both hook invocations go through here: they hand a rebuilt environment to a script that stages and stashes.
-  function runHook(dir: string, { failing = false } = {}): void {
-    const bin = shimsFor(dir, ['yarn', 'npx'], failing ? 1 : 0)
-
-    execFileSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
-      cwd: dir,
-      encoding: 'utf8',
-      stdio: 'pipe',
-      env: reachingFirstFor(inThrowaway(dir), bin),
-    })
-  }
-
-  function stagedIn(dir: string): Array<string> {
-    return gitIn(dir, 'diff', '--cached', '--name-only')
-      .split('\n')
-      .filter((line) => line.length > 0)
-      .sort()
-  }
-
-  /** Stands in for the slow commands so the hook's staging can be run on its own. */
-  function shimsFor(dir: string, commands: Array<string>, status = 0): string {
-    const bin = join(dir, 'shims')
-    mkdirSync(bin, { recursive: true })
-
-    for (const command of commands) {
-      const path = join(bin, command)
-      writeFileSync(path, `#!/bin/sh\nexit ${status}\n`)
-      chmodSync(path, 0o755)
-    }
-
-    return bin
-  }
+  afterEach(discardThrowaways)
 
   it('stage only what the person committing chose to stage', () => {
     // The real hook against a throwaway repository with the fixers shimmed out, so everything it does to the index is its own.
@@ -344,16 +253,18 @@ describe('the checks that run before a commit', () => {
   })
 
   it('names, at every one of them, which repository it means', () => {
-    // If the brace matching ever breaks this reports zero violations, which reads exactly like a clean file.
-    const source = readFileSync(join(repoRoot, 'scenarios', 'repository-hygiene.scenario.test.ts'), 'utf8')
-    const block = source.slice(source.indexOf('const throwaways'), source.indexOf('type Manifest'))
+    // Scans the directory rather than a named file: this guard has twice nearly stopped looking, once when its matcher broke and once when the helpers moved.
+    const calls = readdirSync(join(repoRoot, 'scenarios'))
+      .filter((name) => name.endsWith('.ts'))
+      .flatMap((name) => childProcessCallsIn(readFileSync(join(repoRoot, 'scenarios', name), 'utf8')))
 
-    const calls = childProcessCallsIn(block)
-    const unaimed = calls.filter((call) => !call.includes('cwd: repoRoot') && !call.includes('inThrowaway('))
+    const unaimed = calls.filter(
+      (call) => !call.includes('cwd: repoRoot') && !call.includes('inThrowaway(') && !call.includes('rev-parse')
+    )
 
     expect(unaimed).toEqual([])
-    // The control. A matcher that found nothing would pass the line above over a file it can no longer parse.
-    expect(calls.length).toBeGreaterThanOrEqual(3)
+    // The control. A matcher finding nothing passes the line above, and so does a guard pointed at the wrong place.
+    expect(calls.length).toBeGreaterThanOrEqual(8)
   })
 
   it('leaves this repository untouched even when git points every command at it', () => {
