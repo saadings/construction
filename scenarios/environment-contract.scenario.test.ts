@@ -133,3 +133,41 @@ describe('the join between Clerk and Convex', () => {
     expect(config.providers[0].applicationID).toBe('convex')
   })
 })
+
+describe('what the deployment has to be told', () => {
+  /**
+   * Convex sets these on every deployment itself. Naming them keeps the check
+   * below from crying wolf the first time one is read, which is how a check
+   * like this ends up deleted.
+   */
+  const SET_BY_CONVEX = new Set(['CONVEX_CLOUD_URL', 'CONVEX_SITE_URL'])
+
+  function readByTheBackend(): Array<string> {
+    const source = execFileSync('git', ['grep', '-ho', '-E', 'process\\.env\\.[A-Z0-9_]+', '--', 'convex/'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    })
+
+    return [...new Set(source.split('\n').map((line) => line.replace('process.env.', '').trim()))]
+      .filter((name) => name.length > 0 && !SET_BY_CONVEX.has(name))
+      .sort()
+  }
+
+  it('names every variable the backend reads', () => {
+    // The frontend comparison above cannot see these. It checks `.env.example`
+    // against the typed loader, which is a frontend-only list, so a variable
+    // read by Convex alone is structurally invisible to it — and going without
+    // one is not a crash. CLERK_WEBHOOK_SECRET missing makes the webhook answer
+    // 500, which leaves the users table empty while the browser shows a
+    // completed sign-up.
+    const documented = new Set(exampleKeys())
+
+    expect(readByTheBackend().filter((name) => !documented.has(name))).toEqual([])
+  })
+
+  it('finds the variables it is checking', () => {
+    // The control. A grep that matched nothing would report every variable
+    // documented, which is the same answer a correct one gives.
+    expect(readByTheBackend().length).toBeGreaterThanOrEqual(2)
+  })
+})

@@ -21,6 +21,17 @@ with a stack trace about the environment rather than anything that names the
 missing step. It also writes `convex/_generated`, which `yarn typecheck` needs
 in order to check the backend at all.
 
+Two variables go on the Convex deployment rather than in `.env.local`, because
+that is where the backend reads them from — `npx convex env set <NAME> <value>`,
+after the step above has linked one:
+
+- `CLERK_FRONTEND_API_URL` — the Clerk instance whose tokens this deployment
+  accepts. Without it every signed-in person is refused by the backend while
+  signing in still looks like it worked.
+- `CLERK_WEBHOOK_SECRET` — the signing secret shown when the Clerk webhook
+  endpoint was created. Without it the webhook answers 500, so the `users`
+  table stays empty behind a sign-up the browser reported as finished.
+
 ## Checks
 
 ```bash
