@@ -12,7 +12,7 @@
     "preview": "cd frontend && vite preview",
     "lint:check": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && tsc --project convex",
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "vitest run",

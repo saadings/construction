@@ -43,8 +43,11 @@ jobs:
         run: npx convex codegen
       - name: Lint
         run: yarn lint:check
-      # Nothing else in the pipeline reads the types: vite build strips them
-      # without checking them, and convex codegen is told to skip the check.
+      # The only step that reads the types. `vite build` strips them without
+      # checking, and `convex codegen` only checks the backend as a side
+      # effect of its default --typecheck mode, which is not a gate anyone
+      # should be relying on. It runs after codegen because the backend cannot
+      # be checked until convex/_generated exists.
       - name: Typecheck
         run: yarn typecheck
 
@@ -69,8 +72,8 @@ jobs:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
-          DEPLOY_NAME=$(echo "$CONVEX_DEPLOY_KEY" | sed 's/.*:\(.*\)|.*/\1/')
-          export VITE_CONVEX_URL="https://${DEPLOY_NAME}.convex.cloud"
+          VITE_CONVEX_URL=$(bash scripts/convexUrl.sh)
+          export VITE_CONVEX_URL
           echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL"
           yarn build
       - name: Upload build artifact

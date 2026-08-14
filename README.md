@@ -18,7 +18,8 @@ yarn dev
 The Convex step is not optional and it is not only for the backend. Both
 `yarn dev` and `yarn build` read `VITE_CONVEX_URL`, and without it they stop
 with a stack trace about the environment rather than anything that names the
-missing step.
+missing step. It also writes `convex/_generated`, which `yarn typecheck` needs
+in order to check the backend at all.
 
 ## Checks
 
