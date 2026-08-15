@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { pakistaniMobile, personName, whatIsWrong } from '~shared/validation/primitives'
 
@@ -114,7 +115,14 @@ function OnePerson({
   if (!changing) {
     return (
       <li className={`${ROW} py-3.5`}>
-        <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{person.name}</span>
+        {/* The way into their account, which is the statement the workbooks were kept open to read. Correcting them is the button on the right; this is the other half of what a name is for. */}
+        <Link
+          to="/people/$personId"
+          params={{ personId: person._id }}
+          className="text-foreground min-w-0 truncate text-[1.0625rem] underline-offset-4 hover:underline"
+        >
+          {person.name}
+        </Link>
         <span className="text-muted-foreground order-last col-span-2 text-sm sm:order-none sm:col-span-1">
           {person.phone ?? '—'}
         </span>

@@ -13,6 +13,7 @@ import { Route as PeopleRouteImport } from './routes/people'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
+import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
 import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdSharesRouteImport } from './routes/sites.$siteId.shares'
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
@@ -38,6 +39,11 @@ const SitesNewRoute = SitesNewRouteImport.update({
   path: '/sites/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
+  id: '/$personId',
+  path: '/$personId',
+  getParentRoute: () => PeopleRoute,
+} as any)
 const SitesSiteIdIndexRoute = SitesSiteIdIndexRouteImport.update({
   id: '/sites/$siteId/',
   path: '/sites/$siteId/',
@@ -62,7 +68,8 @@ const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
-  '/people': typeof PeopleRoute
+  '/people': typeof PeopleRouteWithChildren
+  '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
@@ -72,7 +79,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
-  '/people': typeof PeopleRoute
+  '/people': typeof PeopleRouteWithChildren
+  '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
@@ -83,7 +91,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
-  '/people': typeof PeopleRoute
+  '/people': typeof PeopleRouteWithChildren
+  '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/more'
     | '/people'
+    | '/people/$personId'
     | '/sites/new'
     | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/more'
     | '/people'
+    | '/people/$personId'
     | '/sites/new'
     | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/more'
     | '/people'
+    | '/people/$personId'
     | '/sites/new'
     | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
@@ -126,7 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MoreRoute: typeof MoreRoute
-  PeopleRoute: typeof PeopleRoute
+  PeopleRoute: typeof PeopleRouteWithChildren
   SitesNewRoute: typeof SitesNewRoute
   SitesSiteIdComingInRoute: typeof SitesSiteIdComingInRoute
   SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/people/$personId': {
+      id: '/people/$personId'
+      path: '/$personId'
+      fullPath: '/people/$personId'
+      preLoaderRoute: typeof PeoplePersonIdRouteImport
+      parentRoute: typeof PeopleRoute
+    }
     '/sites/$siteId/': {
       id: '/sites/$siteId/'
       path: '/sites/$siteId'
@@ -195,10 +214,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PeopleRouteChildren {
+  PeoplePersonIdRoute: typeof PeoplePersonIdRoute
+}
+
+const PeopleRouteChildren: PeopleRouteChildren = {
+  PeoplePersonIdRoute: PeoplePersonIdRoute,
+}
+
+const PeopleRouteWithChildren =
+  PeopleRoute._addFileChildren(PeopleRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MoreRoute: MoreRoute,
-  PeopleRoute: PeopleRoute,
+  PeopleRoute: PeopleRouteWithChildren,
   SitesNewRoute: SitesNewRoute,
   SitesSiteIdComingInRoute: SitesSiteIdComingInRoute,
   SitesSiteIdDayRoute: SitesSiteIdDayRoute,

@@ -4,7 +4,6 @@ import { convexTest } from 'convex-test'
 import { Webhook } from 'svix'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { api } from '../_generated/api'
 import schema from '../schema'
 
 // The webhook as Clerk meets it — signed request, status code, table contents — never through which internal mutation ran.
@@ -200,9 +199,14 @@ describe('someone the app already holds', () => {
     const accounts = await t.run((ctx) => ctx.db.query('accounts').collect())
     expect(accounts.map((account) => account.name)).toEqual(['The Second'])
 
-    // And the app can still say who he is: a second row makes this throw rather than answer.
-    const signedInAsThePartner = t.withIdentity({ subject: 'user_partner' })
-    expect(await signedInAsThePartner.query(api.accounts.actions.current, {})).toMatchObject({ name: 'The Second' })
+    // And exactly one row carries that sign-in, read through the index everything else reads it through: a second row makes `.unique()` throw wherever the app looks somebody up.
+    const found = await t.run((ctx) =>
+      ctx.db
+        .query('accounts')
+        .withIndex('byExternalId', (q) => q.eq('externalId', 'user_partner'))
+        .unique()
+    )
+    expect(found?.name).toBe('The Second')
   })
 
   it('is let go when their Clerk account is deleted', async () => {
