@@ -19,7 +19,7 @@ const probe = {
     handler: async (ctx) => {
       const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
       const siteId = await ctx.db.insert('sites', {
-        name: '359-R, Phase 7',
+        name: '1-A, Phase 0',
         builtForAClient: false,
         stage: 'building',
         hidden: false,
@@ -42,9 +42,9 @@ function convexWithSites() {
 }
 
 const aHouse = {
-  name: '  359-R,   Phase 7 ',
-  plotNumber: '359-R',
-  phase: 'Phase 7',
+  name: '  1-A,   Phase 0 ',
+  plotNumber: '1-A',
+  phase: 'Phase 0',
   coveredAreaSqft: '5,500',
   builtForAClient: false,
   stage: 'building',
@@ -81,7 +81,7 @@ describe('starting a site', () => {
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const siteId = await signedIn.mutation(api.sites.mutations.start, aHouse)
 
-    expect(await signedIn.query(api.sites.queries.one, { siteId })).toMatchObject({ name: '359-R, Phase 7' })
+    expect(await signedIn.query(api.sites.queries.one, { siteId })).toMatchObject({ name: '1-A, Phase 0' })
     expect(await signedIn.query(api.sites.queries.mine, {})).toHaveLength(1)
 
     const held = await t.run((ctx) => ctx.db.query('siteRoles').collect())
@@ -112,7 +112,7 @@ describe('starting a site', () => {
 
     const site = await t.run((ctx) => ctx.db.get('sites', siteId))
     // Two spaces and a trailing one went in; the name is stored the way it is said.
-    expect(site?.name).toBe('359-R, Phase 7')
+    expect(site?.name).toBe('1-A, Phase 0')
     // A comma-grouped figure went in, a number came out, because the form and the server run the same schema.
     expect(site?.coveredAreaSqft).toBe(5500)
   })
@@ -168,8 +168,8 @@ describe('the sites on the home screen', () => {
       if (!personId) throw new Error('no person')
 
       for (const [name, capacity] of [
-        ['359-R, Phase 7', 'partner'],
-        ['478-R, Phase 7', 'investor'],
+        ['1-A, Phase 0', 'partner'],
+        ['478-R, Phase 0', 'investor'],
         ['12-C, Phase 5', 'client'],
       ] as const) {
         const siteId = await ctx.db.insert('sites', {
@@ -184,7 +184,7 @@ describe('the sites on the home screen', () => {
 
     const mine = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.sites.queries.mine, {})
 
-    expect(mine.map((site) => site.name)).toEqual(['359-R, Phase 7'])
+    expect(mine.map((site) => site.name)).toEqual(['1-A, Phase 0'])
   })
 
   it('leaves out a site that has been hidden', async () => {

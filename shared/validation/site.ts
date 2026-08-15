@@ -2,12 +2,12 @@ import { z } from 'zod'
 
 import { calendarDay } from './primitives'
 
-// A house is spoken about by its address, so that is the name: "359-R, Phase 7".
+// A house is spoken about by its address, so that is the name: "1-A, Phase 0".
 export const siteName = z
   .string()
   .transform((value) => value.trim().replace(/\s+/g, ' '))
   .refine((value) => value.length >= 2 && value.length <= 80, {
-    message: 'Give this site a name, the way you say it: 359-R, Phase 7.',
+    message: 'Give this site a name, the way you say it: 1-A, Phase 0.',
   })
 
 // Plot number, block, phase and scheme are all written the way DHA writes them, so they are kept as typed and only bounded.

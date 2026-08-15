@@ -33,7 +33,7 @@ type Site = {
 async function aSiteThePartnerIsOn(ctx: MutationCtx): Promise<Site> {
   const nauman = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   const siteId = await ctx.db.insert('sites', {
-    name: '359-R, Phase 7',
+    name: '1-A, Phase 0',
     builtForAClient: false,
     stage: 'building',
     hidden: false,
@@ -181,7 +181,7 @@ describe('putting a day of payments in', () => {
     const t = convexWithPayments()
     const site = await t.run(aSiteThePartnerIsOn)
     const elsewhere = await t.run((ctx) =>
-      ctx.db.insert('sites', { name: '478-R, Phase 7', builtForAClient: false, stage: 'building', hidden: false })
+      ctx.db.insert('sites', { name: '478-R, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
 
     const refusal = await refusalFrom(
@@ -240,7 +240,7 @@ describe('taking a payment back out', () => {
 
     const otherSite = await t.run(async (ctx) => {
       const id = await ctx.db.insert('sites', {
-        name: '478-R, Phase 7',
+        name: '478-R, Phase 0',
         builtForAClient: false,
         stage: 'building',
         hidden: false,

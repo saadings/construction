@@ -26,6 +26,8 @@ const TAKEN_FROM_THE_WORKBOOKS = new Set([
   '67a86e3e7bd2443f6d2c2909dba371dda1642d0d79df3004fef75da317522433',
   '11d7cdb02b19aeffbdc59eeff157f1fd6f0248df3596ed729fd77f18493fe865',
   '6481ce0d69b3183f965186e1266ed4a0931a89bbfa82a213c5fd42904996ef4c',
+  '9587740ea2f5a2d997b84ba6d1b07977abbc1487c7125bb115dc00d9bb823ca2',
+  'fea25466ffad9fef240652204f67597d201c902f6ed1482dc493c457aef2abec',
 ])
 
 function digestOf(value: string): string {
@@ -109,7 +111,7 @@ describe('what a fixture is allowed to be made of', () => {
   it('leaves an ordinary string alone, so the rule is not refusing everything quoted', () => {
     // The other half. A list that matched every string would satisfy the check above while making the guard useless.
     expect(fromTheWorkbooksIn("const trade = 'Cement'\nconst site = 'A house'")).toEqual([])
-    expect(TAKEN_FROM_THE_WORKBOOKS.size).toBeGreaterThanOrEqual(7)
+    expect(TAKEN_FROM_THE_WORKBOOKS.size).toBeGreaterThanOrEqual(9)
   })
 
   it('reads quoted strings out of a file, since that is where a copied value lands', () => {

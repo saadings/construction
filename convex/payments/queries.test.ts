@@ -33,7 +33,7 @@ const SPEND: Array<[string, boolean, number]> = [
 async function aSiteWithSpending(ctx: MutationCtx) {
   const nauman = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   const siteId = await ctx.db.insert('sites', {
-    name: '359-R, Phase 7',
+    name: '1-A, Phase 0',
     builtForAClient: false,
     stage: 'building',
     hidden: false,
@@ -142,7 +142,7 @@ describe('what a site has cost', () => {
     const t = convexWithPayments()
     await t.run(aSiteWithSpending)
     const elsewhere = await t.run((ctx) =>
-      ctx.db.insert('sites', { name: '478-R, Phase 7', builtForAClient: false, stage: 'building', hidden: false })
+      ctx.db.insert('sites', { name: '478-R, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
 
     expect(
