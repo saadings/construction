@@ -440,10 +440,12 @@ API URL is the issuer domain it needs. Three pieces:
    `null` and every access check silently denies — which looks exactly like a
    permissions bug and is not one.
 
-3. **A JWT template named `convex` in the Clerk dashboard.** `applicationID` is
-   checked against the token's `aud` claim, so the template's name must match
-   exactly. There is no CLI or API route for creating it — Nauman must add it at
-   dashboard.clerk.com under JWT Templates. Auth cannot work until this exists.
+3. **A JWT template named `convex`.** `applicationID` is checked against the
+   token's `aud` claim, so the template's name must match exactly. Auth cannot
+   work until this exists. It **is** automatable — `POST /v1/jwt_templates` in
+   the Clerk Backend API — and this item used to say it was not, which cost
+   time. Resolved on `secure-goose-32`; see *What is still open* below for what
+   the dashboard's Convex integration does and does not do.
 
 The backend API is only needed if the app ever calls Clerk directly to look up
 users. Nothing in the first version requires it.
@@ -514,33 +516,58 @@ They agree because they are the same file.
 
 ```ts
 // shared/validation/payment.ts
-export const paymentInput = z.object({
-  siteId:      zid("sites"),
-  date:        dateOnly,
-  tradeId:     zid("trades"),
-  paidToId:    zid("people").optional(),
-  newPerson:   personName.optional(),
-  amount:      rupees,
-  method:      z.enum(["cheque", "cash", "transfer", "payOrder"]),
-  reference:   chequeNumber.optional(),
-  bankId:      zid("bankAccounts").optional(),
-  note:        z.string().trim().max(300).optional(),
-  isExtraWork: z.boolean().default(false),
-  paidById:    zid("people"),
+
+// Which questions a way of paying asks, stated once. The screen asks from this
+// and the schema refuses from it, so the two cannot drift into disagreeing.
+const ASKS: Record<HowPaid, { chequeNumber: boolean; bank: boolean }> = {
+  cheque:   { chequeNumber: true,  bank: true  },
+  transfer: { chequeNumber: false, bank: true  },
+  cash:     { chequeNumber: false, bank: false },
+  payOrder: { chequeNumber: false, bank: false },
+};
+
+export const paymentEntry = z.object({
+  tradeId:       zid("trades"),
+  day:           calendarDay,
+  amount:        money,
+  paidToId:      zid("people").optional(),
+  newPerson:     personName.optional(),
+  paidById:      zid("people"),
+  method:        z.enum(HOW_PAID),
+  reference:     chequeNumber.optional(),
+  bankAccountId: zid("bankAccounts").optional(),
+  note:          note.optional(),
+  isExtraWork:   z.boolean().default(false),
 })
-  .refine(r => r.method !== "cheque" || !!r.reference, {
+  .refine(e => !asksForChequeNumber(e.method) || !!e.reference, {
     path: ["reference"],
-    message: "Add the cheque number.",
+    message: SAY.reference,
   })
-  .refine(r => !!r.paidToId || !!r.newPerson, {
+  .refine(e => !asksForBank(e.method) || !!e.bankAccountId, {
+    path: ["bankAccountId"],
+    message: SAY.bank,
+  })
+  .refine(e => !!e.paidToId || !!e.newPerson, {
     path: ["paidToId"],
-    message: "Say who was paid.",
+    message: SAY.paidTo,
   });
 ```
 
-**Checking happens per field, as it is left** — the way Excel refuses a bad cell
-immediately rather than complaining about the whole sheet at the end. A mistake
-surfaces beside the field just left, never as a wall of messages after saving.
+**No `siteId`.** It comes from the wrapper that has already checked the caller
+may reach that site, so a payment cannot name one site while being written to
+another. The id is `bankAccountId` rather than `bankId`, because every other id
+on a payment names its table and `bankId` implies a `banks` table that does not
+exist.
+
+**One thing wrong at a time, never a wall** — the way Excel refuses a bad cell
+rather than complaining about the whole sheet at the end. The day sheet reports
+the first unanswered question and no more, because eight problems at once reads
+as the app being broken rather than as a form half filled in.
+
+**Not yet built:** surfacing it beside the field as that field is left. Today
+the check runs when a payment is added to the sitting or the sitting is put in.
+The messages are the same either way — they come from the same file the server
+refuses by — so this is where they appear, not what they say.
 
 ### Field rules
 
