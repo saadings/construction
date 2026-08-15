@@ -300,9 +300,12 @@ describe('deciding who may open a site', () => {
     // The floor, and the one this guard most needed: if the wrapper names stopped matching it would find nothing, which is what a clean tree looks like.
     const global = declared.filter((fn) => GLOBAL.includes(fn.wrapper)).map(named)
 
-    expect(global.length).toBeGreaterThanOrEqual(8)
-    expect(global).toContain('people/queries.ts list')
-    expect(global).toContain('people/mutations.ts edit')
+    // Anchored on the ones global by design, never on the ones waiting to be fixed: a floor standing on an exposure fails the day the exposure is removed, which is a guard fighting its own fix.
+    for (const key of Object.keys(DELIBERATELY_GLOBAL)) {
+      expect(global, `${key} is written down as global by design and is not in the tree`).toContain(key)
+    }
+
+    expect(Object.keys(DELIBERATELY_GLOBAL).length).toBeGreaterThanOrEqual(2)
 
     // Every one of them accounted for in one list or the other, and none in both.
     for (const key of global) {
