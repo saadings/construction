@@ -17,15 +17,35 @@ function screenFiles(dir: string): Array<string> {
   })
 }
 
+/** Where each `*Waiting` component is written, so a screen handing its waiting to one can be followed to what that one actually puts on the screen. */
+export function whereWaitingIsWritten(files: Array<{ source: string }>): Map<string, Array<string>> {
+  const written = new Map<string, Array<string>>()
+
+  for (const { source } of files) {
+    for (const [, name] of source.matchAll(/function\s+(\w*Waiting)\b/g)) {
+      written.set(name, [...(written.get(name) ?? []), source])
+    }
+  }
+
+  return written
+}
+
 /** A screen that waits on a reading and puts nothing in the shape of what is coming. */
-export function waitsWithoutASkeleton(source: string): boolean {
+export function waitsWithoutASkeleton(source: string, written: Map<string, Array<string>> = new Map()): boolean {
   // Asked of anything that branches on `undefined`, not only of the file that does the reading: the screen holding the waiting UI is usually not the one that called `useQuery`. Requiring both left `People.tsx` and every component like it unswept.
 
   // A reading is always a bare local -- `stages === undefined`. `contract.actualAreaSqft === undefined` is a field that may be absent, which is a fact about a contract and not a screen waiting on anything.
   if (!/(?<![.\w])\w+\s*===\s*undefined/.test(source)) return false
 
-  // Put on the screen, not merely imported: an import left behind by a screen that went back to saying a word satisfies a check for the word `WhileWaiting` and nothing else. Either the shape is here, or it is handed to a component named for the waiting it does -- `SitesListWaiting`, `Waiting`.
-  return !/<([A-Z]\w*)?Waiting\b/.test(source)
+  // The grey bars themselves, and nothing that merely mentions them. This asked whether the name `Waiting` appeared in the file at all, and passed a screen that names its waiting component and then renders a word inside it -- a definition with no use, one turn on from the import with no definition it already caught.
+  if (source.includes('<Skeleton')) return false
+
+  // Handed to a component named for the waiting it does. `WhileWaiting` is only a labelled region, so it is not evidence of anything; one written in this same file is not either, because then this file is the one that would be holding the shape.
+  const handedTo = [...source.matchAll(/<(\w*Waiting)\b/g)]
+    .map(([, name]) => name)
+    .filter((name) => name !== 'WhileWaiting' && !new RegExp(`function\\s+${name}\\b`).test(source))
+
+  return !handedTo.some((name) => (written.get(name) ?? []).some((where) => where.includes('<Skeleton')))
 }
 
 /** Every plain `<button>` that turns itself off, which is a button that sends something and is not the one that knows how. */
@@ -45,7 +65,9 @@ describe('what a screen shows while it is waiting', () => {
   }))
 
   it('is the shape of what is coming, on every screen that reads anything', () => {
-    expect(screens.filter(({ source }) => waitsWithoutASkeleton(source)).map(({ path }) => path)).toEqual([])
+    const written = whereWaitingIsWritten(screens)
+
+    expect(screens.filter(({ source }) => waitsWithoutASkeleton(source, written)).map(({ path }) => path)).toEqual([])
   })
 
   it('is read over the screens it is actually asked of', () => {
@@ -55,28 +77,59 @@ describe('what a screen shows while it is waiting', () => {
 
   it('would notice a screen that only said a word', () => {
     // The control, verbatim in the shape the app used to be written in.
-    expect(
-      waitsWithoutASkeleton('const s = useQuery(a, {})\nif (s === undefined) return <p>Getting your sites…</p>')
-    ).toBe(true)
-    expect(
-      waitsWithoutASkeleton('const s = useQuery(a, {})\nif (s === undefined) return <WhileWaiting what="x" />')
-    ).toBe(false)
-    expect(waitsWithoutASkeleton('const s = useQuery(a, {})\nif (s === undefined) return <SitesListWaiting />')).toBe(
-      false
-    )
-    // The one that got through: the screen went back to a word and left the import behind it.
+    const reads = 'const s = useQuery(a, {})\n'
+    expect(waitsWithoutASkeleton(`${reads}if (s === undefined) return <p>Getting your sites…</p>`)).toBe(true)
+    expect(waitsWithoutASkeleton(`${reads}if (s === undefined) return <Skeleton className="h-4" />`)).toBe(false)
+
+    // The one that got through first: the screen went back to a word and left the import behind it.
     expect(
       waitsWithoutASkeleton(
-        "import { WhileWaiting } from './Skeleton'\nconst s = useQuery(a, {})\nif (s === undefined) return <p>Looking…</p>"
+        `import { WhileWaiting } from './Skeleton'\n${reads}if (s === undefined) return <p>Looking…</p>`
       )
     ).toBe(true)
+
+    // A labelled region is not a shape: `<WhileWaiting>` around a word says "this is the waiting part" and shows nothing.
+    expect(
+      waitsWithoutASkeleton(`${reads}if (s === undefined) return <WhileWaiting what="x">Looking…</WhileWaiting>`)
+    ).toBe(true)
+
     // A screen that never asks whether an answer has arrived is not waiting on one.
     expect(waitsWithoutASkeleton('if (problem === null) return null')).toBe(false)
     // Nor is one asking whether a field is there. A contract that nobody has measured is a contract, not a read in flight.
     expect(waitsWithoutASkeleton('contract.actualAreaSqft === undefined ? none : some')).toBe(false)
     expect(waitsWithoutASkeleton('stage.billedOn === undefined ? "Not billed" : stage.billedOn')).toBe(false)
-    // And the bare local it is really about is still caught.
-    expect(waitsWithoutASkeleton('if (stages === undefined) return <p>Looking…</p>')).toBe(true)
+  })
+
+  it('follows a screen that hands its waiting to somebody else, and reads what that one shows', () => {
+    // The second hole, one turn on from the first: that control catches an import with no definition, and this is a definition with no use. A screen naming `SitesListWaiting` passed while the component it named rendered a word.
+    const reads = 'const s = useQuery(a, {})\nif (s === undefined) return <SitesListWaiting />'
+
+    const holdsTheShape = new Map([['SitesListWaiting', ['function SitesListWaiting() { return <Skeleton /> }']]])
+    expect(waitsWithoutASkeleton(reads, holdsTheShape)).toBe(false)
+
+    const saysAWord = new Map([['SitesListWaiting', ['function SitesListWaiting() { return <p>Looking…</p> }']]])
+    expect(waitsWithoutASkeleton(reads, saysAWord)).toBe(true)
+
+    // One written in the same file is not evidence about that file, or a screen would vouch for itself by naming a function.
+    const itsOwn =
+      'const s = useQuery(a, {})\nif (s === undefined) return <Waiting />\nfunction Waiting() { return <p>Looking…</p> }'
+    expect(waitsWithoutASkeleton(itsOwn, new Map([['Waiting', ['function Waiting() { return <Skeleton /> }']]]))).toBe(
+      true
+    )
+  })
+
+  it('names the screen when a component it leans on stops showing anything', () => {
+    // Against the real tree rather than a string: gut `SitesListWaiting` where it is written, and the screen leaning on it has to come back by name.
+    const gutted = screens.map(({ path, source }) =>
+      path === 'components/sites/SitesList.tsx'
+        ? { path, source: source.replaceAll('<Skeleton', '<p') }
+        : { path, source }
+    )
+    const written = whereWaitingIsWritten(gutted)
+
+    expect(gutted.filter(({ source }) => waitsWithoutASkeleton(source, written)).map(({ path }) => path)).toContain(
+      'routes/index.tsx'
+    )
   })
 })
 
