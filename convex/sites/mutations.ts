@@ -1,9 +1,9 @@
-import { ConvexError, v } from 'convex/values'
+import { v } from 'convex/values'
 
 import { siteInput } from '../../shared/validation/site'
-import { authenticatedMutation } from '../utils/auth'
 import { checked } from '../utils/checked'
-import { personSignedInAs, siteMutation } from '../utils/siteAccess'
+import { ledgerMutation } from '../utils/ledgerAccess'
+import { siteMutation } from '../utils/siteAccess'
 
 const typedIn = {
   name: v.string(),
@@ -23,21 +23,13 @@ const typedIn = {
   ),
 }
 
-export const start = authenticatedMutation({
+// Anyone signed in starts a house, and everyone signed in can then open it. Who is a partner, an investor or a client on it is written down separately, because that is about the money rather than about who may look.
+export const start = ledgerMutation({
   args: typedIn,
   handler: async (ctx, args) => {
-    const personId = await personSignedInAs(ctx, ctx.identity)
-    if (personId === null) {
-      throw new ConvexError('Ask Nauman to add you before you start a site.')
-    }
-
     const details = checked(siteInput, args)
-    const siteId = await ctx.db.insert('sites', { ...details, hidden: false })
 
-    // Whoever starts a site is a partner on it. Without this the first site anyone makes would be one nobody could open.
-    await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
-
-    return siteId
+    return await ctx.db.insert('sites', { ...details, hidden: false })
   },
 })
 

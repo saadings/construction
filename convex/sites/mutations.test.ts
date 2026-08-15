@@ -65,23 +65,21 @@ async function anAccountFor(ctx: MutationCtx, { withAPerson }: { withAPerson: bo
 }
 
 describe('starting a site', () => {
-  it('makes whoever started it a partner on it', async () => {
-    // Otherwise the first site anyone makes is one nobody can open, and the link would have to be set by hand on a live deployment.
+  it('opens to everybody signed in, and writes no role at all', async () => {
+    // Starting a house says who may look at nothing: everybody signed in already may. Who is a partner, an investor or a client on it is about the money and is written down where the money needs it.
     const t = convexWithSites()
-    const personId = await t.run((ctx) => anAccountFor(ctx, { withAPerson: true }))
+    await t.run((ctx) => anAccountFor(ctx, { withAPerson: false }))
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const siteId = await signedIn.mutation(api.sites.mutations.start, aHouse)
 
     expect(await signedIn.query(api.sites.queries.one, { siteId })).toMatchObject({ name: '1-A, Phase 0' })
-    expect(await signedIn.query(api.sites.queries.mine, {})).toHaveLength(1)
-
-    const held = await t.run((ctx) => ctx.db.query('siteRoles').collect())
-    expect(held).toMatchObject([{ personId, siteId, capacity: 'partner' }])
+    expect(await signedIn.query(api.sites.queries.all, {})).toHaveLength(1)
+    expect(await t.run((ctx) => ctx.db.query('siteRoles').collect())).toEqual([])
   })
 
-  it('writes the site and the role together or not at all', async () => {
-    // If the site landed and the role did not, the result is a house nobody can open and nobody can see, with no screen that could repair it.
+  it('writes a house and whatever went with it together, or not at all', async () => {
+    // A half-written sitting is what three disagreeing workbooks were made of. One transaction, all of it or none.
     const t = convexWithSites()
     const startThenFail = makeFunctionReference<'mutation', Record<string, never>, null>(
       'sites/startProbe:startThenFail'
@@ -109,16 +107,14 @@ describe('starting a site', () => {
     expect(site?.coveredAreaSqft).toBe(5500)
   })
 
-  it('turns away someone whose sign-in is not attached to a person, and writes nothing', async () => {
+  it('lets somebody whose sign-in is attached to nobody start a house', async () => {
+    // This was a dead end: the second person to sign in was told to ask, on a screen nobody had built. There is nothing to be let into now.
     const t = convexWithSites()
     await t.run((ctx) => anAccountFor(ctx, { withAPerson: false }))
 
-    const refusal = await refusalFrom(
-      t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.sites.mutations.start, aHouse)
-    )
+    const siteId = await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.sites.mutations.start, aHouse)
 
-    expect(refusal).toBe('Ask Nauman to add you before you start a site.')
-    expect(await t.run((ctx) => ctx.db.query('sites').collect())).toEqual([])
+    expect(await t.run((ctx) => ctx.db.get('sites', siteId))).toMatchObject({ name: '1-A, Phase 0' })
   })
 
   it('says what is wrong in words, and writes nothing', async () => {
@@ -153,7 +149,7 @@ describe('starting a site', () => {
 })
 
 describe('the sites on the home screen', () => {
-  it('leaves out a site the person is only the client or the investor on', async () => {
+  it('shows a house whatever role anybody holds on it, because it is one set of books', async () => {
     // The same rule the site itself is guarded by. A list that disagreed with the guard would show doors that will not open.
     const t = convexWithSites()
 
@@ -176,9 +172,10 @@ describe('the sites on the home screen', () => {
       }
     })
 
-    const mine = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.sites.queries.mine, {})
+    const listed = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.sites.queries.all, {})
 
-    expect(mine.map((site) => site.name)).toEqual(['1-A, Phase 0'])
+    // All three, whatever role is held on them. `siteRoles` says who the money belongs to and decides nothing about who may look.
+    expect((listed ?? []).map((site) => site.name).sort()).toEqual(['1-A, Phase 0', '12-C, Phase 5', '2-B, Phase 0'])
   })
 
   it('carries one number a site, worked out from the payments on it', async () => {
@@ -224,7 +221,7 @@ describe('the sites on the home screen', () => {
       return { siteId }
     })
 
-    const [row] = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.sites.queries.mine, {})
+    const [row] = (await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.sites.queries.all, {})) ?? []
 
     expect(row?._id).toBe(siteId)
     // 2,570,481 + 1,839,200 from the workbooks. Nowhere to type this, and the removed one is not in it.
@@ -239,7 +236,7 @@ describe('the sites on the home screen', () => {
     const siteId = await signedIn.mutation(api.sites.mutations.start, aHouse)
     await signedIn.mutation(api.sites.mutations.hide, { siteId })
 
-    expect(await signedIn.query(api.sites.queries.mine, {})).toEqual([])
+    expect(await signedIn.query(api.sites.queries.all, {})).toEqual([])
     // Hidden, not gone: the payments on it still point at a site that is there.
     expect(await t.run((ctx) => ctx.db.get('sites', siteId))).toMatchObject({ hidden: true })
   })

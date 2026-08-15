@@ -21,9 +21,9 @@ function Home() {
 }
 
 function HisSites() {
-  const sites = useQuery(api.sites.queries.mine, {})
+  const sites = useQuery(api.sites.queries.all, {})
 
-  if (sites === undefined) {
+  if (sites === undefined || sites === null) {
     return (
       <main className="bg-background text-muted-foreground flex min-h-dvh items-center justify-center p-6">
         <p>Getting your sites…</p>

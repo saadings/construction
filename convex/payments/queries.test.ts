@@ -138,18 +138,23 @@ describe('what a site has cost', () => {
     expect(totals?.byTrade.map((trade) => trade.name)).toContain('Land purchase')
   })
 
-  it('shows nothing at all on a site that is not one of yours', async () => {
+  it('shows every house in the ledger, and nothing for one that is not there', async () => {
     const t = convexWithPayments()
     await t.run(aSiteWithSpending)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
     const elsewhere = await t.run((ctx) =>
       ctx.db.insert('sites', { name: '2-B, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
+    // A house somebody else started, with nothing on it yet: zero rather than nothing at all.
+    expect(await signedIn.query(api.payments.queries.totals, { siteId: elsewhere })).toMatchObject({ spentPaisa: 0 })
+    expect(await signedIn.query(api.payments.queries.forSite, { siteId: elsewhere })).toEqual([])
 
-    expect(
-      await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.payments.queries.totals, { siteId: elsewhere })
-    ).toBeNull()
-    expect(
-      await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.payments.queries.forSite, { siteId: elsewhere })
-    ).toBeNull()
+    const gone = await t.run(async (ctx) => {
+      await ctx.db.delete('sites', elsewhere)
+      return elsewhere
+    })
+    expect(await signedIn.query(api.payments.queries.totals, { siteId: gone })).toBeNull()
+    expect(await signedIn.query(api.payments.queries.forSite, { siteId: gone })).toBeNull()
   })
 })

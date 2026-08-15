@@ -185,30 +185,25 @@ describe('work that was outside the contract', () => {
     expect(kept).toMatchObject({ removed: true, changedByExternalId: SIGNED_IN_AS })
   })
 
-  it('is not reachable on a house the caller is not a partner on', async () => {
+  it('is reachable by anybody signed in, holding no role on the house', async () => {
     const t = convexWithExtraWork()
     const siteId = await t.run(aHouseBuiltForAClient)
 
     await t.run(async (ctx) => {
-      const stranger = await ctx.db.insert('people', { name: 'A stranger', hidden: false })
       await ctx.db.insert('accounts', {
         externalId: 'user_stranger',
-        name: 'A stranger',
-        primaryEmail: 'stranger@example.com',
+        name: 'Another partner',
+        primaryEmail: 'another@example.com',
         otherEmails: [],
-        personId: stranger,
       })
     })
 
-    const refusal = await t
-      .withIdentity({ subject: 'user_stranger' })
-      .mutation(api.extraWork.mutations.raise, { siteId, ...aBill })
-      .then(() => 'nothing was refused', theWordsIn)
+    // One partnership, one set of books: a sign-in with no person and no role raises a bill on any house in it.
+    await t.withIdentity({ subject: 'user_stranger' }).mutation(api.extraWork.mutations.raise, { siteId, ...aBill })
 
-    expect(refusal).toBe('This site is not one of yours.')
-    expect(await t.run((ctx) => ctx.db.query('extraWorkBills').collect())).toEqual([])
-    // The control: the same call from the partner lands, so this is the access check and not a broken mutation.
-    await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.extraWork.mutations.raise, { siteId, ...aBill })
+    expect(await t.run((ctx) => ctx.db.query('extraWorkBills').collect())).toHaveLength(1)
+    // And it is still the door: somebody not signed in at all writes nothing.
+    await expect(t.mutation(api.extraWork.mutations.raise, { siteId, ...aBill })).rejects.toThrow()
     expect(await t.run((ctx) => ctx.db.query('extraWorkBills').collect())).toHaveLength(1)
   })
 })

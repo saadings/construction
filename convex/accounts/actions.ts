@@ -1,7 +1,6 @@
 import type { UserJSON } from '@clerk/backend'
 import { type Validator, v } from 'convex/values'
 
-import { personName } from '../../shared/validation/primitives'
 import { type QueryCtx, internalMutation, query } from '../_generated/server'
 
 export const current = query({
@@ -35,18 +34,8 @@ export const upsert = internalMutation({
       return
     }
 
-    // The cold start: the very first sign-in on a deployment is the person setting it up, so it declares itself, there being nobody to ask.
-
-    // That holds only while the first sign-up really is that person. On a fresh production deployment with sign-up open, it is whoever finds the URL first.
-
-    // So the Clerk allowlist is not a hardening of this design, it is a precondition of it: restrictions.allowlist true, and every partner's address added, before production takes a sign-up.
-
-    // Everyone after arrives unlinked and waits to be joined to a person already in the ledger, because guessing which one would put one partner's money under another's name.
-    const personId = (await anyoneLinkedYet(ctx))
-      ? undefined
-      : await ctx.db.insert('people', { name: whatToCallThem(accountAttributes), hidden: false })
-
-    await ctx.db.insert('accounts', { ...accountAttributes, personId })
+    // No person is made and none is asked for. A sign-in is somebody who may use the ledger; who they are in it -- a partner, an investor, a client -- is written down where the money needs it and nowhere else.
+    await ctx.db.insert('accounts', accountAttributes)
   },
 })
 
@@ -75,24 +64,6 @@ export async function currentAccount(ctx: QueryCtx) {
     return null
   }
   return await accountByExternalId(ctx, identity.subject)
-}
-
-// Clerk's name for someone is not a name this ledger would accept: a one-letter first name with no surname is "A", and a phone-only sign-up is nothing at all.
-
-// So it is parsed by the same rule every other write to `people` is parsed by, and refused rather than stored, because this row is the first partner's own and every role, payment and balance hangs off it.
-function whatToCallThem(account: { name: string; primaryEmail: string }): string {
-  const proposed = account.name === '' ? account.primaryEmail : account.name
-  const parsed = personName.safeParse(proposed)
-
-  // Reads as something to replace, which is the right nudge for a name nobody chose.
-  return parsed.success ? parsed.data : 'Whoever set this up'
-}
-
-// Asked of the deployment rather than of this webhook, so a half-set-up one can still be rescued without anybody editing the database by hand.
-async function anyoneLinkedYet(ctx: QueryCtx): Promise<boolean> {
-  const accounts = await ctx.db.query('accounts').collect()
-
-  return accounts.some((account) => account.personId !== undefined)
 }
 
 async function accountByExternalId(ctx: QueryCtx, externalId: string) {
