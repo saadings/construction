@@ -101,6 +101,37 @@ describe('a day of payments', () => {
     expect(within(alreadyDown).getByText('25,000')).toBeTruthy()
   })
 
+  it('lets every way of paying be found by what is written on it', async () => {
+    // A row of choices inside a `<label>` gives its first button the label's own words as its name: "How paid How paid", which is what a screen reader says and what nothing can find. Cheque is the default and the first of them, so it was the one nobody could reach by name.
+    aSheet()
+
+    for (const how of ['Cheque', 'Cash', 'Transfer', 'Pay order']) {
+      expect(screen.getByRole('radio', { name: how })).toBeTruthy()
+    }
+  })
+
+  it('takes a payment back out of the sitting before any of it goes in', async () => {
+    // Nothing here has been written yet, so this is a row leaving the sitting rather than a payment leaving the ledger. Without it, a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards.
+    const user = userEvent.setup()
+    const { onPutIn } = aSheet()
+
+    await fillOne(user, { amount: '25000' })
+    await user.click(screen.getByRole('button', { name: 'Add another' }))
+    await fillOne(user, { amount: '10000' })
+    await user.click(screen.getByRole('button', { name: 'Add another' }))
+
+    expect(within(screen.getByRole('list')).getByText('25,000')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Take out 25,000 to A mason' }))
+
+    expect(within(screen.getByRole('list')).queryByText('25,000')).toBeNull()
+    // And the total follows it out, because the total is what is in the sitting rather than what was ever typed into it.
+    expect(within(screen.getByRole('banner')).getByText('10,000')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    expect(onPutIn).toHaveBeenCalledWith([expect.objectContaining({ amount: '10,000' })])
+  })
+
   it('asks for a cheque number only for a cheque', async () => {
     const user = userEvent.setup()
     aSheet()

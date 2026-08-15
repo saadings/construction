@@ -4,7 +4,7 @@ import { whatIsWrongWith } from '~shared/validation/payment'
 
 import { cn } from '../../lib/utils'
 import { Button } from '../form/Button'
-import { Field, Line, Lines, Picker } from '../form/Field'
+import { Choices, Field, Line, Lines, Picker } from '../form/Field'
 import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
@@ -90,6 +90,12 @@ export function DaySheet({
     setProblem(null)
   }
 
+  function takeOut(index: number) {
+    setDone((was) => was.filter((_, at) => at !== index))
+    // A sitting that is empty again is not a sitting with a problem in it.
+    setProblem(null)
+  }
+
   function putThemIn() {
     const started = paisaIn(draft) > 0 || draft.tradeId !== ''
     if (started) {
@@ -160,6 +166,16 @@ export function DaySheet({
                     </p>
                   </div>
                   <Figure className="text-brass shrink-0 text-lg">{formatPaisa(paisaIn(each))}</Figure>
+
+                  {/* Nothing here has gone in yet, so this takes a row back out of the sitting rather than out of the ledger. Without it a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards. */}
+                  <button
+                    type="button"
+                    onClick={() => takeOut(index)}
+                    aria-label={`Take out ${formatPaisa(paisaIn(each))} to ${nameOf(people, each.paidToId) ?? each.newPerson}`}
+                    className="text-muted-foreground shrink-0 text-sm"
+                  >
+                    Take out
+                  </button>
                 </li>
               ))}
             </ol>
@@ -221,8 +237,9 @@ export function DaySheet({
             problem={whatIsWrongWith('amount', draft)}
           />
 
-          <Field label="How paid">
-            <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="How paid">
+          {/* `Choices` rather than `Field`: a label points at one control, and the first button inside one takes the label's words as its own name -- so "Cheque" announced itself as "How paid How paid" and could be found by nothing, screen reader included. */}
+          <Choices label="How paid">
+            <div className="grid grid-cols-4 gap-2">
               {HOW_PAID.map((how) => (
                 <button
                   key={how.value}
@@ -241,7 +258,7 @@ export function DaySheet({
                 </button>
               ))}
             </div>
-          </Field>
+          </Choices>
 
           {asksForChequeNumber(draft.method) ? (
             <Field label="Cheque number" problem={whatIsWrongWith('reference', draft)}>

@@ -1,5 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
+import { ConvexError } from 'convex/values'
+import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../convex/_generated/api'
@@ -8,6 +10,7 @@ import { Positions } from '../components/partners/Positions'
 import { Figure, Page } from '../components/shell/Page'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { Billing } from '../components/site/Billing'
+import type { TradeSpend } from '../components/site/SpentByTrade'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 
 export const Route = createFileRoute('/sites/$siteId/')({ component: OneHouse })
@@ -63,7 +66,7 @@ function OneHouse() {
         <Amount label="Land" paisa={totals.plotCostPaisa} />
       </section>
 
-      <SpentByTrade byTrade={totals.byTrade} />
+      <WhatItWentOn siteId={forSite.siteId} byTrade={totals.byTrade} />
 
       {/* The one thing deciding whether a house shows billing or a sale. A house built for the partners has no client to bill. */}
       {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
@@ -112,6 +115,50 @@ function Amount({ label, paisa, big = false }: { label: string; paisa: number; b
         {formatPaisa(paisa)}
       </Figure>
     </div>
+  )
+}
+
+// The payments behind one figure, asked for only once somebody opens it: a house has trades nobody is looking at, and reading all of them to show one is a page that gets slower the longer the house runs.
+function WhatItWentOn({ siteId, byTrade }: { siteId: Id<'sites'>; byTrade: Array<TradeSpend> }) {
+  const [opened, setOpened] = useState<string | null>(null)
+  const [takingOut, setTakingOut] = useState<string | null>(null)
+  const [refusal, setRefusal] = useState<string | null>(null)
+
+  const went = useQuery(
+    api.payments.queries.onTrade,
+    opened === null ? 'skip' : { siteId, tradeId: opened as Id<'trades'> }
+  )
+  const remove = useMutation(api.payments.mutations.remove)
+
+  return (
+    <SpentByTrade
+      byTrade={byTrade}
+      onOpen={(tradeId) => {
+        setOpened(tradeId)
+        setRefusal(null)
+      }}
+      // Handed over as it came: `undefined` is a reading on its way, `null` is an answer. Flattening them is what leaves a screen watching for something that is not coming.
+      opened={opened === null ? null : { tradeId: opened, went }}
+      takingOut={takingOut}
+      refusal={refusal}
+      onTakeOut={async (paymentId) => {
+        setTakingOut(paymentId)
+        setRefusal(null)
+
+        try {
+          await remove({ siteId, paymentId: paymentId as Id<'payments'> })
+
+          return true
+        } catch (thrown) {
+          // The sentence the server refused with, which is written for him. A removal that quietly does nothing is the worst of both: the figure stays and nobody is told why.
+          setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not come out. Try once more.')
+
+          return false
+        } finally {
+          setTakingOut(null)
+        }
+      }}
+    />
   )
 }
 
