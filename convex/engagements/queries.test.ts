@@ -19,7 +19,11 @@ function convexWithEngagements() {
   })
 }
 
+// Two engagements, because one proves nothing: with a single person on a single trade, a query that ignores who and what entirely gives the right answer.
+
 // A mason on civil labour: agreed 300,000, billed 340,000 once extra work landed, paid 325,000 so far.
+
+// A steel supplier on steel: agreed 500,000, billed 520,000, paid 480,000. Every figure differs from the mason's, so a row carrying the other's would be wrong rather than coincidentally right.
 
 // Invented from the first line. The shape is the workbooks'; none of the names or figures are.
 async function aSiteWithAMasonOnIt(ctx: MutationCtx) {
@@ -78,7 +82,58 @@ async function aSiteWithAMasonOnIt(ctx: MutationCtx) {
     addedByExternalId: SIGNED_IN_AS,
   })
 
-  return { siteId, mason, tradeId, partner }
+  const supplier = await ctx.db.insert('people', { name: 'A steel supplier', hidden: false })
+  const steelTradeId = await ctx.db.insert('trades', {
+    name: 'Steel',
+    countsAsBuildingCost: true,
+    position: 2,
+    hidden: false,
+  })
+
+  await ctx.db.insert('engagements', {
+    siteId,
+    personId: supplier,
+    tradeId: steelTradeId,
+    agreedPaisa: 50_000_000,
+    hidden: false,
+  })
+
+  for (const [day, rupees] of [
+    ['2025-09-10', 300_000],
+    ['2025-10-08', 220_000],
+  ] as const) {
+    await ctx.db.insert('bills', {
+      siteId,
+      personId: supplier,
+      tradeId: steelTradeId,
+      day,
+      amountPaisa: rupees * 100,
+      removed: false,
+      addedByExternalId: SIGNED_IN_AS,
+    })
+  }
+
+  await ctx.db.insert('payments', {
+    siteId,
+    tradeId: steelTradeId,
+    paidToId: supplier,
+    paidById: partner,
+    day: '2025-10-12',
+    amountPaisa: 48_000_000,
+    method: 'transfer',
+    isExtraWork: false,
+    removed: false,
+    addedByExternalId: SIGNED_IN_AS,
+  })
+
+  return { siteId, mason, tradeId, partner, supplier, steelTradeId }
+}
+
+type Spread = { personName: string; agreedPaisa?: number; billedPaisa: number; paidPaisa: number }
+
+// Named rather than taken by position, because a test that reads `spread[0]` passes when two rows swap and says nothing about which one it read.
+function rowFor(spread: Array<Spread> | null, name: string): Spread | undefined {
+  return (spread ?? []).find((row) => row.personName === name)
 }
 
 describe('agreed, billed and paid', () => {
@@ -88,8 +143,8 @@ describe('agreed, billed and paid', () => {
 
     const spread = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })
 
-    expect(spread).toHaveLength(1)
-    const [only] = spread ?? []
+    expect(spread).toHaveLength(2)
+    const only = rowFor(spread, 'A mason')
     expect(only?.personName).toBe('A mason')
     // 300,000 agreed. 340,000 billed once extra work landed. 325,000 paid so far.
     expect(only?.agreedPaisa).toBe(30_000_000)
@@ -103,13 +158,110 @@ describe('agreed, billed and paid', () => {
     const { siteId } = await t.run(aSiteWithAMasonOnIt)
 
     const spread = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })
-    const [only] = spread ?? []
+    const only = rowFor(spread, 'A mason')
 
     expect(new Set([only?.agreedPaisa, only?.billedPaisa, only?.paidPaisa]).size).toBe(3)
     // Due to extra work or redoing, in the words of the variance sheet.
     expect((only?.billedPaisa ?? 0) - (only?.agreedPaisa ?? 0)).toBe(4_000_000)
     // And what is still owed on it.
     expect((only?.billedPaisa ?? 0) - (only?.paidPaisa ?? 0)).toBe(1_500_000)
+  })
+
+  it('gives each engagement only its own bills and payments', async () => {
+    // The one thing this query must never do. A mason's balance carrying the steel supplier's bills is the worst answer it can give, and with one engagement in the fixture a query ignoring who and what entirely would have looked perfect.
+    const t = convexWithEngagements()
+    const { siteId } = await t.run(aSiteWithAMasonOnIt)
+
+    const spread = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })
+
+    expect(rowFor(spread, 'A mason')).toMatchObject({
+      agreedPaisa: 30_000_000,
+      billedPaisa: 34_000_000,
+      paidPaisa: 32_500_000,
+    })
+    expect(rowFor(spread, 'A steel supplier')).toMatchObject({
+      agreedPaisa: 50_000_000,
+      billedPaisa: 52_000_000,
+      paidPaisa: 48_000_000,
+    })
+
+    // And neither row is the whole site: the two together are what a query that stopped telling them apart would put on both.
+    const everyBill = 34_000_000 + 52_000_000
+    for (const row of spread ?? []) {
+      expect(row.billedPaisa).not.toBe(everyBill)
+    }
+  })
+
+  it('tells two engagements apart by the trade as well as the person', async () => {
+    // The same man on two trades is ordinary -- a mason who also supplies sand -- and matching on the person alone puts one trade's bills on the other.
+    const t = convexWithEngagements()
+    const { siteId } = await t.run(async (ctx) => {
+      const set = await aSiteWithAMasonOnIt(ctx)
+
+      const sand = await ctx.db.insert('trades', {
+        name: 'Sand',
+        countsAsBuildingCost: true,
+        position: 3,
+        hidden: false,
+      })
+      await ctx.db.insert('engagements', {
+        siteId: set.siteId,
+        personId: set.mason,
+        tradeId: sand,
+        agreedPaisa: 8_000_000,
+        hidden: false,
+      })
+      await ctx.db.insert('bills', {
+        siteId: set.siteId,
+        personId: set.mason,
+        tradeId: sand,
+        day: '2025-10-20',
+        amountPaisa: 7_500_000,
+        removed: false,
+        addedByExternalId: SIGNED_IN_AS,
+      })
+
+      return set
+    })
+
+    const spread = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })
+    const hisTwo = (spread ?? []).filter((row) => row.personName === 'A mason')
+
+    expect(hisTwo.map((row) => row.billedPaisa).sort((one, other) => one - other)).toEqual([7_500_000, 34_000_000])
+  })
+
+  it('tells two people on one trade apart', async () => {
+    // Two masons on civil labour is ordinary, and matching on the trade alone puts one man's bills on the other -- which is the same mistake as matching on the person alone, wearing the other hat.
+    const t = convexWithEngagements()
+    const { siteId } = await t.run(async (ctx) => {
+      const set = await aSiteWithAMasonOnIt(ctx)
+
+      const second = await ctx.db.insert('people', { name: 'Another mason', hidden: false })
+      await ctx.db.insert('engagements', {
+        siteId: set.siteId,
+        personId: second,
+        tradeId: set.tradeId,
+        agreedPaisa: 12_000_000,
+        hidden: false,
+      })
+      await ctx.db.insert('bills', {
+        siteId: set.siteId,
+        personId: second,
+        tradeId: set.tradeId,
+        day: '2025-10-22',
+        amountPaisa: 11_000_000,
+        removed: false,
+        addedByExternalId: SIGNED_IN_AS,
+      })
+
+      return set
+    })
+
+    const spread = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })
+
+    // Both are on the same trade, and neither has picked up the other's bill.
+    expect(rowFor(spread, 'A mason')?.billedPaisa).toBe(34_000_000)
+    expect(rowFor(spread, 'Another mason')?.billedPaisa).toBe(11_000_000)
   })
 
   it('leaves out a bill that was taken back out', async () => {
@@ -124,8 +276,10 @@ describe('agreed, billed and paid', () => {
       return set
     })
 
-    const [only] =
-      (await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })) ?? []
+    const only = rowFor(
+      await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId }),
+      'A mason'
+    )
 
     expect(only?.billedPaisa).toBe(30_000_000)
     // Agreed and paid are untouched by it, which is what having three separate figures buys.
@@ -208,8 +362,10 @@ describe('raising a bill', () => {
       })
     })
 
-    const [only] =
-      (await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId })) ?? []
+    const only = rowFor(
+      await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.engagements.queries.spread, { siteId }),
+      'A mason'
+    )
 
     // Paid moved; billed did not. A payment settles the balance, never a bill.
     expect(only?.paidPaisa).toBe(33_500_000)
