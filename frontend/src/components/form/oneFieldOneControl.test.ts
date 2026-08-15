@@ -1,21 +1,11 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
+
+import { everyScreen } from '../../testing/screens'
 
 // `Field` renders a `<label>`, and a label points at one control: the first labelable thing inside it takes the label's words as its own name. So a row of choices inside a `Field` announces its first choice as the field's own label -- "Ours to sell" read out as "Whose house", "Cheque" read out as "How paid How paid".
 
-// Found in four places by four different accidents, and `Choices` exists to fix it. Nothing obliged anybody to use it, which is a rule living in a comment. Read relative to itself, because the commit gate runs this in a throwaway checkout that is not a git repository.
-const SOURCE = join(dirname(new URL(import.meta.url).pathname), '..', '..')
-
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') && !path.endsWith('.test.tsx') ? [path] : []
-  })
-}
+// Found in four places by four different accidents, and `Choices` exists to fix it. Nothing obliged anybody to use it, which is a rule living in a comment.
 
 /** Everything a `<label>` would try to name, which is every element a person can put an answer into. */
 const A_CONTROL = /<(Line|Lines|Picker|MoneyLine|input|select|textarea|button)\b/g
@@ -55,10 +45,7 @@ export function whatIsWrongWithTheField(block: string): string | null {
 }
 
 describe('what one Field is allowed to hold', () => {
-  const screens = screenFiles(SOURCE).map((path) => ({
-    path: path.split('/src/')[1],
-    source: readFileSync(path, 'utf8'),
-  }))
+  const screens = everyScreen()
 
   const fields = screens.flatMap(({ path, source }) => fieldsIn(source).map((block) => ({ path, block })))
 
