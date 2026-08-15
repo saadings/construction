@@ -10,6 +10,8 @@ import { milestonesSchema } from './milestones/schema'
 import { moneyInSchema } from './moneyIn/schema'
 import { paymentsSchema } from './payments/schema'
 import { peopleSchema } from './people/schema'
+import { profitPayoutsSchema } from './profitPayouts/schema'
+import { profitSharesSchema } from './profitShares/schema'
 import { siteRolesSchema } from './siteRoles/schema'
 import { sitesSchema } from './sites/schema'
 import { tradesSchema } from './trades/schema'
@@ -26,6 +28,8 @@ export default defineSchema({
   moneyIn: moneyInSchema,
   payments: paymentsSchema,
   people: peopleSchema,
+  profitPayouts: profitPayoutsSchema,
+  profitShares: profitSharesSchema,
   siteRoles: siteRolesSchema,
   sites: sitesSchema,
   trades: tradesSchema,
