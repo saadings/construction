@@ -83,7 +83,6 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
 
 /** A reading no screen opens. The same rule as above and the same instruction: lower this list, and never add to it without saying why in a review. */
 const NOBODY_CAN_OPEN_YET: Record<string, string> = {
-  'moneyIn.totals': 'the house page adds up what came in from the rows rather than asking for a total',
   'owed.position':
     'what everybody is owed across every house -- the market payables register, which has no screen of its own',
 }

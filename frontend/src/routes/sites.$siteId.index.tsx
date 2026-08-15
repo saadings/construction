@@ -6,6 +6,7 @@ import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { WhatHasComeIn } from '../components/moneyIn/WhatHasComeIn'
 import { Positions } from '../components/partners/Positions'
 import { Figure, Page } from '../components/shell/Page'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
@@ -25,6 +26,8 @@ function OneHouse() {
 
   const site = useQuery(api.sites.queries.one, forSite)
   const totals = useQuery(api.payments.queries.totals, forSite)
+  // Asked for rather than added up from the rows: a total worked out on the screen disagrees with the one every other reading uses the moment a receipt is taken back out.
+  const comeIn = useQuery(api.moneyIn.queries.totals, forSite)
   const edit = useMutation(api.sites.mutations.edit)
   const putAway = useMutation(api.sites.mutations.hide)
   const router = useRouter()
@@ -72,6 +75,8 @@ function OneHouse() {
         <Amount label="Building" paisa={totals.buildingCostPaisa} />
         <Amount label="Land" paisa={totals.plotCostPaisa} />
       </section>
+
+      <WhatHasComeIn siteId={siteId} totals={comeIn} />
 
       <WhatItWentOn siteId={forSite.siteId} byTrade={totals.byTrade} />
 
