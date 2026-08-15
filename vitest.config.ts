@@ -27,7 +27,14 @@ export default defineConfig(({ mode }) => {
         { test: { ...shared, name: 'convex', include: ['convex/**/*.test.ts'], environment: 'edge-runtime' } },
         {
           resolve,
-          test: { ...shared, name: 'frontend', include: ['frontend/**/*.test.{ts,tsx}'], environment: 'jsdom' },
+          test: {
+            ...shared,
+            name: 'frontend',
+            include: ['frontend/**/*.test.{ts,tsx}'],
+            environment: 'jsdom',
+            // What jsdom does not implement and shadcn's components ask for. Given to every jsdom test rather than to the one that noticed it.
+            setupFiles: ['./frontend/src/testing/jsdom.ts'],
+          },
         },
         // Plain node: this half runs on both sides, so it must not depend on anything either runtime provides.
         { test: { ...shared, name: 'shared', include: ['shared/**/*.test.ts'], environment: 'node' } },

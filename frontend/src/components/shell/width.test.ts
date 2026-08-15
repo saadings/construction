@@ -68,23 +68,20 @@ describe('the width a screen is allowed to take', () => {
   })
 })
 
-describe('the room the bar along the bottom of a phone takes', () => {
-  it('is written once, and read by everything sitting above it', () => {
-    // A flat guess at another element's height drifts the moment that element gains a row -- and it was already 15px wrong on an iPhone, where the bar carries the home indicator's inset as well.
-    const styles = readFileSync('frontend/src/styles.css', 'utf8')
+describe('room left for something else on the screen', () => {
+  // The bar along the bottom is gone with the shell, and `--phone-bar` goes with its last reader in the change straight after the day sheet's combobox. What does not go is the rule the variable existed to keep.
 
-    expect(styles).toContain('--phone-bar:')
-    expect(styles).toMatch(/--phone-bar:[^;]*env\(safe-area-inset-bottom\)/)
-
+  it("is never a flat guess at another element's height", () => {
+    // `bottom-20` was 15px behind the bar on an iPhone, because a guess cannot know about the home indicator's inset. Anything clearing something else reads that thing rather than estimating it.
     const guessing = SOURCE.filter((file) => /(bottom|pb)-\[?(20|24|16)\b/.test(file.text)).map((file) => file.path)
+
     expect(guessing).toEqual([])
   })
 
-  it('is read by the screens that sit above it, rather than by nobody', () => {
-    // The control: the check above passes just as well against screens that clear nothing at all.
-    const reading = SOURCE.filter((file) => file.text.includes('var(--phone-bar)')).map((file) => file.path)
-
-    expect(reading.length).toBeGreaterThanOrEqual(3)
+  it('is looking at the screens, rather than at an empty list', () => {
+    // The floor: a sweep that stopped finding files reports the same clean answer as a tree with nothing wrong in it.
+    expect(SOURCE.length).toBeGreaterThan(20)
+    expect(SOURCE.map((file) => file.path)).toContain('frontend/src/components/daySheet/DaySheet.tsx')
   })
 })
 

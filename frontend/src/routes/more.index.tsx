@@ -1,4 +1,3 @@
-import { useUser } from '@clerk/tanstack-react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 
@@ -24,8 +23,6 @@ function More() {
   const trades = useQuery(api.trades.queries.list, {})
   const accounts = useQuery(api.bankAccounts.queries.list, {})
   const { chosen } = useHowItLooks()
-  // Whatever Clerk knows him as. Nothing about who he is lives in this repository, so the row says what the account says and nothing is written down.
-  const { user } = useUser()
 
   const places: Array<WhereToGo> = [
     {
@@ -51,12 +48,6 @@ function More() {
       name: 'How it looks',
       what: 'Light, dark, or whatever the phone is doing.',
       now: whatItLooksLike(chosen),
-    },
-    {
-      to: '/more/your-sign-in',
-      name: 'Your sign-in',
-      what: 'The account you are signed in as, and the way out.',
-      now: user?.primaryEmailAddress?.emailAddress ?? '',
     },
   ]
 

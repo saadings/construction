@@ -3,8 +3,6 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { ON_THE_PHONE } from './destinations'
-
 // The sign-in was fixed to the top right corner of one route. On a desk that is where the Sites screen puts its own button, so Nauman opened the app wider than a phone and found the avatar sitting on top of it -- and every screenshot anybody had taken was of a phone, where the wide button is hidden and the round one is at the bottom.
 
 // The overlap was the visible half. The other half is that no other screen had it at all: signing out existed on one screen out of nine, and the tree agreed with itself because nothing asked.
@@ -29,14 +27,15 @@ const SOURCE = everySourceFile(FRONTEND).map((path) => ({ path, text: readFileSy
 const routes = SOURCE.filter((file) => file.path.startsWith(join(FRONTEND, 'routes')))
 const holding = (what: RegExp) => SOURCE.filter((file) => what.test(file.text)).map((file) => file.path)
 
-// The two places chrome is allowed to be. Everywhere else is a page drawing over its own content.
+// The one place chrome is allowed to be. Everywhere else is a page drawing over its own content.
+
+// It was two until the sidebar landed: a phone had no chrome to carry it, so a screen under More did. The sheet carries it now, so the same footer answers every width and the screen that stood in for it is gone.
 const THE_SHELL = join(FRONTEND, 'components', 'shell', 'Shell.tsx')
-const ON_A_PHONE = join(FRONTEND, 'components', 'settings', 'YourSignIn.tsx')
 
 describe('where the chrome is allowed to live', () => {
   it('is the shell, and never a route', () => {
     // Swept rather than checked in the one corner it picked: a route pinning it bottom-left instead would be the same defect and would pass a check written about `top-5 right-5`.
-    expect(holding(/<UserButton/).sort()).toEqual([ON_A_PHONE, THE_SHELL])
+    expect(holding(/<UserButton/)).toEqual([THE_SHELL])
   })
 
   it('is not pinned over the page by anybody at all', () => {
@@ -66,17 +65,25 @@ describe('signing out', () => {
 
   // Deliberately absent: what the bands are is changing. The shell is being replaced with shadcn's Sidebar, the bar along the bottom goes, and navigation on a phone moves to the top corner -- so a guard naming three bands and reading each one out of the shape that carries it would be written to be deleted. A gap somebody knows about is better than a guard that has to be believed and then removed.
 
-  it('is reachable on a phone as a path, which is a different fact from being on the screen', () => {
-    // On a desk the sign-in is on the screen. On a phone it is somewhere you get to, and the path has three parts: the bottom bar offers More, More's menu carries a row for it, and the row leads to a route that exists. Any one alone is a guard that passes with a screen nobody can reach.
-    expect(ON_THE_PHONE.map((destination) => destination.to)).toContain('/more')
+  it('is in the footer, which is the one part of the shell every width shows', () => {
+    // The whole of it now: the column has a footer and the sheet is the same component, so there is no second answer for a phone and nothing to keep in step.
+    const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
+    const footer = shell.slice(shell.indexOf('<SidebarFooter'), shell.indexOf('</SidebarFooter>'))
 
-    const menu = SOURCE.find((file) => file.path === join(FRONTEND, 'routes', 'more.index.tsx'))?.text ?? ''
-    expect(menu).toContain("to: '/more/your-sign-in'")
+    // The locate is the assertion: `indexOf` answers -1 for a footer that is gone, and a slice from -1 is not empty -- it is the tail of the file, which contains everything.
+    expect(shell).toContain('<SidebarFooter')
+    expect(shell.indexOf('<SidebarFooter')).toBeGreaterThan(0)
+    expect(shell.indexOf('</SidebarFooter>')).toBeGreaterThan(shell.indexOf('<SidebarFooter'))
 
-    // And the route that row names is a file, or the row is a tab that goes nowhere in a new place.
-    expect(SOURCE.map((file) => file.path)).toContain(join(FRONTEND, 'routes', 'more.your-sign-in.tsx'))
-    expect(SOURCE.find((file) => file.path === join(FRONTEND, 'routes', 'more.your-sign-in.tsx'))?.text).toContain(
-      'YourSignIn'
+    expect(footer).toContain('<UserButton')
+  })
+
+  it('has nothing left over from when a phone had no chrome to carry it', () => {
+    // A screen and a menu row that existed only because the bar along the bottom held four and had four. Left behind they would be a second way to one thing, drifting from the first.
+    expect(SOURCE.map((file) => file.path)).not.toContain(join(FRONTEND, 'routes', 'more.your-sign-in.tsx'))
+    expect(SOURCE.map((file) => file.path)).not.toContain(join(FRONTEND, 'components', 'settings', 'YourSignIn.tsx'))
+    expect(SOURCE.find((file) => file.path === join(FRONTEND, 'routes', 'more.index.tsx'))?.text).not.toContain(
+      'your-sign-in'
     )
   })
 
@@ -85,8 +92,8 @@ describe('signing out', () => {
     const menu = SOURCE.find((file) => file.path === join(FRONTEND, 'routes', 'more.index.tsx'))?.text ?? ''
     const named = [...menu.matchAll(/to: '(\/more\/[\w-]+)'/g)].map((found) => found[1])
 
-    // The floor: five rows are drawn, so five are read. A regex that stopped matching would report a clean answer about nothing.
-    expect(named.length).toBe(5)
+    // The floor: four rows are drawn, so four are read. A regex that stopped matching would report a clean answer about nothing.
+    expect(named.length).toBe(4)
 
     for (const to of named) {
       const file = join(FRONTEND, 'routes', `more.${to.replace('/more/', '')}.tsx`)

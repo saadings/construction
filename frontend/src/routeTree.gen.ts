@@ -16,7 +16,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MoreIndexRouteImport } from './routes/more.index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
 import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
-import { Route as MoreYourSignInRouteImport } from './routes/more.your-sign-in'
 import { Route as MoreWhoCanSignInRouteImport } from './routes/more.who-can-sign-in'
 import { Route as MoreWhichAccountRouteImport } from './routes/more.which-account'
 import { Route as MoreWhatForRouteImport } from './routes/more.what-for'
@@ -60,11 +59,6 @@ const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
   id: '/$personId',
   path: '/$personId',
   getParentRoute: () => PeopleRoute,
-} as any)
-const MoreYourSignInRoute = MoreYourSignInRouteImport.update({
-  id: '/your-sign-in',
-  path: '/your-sign-in',
-  getParentRoute: () => MoreRoute,
 } as any)
 const MoreWhoCanSignInRoute = MoreWhoCanSignInRouteImport.update({
   id: '/who-can-sign-in',
@@ -116,7 +110,6 @@ export interface FileRoutesByFullPath {
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
   '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
-  '/more/your-sign-in': typeof MoreYourSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
   '/more/': typeof MoreIndexRoute
@@ -133,7 +126,6 @@ export interface FileRoutesByTo {
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
   '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
-  '/more/your-sign-in': typeof MoreYourSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
   '/more': typeof MoreIndexRoute
@@ -152,7 +144,6 @@ export interface FileRoutesById {
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
   '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
-  '/more/your-sign-in': typeof MoreYourSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
   '/more/': typeof MoreIndexRoute
@@ -172,7 +163,6 @@ export interface FileRouteTypes {
     | '/more/what-for'
     | '/more/which-account'
     | '/more/who-can-sign-in'
-    | '/more/your-sign-in'
     | '/people/$personId'
     | '/sites/new'
     | '/more/'
@@ -189,7 +179,6 @@ export interface FileRouteTypes {
     | '/more/what-for'
     | '/more/which-account'
     | '/more/who-can-sign-in'
-    | '/more/your-sign-in'
     | '/people/$personId'
     | '/sites/new'
     | '/more'
@@ -207,7 +196,6 @@ export interface FileRouteTypes {
     | '/more/what-for'
     | '/more/which-account'
     | '/more/who-can-sign-in'
-    | '/more/your-sign-in'
     | '/people/$personId'
     | '/sites/new'
     | '/more/'
@@ -280,13 +268,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PeoplePersonIdRouteImport
       parentRoute: typeof PeopleRoute
     }
-    '/more/your-sign-in': {
-      id: '/more/your-sign-in'
-      path: '/your-sign-in'
-      fullPath: '/more/your-sign-in'
-      preLoaderRoute: typeof MoreYourSignInRouteImport
-      parentRoute: typeof MoreRoute
-    }
     '/more/who-can-sign-in': {
       id: '/more/who-can-sign-in'
       path: '/who-can-sign-in'
@@ -351,7 +332,6 @@ interface MoreRouteChildren {
   MoreWhatForRoute: typeof MoreWhatForRoute
   MoreWhichAccountRoute: typeof MoreWhichAccountRoute
   MoreWhoCanSignInRoute: typeof MoreWhoCanSignInRoute
-  MoreYourSignInRoute: typeof MoreYourSignInRoute
   MoreIndexRoute: typeof MoreIndexRoute
 }
 
@@ -360,7 +340,6 @@ const MoreRouteChildren: MoreRouteChildren = {
   MoreWhatForRoute: MoreWhatForRoute,
   MoreWhichAccountRoute: MoreWhichAccountRoute,
   MoreWhoCanSignInRoute: MoreWhoCanSignInRoute,
-  MoreYourSignInRoute: MoreYourSignInRoute,
   MoreIndexRoute: MoreIndexRoute,
 }
 
