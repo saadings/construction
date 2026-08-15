@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { ConvexError } from 'convex/values'
 import { useState } from 'react'
@@ -12,6 +12,9 @@ import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { Billing } from '../components/site/Billing'
 import type { TradeSpend } from '../components/site/SpentByTrade'
 import { SpentByTrade } from '../components/site/SpentByTrade'
+import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
+import type { Stage } from '../components/sites/HouseDetails'
+import { STAGES } from '../components/sites/HouseDetails'
 
 export const Route = createFileRoute('/sites/$siteId/')({ component: OneHouse })
 
@@ -21,6 +24,9 @@ function OneHouse() {
 
   const site = useQuery(api.sites.queries.one, forSite)
   const totals = useQuery(api.payments.queries.totals, forSite)
+  const edit = useMutation(api.sites.mutations.edit)
+  const putAway = useMutation(api.sites.mutations.hide)
+  const router = useRouter()
 
   if (site === undefined || totals === undefined) {
     return <OneHouseWaiting />
@@ -72,6 +78,25 @@ function OneHouse() {
       {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
 
       <WhatThePartnersAreOwed siteId={forSite.siteId} />
+
+      <ChangeTheHouse
+        house={{
+          name: site.name,
+          // Held as it is typed, because that is what the box takes back.
+          coveredAreaSqft: site.coveredAreaSqft === undefined ? '' : site.coveredAreaSqft.toLocaleString('en-US'),
+          // Looked up in the list the picker is drawn from, so a stage the app does not know cannot reach it.
+          stage: STAGES.find((each) => each.value === site.stage)?.value ?? ('building' as Stage),
+          builtForAClient: site.builtForAClient,
+        }}
+        onSave={async (corrected) => {
+          await edit({ siteId: forSite.siteId, ...corrected })
+        }}
+        onPutAway={async () => {
+          await putAway(forSite)
+          // Back to the houses, because the one being looked at is no longer on the list.
+          await router.navigate({ to: '/' })
+        }}
+      />
     </Page>
   )
 }

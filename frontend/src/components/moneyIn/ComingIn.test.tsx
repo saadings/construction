@@ -22,6 +22,7 @@ const ALREADY: Array<Received> = [
 
 function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
   const onPutIn = vi.fn<(receipt: NewReceipt) => Promise<boolean>>(() => Promise.resolve(true))
+  const onTakeBack = vi.fn<(moneyInId: string) => Promise<void>>(() => Promise.resolve())
 
   const root = createRootRoute({
     component: () => (
@@ -33,6 +34,7 @@ function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
         saving={false}
         refusal={null}
         onPutIn={onPutIn}
+        onTakeBack={onTakeBack}
         {...over}
       />
     ),
@@ -41,7 +43,7 @@ function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
 
   render(<RouterProvider router={router} />)
 
-  return { onPutIn }
+  return { onPutIn, onTakeBack }
 }
 
 describe('money coming in', () => {
@@ -189,5 +191,42 @@ describe('money coming in', () => {
     await screen.findAllByRole('listitem')
 
     expect(document.body.textContent).not.toMatch(/record|entity|paisa|query|database|partnerMoney|clientPayment/i)
+  })
+})
+
+describe('taking money coming in back out', () => {
+  it('takes back the one it was asked about', async () => {
+    // Money going out could be taken back from the first day and money coming in could not. A partner's capital entered wrong was permanent, and capital is what the whole profit split is worked out from.
+    const { onTakeBack } = renderWith()
+    // Waited for by the buttons rather than by a name: a person is in the picker as well as in the list, and there are two of every name on this screen.
+    const takingBack = await screen.findAllByRole('button', { name: 'Take it back' })
+
+    fireEvent.click(takingBack[1])
+
+    await waitFor(() => {
+      expect(onTakeBack).toHaveBeenCalledWith('m2')
+    })
+  })
+
+  it('says what the server said rather than turning the word back and doing nothing', async () => {
+    const onTakeBack = vi.fn<(moneyInId: string) => Promise<void>>(() =>
+      Promise.reject({ data: 'That money is not on this site.' })
+    )
+    renderWith({ onTakeBack })
+    const takingBack = await screen.findAllByRole('button', { name: 'Take it back' })
+
+    fireEvent.click(takingBack[0])
+
+    expect((await screen.findByRole('alert')).textContent).toBe('That money is not on this site.')
+  })
+
+  it('offers it against every receipt, and none when nothing has come in', async () => {
+    renderWith()
+    expect(await screen.findAllByRole('button', { name: 'Take it back' })).toHaveLength(2)
+
+    cleanup()
+    renderWith({ received: [] })
+    await screen.findByText(/Nothing has come in on this house yet/)
+    expect(screen.queryByRole('button', { name: 'Take it back' })).toBeNull()
   })
 })

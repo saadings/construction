@@ -14,13 +14,15 @@ const EVERYONE: Array<PersonRow> = [
 ]
 
 // The screen carries no links, but it is rendered where it really lives so a router-only failure cannot hide here.
-function renderWith(people: Array<PersonRow> | null | undefined, onAdd = vi.fn(), onHide = vi.fn()) {
-  const root = createRootRoute({ component: () => <People people={people} onAdd={onAdd} onHide={onHide} /> })
+function renderWith(people: Array<PersonRow> | null | undefined, onAdd = vi.fn(), onHide = vi.fn(), onEdit = vi.fn()) {
+  const root = createRootRoute({
+    component: () => <People people={people} onAdd={onAdd} onEdit={onEdit} onHide={onHide} />,
+  })
   const router = createRouter({ routeTree: root, history: createMemoryHistory({ initialEntries: ['/'] }) })
 
   render(<RouterProvider router={router} />)
 
-  return { onAdd, onHide }
+  return { onAdd, onEdit, onHide }
 }
 
 describe('the people in the ledger', () => {
@@ -138,11 +140,60 @@ describe('the people in the ledger', () => {
     const { onHide } = renderWith(EVERYONE, vi.fn(), vi.fn().mockResolvedValue(undefined))
 
     const rows = await screen.findAllByRole('listitem')
-    fireEvent.click(within(rows[1]).getByRole('button', { name: 'Take off the list' }))
+    fireEvent.click(within(rows[1]).getByRole('button', { name: 'Change' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Take off the list' }))
 
     await waitFor(() => {
       expect(onHide).toHaveBeenCalledWith('p2')
     })
+  })
+
+  it('corrects a name that was typed wrong, which nothing else could', async () => {
+    // A name typed wrong was permanent, and two people cannot share a name any more, so there was no working around it by adding the right one.
+    const { onEdit } = renderWith(EVERYONE, vi.fn(), vi.fn(), vi.fn().mockResolvedValue(undefined))
+
+    const rows = await screen.findAllByRole('listitem')
+    fireEvent.click(within(rows[0]).getByRole('button', { name: 'Change' }))
+    fireEvent.change(screen.getByLabelText('What A mason is called'), { target: { value: 'A senior mason' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    await waitFor(() => {
+      expect(onEdit).toHaveBeenCalledWith('p1', {
+        name: 'A senior mason',
+        phone: '0300-0000000',
+        notes: 'Civil labour, lump sum',
+      })
+    })
+  })
+
+  it('gives back what was there when a correction is abandoned', async () => {
+    const { onEdit } = renderWith(EVERYONE)
+
+    const rows = await screen.findAllByRole('listitem')
+    fireEvent.click(within(rows[0]).getByRole('button', { name: 'Change' }))
+    fireEvent.change(screen.getByLabelText('What A mason is called'), { target: { value: 'Somebody else' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Never mind' }))
+
+    expect(screen.getAllByRole('listitem')[0].textContent).toContain('A mason')
+    expect(onEdit).not.toHaveBeenCalled()
+  })
+
+  it('says what the server said, and keeps what was being corrected', async () => {
+    const { onEdit } = renderWith(
+      EVERYONE,
+      vi.fn(),
+      vi.fn(),
+      vi.fn().mockRejectedValue({ data: 'There is already somebody called A steel supplier.' })
+    )
+
+    const rows = await screen.findAllByRole('listitem')
+    fireEvent.click(within(rows[0]).getByRole('button', { name: 'Change' }))
+    fireEvent.change(screen.getByLabelText('What A mason is called'), { target: { value: 'A steel supplier' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe('There is already somebody called A steel supplier.')
+    expect(screen.getByLabelText<HTMLInputElement>('What A mason is called').value).toBe('A steel supplier')
+    expect(onEdit).toHaveBeenCalled()
   })
 
   it('says nothing technical anywhere on it', async () => {
