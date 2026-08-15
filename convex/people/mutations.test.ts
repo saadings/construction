@@ -72,7 +72,7 @@ describe('adding someone the business deals with', () => {
     expect(refusal).toContain('name of the person or shop')
     // Only the partner set up above is there. Nothing was written for the name that was refused.
     expect((await t.run((ctx) => ctx.db.query('people').collect())).map((person) => person.name)).toEqual([
-      'Nauman Saeed',
+      'The partner',
     ])
   })
 
