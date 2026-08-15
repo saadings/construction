@@ -268,29 +268,37 @@ describe('the shape of the deploy workflow', () => {
   }
 
   it('gives the scenario suite the history it asks about', () => {
-    const test = job('test')
+    const checks = job('checks')
 
     // The control: this really is the job running the suite that reads git history.
-    expect(test.runs.join('\n')).toContain('yarn test:scenario')
+    expect(checks.runs.join('\n')).toContain('yarn test:scenario')
 
     // Without it the clone is one grafted commit, and every history check answers with the working tree.
-    expect(test.body).toContain('fetch-depth: 0')
+    expect(checks.body).toContain('fetch-depth: 0')
   })
 
-  it('only deploys a frontend it has the artifact for', () => {
-    const frontend = job('deploy-frontend')
-    const build = job('build')
+  it('deploys only the frontend it just built, in that order', () => {
+    // The artifact existed to carry a build across a job boundary. In one job it cannot race its own upload -- what has to hold instead is that the build runs before the deploy, and that both are gated on the same answer.
+    const steps = stepsIn(job('deploy').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
 
-    expect(frontend.body).toContain('wrangler-action')
+    const build = at('yarn build')
+    const wrangler = at('wrangler-action')
+    const backend = at('npx convex deploy')
 
-    // deploy-frontend publishes what build uploaded, and without the edge the download races the upload.
-    expect(frontend.needs).toContain('build')
-    expect(build.body).toContain('name: frontend-build')
-    expect(frontend.body).toContain('name: frontend-build')
+    // Absence before order: findIndex answers -1 for a step that is gone, and -1 comes before everything.
+    expect(build).toBeGreaterThan(-1)
+    expect(wrangler).toBeGreaterThan(-1)
+    expect(backend).toBeGreaterThan(-1)
 
-    // build only uploads on a push, so both sides of that pairing are asserted rather than assumed.
-    expect(build.body).toContain("if: github.event_name == 'push'")
-    expect(frontend.condition).toContain("github.event_name == 'push'")
+    expect(build).toBeLessThan(wrangler)
+    // The backend goes first, which the two parallel jobs this replaced did not guarantee.
+    expect(backend).toBeLessThan(wrangler)
+
+    // Both frontend steps answer to the same filter output, so one cannot deploy what the other did not build.
+    expect(steps[build].condition).toBe("steps.filter.outputs.frontend == 'true'")
+    expect(steps[wrangler].condition).toBe("steps.filter.outputs.frontend == 'true'")
+    expect(steps[backend].condition).toBe("steps.filter.outputs.backend == 'true'")
   })
 
   it('queues runs against the same branch rather than overlapping them', () => {
@@ -300,7 +308,7 @@ describe('the shape of the deploy workflow', () => {
   })
 
   it('rebuilds the frontend when the script that addresses the backend changes', () => {
-    const lines = job('detect-changes').runs.join('\n').split('\n')
+    const lines = job('deploy').runs.join('\n').split('\n')
     const frontendMatcher = lines.filter((line) => line.includes("changed_matches '^frontend/'"))
     const backendMatcher = lines.filter((line) => line.includes("changed_matches '^convex/'"))
 
@@ -314,21 +322,29 @@ describe('the shape of the deploy workflow', () => {
     expect(backendMatcher[0]).not.toContain('^scripts/')
   })
 
-  it('generates the Convex types once and hands them to the jobs that read them', () => {
-    const codegen = jobs.filter((candidate) => candidate.runs.some((step) => step.includes('npx convex codegen')))
+  it('generates the Convex types once, before every step that reads them', () => {
+    // The seven jobs this replaced expressed the same graph as `needs:`; in one job it is step order, which is a fact about a list and has to be asserted as one.
+    const steps = stepsIn(job('checks').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
 
-    // Control and point of the job at once: codegen was a step in three jobs, and a reader that stops seeing run steps fails here on an empty list.
-    expect(codegen.map(({ name }) => name)).toEqual(['convex-codegen'])
+    const codegen = at('npx convex codegen')
+    const readers = ['yarn lint:check', 'yarn typecheck', 'yarn build', 'yarn test'].map((step) => ({
+      step,
+      index: at(step),
+    }))
 
-    // Codegen is not local: it validates auth.config.ts against the deployment, on a variable only sync-secrets writes.
-    expect(codegen[0].needs).toContain('sync-secrets')
-    expect(codegen[0].body).toContain('name: convex-generated')
-
-    // convex/_generated/ is gitignored, so a job reading it without the artifact fails on a missing module.
-    for (const name of ['lint', 'typecheck', 'test']) {
-      expect(job(name).needs).toContain('convex-codegen')
-      expect(job(name).body).toContain('name: convex-generated')
+    // Absence asserted before order, because `findIndex` answers -1 for a step that is gone and -1 comes before everything.
+    expect(codegen).toBeGreaterThan(-1)
+    for (const reader of readers) {
+      expect(reader.index, `${reader.step} is not in the checks job at all`).toBeGreaterThan(-1)
+      expect(codegen, `${reader.step} runs before codegen`).toBeLessThan(reader.index)
     }
+
+    // Codegen is not local: it validates auth.config.ts against the deployment, on a variable only the secrets step writes.
+    expect(at('| npx convex env set')).toBeLessThan(codegen)
+
+    // convex/_generated/ is gitignored and codegen writing nothing used to fail three steps later on a missing module.
+    expect(at('codegen wrote nothing')).toBeGreaterThan(codegen)
   })
 
   it('runs every job on one Node, and on a version that still gets fixes', () => {
@@ -342,7 +358,7 @@ describe('the shape of the deploy workflow', () => {
 
     // One declaration read everywhere: a job pinning its own version is how a pipeline runs two runtimes unnoticed.
     const pins = workflow.match(/^ +node-version: .*$/gm) ?? []
-    expect(pins.length).toBeGreaterThanOrEqual(6)
+    expect(pins.length).toBeGreaterThanOrEqual(2)
     expect(pins.every((pin) => pin.includes('${{ env.NODE_VERSION }}'))).toBe(true)
 
     // setup-node v4 runs its own code on Node 20, which the runners deprecated and now force onto 24 with a warning.
@@ -356,30 +372,31 @@ describe('the shape of the deploy workflow', () => {
   })
 
   it('runs on a pull request, because codegen cannot pass until the deployment has its variables', () => {
-    // Gating the whole job on `push` meant a pull request first went green after merging: `auth.config.ts` reads CLERK_FRONTEND_API_URL off the deployment, and codegen validates it there.
-    expect(job('sync-secrets').condition ?? '').not.toContain("github.event_name == 'push'")
+    // Gating this on `push` meant a pull request first went green after merging: `auth.config.ts` reads CLERK_FRONTEND_API_URL off the deployment, codegen validates it there, and the step that reads it lives in the job a pull request runs.
+    expect(job('checks').condition).toContain("github.event_name == 'pull_request'")
+    expect(stepsIn(job('checks').body).some((step) => step.body.includes('$(npx convex env get'))).toBe(true)
 
-    // The control: conditions are read at all, and the jobs that really are push-only still say so.
-    expect(job('detect-changes').condition).toContain("github.event_name == 'push'")
+    // The control: conditions are read at all, and the job that really is push-only still says so.
+    expect(job('deploy').condition).toContain("github.event_name == 'push'")
   })
 
   it('writes to the deployment only on a push, and reads on everything else', () => {
-    // `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production. Running that on a pull request is a deploy nobody reads as one, from a branch nobody has reviewed.
-    const steps = stepsIn(job('sync-secrets').body)
-    const writing = steps.filter((step) => step.body.includes('convex env set'))
-    const reading = steps.filter((step) => step.body.includes('convex env get'))
+    // `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production, so running it on a pull request is a deploy nobody reads as one -- the two live in different jobs now, and both are matched on the invocation rather than the phrase, because a comment naming a command is attributed to the step above it.
+    const writing = stepsIn(job('deploy').body).filter((step) => step.body.includes('| npx convex env set'))
+    const reading = stepsIn(job('checks').body).filter((step) => step.body.includes('$(npx convex env get'))
 
     // The control: both halves are found at all, so a renamed step fails here rather than leaving an empty list to agree with everything.
     expect(writing).toHaveLength(1)
     expect(reading).toHaveLength(1)
 
-    expect(writing[0].condition).toBe("github.event_name == 'push'")
-    expect(reading[0].condition).toBe("github.event_name != 'push'")
+    // And neither job can run on the other's event.
+    expect(job('deploy').condition).toContain("github.event_name == 'push'")
+    expect(job('checks').condition).toContain("github.event_name == 'pull_request'")
   })
 
   it('never prints a variable it is checking, because three of the four are secrets', () => {
     // A job that echoes a secret to prove it is set has published it to anyone who can read a log, and a log outlives the run.
-    const reading = stepsIn(job('sync-secrets').body).find((step) => step.body.includes('convex env get'))
+    const reading = stepsIn(job('checks').body).find((step) => step.body.includes('convex env get'))
 
     expect(reading).toBeDefined()
     // Captured into a shell variable and tested for emptiness; nothing is echoed but the names of what is missing.
@@ -388,8 +405,16 @@ describe('the shape of the deploy workflow', () => {
   })
 
   it('still fails fast on formatting', () => {
-    // format runs no codegen, so making it wait only puts the cheapest check behind a write to the deployment.
-    expect(job('format').needs).toEqual([])
+    // Formatting needs no generated types, so putting it after codegen would delay the cheapest failure there is until after a write to production.
+    const steps = stepsIn(job('checks').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
+
+    const format = at('yarn format:check')
+    const touchesTheDeployment = at('npx convex env')
+
+    expect(format).toBeGreaterThan(-1)
+    expect(touchesTheDeployment).toBeGreaterThan(-1)
+    expect(format).toBeLessThan(touchesTheDeployment)
   })
 
   it('runs for a pull request whatever branch it targets', () => {
@@ -408,12 +433,16 @@ describe('the shape of the deploy workflow', () => {
   })
 
   it('builds the frontend only after the types it imports exist', () => {
-    // This job skipped codegen on the reading that the bundle imported nothing generated: true when written, held by nothing, red the first time a screen called a query.
-    expect(job('build').needs).toContain('convex-codegen')
-    expect(job('build').body).toContain('name: convex-generated')
+    // This skipped codegen on the reading that the bundle imported nothing generated: true when written, held by nothing, red the first time a screen called a query.
+    const steps = stepsIn(job('checks').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
 
-    // The control: the artifact it downloads is the one codegen publishes, rather than a name that matches nothing.
-    expect(job('convex-codegen').body).toContain('name: convex-generated')
+    const build = at('yarn build')
+    const codegen = at('npx convex codegen')
+
+    expect(build).toBeGreaterThan(-1)
+    expect(codegen).toBeGreaterThan(-1)
+    expect(codegen).toBeLessThan(build)
   })
 })
 

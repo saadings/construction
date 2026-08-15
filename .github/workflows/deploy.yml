@@ -17,162 +17,16 @@ env:
   NODE_VERSION: '24.19.0'
 
 jobs:
-  # Phase I. Waits for nothing, so a formatting mistake fails in under a minute rather than behind a write to the deployment.
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Format check
-        run: yarn format:check
-
-  # The bundle imports `api` out of convex/_generated to call anything, so it cannot be built before those types exist.
-  build:
-    needs: [convex-codegen]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Download generated types
-        uses: actions/download-artifact@v4
-        with:
-          name: convex-generated
-          path: convex/_generated
-      - name: Build
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
-        run: |
-          set -euo pipefail
-          VITE_CONVEX_URL=$(bash scripts/convexUrl.sh)
-          export VITE_CONVEX_URL
-          echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL"
-          yarn build
-      - name: Upload build artifact
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/dist/client
-          retention-days: 1
-
-  # Runs codegen once for the three jobs that read it; needs sync-secrets because codegen validates auth.config.ts against the deployment.
-  convex-codegen:
-    needs: [sync-secrets]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Generate Convex types
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: npx convex codegen
-      - name: Upload generated types
-        uses: actions/upload-artifact@v4
-        with:
-          name: convex-generated
-          path: convex/_generated
-          retention-days: 1
-          # Without this, codegen writing nothing fails three jobs later on a missing module instead of here.
-          if-no-files-found: error
-
-  lint:
-    needs: [convex-codegen]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Download generated types
-        uses: actions/download-artifact@v4
-        with:
-          name: convex-generated
-          path: convex/_generated
-      - name: Lint
-        run: yarn lint:check
-
-  # The only job that reads the generated types as types; behind lint it reported as a lint failure.
-  typecheck:
-    needs: [convex-codegen]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Download generated types
-        uses: actions/download-artifact@v4
-        with:
-          name: convex-generated
-          path: convex/_generated
-      - name: Typecheck
-        run: yarn typecheck
-
-  test:
-    needs: [convex-codegen]
+  # One runner for every check, because Actions bills per job rounded up to the minute: seven jobs of 31-51 seconds were seven billed minutes for under four minutes of work, and each of them paid the same 23 seconds of checkout, corepack and install. The step order below is the dependency graph those seven jobs expressed as `needs:`, and it is asserted as an order rather than left to be read.
+  checks:
+    # A pull request tests the merge commit, so the same checks on the push that follows cannot prevent anything -- they report that `main` is broken after it already is. Every merge here is rebuilt against current `main` and re-run before it is merged, which is the thing the push run would otherwise be a slower second copy of.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           # The scenario suite asks what this repository has ever committed; a depth-1 clone answers with the working tree.
           fetch-depth: 0
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: yarn install --immutable
-      - name: Download generated types
-        uses: actions/download-artifact@v4
-        with:
-          name: convex-generated
-          path: convex/_generated
-      - name: Run tests
-        run: yarn test
-      # Credentials in history, inherited identifiers, unresolvable actions — none of it protects anything unless CI runs it.
-      - name: Run scenario tests
-        run: yarn test:scenario
-
-  # Runs on pull requests as well, because codegen cannot pass until the deployment has CLERK_FRONTEND_API_URL and gating the whole job on `push` meant a pull request first went green after merging. On a pull request it only reads: `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production, and a branch nobody has reviewed must not reach it.
-  sync-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
 
       - uses: actions/setup-node@v5
         with:
@@ -185,9 +39,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # A pull request reads what a push writes. It fails here naming the variable rather than three jobs later inside codegen, where a missing one reads as a broken auth config.
+      # First, and before anything reaches the deployment: formatting needs no generated types, so putting it after codegen would delay the cheapest failure there is until after a write to production.
+      - name: Format check
+        run: yarn format:check
+
+      # A pull request reads what a push writes. It fails here naming the variable rather than inside codegen, where a missing one reads as a broken auth config.
       - name: Check the deployment has what codegen reads
-        if: github.event_name != 'push'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: |
@@ -202,23 +59,128 @@ jobs:
           done
 
           if [ -n "$missing" ]; then
-            echo "✗ The deployment has no value for:$missing"
-            echo "  A pull request reads these and never writes them. Push to main to set them."
+            echo "✗ The deployment is missing:$missing"
+            echo "  A push writes these. Until one has, codegen cannot validate auth.config.ts."
             exit 1
           fi
 
-          echo "✓ The deployment has every variable codegen reads"
+          echo "✓ The deployment has what codegen reads"
 
-      - name: Sync Secrets to Convex
-        id: sync-convex
-        if: github.event_name == 'push'
+      # Codegen is not local: it validates auth.config.ts against the deployment, on a variable only the step above writes. Everything below reads what it writes, and it writes in place — the artifact this used to travel through existed only to cross a job boundary that no longer exists.
+      - name: Generate Convex types
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: npx convex codegen
+
+      # What `if-no-files-found: error` did for the artifact. Without it, codegen writing nothing fails three steps later on a missing module rather than here, where the message says what actually happened.
+      - name: The generated types exist
+        run: |
+          set -euo pipefail
+          if [ -z "$(ls -A convex/_generated 2>/dev/null)" ]; then
+            echo "✗ codegen wrote nothing to convex/_generated"
+            echo "  Everything below reads it, and would fail on a missing module instead of here."
+            exit 1
+          fi
+          ls convex/_generated
+
+      - name: Lint
+        run: yarn lint:check
+
+      # The only step that reads the generated types as types; behind lint it reported as a lint failure.
+      - name: Typecheck
+        run: yarn typecheck
+
+      # The bundle imports `api` out of convex/_generated to call anything, so it cannot be built before those types exist.
+      - name: Build
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+        run: |
+          set -euo pipefail
+          VITE_CONVEX_URL=$(bash scripts/convexUrl.sh)
+          export VITE_CONVEX_URL
+          echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL"
+          yarn build
+
+      - name: Run tests
+        run: yarn test
+
+      # Credentials in history, inherited identifiers, unresolvable actions — none of it protects anything unless CI runs it.
+      - name: Run scenario tests
+        run: yarn test:scenario
+
+  # One runner for the whole of a push, for the same reason the checks are one: four jobs of well under a minute were four billed minutes, and three of them paid the same checkout and install. The two deploys were deliberately beside each other rather than in sequence, which accepted new UI going live before the backend caught up; in one job the backend goes first, which is the safer order and costs nothing.
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Full history so the previous commit is available to diff against.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false # see NODE_VERSION above
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      # Does with git what a third-party paths-filter action did, so the pipeline depends only on actions/ and cloudflare/.
+      - name: Detect which parts changed
+        id: filter
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # A first push reports an all-zero previous commit and a force-push can leave one that is gone; deploy everything rather than guess.
+          if [ -z "$BEFORE" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            echo "No previous commit to compare against — treating everything as changed."
+            changed=$(git ls-files)
+          else
+            changed=$(git diff --name-only "$BEFORE" "$AFTER")
+          fi
+
+          echo "Changed files:"
+          echo "$changed"
+
+          changed_matches() {
+            printf '%s\n' "$changed" | grep -qE "$1"
+          }
+
+          # Named for the files it lists, not for what both sides happen to need: called `shared` it read as covering shared/, and so that directory went undeployed for a day.
+          rootFiles='^(package\.json|yarn\.lock|tsconfig\.json|tsconfig\.node\.json)$'
+
+          # shared/ is compiled into both sides rather than deployed on its own, so a rule about money changing there has to ship twice or it ships nowhere.
+          backend=false
+          if changed_matches '^convex/' || changed_matches '^shared/' || changed_matches "$rootFiles"; then
+            backend=true
+          fi
+
+          # scripts/ counts as frontend because convexUrl.sh produces the address compiled into the bundle; `convex deploy` reads nothing there.
+          frontend=false
+          if changed_matches '^frontend/' || changed_matches '^shared/' || changed_matches '^scripts/' ||
+            changed_matches "$rootFiles" || changed_matches '^(tsconfig\.app\.json|components\.json)$'; then
+            frontend=true
+          fi
+
+          echo "backend=$backend" >>"$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >>"$GITHUB_OUTPUT"
+          echo "backend=$backend  frontend=$frontend"
+      # `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production, so a branch nobody has reviewed must not reach it.
+      - name: Sync secrets to Convex
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
           CLERK_WEBHOOK_SECRET: ${{ secrets.CLERK_WEBHOOK_SECRET }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
         run: |
-          # Without pipefail a decode that fails halfway still reports success and puts a broken value on the deployment.
           set -euo pipefail
 
           set_convex_env() {
@@ -264,105 +226,43 @@ jobs:
           set_convex_env "CLERK_SECRET_KEY" "$CLERK_SECRET_KEY"
           set_convex_env "CLERK_PUBLISHABLE_KEY" "$CLERK_PUBLISHABLE_KEY"
 
-  # ── Phase II — which components changed, once every CI check has passed ──
-  detect-changes:
-    needs: [format, build, lint, typecheck, test]
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      # Full history so the previous commit is available to diff against.
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      # Does with git what a third-party paths-filter action did, so the pipeline depends only on actions/ and cloudflare/.
-      - name: Detect which parts changed
-        id: filter
+      # Codegen is not local: it validates auth.config.ts against the deployment, on a variable only the step above writes. The bundle imports `api` out of convex/_generated, so it cannot be built before these exist.
+      - name: Generate Convex types
+        if: steps.filter.outputs.frontend == 'true'
         env:
-          BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: npx convex codegen
+
+      - name: Build
+        if: steps.filter.outputs.frontend == 'true'
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
+          VITE_CONVEX_URL=$(bash scripts/convexUrl.sh)
+          export VITE_CONVEX_URL
+          echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL"
+          yarn build
 
-          # A first push reports an all-zero previous commit and a force-push can leave one that is gone; deploy everything rather than guess.
-          if [ -z "$BEFORE" ] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-            echo "No previous commit to compare against — treating everything as changed."
-            changed=$(git ls-files)
-          else
-            changed=$(git diff --name-only "$BEFORE" "$AFTER")
+          # Deploying an empty directory is a successful deploy of nothing, which is the worst way for this to fail.
+          if [ -z "$(ls -A frontend/dist/client 2>/dev/null)" ]; then
+            echo "✗ the build produced nothing to deploy"
+            exit 1
           fi
 
-          echo "Changed files:"
-          echo "$changed"
-
-          changed_matches() {
-            printf '%s\n' "$changed" | grep -qE "$1"
-          }
-
-          # Named for the files it lists, not for what both sides happen to need: called `shared` it read as covering shared/, and so that directory went undeployed for a day.
-          rootFiles='^(package\.json|yarn\.lock|tsconfig\.json|tsconfig\.node\.json)$'
-
-          # shared/ is compiled into both sides rather than deployed on its own, so a rule about money changing there has to ship twice or it ships nowhere.
-          backend=false
-          if changed_matches '^convex/' || changed_matches '^shared/' || changed_matches "$rootFiles"; then
-            backend=true
-          fi
-
-          # scripts/ counts as frontend because convexUrl.sh produces the address compiled into the bundle; `convex deploy` reads nothing there.
-          frontend=false
-          if changed_matches '^frontend/' || changed_matches '^shared/' || changed_matches '^scripts/' ||
-            changed_matches "$rootFiles" || changed_matches '^(tsconfig\.app\.json|components\.json)$'; then
-            frontend=true
-          fi
-
-          echo "backend=$backend" >>"$GITHUB_OUTPUT"
-          echo "frontend=$frontend" >>"$GITHUB_OUTPUT"
-          echo "backend=$backend  frontend=$frontend"
-
-  # ── Phase III — deploy the backend to Convex ──
-  deploy-backend:
-    needs: [detect-changes, sync-secrets]
-    if: github.event_name == 'push' && needs.detect-changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          package-manager-cache: false # see NODE_VERSION above
-
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
+      # The backend first, which the two parallel jobs this replaced did not guarantee.
       - name: Deploy Backend to Convex
+        if: steps.filter.outputs.backend == 'true'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: npx convex deploy --yes
 
-  # Phase III, beside deploy-backend rather than behind it: by decision, this accepts new UI going live before the backend catches up.
-  deploy-frontend:
-    needs: [detect-changes, build]
-    if: github.event_name == 'push' && needs.detect-changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: dist
-
       # Project name written out, not read from a repository variable: this repository has none, and empty fails only after the build passes.
       - name: Deploy Frontend to Cloudflare Pages
+        if: steps.filter.outputs.frontend == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=construction
+          command: pages deploy frontend/dist/client --project-name=construction
