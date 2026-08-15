@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13
 **Status:** Awaiting approval
-**Owner:** Nauman Saeed (sole stakeholder and primary user)
+**Owner:** The partner (sole stakeholder and primary user)
 
 ## Purpose
 
@@ -132,7 +132,7 @@ a vendor is owed had to be kept as a separate hand-maintained list.
 
 Everyone — partners, clients, vendors, chokidars. Name, phone, notes.
 
-**No role field.** Sajid Bhai is an investor on some sites and the steel
+**No role field.** A mason is an investor on some sites and the steel
 supplier on others; a role on the person would be wrong on day one.
 
 ### siteRoles
@@ -268,7 +268,7 @@ because that working is what makes the bill defensible to a client.
 
 ### bankAccounts
 
-A label such as "Askari 2192". Full account numbers are stored masked and never
+A label such as "Bank 0000". Full account numbers are stored masked and never
 rendered in full, since a partner may screenshot any screen.
 
 ### Derived, never stored
@@ -657,7 +657,7 @@ test fixtures:
 
 - the 82 payments whose `TOTAL` row is already known
 - one own-build site where building cost, plot cost and profit are all known
-- the Khalid Mirza market-payables register — thirteen named balances totalling
+- the A client market-payables register — thirteen named balances totalling
   1,591,701, which the app must reach by calculation rather than by being told
 
 They are fed through the app's calculations and asserted to produce the same

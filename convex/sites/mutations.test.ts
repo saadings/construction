@@ -17,7 +17,7 @@ const probe = {
   startThenFail: mutation({
     args: {},
     handler: async (ctx) => {
-      const personId = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
       const siteId = await ctx.db.insert('sites', {
         name: '359-R, Phase 7',
         builtForAClient: false,
@@ -51,11 +51,11 @@ const aHouse = {
 } as const
 
 async function anAccountFor(ctx: MutationCtx, { withAPerson }: { withAPerson: boolean }) {
-  const personId = withAPerson ? await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false }) : undefined
+  const personId = withAPerson ? await ctx.db.insert('people', { name: 'The partner', hidden: false }) : undefined
 
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
+    name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
     personId,

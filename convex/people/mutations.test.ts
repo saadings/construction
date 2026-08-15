@@ -22,7 +22,7 @@ function convexWithPeople() {
 async function anAccount(ctx: MutationCtx) {
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
+    name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
   })
@@ -35,14 +35,14 @@ describe('adding someone the business deals with', () => {
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const personId = await signedIn.mutation(api.people.mutations.add, {
-      name: '  Sajid   Bhai ',
-      phone: '0321 4276376',
+      name: '  A   mason ',
+      phone: '0300 0000000',
     })
 
     const person = await t.run((ctx) => ctx.db.get('people', personId))
-    expect(person?.name).toBe('Sajid Bhai')
+    expect(person?.name).toBe('A mason')
     // Five different shapes of the same number appear across the workbooks; one shape comes out.
-    expect(person?.phone).toBe('0321-4276376')
+    expect(person?.phone).toBe('0300-0000000')
   })
 
   it('says what is wrong in words, and writes nothing', async () => {
@@ -65,7 +65,7 @@ describe('adding someone the business deals with', () => {
   it('turns away a caller who is not signed in', async () => {
     const t = convexWithPeople()
 
-    await expect(t.mutation(api.people.mutations.add, { name: 'Sajid Bhai' })).rejects.toThrow()
+    await expect(t.mutation(api.people.mutations.add, { name: 'A mason' })).rejects.toThrow()
     expect(await t.run((ctx) => ctx.db.query('people').collect())).toEqual([])
   })
 })
@@ -76,7 +76,7 @@ describe('the list of people', () => {
     await t.run(anAccount)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
-    for (const name of ['Sajid Bhai', 'Ashfaq', 'Khalid Mirza']) {
+    for (const name of ['A mason', 'A supplier', 'A client']) {
       await signedIn.mutation(api.people.mutations.add, { name })
     }
 
@@ -84,9 +84,9 @@ describe('the list of people', () => {
     await signedIn.mutation(api.people.mutations.hide, { personId: gone })
 
     expect((await signedIn.query(api.people.queries.list, {})).map((person) => person.name)).toEqual([
-      'Ashfaq',
-      'Khalid Mirza',
-      'Sajid Bhai',
+      'A client',
+      'A mason',
+      'A supplier',
     ])
     // Hidden, not deleted: payments point at them forever, and a name that vanishes turns settled money into a mystery.
     expect(await t.run((ctx) => ctx.db.get('people', gone))).toMatchObject({ hidden: true })

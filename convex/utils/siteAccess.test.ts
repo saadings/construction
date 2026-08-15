@@ -44,11 +44,11 @@ async function aSite(ctx: MutationCtx, name: string): Promise<Id<'sites'>> {
 /** Everything a signed-in partner needs, so each test below can take exactly one piece away. */
 async function aPartnerOnASite(ctx: MutationCtx) {
   const siteId = await aSite(ctx, '359-R, Phase 7')
-  const personId = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+  const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
+    name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
     personId,
@@ -92,7 +92,7 @@ describe('opening a site', () => {
       const siteId = await aSite(ctx, '359-R, Phase 7')
       await ctx.db.insert('accounts', {
         externalId: SIGNED_IN_AS,
-        name: 'Nauman Saeed',
+        name: 'The partner',
         primaryEmail: 'nauman@example.com',
         otherEmails: [],
       })
@@ -124,11 +124,11 @@ describe('opening a site', () => {
 
     const siteId = await t.run(async (ctx) => {
       const siteId = await aSite(ctx, '359-R, Phase 7')
-      const personId = await ctx.db.insert('people', { name: 'Dr Khalid Mirza', hidden: false })
+      const personId = await ctx.db.insert('people', { name: 'Dr A client', hidden: false })
       await ctx.db.insert('siteRoles', { personId, siteId, capacity })
       await ctx.db.insert('accounts', {
         externalId: SIGNED_IN_AS,
-        name: 'Dr Khalid Mirza',
+        name: 'Dr A client',
         primaryEmail: 'khalid@example.com',
         otherEmails: [],
         personId,

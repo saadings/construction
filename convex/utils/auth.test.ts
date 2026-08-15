@@ -71,7 +71,7 @@ describe('a caller who is not signed in', () => {
   it('is refused by the mutation before anything is written', async () => {
     const t = convexWithProbe()
 
-    await expect(t.mutation(remember, { name: 'Nauman' })).rejects.toThrow('Not authenticated')
+    await expect(t.mutation(remember, { name: 'The partner' })).rejects.toThrow('Not authenticated')
 
     expect(reached).toEqual([])
     expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
@@ -91,11 +91,11 @@ describe('a caller who is signed in', () => {
   it('reaches the mutation handler, which can still write', async () => {
     const t = convexWithProbe()
 
-    const subject = await t.withIdentity({ subject: 'user_x' }).mutation(remember, { name: 'Nauman' })
+    const subject = await t.withIdentity({ subject: 'user_x' }).mutation(remember, { name: 'The partner' })
 
     expect(subject).toBe('user_x')
     expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toMatchObject([
-      { externalId: 'user_x', name: 'Nauman' },
+      { externalId: 'user_x', name: 'The partner' },
     ])
   })
 
@@ -104,7 +104,7 @@ describe('a caller who is signed in', () => {
     const t = convexWithProbe()
     const signedIn = t.withIdentity({ subject: 'user_x' })
 
-    await signedIn.mutation(remember, { name: 'Nauman' })
+    await signedIn.mutation(remember, { name: 'The partner' })
 
     expect(await signedIn.query(whoIsAsking, {})).toEqual({ subject: 'user_x', people: 1 })
   })

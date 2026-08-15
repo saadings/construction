@@ -56,7 +56,7 @@ export const pakistaniMobile = z
   .string()
   .transform((value) => value.replace(/\D/g, '').replace(/^92/, '0'))
   .refine((digits) => /^03\d{9}$/.test(digits), {
-    message: 'Put in a mobile number, like 0321-4276376.',
+    message: 'Put in a mobile number, like 0300-0000000.',
   })
   .transform((digits) => `${digits.slice(0, 4)}-${digits.slice(4)}`)
 

@@ -31,7 +31,7 @@ const SPEND: Array<[string, boolean, number]> = [
 ]
 
 async function aSiteWithSpending(ctx: MutationCtx) {
-  const nauman = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+  const nauman = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   const siteId = await ctx.db.insert('sites', {
     name: '359-R, Phase 7',
     builtForAClient: false,
@@ -41,7 +41,7 @@ async function aSiteWithSpending(ctx: MutationCtx) {
   await ctx.db.insert('siteRoles', { personId: nauman, siteId, capacity: 'partner' })
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
+    name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
     personId: nauman,
@@ -86,7 +86,7 @@ describe('what a site has cost', () => {
   })
 
   it('never lets the two sides disagree with the whole', async () => {
-    // The Khalid Mirza workbook stated a figure its own rows could not reach: a million counted with nothing behind it against nine hundred thousand paid and never counted.
+    // The A client workbook stated a figure its own rows could not reach: a million counted with nothing behind it against nine hundred thousand paid and never counted.
     const t = convexWithPayments()
     const { siteId } = await t.run(aSiteWithSpending)
 

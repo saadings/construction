@@ -71,20 +71,20 @@ describe('a person', () => {
 
 describe('a mobile number', () => {
   it('normalises every way the workbooks write one', () => {
-    for (const typed of ['03214276376', '0321-4276376', '0321 4276376', '+923214276376', '92 321 4276376']) {
-      expect(pakistaniMobile.parse(typed)).toBe('0321-4276376')
+    for (const typed of ['03000000000', '0300-0000000', '0300 0000000', '+923000000000', '92 300 0000000']) {
+      expect(pakistaniMobile.parse(typed)).toBe('0300-0000000')
     }
   })
 
   it('refuses a number that is not a Pakistani mobile', () => {
     expect(pakistaniMobile.safeParse('042-35880000').success).toBe(false)
-    expect(pakistaniMobile.safeParse('0321-427637').success).toBe(false)
+    expect(pakistaniMobile.safeParse('0300-000000').success).toBe(false)
   })
 })
 
 describe('a cheque number', () => {
   it('keeps what was written on the cheque', () => {
-    expect(chequeNumber.parse(' 3894 ')).toBe('3894')
+    expect(chequeNumber.parse(' 0001 ')).toBe('0001')
   })
 
   it('refuses something far too long to be one', () => {

@@ -45,7 +45,7 @@ function userEvent(type: 'user.created' | 'user.updated', id: string, surname = 
     type,
     data: {
       id,
-      first_name: 'Nauman',
+      first_name: 'The',
       last_name: surname,
       email_addresses: [{ id: 'e1', email_address: 'nauman@example.com' }],
       primary_email_address_id: 'e1',
@@ -190,19 +190,19 @@ describe('someone the app already holds', () => {
   it('is updated in place when their details change, not added a second time', async () => {
     // Fails here and nowhere else if the `user.updated` fallthrough label is tidied away, or if the mirror inserts instead of patching.
     const t = convexWithClerkWebhook()
-    await t.fetch('/webhooks/clerk', clerkRequest(userEvent('user.created', 'user_nauman')))
+    await t.fetch('/webhooks/clerk', clerkRequest(userEvent('user.created', 'user_partner')))
 
-    const response = await t.fetch('/webhooks/clerk', clerkRequest(userEvent('user.updated', 'user_nauman', 'Ahmed')))
+    const response = await t.fetch('/webhooks/clerk', clerkRequest(userEvent('user.updated', 'user_partner', 'Second')))
 
     expect(response.status).toBe(200)
 
     // One person, carrying the new name.
     const accounts = await t.run((ctx) => ctx.db.query('accounts').collect())
-    expect(accounts.map((account) => account.name)).toEqual(['Nauman Ahmed'])
+    expect(accounts.map((account) => account.name)).toEqual(['The Second'])
 
     // And the app can still say who he is: a second row makes this throw rather than answer.
-    const signedInAsNauman = t.withIdentity({ subject: 'user_nauman' })
-    expect(await signedInAsNauman.query(api.accounts.actions.current, {})).toMatchObject({ name: 'Nauman Ahmed' })
+    const signedInAsThePartner = t.withIdentity({ subject: 'user_partner' })
+    expect(await signedInAsThePartner.query(api.accounts.actions.current, {})).toMatchObject({ name: 'The Second' })
   })
 
   it('is let go when their Clerk account is deleted', async () => {
