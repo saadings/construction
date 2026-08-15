@@ -81,12 +81,8 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'bills.remove': 'and nothing takes one back',
   'engagements.agree':
     'what was agreed with a contractor has no screen, so the spread reads agreed as nothing, and there is no way to take one back because none was written',
-  'moneyIn.remove': 'money coming in can be put in and never taken back out',
-  'people.edit': 'a person can be added and hidden, and never corrected',
   'profitPayouts.record': 'nothing is due until a house sells, so nobody can be paid out on one that has not',
   'profitPayouts.remove': 'and nothing takes a payout back',
-  'sites.edit': 'a house is named once and never renamed',
-  'sites.hide': 'and never put away',
 }
 
 /** A reading no screen opens. The same rule as above and the same instruction: lower this list, and never add to it without saying why in a review. */

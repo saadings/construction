@@ -5,7 +5,7 @@ import { areaSqft } from '~shared/validation/contract'
 import { calendarDay, note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
-import { Field, Line, Lines, Picker } from '../form/Field'
+import { Choices, Field, Line, Lines, Picker } from '../form/Field'
 import { Form } from '../shell/Page'
 
 // What a client agreed to pay for a house. Nothing else about billing works without it: a stage is a percentage of this, and until it is here the whole billing half of the screen has figures with nothing behind them.
@@ -101,8 +101,9 @@ export function AgreeAContract({
         </Field>
       </div>
 
-      <Field label="How it is priced">
-        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="How it is priced">
+      {/* Not a `Field`: the first choice inside a label takes the label's words as its own name, so "One agreed price" announced itself as "How it is priced". */}
+      <Choices label="How it is priced">
+        <div className="grid grid-cols-2 gap-2">
           {HOW.map((choice) => (
             <button
               key={choice.how}
@@ -122,7 +123,7 @@ export function AgreeAContract({
             </button>
           ))}
         </div>
-      </Field>
+      </Choices>
 
       <div className="grid gap-5 sm:grid-cols-2">
         {/* One box, asked two ways. A rate and a total in the same form is how one of them gets left behind holding an old figure. */}

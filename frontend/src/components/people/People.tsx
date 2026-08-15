@@ -19,11 +19,14 @@ const ROW = 'grid grid-cols-[1fr_auto] items-baseline gap-x-4 sm:grid-cols-[minm
 export function People({
   people,
   onAdd,
+  onEdit,
   onHide,
 }: {
   // Three answers, never two: still coming, refused, and a list. Folding the first two together is the spinner nobody could get past.
   people: Array<PersonRow> | null | undefined
   onAdd: (person: NewPerson) => Promise<void>
+  // A name typed wrong was permanent, and two people cannot share a name any more, so there was no way to work around it by adding the right one.
+  onEdit: (personId: string, person: NewPerson) => Promise<void>
   onHide: (personId: string) => Promise<void>
 }) {
   // The ledger has answered and does not know this sign-in. Nothing on this screen would work, so it offers none of it.
@@ -65,40 +68,167 @@ export function People({
             <span>What was written down</span>
           </div>
 
-          <ul className="divide-hairline flex flex-col divide-y">
+          <ul aria-label="Everyone in the ledger" className="divide-hairline flex flex-col divide-y">
             {people.map((person) => (
-              <li key={person._id} className={`${ROW} py-3.5`}>
-                {/* The way into their account, which is the statement the workbooks were kept open to read. A name that does nothing was the whole of this screen until now. */}
-                <Link
-                  to="/people/$personId"
-                  params={{ personId: person._id }}
-                  className="text-foreground min-w-0 truncate text-[1.0625rem] underline-offset-4 hover:underline"
-                >
-                  {person.name}
-                </Link>
-                <span className="text-muted-foreground order-last col-span-2 text-sm sm:order-none sm:col-span-1">
-                  {person.phone ?? '—'}
-                </span>
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className="text-muted-foreground hidden min-w-0 truncate text-sm sm:block">
-                    {person.notes ?? ''}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void onHide(person._id)
-                    }}
-                    className="text-muted-foreground hover:text-foreground shrink-0 text-sm underline underline-offset-4"
-                  >
-                    Take off the list
-                  </button>
-                </span>
-              </li>
+              <OnePerson key={person._id} person={person} onEdit={onEdit} onHide={onHide} />
             ))}
           </ul>
         </div>
       )}
     </Page>
+  )
+}
+
+function OnePerson({
+  person,
+  onEdit,
+  onHide,
+}: {
+  person: PersonRow
+  onEdit: (personId: string, person: NewPerson) => Promise<void>
+  onHide: (personId: string) => Promise<void>
+}) {
+  const [changing, setChanging] = useState(false)
+  const [name, setName] = useState(person.name)
+  const [phone, setPhone] = useState(person.phone ?? '')
+  const [notes, setNotes] = useState(person.notes ?? '')
+  const [saving, setSaving] = useState(false)
+  const [refusal, setRefusal] = useState<string | null>(null)
+
+  const wrongPhone = phone.trim() === '' ? null : whatIsWrong(pakistaniMobile, phone)
+
+  async function send(what: () => Promise<void>) {
+    setSaving(true)
+    setRefusal(null)
+
+    try {
+      await what()
+      setChanging(false)
+    } catch (thrown) {
+      const said: unknown = (thrown as { data?: unknown }).data
+      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!changing) {
+    return (
+      <li className={`${ROW} py-3.5`}>
+        {/* The way into their account, which is the statement the workbooks were kept open to read. Correcting them is the button on the right; this is the other half of what a name is for. */}
+        <Link
+          to="/people/$personId"
+          params={{ personId: person._id }}
+          className="text-foreground min-w-0 truncate text-[1.0625rem] underline-offset-4 hover:underline"
+        >
+          {person.name}
+        </Link>
+        <span className="text-muted-foreground order-last col-span-2 text-sm sm:order-none sm:col-span-1">
+          {person.phone ?? '—'}
+        </span>
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="text-muted-foreground hidden min-w-0 truncate text-sm sm:block">{person.notes ?? ''}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setChanging(true)
+            }}
+            className="text-primary shrink-0 text-sm font-medium"
+          >
+            Change
+          </button>
+        </span>
+        {refusal === null ? null : (
+          <span role="alert" className="text-destructive col-span-full text-sm">
+            {refusal}
+          </span>
+        )}
+      </li>
+    )
+  }
+
+  return (
+    <li className="flex flex-col gap-4 py-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name" problem={whatIsWrong(personName, name)}>
+          <Line
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value)
+            }}
+            autoComplete="off"
+            aria-label={`What ${person.name} is called`}
+          />
+        </Field>
+
+        <Field label="Number" hint="Leave it empty if you do not have one." problem={wrongPhone}>
+          <Line
+            value={phone}
+            onChange={(event) => {
+              setPhone(event.target.value)
+            }}
+            inputMode="tel"
+            autoComplete="off"
+            placeholder="0300-0000000"
+            aria-label={`The number for ${person.name}`}
+          />
+        </Field>
+      </div>
+
+      <Field label="Anything worth remembering">
+        <Lines
+          value={notes}
+          onChange={(event) => {
+            setNotes(event.target.value)
+          }}
+          aria-label={`What was written down about ${person.name}`}
+        />
+      </Field>
+
+      {refusal === null ? null : (
+        <span role="alert" className="text-destructive text-sm">
+          {refusal}
+        </span>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          busy={saving}
+          className="py-2 text-sm"
+          onClick={() =>
+            send(async () => {
+              await onEdit(person._id, {
+                name,
+                phone: phone.trim() === '' ? undefined : phone,
+                notes: notes.trim() === '' ? undefined : notes,
+              })
+            })
+          }
+        >
+          Save it
+        </Button>
+        <button
+          type="button"
+          onClick={() => {
+            setName(person.name)
+            setPhone(person.phone ?? '')
+            setNotes(person.notes ?? '')
+            setChanging(false)
+          }}
+          className="text-muted-foreground text-sm underline underline-offset-4"
+        >
+          Never mind
+        </button>
+        {/* Hidden rather than deleted, because payments point at a person forever. */}
+        <button
+          type="button"
+          onClick={() => send(async () => await onHide(person._id))}
+          className="text-destructive ml-auto text-sm"
+        >
+          Take off the list
+        </button>
+      </div>
+    </li>
   )
 }
 

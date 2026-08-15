@@ -57,6 +57,7 @@ export function ComingIn({
   saving,
   refusal,
   onPutIn,
+  onTakeBack,
 }: {
   siteName: string
   received: Array<Received> | null | undefined
@@ -66,12 +67,14 @@ export function ComingIn({
   refusal: string | null
   // Answers whether it went in, because the boxes may only be emptied when it did. A refusal that wipes what was typed makes him type the lot again to read what he got wrong.
   onPutIn: (receipt: NewReceipt) => Promise<boolean>
+  // Money going out could be taken back from the first day and money coming in could not. A partner's capital entered wrong was permanent, and capital is what the whole profit split is worked out from.
+  onTakeBack: (moneyInId: string) => Promise<void>
 }) {
   return (
     <Page title="Money coming in" beside={<span className="text-muted-foreground text-sm">{siteName}</span>}>
       <Taking people={people ?? []} accounts={accounts ?? []} saving={saving} refusal={refusal} onPutIn={onPutIn} />
 
-      <AlreadyIn received={received} />
+      <AlreadyIn received={received} onTakeBack={onTakeBack} />
     </Page>
   )
 }
@@ -252,7 +255,13 @@ const SAID: Record<WhyItCame, string> = {
   sale: 'The sale',
 }
 
-function AlreadyIn({ received }: { received: Array<Received> | null | undefined }) {
+function AlreadyIn({
+  received,
+  onTakeBack,
+}: {
+  received: Array<Received> | null | undefined
+  onTakeBack: (moneyInId: string) => Promise<void>
+}) {
   if (received === undefined) {
     return <AlreadyInWaiting />
   }
@@ -268,17 +277,61 @@ function AlreadyIn({ received }: { received: Array<Received> | null | undefined 
   return (
     <ul className="divide-hairline flex flex-col divide-y">
       {received.map((one) => (
-        <li key={one._id} className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 py-3.5">
-          <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{one.fromName}</span>
-          {/* Green, because it is money coming to the partnership rather than leaving it. */}
-          <Figure className="text-green text-right text-lg">{formatPaisa(one.amountPaisa)}</Figure>
-          <span className="text-muted-foreground col-span-2 text-sm">
-            {SAID[one.why]} · {one.day}
-            {one.reference === undefined ? '' : ` · ${one.reference}`}
-          </span>
-        </li>
+        <OneReceipt key={one._id} received={one} onTakeBack={onTakeBack} />
       ))}
     </ul>
+  )
+}
+
+// Taken back out, never erased, and signed by whoever did it. A partner's capital vanishing without a signature is the exact case a disagreement about money turns on.
+function OneReceipt({
+  received,
+  onTakeBack,
+}: {
+  received: Received
+  onTakeBack: (moneyInId: string) => Promise<void>
+}) {
+  const [saving, setSaving] = useState(false)
+  const [refusal, setRefusal] = useState<string | null>(null)
+
+  async function takeBack() {
+    setSaving(true)
+    setRefusal(null)
+
+    try {
+      await onTakeBack(received._id)
+    } catch (thrown) {
+      const said: unknown = (thrown as { data?: unknown }).data
+      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <li className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 py-3.5">
+      <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{received.fromName}</span>
+      {/* Green, because it is money coming to the partnership rather than leaving it. */}
+      <Figure className="text-green text-right text-lg">{formatPaisa(received.amountPaisa)}</Figure>
+      <span className="text-muted-foreground col-span-2 flex flex-wrap items-baseline gap-x-3 text-sm">
+        <span>
+          {SAID[received.why]} · {received.day}
+          {received.reference === undefined ? '' : ` · ${received.reference}`}
+        </span>
+        <button
+          type="button"
+          onClick={takeBack}
+          className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4"
+        >
+          {saving ? 'Taking it back…' : 'Take it back'}
+        </button>
+      </span>
+      {refusal === null ? null : (
+        <span role="alert" className="text-destructive col-span-2 text-sm">
+          {refusal}
+        </span>
+      )}
+    </li>
   )
 }
 

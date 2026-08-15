@@ -61,3 +61,4 @@ __unconfig*
 
 # Browser automation artefacts. They land in whatever directory the run started from and are one `git add -A` from being committed.
 .playwright-mcp/
+/*.png

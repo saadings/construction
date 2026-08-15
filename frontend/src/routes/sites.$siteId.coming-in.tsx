@@ -18,6 +18,7 @@ function WhatCameIn() {
   const people = useQuery(api.people.queries.list, {})
   const accounts = useQuery(api.bankAccounts.queries.list, {})
   const record = useMutation(api.moneyIn.mutations.record)
+  const takeBack = useMutation(api.moneyIn.mutations.remove)
 
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
@@ -31,6 +32,23 @@ function WhatCameIn() {
       accounts={accounts}
       saving={saving}
       refusal={refusal}
+      onTakeBack={async (moneyInId) => {
+        // Looked up in the list it came from rather than cast, and waiting is not refused even here: `received ?? []` would say the receipt is gone when the read had simply not come back.
+        if (received === undefined) {
+          throw new ConvexError('What has come in is still loading. Try again in a moment.')
+        }
+
+        if (received === null) {
+          throw new ConvexError('What has come in did not load. Open the house again.')
+        }
+
+        const one = received.find((each) => each._id === moneyInId)
+        if (one === undefined) {
+          throw new ConvexError('That money is not on this house.')
+        }
+
+        await takeBack({ ...forSite, moneyInId: one._id })
+      }}
       onPutIn={async (receipt) => {
         setSaving(true)
         setRefusal(null)
