@@ -1,4 +1,4 @@
-import { Building2, Settings2 } from 'lucide-react'
+import { Building2, Settings2, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type Destination = {
@@ -11,9 +11,10 @@ export type Destination = {
 
 // Written once and read by all three shapes of the nav, so a destination cannot appear in one and be forgotten in another.
 
-// People, Owed and Coming in join this list as their screens land. A tab that goes nowhere is the dead end we have already fixed once, and a test holds every destination here to a route that exists.
+// Owed and Coming in join this list as their screens land. A tab that goes nowhere is the dead end we have already fixed once, and a test holds every destination here to a route that exists.
 export const DESTINATIONS: Array<Destination> = [
   { to: '/', label: 'Sites', icon: Building2, onThePhone: true },
+  { to: '/people', label: 'People', icon: Users, onThePhone: true },
   { to: '/more', label: 'More', icon: Settings2, onThePhone: true },
 ]
 
