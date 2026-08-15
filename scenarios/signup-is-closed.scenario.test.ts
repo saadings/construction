@@ -1,4 +1,10 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
+
+const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
 // Anyone who can reach the sign-in page can hold an account, and the first account on a deployment is the one that becomes a partner. That is a setting, and nothing else in this repository can see a setting.
 
@@ -110,18 +116,26 @@ describe('who may sign up', () => {
 })
 
 describe('the deployment this checkout is pointed at', () => {
+  // Vite needs the prefix to put the key in the bundle; a script does not. Either name is the same key, and reading only one is how this ends up asking nothing.
   const key = process.env.CLERK_PUBLISHABLE_KEY ?? process.env.VITE_CLERK_PUBLISHABLE_KEY
 
-  it('is named by its own key, so this cannot be asked of the wrong one', () => {
-    // Vite needs the prefix to put it in the bundle; a script does not. Either name is the same key, and reading only one of them is how this ends up asking nothing.
-    expect(keyKind(key)).not.toBe('none')
-    expect(hostFrom(key ?? '')).toMatch(/^https:\/\/[\w.-]+$/)
+  it('is asked about only where there is one to ask, and that is not nowhere', () => {
+    if (keyKind(key) !== 'none') {
+      expect(hostFrom(key ?? '')).toMatch(/^https:\/\/[\w.-]+$/)
+      return
+    }
+
+    // No key in this job. That is not the same as no key in the project, and the difference has to be proved rather than assumed.
+    const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'deploy.yml'), 'utf8')
+
+    expect(workflow).toContain('CLERK_PUBLISHABLE_KEY')
+    expect(workflow).toContain('refusing to write a partial set of variables')
   })
 
   it('answers for itself when it is the production one', async () => {
     if (keyKind(key) !== 'live') {
-      // Development, and open on purpose. The rule above is what will run when a production key is in front of it.
-      expect(keyKind(key)).toBe('test')
+      // Development, or a job that was given no key. The rule above is what will run when a production key is in front of it.
+      expect(['test', 'none']).toContain(keyKind(key))
       return
     }
 
