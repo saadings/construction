@@ -49,6 +49,13 @@ export const money = z.union([z.string(), z.number()]).transform((value, ctx) =>
   return read.paisa
 })
 
+// Money that cannot be less than nothing: a rate, a unit price, a sum agreed. `money` allows a minus because a payment can come back out, and that is right where it came from and wrong everywhere a price is meant.
+
+// Named here so the next rate cannot reach for `money` out of habit, which is how a rate of minus two thousand four hundred became a contract worth less than nothing.
+export const positiveMoney = money.refine((paisa) => paisa > 0, {
+  message: 'Put in an amount greater than nothing.',
+})
+
 export const calendarDay = z.string().transform((value, ctx) => {
   const read = readCalendarDate(value)
 

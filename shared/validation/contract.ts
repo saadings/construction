@@ -1,6 +1,7 @@
+import { zid } from 'convex-helpers/server/zod4'
 import { z } from 'zod'
 
-import { calendarDay, money, note } from './primitives'
+import { calendarDay, note, positiveMoney } from './primitives'
 
 // A house is between 100 and 20,000 square feet, the same bound a site's covered area is held to.
 const areaSqft = z.union([z.string(), z.number()]).transform((value, ctx) => {
@@ -16,12 +17,19 @@ const areaSqft = z.union([z.string(), z.number()]).transform((value, ctx) => {
 
 // Priced one way or the other. A lump sum carries no rate and a rate carries no total, so neither can be left behind when the other changes.
 const priced = z.discriminatedUnion('how', [
-  z.object({ how: z.literal('lumpSum'), totalPaisa: money }),
-  z.object({ how: z.literal('ratePerSqft'), ratePerSqftPaisa: money }),
+  z.object({ how: z.literal('lumpSum'), totalPaisa: positiveMoney }),
+  z.object({ how: z.literal('ratePerSqft'), ratePerSqftPaisa: positiveMoney }),
 ])
 
+// What may be corrected on a contract already agreed. Its client and the day it was agreed are not here: those are what a disagreement is settled against, and a wrong one is cancelled rather than quietly rewritten.
+export const contractRevision = z.object({
+  priced,
+  agreedAreaSqft: areaSqft,
+  note: note.optional(),
+})
+
 export const contractInput = z.object({
-  clientId: z.string(),
+  clientId: zid('people'),
   agreedOn: calendarDay,
   priced,
   agreedAreaSqft: areaSqft,

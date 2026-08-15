@@ -148,6 +148,44 @@ describe('what a client agreed to pay', () => {
     expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
   })
 
+  it('can be corrected, because a rate typed wrong is otherwise permanent', async () => {
+    // `agree` refuses a second while the first stands, so without this a typo in the rate could never be reached again.
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const contractId = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+    await signedIn.mutation(api.contracts.mutations.revise, {
+      siteId,
+      contractId,
+      priced: { how: 'ratePerSqft', ratePerSqftPaisa: '2,600' },
+      agreedAreaSqft: '5,000',
+    })
+
+    const read = await signedIn.query(api.contracts.queries.forSite, { siteId })
+    expect(read?.valuePaisa).toBe(2_600_00 * 5_000)
+    // The client and the day agreed are left alone: changing those is a different contract, not a correction.
+    expect(read?.clientId).toBe(clientId)
+    expect(read?.agreedOn).toBe('2026-03-14')
+  })
+
+  it('can be cancelled and the house agreed again, without erasing what was agreed', async () => {
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const contractId = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+    await signedIn.mutation(api.contracts.mutations.cancel, { siteId, contractId })
+
+    expect(await signedIn.query(api.contracts.queries.forSite, { siteId })).toBeNull()
+    // Still there, because what was agreed is what a disagreement is settled against.
+    expect(await t.run((ctx) => ctx.db.get('contracts', contractId))).toMatchObject({ hidden: true })
+
+    // And the house can be agreed again, which the refusal would otherwise have blocked forever.
+    await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+    expect(await signedIn.query(api.contracts.queries.forSite, { siteId })).not.toBeNull()
+  })
+
   it('will not measure a contract belonging to another house', async () => {
     const t = convexWithContracts()
     const { siteId, clientId } = await t.run(aHouseBuiltForAClient)

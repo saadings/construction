@@ -58,6 +58,17 @@ describe('how a contract may be priced', () => {
     expect(both.data?.priced).not.toHaveProperty('totalPaisa')
   })
 
+  it.each([
+    ['a rate below nothing', { how: 'ratePerSqft', ratePerSqftPaisa: '-2,400' }],
+    ['a rate of nothing', { how: 'ratePerSqft', ratePerSqftPaisa: '0' }],
+    ['a sum below nothing', { how: 'lumpSum', totalPaisa: '-1,200,000' }],
+  ])('refuses %s', (_case, priced) => {
+    // `money` allows a minus because a payment can come back out. A price cannot, and a rate of minus two thousand four hundred is a contract worth less than nothing.
+    const checked = contractInput.safeParse({ ...agreed, priced })
+
+    expect(checked.success).toBe(false)
+  })
+
   it('refuses a way of pricing it has never heard of', () => {
     expect(contractInput.safeParse({ ...agreed, priced: { how: 'whatever', totalPaisa: '1' } }).success).toBe(false)
   })

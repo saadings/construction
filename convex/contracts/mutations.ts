@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 
-import { contractInput } from '../../shared/validation/contract'
+import { contractInput, contractRevision } from '../../shared/validation/contract'
 import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
@@ -56,5 +56,37 @@ export const measure = siteMutation({
     })
 
     await ctx.db.patch('contracts', args.contractId, { actualAreaSqft })
+  },
+})
+
+// A rate typed wrong is otherwise permanent: `agree` refuses a second while the first stands, and nothing else could reach the first.
+export const revise = siteMutation({
+  args: {
+    contractId: v.id('contracts'),
+    priced,
+    agreedAreaSqft: v.union(v.string(), v.number()),
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const contract = await ctx.db.get('contracts', args.contractId)
+    if (contract === null || contract.siteId !== ctx.siteId) {
+      throw new ConvexError('That contract is not on this house.')
+    }
+
+    // The client and the day agreed are left where they are. Changing who agreed what, and when, is a different contract rather than a correction.
+    await ctx.db.patch('contracts', args.contractId, checked(contractRevision, args))
+  },
+})
+
+// Cancelled, never erased, because what was agreed is what a disagreement is settled against. A house may then be agreed again.
+export const cancel = siteMutation({
+  args: { contractId: v.id('contracts') },
+  handler: async (ctx, args) => {
+    const contract = await ctx.db.get('contracts', args.contractId)
+    if (contract === null || contract.siteId !== ctx.siteId) {
+      throw new ConvexError('That contract is not on this house.')
+    }
+
+    await ctx.db.patch('contracts', args.contractId, { hidden: true })
   },
 })
