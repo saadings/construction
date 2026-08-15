@@ -100,6 +100,8 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
+  // Counted rather than a flag, because the second person added has to reset the form as thoroughly as the first.
+  const [gonein, setGoneIn] = useState(0)
 
   // Nothing typed is a perfectly good answer for a number, so an empty one has nothing wrong with it.
   const wrongPhone = phone.trim() === '' ? null : whatIsWrong(pakistaniMobile, phone)
@@ -117,6 +119,7 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
       setName('')
       setPhone('')
       setNotes('')
+      setGoneIn((before) => before + 1)
     } catch (thrown) {
       const said: unknown = (thrown as { data?: unknown }).data
       setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
@@ -126,7 +129,7 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
   }
 
   return (
-    <Form className="gap-5">
+    <Form className="gap-5" freshAfter={gonein}>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Name" hint="The way you say it." problem={whatIsWrong(personName, name)}>
           <Line
