@@ -1,4 +1,4 @@
-import { Show, SignInButton, UserButton } from '@clerk/tanstack-react-start'
+import { UserButton } from '@clerk/tanstack-react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 
@@ -6,20 +6,8 @@ import { api } from '../../../convex/_generated/api'
 import { NotKnownHere } from '../components/shell/NotKnownHere'
 import { SitesList, SitesListWaiting } from '../components/sites/SitesList'
 
-export const Route = createFileRoute('/')({ component: Home })
-
-function Home() {
-  return (
-    <>
-      <Show when="signed-out">
-        <WayIn />
-      </Show>
-      <Show when="signed-in">
-        <HisSites />
-      </Show>
-    </>
-  )
-}
+// No signed-out branch: the root never renders a route to somebody signed out, so one here would be a screen nothing can reach.
+export const Route = createFileRoute('/')({ component: HisSites })
 
 function HisSites() {
   const sites = useQuery(api.sites.queries.all, {})
@@ -45,18 +33,5 @@ function HisSites() {
         <UserButton />
       </div>
     </>
-  )
-}
-
-function WayIn() {
-  return (
-    <main className="bg-background mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 p-6">
-      <h1 className="text-foreground font-display text-[2.75rem] leading-none">Construction</h1>
-      <p className="text-muted-foreground">Sites, spending and what everyone is owed.</p>
-
-      <SignInButton mode="modal">
-        <button className="bg-primary text-primary-foreground mt-2 rounded-md px-6 py-3 font-medium">Sign in</button>
-      </SignInButton>
-    </main>
   )
 }

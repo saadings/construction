@@ -36,7 +36,7 @@ describe('the width a screen is allowed to take', () => {
   /** Centred and capped on purpose. Both are screens with no nav, one thing to do, and nothing to line up. */
   const CENTRED_ON_PURPOSE: Record<string, string> = {
     'frontend/src/components/NotFound.tsx': 'a page that is not there, which is a sentence and a way back',
-    'frontend/src/routes/index.tsx': 'the signed-out screen, which is a name and one button',
+    'frontend/src/components/shell/WayIn.tsx': 'the signed-out screen, which is a name and one button',
   }
 
   it('is not a phone-wide column on any screen but the two that are meant to be', () => {

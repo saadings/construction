@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 
 import { api } from '../../../convex/_generated/api'
 import { Shell } from '../components/shell/Shell'
+import { WayIn } from '../components/shell/WayIn'
 import { env } from '../lib/env'
 import { THEME_INIT_SCRIPT, applyHowItLooks, useHowItLooks, usePrefersDark } from '../lib/theme'
 import type { RouterContext } from '../router'
@@ -53,9 +54,9 @@ function RootComponent() {
     // Clerk's screens are not styled from these tokens, so they are told which way round the app is; pinned to dark they arrive as a dark panel over a light page.
     <ClerkProvider appearance={{ baseTheme: isDark ? dark : undefined }}>
       <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-        {/* The nav belongs to somebody who is signed in. Signed out, there is one screen and nowhere else to go. */}
+        {/* Signed out there is one screen, whatever was asked for. Rendering the outlet here put every other route in front of somebody with no session: a form nobody can send, over a reading that never comes back. */}
         <Show when="signed-out">
-          <Outlet />
+          <WayIn />
         </Show>
         <Show when="signed-in">
           <RememberThisSignIn />
