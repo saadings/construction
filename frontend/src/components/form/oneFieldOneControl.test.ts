@@ -7,8 +7,10 @@ import { everyScreen } from '../../testing/screens'
 
 // `Field` is now a group with a label pointing at an id the field hands its control, and the same rule holds for a sharper reason: there is one id to give. Two controls in one `Field` are handed the same one, so the document has two elements answering to a single name and the label reaches whichever comes first. Asserted as rendered output in `Field.test.tsx`; this is where it is kept off the screens.
 
+// `Picker` was in this list until const measured it: it was a `<select>`, #89 deleted it, and `Pick` that replaced it was never added. So the matcher was blind to this app's primary picker on ten call sites, and two `Pick`s in one `Field` -- the exact defect this exists to prevent -- reported nothing at all. The floor above had already been re-anchored off `Picker`; the list underneath it had not, which is the same rot one level down.
+
 /** Everything a `Field` would try to name, which is every element a person can put an answer into. */
-const A_CONTROL = /<(Line|Lines|Picker|MoneyLine|input|select|textarea|button)\b/g
+const A_CONTROL = /<(Line|Lines|Pick|MoneyLine|input|select|textarea|button)\b/g
 
 /** Each `<Field …>` block, from its opening tag to the `</Field>` that closes it. `Field` never nests inside `Field`, so the first close is the right one. */
 export function fieldsIn(source: string): Array<string> {
@@ -92,6 +94,14 @@ describe('what one Field is allowed to hold', () => {
     expect(whatIsWrongWithTheField('<Field label="Number"><Line value={one} /><label>and</label>')).toContain(
       'a label inside a Field'
     )
+
+    // In the shape this app really writes, which is what the matcher was blind to. `Pick` is on ten call sites and was not in the list; `Picker`, which is on none, was.
+    expect(
+      whatIsWrongWithTheField('<Field label="What for"><Pick chosen={a} choices={x} /><Pick chosen={b} choices={y} />')
+    ).toContain('2 controls')
+    expect(
+      whatIsWrongWithTheField('<Field label="What for"><Pick chosen={a} choices={x} /><Line value={n} />')
+    ).toContain('2 controls')
   })
 
   it('leaves a question with one answer in it alone', () => {
@@ -99,8 +109,10 @@ describe('what one Field is allowed to hold', () => {
       whatIsWrongWithTheField('<Field label="Name" problem={x}><Line value={name} aria-label="Name" /></Field>')
     ).toBeNull()
     expect(
-      whatIsWrongWithTheField('<Field label="Where it has got to"><Picker value={stage}><option /></Picker>')
+      whatIsWrongWithTheField('<Field label="What for"><Pick chosen={trade} choices={trades} /></Field>')
     ).toBeNull()
+    // And a component whose name merely begins with one of theirs is not one of them. `Picker` used to be in the list itself, which is how a plant written in its shape went on passing after the thing was deleted.
+    expect(whatIsWrongWithTheField('<Field label="Where it has got to"><Picker value={stage} /></Field>')).toBeNull()
     // And a row of choices outside a `Field` is the fix, so the sweep does not pick it up at all.
     expect(fieldsIn('<Choices label="Whose house"><button role="radio">Ours to sell</button></Choices>')).toEqual([])
     // Nor does a component whose name only begins the same way.
