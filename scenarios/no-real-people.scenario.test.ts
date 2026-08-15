@@ -26,8 +26,14 @@ const TAKEN_FROM_THE_WORKBOOKS = new Set([
   '67a86e3e7bd2443f6d2c2909dba371dda1642d0d79df3004fef75da317522433',
   '11d7cdb02b19aeffbdc59eeff157f1fd6f0248df3596ed729fd77f18493fe865',
   '6481ce0d69b3183f965186e1266ed4a0931a89bbfa82a213c5fd42904996ef4c',
-  '9587740ea2f5a2d997b84ba6d1b07977abbc1487c7125bb115dc00d9bb823ca2',
-  'fea25466ffad9fef240652204f67597d201c902f6ed1482dc493c457aef2abec',
+  '97b3650166ce2517ed20c1eb1567c1c8570832a16d239a3bb8762cc529b8fb71',
+  '5f14e72d515e753ca29c94e56cf339a8358067cbbb425dfe8cb2974bdbd1fc45',
+  '419573d7148745facdb9f434151c16a7517525632e63081e78b431172f70369c',
+  '18838d4a59181e4c5021eb2b012e845730302b49bd9f851d3358ae353eb0793c',
+  '3885fcc7202149913b8205e5b8eb9fa7b7f0597fdb461732206b8baffa67c76b',
+  '707f6b27b35675b3ef29ba1e1075c03324e79f8796f43e5a99e76e098ee12b64',
+  '1521628568a3e2c3f6455cab87d6f10167816c770ba4f9dc36dfd80385b8f6af',
+  '0f33e04ac3b3762d50f9530393b85019c1d935777def125e9ac56fcea8622c1f',
 ])
 
 function digestOf(value: string): string {
@@ -42,6 +48,22 @@ function trackedSource(): Array<string> {
     .filter((path) => path !== 'scenarios/no-real-people.scenario.test.ts')
 }
 
+// A value removed as part of a longer one is itself a known-bad value: the label went and the four digits it was renamed for stayed, in another file, in a field of their own.
+
+/** Every run of one to three words, punctuation and line breaks ignored, so a name wrapped across two lines and a fragment sitting alone both read the same. */
+export function wordRunsIn(source: string): Array<string> {
+  const words = source.split(/[^A-Za-z0-9]+/).filter((word) => word.length > 0)
+  const runs: Array<string> = []
+
+  for (let at = 0; at < words.length; at += 1) {
+    for (let long = 1; long <= 3 && at + long <= words.length; long += 1) {
+      runs.push(words.slice(at, at + long).join(' '))
+    }
+  }
+
+  return runs
+}
+
 /** Every quoted string in a file, which is where a copied-in name or number lands. */
 export function quotedIn(source: string): Array<string> {
   return [...source.matchAll(/'([^'\n]{2,60})'|"([^"\n]{2,60})"/g)].map((match) => match[1] ?? match[2])
@@ -54,7 +76,11 @@ export function realLookingMobilesIn(source: string): Array<string> {
 
 /** A string whose digest is one taken from the workbooks. */
 export function fromTheWorkbooksIn(source: string): Array<string> {
-  return quotedIn(source).filter((quoted) => TAKEN_FROM_THE_WORKBOOKS.has(digestOf(quoted.trim())))
+  const found = [...quotedIn(source), ...wordRunsIn(source)].filter((candidate) =>
+    TAKEN_FROM_THE_WORKBOOKS.has(digestOf(candidate.trim()))
+  )
+
+  return [...new Set(found)]
 }
 
 describe('what a fixture is allowed to be made of', () => {

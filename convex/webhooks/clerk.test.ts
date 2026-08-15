@@ -40,7 +40,7 @@ function convexWithClerkWebhook() {
 }
 
 /** A user event carrying only the parts the handler reads. */
-function userEvent(type: 'user.created' | 'user.updated', id: string, surname = 'Saeed') {
+function userEvent(type: 'user.created' | 'user.updated', id: string, surname = 'Partner') {
   return {
     type,
     data: {

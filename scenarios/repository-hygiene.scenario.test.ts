@@ -86,7 +86,7 @@ describe('secrets and source workbooks', () => {
       '.env.production',
       '.env.local.backup',
       'construction account.xlsx',
-      'DR.KHALID MIRZA.xlsx',
+      'A CLIENT LEDGER.xlsx',
       'frontend/src/fixtures/payments.xlsx',
       'archive/2024.xls',
       '~$construction account.xlsx',
