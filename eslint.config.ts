@@ -15,6 +15,8 @@ export default defineConfig([
     ignores: [
       'dist',
       'frontend/dist',
+      // The gallery's own build. Ignored beside the app's for the same reason and not for a different one: linting a bundle reports a parsing error about a file nobody wrote.
+      'frontend/dist-gallery',
       'convex/_generated',
       '.yarn',
       '.agents',

@@ -49,7 +49,8 @@ export function Gallery() {
     <div className="bg-background text-foreground min-h-dvh">
       <Scaffolding />
 
-      <div className="border-border flex flex-wrap gap-1.5 border-b px-4 py-3">
+      {/* Named so a photograph can put it away. At 390 this row is a third of the screen, and a picture of a phone that is one third my own navigation is not a picture anybody can judge the app by. The note above it stays in every shot on purpose -- an image gets forwarded, and the one that says what it is has to travel with it. */}
+      <div data-gallery="chrome" className="border-border flex flex-wrap gap-1.5 border-b px-4 py-3">
         {ON_SHOW.map((screen) => (
           <button
             key={screen.slug}
@@ -58,6 +59,9 @@ export function Gallery() {
               show(screen.slug)
             }}
             aria-current={screen.slug === showing.slug ? 'page' : undefined}
+            // What the page knows about itself, written where anything opening it can read it. The script that photographs these screens has no list of its own and no marker of its own: it reads the buttons, and it waits for the words a screen shows before it takes the picture. A second list in a script is a list that drifts, and a screenshot taken on a timer is a picture of whatever had loaded.
+            data-slug={screen.slug}
+            data-proves={screen.proves}
             className={
               screen.slug === showing.slug
                 ? 'border-primary bg-accent text-accent-foreground rounded-md border px-2.5 py-1.5 text-sm font-medium'
@@ -69,7 +73,9 @@ export function Gallery() {
         ))}
       </div>
 
-      <p className="text-faint px-4 py-2 text-[0.75rem] tracking-[0.06em] uppercase">{showing.where}</p>
+      <p data-gallery="chrome" className="text-faint px-4 py-2 text-[0.75rem] tracking-[0.06em] uppercase">
+        {showing.where}
+      </p>
 
       {/* Keyed, so moving from one screen to the next starts it fresh rather than carrying half a form over. Named, so a test can ask what the screen drew without the gallery's own chrome counting as part of it. */}
       <div data-testid="the-screen">

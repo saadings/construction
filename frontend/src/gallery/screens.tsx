@@ -56,7 +56,8 @@ export const ON_SHOW: Array<OnShow> = [
     slug: 'day-sheet',
     name: 'What went out today',
     where: 'a house, then the day sheet',
-    proves: 'In this sitting',
+    // Not `In this sitting`, which is the first thing that came to mind and is `hidden lg:block`. jsdom applies no CSS, so it passed there and the browser found it thirty-four times and never visible -- which is the gallery earning its keep before it had taken a single picture.
+    proves: 'Add another',
     draw: () => (
       <DaySheet
         siteName={THE_HOUSE}
