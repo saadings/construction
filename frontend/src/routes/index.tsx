@@ -1,4 +1,3 @@
-import { UserButton } from '@clerk/tanstack-react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 
@@ -26,12 +25,5 @@ function HisSites() {
     )
   }
 
-  return (
-    <>
-      <SitesList sites={sites} />
-      <div className="fixed top-5 right-5">
-        <UserButton />
-      </div>
-    </>
-  )
+  return <SitesList sites={sites} />
 }
