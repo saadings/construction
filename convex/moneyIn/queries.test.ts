@@ -218,24 +218,26 @@ describe('what came in on a house', () => {
     expect(letIn(await signedIn.query(api.moneyIn.queries.totals, { siteId: other })).receivedPaisa).toBe(4500000)
   })
 
-  it('tells somebody who is not a partner on the house nothing at all', async () => {
+  it('shows it to anybody signed in, and nothing for a house that is not there', async () => {
     const t = convexWithMoneyIn()
     const house = await t.run(aHouseWithMoneyIn)
     await t.run(async (ctx) => {
       await ctx.db.insert('accounts', {
-        externalId: 'user_who_is_not_on_this_house',
-        name: 'The one it is built for',
-        primaryEmail: 'client@example.com',
+        externalId: 'user_another_partner',
+        name: 'Another partner',
+        primaryEmail: 'another@example.com',
         otherEmails: [],
-        personId: house.client,
       })
     })
 
-    // Nothing comes back rather than a refusal, so "not yours" and "not there" read the same from outside.
-    const arrived = await t
-      .withIdentity({ subject: 'user_who_is_not_on_this_house' })
-      .query(api.moneyIn.queries.forSite, { siteId: house.siteId })
+    const alsoSignedIn = t.withIdentity({ subject: 'user_another_partner' })
+    expect(letIn(await alsoSignedIn.query(api.moneyIn.queries.forSite, { siteId: house.siteId }))).toHaveLength(3)
 
-    expect(arrived).toBeNull()
+    // A house that is not there is still nothing, which is what a mistyped or hidden id gets.
+    const gone = await t.run(async (ctx) => {
+      await ctx.db.delete('sites', house.siteId)
+      return house.siteId
+    })
+    expect(await alsoSignedIn.query(api.moneyIn.queries.forSite, { siteId: gone })).toBeNull()
   })
 })

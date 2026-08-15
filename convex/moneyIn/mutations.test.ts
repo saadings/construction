@@ -164,25 +164,25 @@ describe('writing down money that came in', () => {
     expect(refusal).toBe('Say who this came from.')
   })
 
-  it('refuses somebody who is not a partner on the house', async () => {
+  it('takes it from anybody signed in, holding no role on the house', async () => {
+    // One partnership, one set of books. What the sign-in list lets in is what may write here.
     const t = convexWithMoneyIn()
     const site = await t.run(aSiteThePartnerIsOn)
-    // Signed in, with a person of their own, and holding the client's role on this very site.
     await t.run(async (ctx) => {
       await ctx.db.insert('accounts', {
         externalId: SOMEBODY_ELSE,
-        name: 'The one it is built for',
-        primaryEmail: 'client@example.com',
+        name: 'Another partner',
+        primaryEmail: 'another@example.com',
         otherEmails: [],
-        personId: site.client,
       })
     })
 
-    const refusal = await refusalFrom(
-      t.withIdentity({ subject: SOMEBODY_ELSE }).mutation(api.moneyIn.mutations.record, aCheque(site))
-    )
+    await t.withIdentity({ subject: SOMEBODY_ELSE }).mutation(api.moneyIn.mutations.record, aCheque(site))
 
-    expect(refusal).toBe('This site is not one of yours.')
+    expect(await t.run((ctx) => ctx.db.query('moneyIn').collect())).toHaveLength(1)
+    // And the door is still a door: not signed in at all writes nothing.
+    await expect(t.mutation(api.moneyIn.mutations.record, aCheque(site))).rejects.toThrow()
+    expect(await t.run((ctx) => ctx.db.query('moneyIn').collect())).toHaveLength(1)
   })
 })
 
