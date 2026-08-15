@@ -6,7 +6,7 @@ import { join } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { type WorkflowJob, jobsIn, readWorkflow } from './workflowFile'
+import { type WorkflowJob, jobsIn, readWorkflow, stepsIn } from './workflowFile'
 
 // The pieces deciding whether what ships is what was checked — the compiled-in backend address, the only step reading types, and job order — all of which fail without failing anything.
 
@@ -355,12 +355,36 @@ describe('the shape of the deploy workflow', () => {
     expect(cacheOff.length).toBe(setupNode.length)
   })
 
-  it('writes the deployment variables on a pull request too, not only on a push', () => {
-    // Codegen cannot pass until this has run, so gating it on `push` meant a pull request first went green after merging.
+  it('runs on a pull request, because codegen cannot pass until the deployment has its variables', () => {
+    // Gating the whole job on `push` meant a pull request first went green after merging: `auth.config.ts` reads CLERK_FRONTEND_API_URL off the deployment, and codegen validates it there.
     expect(job('sync-secrets').condition ?? '').not.toContain("github.event_name == 'push'")
 
     // The control: conditions are read at all, and the jobs that really are push-only still say so.
     expect(job('detect-changes').condition).toContain("github.event_name == 'push'")
+  })
+
+  it('writes to the deployment only on a push, and reads on everything else', () => {
+    // `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production. Running that on a pull request is a deploy nobody reads as one, from a branch nobody has reviewed.
+    const steps = stepsIn(job('sync-secrets').body)
+    const writing = steps.filter((step) => step.body.includes('convex env set'))
+    const reading = steps.filter((step) => step.body.includes('convex env get'))
+
+    // The control: both halves are found at all, so a renamed step fails here rather than leaving an empty list to agree with everything.
+    expect(writing).toHaveLength(1)
+    expect(reading).toHaveLength(1)
+
+    expect(writing[0].condition).toBe("github.event_name == 'push'")
+    expect(reading[0].condition).toBe("github.event_name != 'push'")
+  })
+
+  it('never prints a variable it is checking, because three of the four are secrets', () => {
+    // A job that echoes a secret to prove it is set has published it to anyone who can read a log, and a log outlives the run.
+    const reading = stepsIn(job('sync-secrets').body).find((step) => step.body.includes('convex env get'))
+
+    expect(reading).toBeDefined()
+    // Captured into a shell variable and tested for emptiness; nothing is echoed but the names of what is missing.
+    expect(reading?.body).toContain('if [ -z "$(npx convex env get')
+    expect(reading?.body).not.toMatch(/echo .*\$\(npx convex env get/)
   })
 
   it('still fails fast on formatting', () => {

@@ -167,7 +167,7 @@ jobs:
       - name: Run scenario tests
         run: yarn test:scenario
 
-  # Runs on pull requests too, so PR CI writes to the production deployment — safe only because the values come from repository secrets.
+  # Runs on pull requests as well, because codegen cannot pass until the deployment has CLERK_FRONTEND_API_URL and gating the whole job on `push` meant a pull request first went green after merging. On a pull request it only reads: `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production, and a branch nobody has reviewed must not reach it.
   sync-secrets:
     runs-on: ubuntu-latest
     steps:
@@ -185,8 +185,33 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      # A pull request reads what a push writes. It fails here naming the variable rather than three jobs later inside codegen, where a missing one reads as a broken auth config.
+      - name: Check the deployment has what codegen reads
+        if: github.event_name != 'push'
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+
+          missing=
+          for name in CLERK_FRONTEND_API_URL CLERK_WEBHOOK_SECRET CLERK_SECRET_KEY CLERK_PUBLISHABLE_KEY; do
+            # Captured and never echoed: three of these four are secrets, and a job that prints one to prove it is there has published it to anyone who can read a log.
+            if [ -z "$(npx convex env get "$name" 2>/dev/null || true)" ]; then
+              missing="$missing $name"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "✗ The deployment has no value for:$missing"
+            echo "  A pull request reads these and never writes them. Push to main to set them."
+            exit 1
+          fi
+
+          echo "✓ The deployment has every variable codegen reads"
+
       - name: Sync Secrets to Convex
         id: sync-convex
+        if: github.event_name == 'push'
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}

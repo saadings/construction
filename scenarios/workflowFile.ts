@@ -113,6 +113,40 @@ function splitNames(list: string): Array<string> {
     .filter((name) => name.length > 0)
 }
 
+export type WorkflowStep = {
+  /** Every line of the step, its `- name:` or `- uses:` header included. */
+  body: string
+  /** The step's own `if:`, never the job's. */
+  condition: string | undefined
+}
+
+/** Each step sliced from its `- ` header to the next one, so a condition can be attributed to the step it guards rather than to the job it sits in. */
+export function stepsIn(job: string): Array<WorkflowStep> {
+  const steps: Array<Array<string>> = []
+  let current: Array<string> | undefined
+
+  for (const line of job.split('\n')) {
+    if (/^ {6}- /.test(line)) {
+      current = [line]
+      steps.push(current)
+      continue
+    }
+
+    // Back out to job depth ends the steps: another key, or the next job's header.
+    if (/^ {0,4}\S/.test(line)) {
+      current = undefined
+      continue
+    }
+
+    current?.push(line)
+  }
+
+  return steps.map((lines) => {
+    const body = lines.join('\n')
+    return { body, condition: /^ {8}if:[ \t]*(.*)$/m.exec(body)?.[1].trim() }
+  })
+}
+
 /** What every `run:` step in the given text runs, block scalars flattened. */
 export function runStepsIn(text: string): Array<string> {
   const lines = text.split('\n')
