@@ -36,6 +36,10 @@ export const upsert = internalMutation({
 
     // The cold start: the very first sign-in on a deployment is the person setting it up, so it declares itself, there being nobody to ask.
 
+    // That holds only while the first sign-up really is that person. On a fresh production deployment with sign-up open, it is whoever finds the URL first.
+
+    // So the Clerk allowlist is not a hardening of this design, it is a precondition of it: restrictions.allowlist true, and every partner's address added, before production takes a sign-up.
+
     // Everyone after arrives unlinked and waits to be joined to a person already in the ledger, because guessing which one would put one partner's money under another's name.
     const personId = (await anyoneLinkedYet(ctx))
       ? undefined
