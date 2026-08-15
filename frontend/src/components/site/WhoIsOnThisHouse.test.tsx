@@ -1,0 +1,277 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import type { Claimed, Engaged, Named, NewBill, NewEngagement } from './WhoIsOnThisHouse'
+import { WhoIsOnThisHouse } from './WhoIsOnThisHouse'
+
+afterEach(cleanup)
+
+// Akram out of the 199-M sheet, in the shape that sheet keeps him: agreed, billed once extra work landed, and paid.
+const ENGAGED: Array<Engaged> = [
+  {
+    engagementId: 'e1',
+    personName: 'A mason',
+    tradeName: 'Civil labour',
+    agreedPaisa: 300_000_00,
+    billedPaisa: 340_000_00,
+    paidPaisa: 325_000_00,
+  },
+  {
+    engagementId: 'e2',
+    personName: 'A tile fixer',
+    tradeName: 'Tiles',
+    ratePaisa: 45_00,
+    unit: 'square foot',
+    billedPaisa: 0,
+    paidPaisa: 0,
+  },
+]
+
+const CLAIMED: Array<Claimed> = [
+  {
+    _id: 'b1',
+    day: '2026-04-01',
+    amountPaisa: 340_000_00,
+    personName: 'A mason',
+    tradeName: 'Civil labour',
+    reference: 'CH-12',
+    description: 'Including the extra room',
+  },
+]
+
+const PEOPLE: Array<Named> = [
+  { _id: 'p1', name: 'A mason' },
+  { _id: 'p2', name: 'A tile fixer' },
+]
+
+const TRADES: Array<Named> = [
+  { _id: 't1', name: 'Civil labour' },
+  { _id: 't2', name: 'Tiles' },
+]
+
+function renderWith(over: Partial<Parameters<typeof WhoIsOnThisHouse>[0]> = {}) {
+  const onAgree = vi.fn<(engagement: NewEngagement) => Promise<boolean>>(() => Promise.resolve(true))
+  const onRaise = vi.fn<(bill: NewBill) => Promise<boolean>>(() => Promise.resolve(true))
+  const onTakeOut = vi.fn<(billId: string) => Promise<boolean>>(() => Promise.resolve(true))
+
+  render(
+    <WhoIsOnThisHouse
+      engaged={ENGAGED}
+      claimed={CLAIMED}
+      people={PEOPLE}
+      trades={TRADES}
+      saving={false}
+      refusal={null}
+      takingOut={null}
+      onAgree={onAgree}
+      onRaise={onRaise}
+      onTakeOut={onTakeOut}
+      {...over}
+    />
+  )
+
+  return { onAgree, onRaise, onTakeOut }
+}
+
+describe('who is on a house', () => {
+  it('shows all three figures, because none of them can be worked out from the others', () => {
+    // Agreed against billed is the extra work; billed against paid is the balance.
+    renderWith()
+
+    const rows = screen.getAllByRole('listitem')
+    expect(within(rows[0]).getByText('300,000')).toBeTruthy()
+    expect(within(rows[0]).getByText('340,000')).toBeTruthy()
+    expect(within(rows[0]).getByText('325,000')).toBeTruthy()
+    // And what is still standing, which is the figure somebody is actually asked about.
+    expect(within(rows[0]).getByText('15,000')).toBeTruthy()
+  })
+
+  it('reads a rate as the rate and what it is for, because the figure alone says nothing', () => {
+    renderWith()
+
+    expect(screen.getByText('45 a square foot')).toBeTruthy()
+  })
+
+  it('says what to do about a house nobody is down on yet', () => {
+    renderWith({ engaged: [], claimed: [] })
+
+    expect(screen.getByText(/Nobody is down on this house yet/)).toBeTruthy()
+  })
+
+  it('puts somebody on a trade with a whole figure', async () => {
+    const { onAgree } = renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
+    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+
+    await waitFor(() => {
+      expect(onAgree).toHaveBeenCalledWith({
+        personId: 'p1',
+        tradeId: 't1',
+        agreed: '300,000',
+        rate: undefined,
+        unit: undefined,
+      })
+    })
+  })
+
+  it('puts somebody on a trade with a rate instead, which is the other way it is agreed', async () => {
+    const { onAgree } = renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p2' } })
+    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't2' } })
+    fireEvent.change(screen.getByLabelText('Or a rate'), { target: { value: '45' } })
+    fireEvent.change(screen.getByLabelText('For each'), { target: { value: 'square foot' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+
+    await waitFor(() => {
+      expect(onAgree).toHaveBeenCalledWith({
+        personId: 'p2',
+        tradeId: 't2',
+        agreed: undefined,
+        rate: '45',
+        unit: 'square foot',
+      })
+    })
+  })
+
+  it('says nothing is missing about the figure once a rate has been put in instead', () => {
+    renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.change(screen.getByLabelText('Or a rate'), { target: { value: '45' } })
+    fireEvent.blur(screen.getByLabelText('What was agreed'))
+
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('takes a bill somebody has raised, with their own number on it', async () => {
+    const { onRaise } = renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Somebody has billed us' }))
+    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
+    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    fireEvent.change(screen.getByLabelText('How much they have billed'), { target: { value: '340000' } })
+    fireEvent.change(screen.getByLabelText('Their bill number'), { target: { value: 'CH-12' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Put it down' }))
+
+    await waitFor(() => {
+      expect(onRaise).toHaveBeenCalledWith(
+        expect.objectContaining({ personId: 'p1', tradeId: 't1', amount: '340,000', reference: 'CH-12' })
+      )
+    })
+  })
+
+  it('asks a bill for nothing about rates, and an agreement for nothing about days', () => {
+    // Two things that ask nearly the same questions, and neither asks the other's.
+    renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Somebody has billed us' }))
+    expect(screen.getByLabelText('Which day')).toBeTruthy()
+    expect(screen.queryByLabelText('Or a rate')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Never mind' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    expect(screen.getByLabelText('Or a rate')).toBeTruthy()
+    expect(screen.queryByLabelText('Which day')).toBeNull()
+  })
+
+  it('keeps the form open with what was typed when the server refused it', () => {
+    renderWith({ refusal: 'Put in what was agreed, either a whole figure or a rate.' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
+
+    expect(screen.getByRole('alert').textContent).toBe('Put in what was agreed, either a whole figure or a rate.')
+    expect(screen.getByLabelText<HTMLSelectElement>('Who').value).toBe('p1')
+  })
+
+  it('closes the form once it has gone in', async () => {
+    renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
+    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Who')).toBeNull()
+    })
+    expect(screen.getByRole('button', { name: 'Put somebody on a trade' })).toBeTruthy()
+  })
+
+  it('leaves the form open when it did not go in, so nothing typed is lost', async () => {
+    const { onAgree } = renderWith()
+    onAgree.mockResolvedValue(false)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
+    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+
+    await waitFor(() => {
+      expect(onAgree).toHaveBeenCalled()
+    })
+    expect(screen.getByLabelText<HTMLInputElement>('What was agreed').value).toBe('300,000')
+  })
+})
+
+describe('a bill that should not have been raised', () => {
+  it('asks before it takes one out, because a bill cannot be put back from a screen', async () => {
+    const { onTakeOut } = renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Take out 340,000 billed by A mason' }))
+    expect(onTakeOut).not.toHaveBeenCalled()
+    // Said plainly, because somebody disputing a bill is exactly the case the record is kept for.
+    expect(screen.getByText('Hide it?')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, take it out' }))
+
+    await waitFor(() => {
+      expect(onTakeOut).toHaveBeenCalledWith('b1')
+    })
+  })
+
+  it('lets somebody change their mind without anything happening', () => {
+    const { onTakeOut } = renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Take out 340,000 billed by A mason' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Never mind' })[0])
+
+    expect(onTakeOut).not.toHaveBeenCalled()
+  })
+
+  it('reads a bill the way somebody would say it', () => {
+    renderWith()
+
+    const bill = screen.getByText(/Civil labour · 2026-04-01/)
+    expect(bill.textContent).toContain('CH-12')
+    expect(bill.textContent).toContain('Including the extra room')
+  })
+})
+
+describe('while the readings are on their way', () => {
+  it('puts up the shape of what is coming, and nothing for a house that is not there', () => {
+    renderWith({ engaged: undefined, claimed: undefined })
+    expect(screen.getByRole('status', { name: 'Getting who is on this house' })).toBeTruthy()
+    expect(screen.getByRole('status', { name: 'Getting what has been billed' })).toBeTruthy()
+
+    cleanup()
+    renderWith({ engaged: null, claimed: null })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
+  it('says nothing technical anywhere on it', () => {
+    renderWith()
+
+    expect(document.body.textContent).not.toMatch(/record|entity|paisa|query|database|engagement|null|undefined/i)
+  })
+})

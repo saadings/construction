@@ -12,6 +12,7 @@ import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { Billing } from '../components/site/Billing'
 import type { TradeSpend } from '../components/site/SpentByTrade'
 import { SpentByTrade } from '../components/site/SpentByTrade'
+import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
 import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import type { Stage } from '../components/sites/HouseDetails'
 import { STAGES } from '../components/sites/HouseDetails'
@@ -76,6 +77,8 @@ function OneHouse() {
 
       {/* The one thing deciding whether a house shows billing or a sale. A house built for the partners has no client to bill. */}
       {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
+
+      <WhoIsOnIt siteId={forSite.siteId} />
 
       <WhatThePartnersAreOwed siteId={forSite.siteId} />
 
@@ -179,6 +182,94 @@ function WhatItWentOn({ siteId, byTrade }: { siteId: Id<'sites'>; byTrade: Array
           setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not come out. Try once more.')
 
           return false
+        } finally {
+          setTakingOut(null)
+        }
+      }}
+    />
+  )
+}
+
+// Who is on this house and what they say they are owed. Asked for on its own, like the rest of the sections, so one slow reading does not hold up the page.
+function WhoIsOnIt({ siteId }: { siteId: Id<'sites'> }) {
+  const engaged = useQuery(api.engagements.queries.spread, { siteId })
+  const claimed = useQuery(api.bills.queries.forSite, { siteId })
+  const people = useQuery(api.people.queries.list, {})
+  const trades = useQuery(api.trades.queries.list, {})
+
+  const agree = useMutation(api.engagements.mutations.agree)
+  const raise = useMutation(api.bills.mutations.raise)
+  const takeOut = useMutation(api.bills.mutations.remove)
+
+  const [saving, setSaving] = useState(false)
+  const [takingOut, setTakingOut] = useState<string | null>(null)
+  const [refusal, setRefusal] = useState<string | null>(null)
+
+  // The sentence the server refused with, which is written for him. Anything else is the app failing rather than him being wrong.
+  async function through(sending: Promise<unknown>): Promise<boolean> {
+    setRefusal(null)
+
+    try {
+      await sending
+
+      return true
+    } catch (thrown) {
+      setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
+
+      return false
+    }
+  }
+
+  return (
+    <WhoIsOnThisHouse
+      engaged={engaged}
+      claimed={claimed}
+      people={people}
+      trades={trades}
+      saving={saving}
+      refusal={refusal}
+      takingOut={takingOut}
+      onAgree={async (engagement) => {
+        setSaving(true)
+
+        try {
+          return await through(
+            agree({
+              siteId,
+              personId: engagement.personId as Id<'people'>,
+              tradeId: engagement.tradeId as Id<'trades'>,
+              agreed: engagement.agreed,
+              rate: engagement.rate,
+              unit: engagement.unit,
+            })
+          )
+        } finally {
+          setSaving(false)
+        }
+      }}
+      onRaise={async (bill) => {
+        setSaving(true)
+
+        try {
+          return await through(
+            raise({
+              siteId,
+              personId: bill.personId as Id<'people'>,
+              tradeId: bill.tradeId as Id<'trades'>,
+              day: bill.day,
+              amount: bill.amount,
+              reference: bill.reference,
+            })
+          )
+        } finally {
+          setSaving(false)
+        }
+      }}
+      onTakeOut={async (billId) => {
+        setTakingOut(billId)
+
+        try {
+          return await through(takeOut({ siteId, billId: billId as Id<'bills'> }))
         } finally {
           setTakingOut(null)
         }
