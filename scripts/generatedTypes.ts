@@ -24,8 +24,10 @@ function saySo(headline: string, whatItMeans: Array<string>): void {
 }
 
 // Printed, never fatal. Whatever was going to happen still happens, with the cause said first instead of an unresolved import naming a path and no reason.
-export function warnIfGeneratedTypesAreMissing() {
-  if (existsSync(API)) {
+
+// The path is an argument so a test can point it somewhere empty, rather than a test having to move the real directory out of the way to see this fire.
+export function warnIfGeneratedTypesAreMissing(api: string = API) {
+  if (existsSync(api)) {
     return
   }
 
@@ -47,9 +49,11 @@ export function warnThatGeneratedTypesAreStale() {
   ])
 }
 
-const [, , asked] = process.argv
-if (asked === 'stale') {
-  warnThatGeneratedTypesAreStale()
-} else {
-  warnIfGeneratedTypesAreMissing()
+// Only when run, never on import, so a test can reach these functions without the check firing as a side effect of loading them.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  if (process.argv[2] === 'stale') {
+    warnThatGeneratedTypesAreStale()
+  } else {
+    warnIfGeneratedTypesAreMissing()
+  }
 }
