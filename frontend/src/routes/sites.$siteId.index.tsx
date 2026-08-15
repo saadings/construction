@@ -4,10 +4,13 @@ import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { Figure, Page } from '../components/shell/Page'
+import { Billing } from '../components/site/Billing'
+import { SpentByTrade } from '../components/site/SpentByTrade'
 
-export const Route = createFileRoute('/sites/$siteId/')({ component: OneSite })
+export const Route = createFileRoute('/sites/$siteId/')({ component: OneHouse })
 
-function OneSite() {
+function OneHouse() {
   const { siteId } = Route.useParams()
   const forSite = { siteId: siteId as Id<'sites'> }
 
@@ -15,77 +18,54 @@ function OneSite() {
   const totals = useQuery(api.payments.queries.totals, forSite)
 
   if (site === undefined || totals === undefined) {
-    return (
-      <main className="bg-background text-muted-foreground flex min-h-dvh items-center justify-center p-6">
-        <p>Getting the site…</p>
-      </main>
-    )
+    return <Page title="…">{null}</Page>
   }
 
-  // Both come back as nothing for a site that is not there and one that is not his, which is what the server refuses to tell apart.
   if (site === null || totals === null) {
     return (
-      <main className="bg-background flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-foreground font-display text-2xl">Nothing to open here.</p>
-        <p className="text-muted-foreground max-w-xs">
-          This house may have been put away, or you may not be on it. Ask Nauman.
-        </p>
-        <Link to="/" className="text-primary pt-2 font-medium">
-          Back to your sites
+      <Page title="Nothing to open here">
+        <p className="text-muted max-w-prose">This house may have been put away.</p>
+        <Link to="/" className="text-brass font-medium">
+          Back to the houses
         </Link>
-      </main>
+      </Page>
     )
   }
 
   return (
-    <div className="bg-background min-h-dvh pb-28">
-      <header className="mx-auto max-w-lg px-5 pt-7 pb-5">
-        <Link to="/" className="text-muted-foreground text-sm">
-          Sites
+    <Page
+      title={site.name}
+      beside={
+        <Link
+          to="/sites/$siteId/day"
+          params={{ siteId }}
+          className="bg-brass text-background rounded-md px-4 py-2 text-sm font-medium"
+        >
+          Put in a day
         </Link>
-        <h1 className="text-foreground font-display mt-1 text-[2rem] leading-none">{site.name}</h1>
+      }
+    >
+      <section className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
+        <Amount label="Spent" paisa={totals.spentPaisa} big />
+        <Amount label="Building" paisa={totals.buildingCostPaisa} />
+        <Amount label="Land" paisa={totals.plotCostPaisa} />
+      </section>
 
-        <p className="text-muted-foreground mt-6 text-[0.75rem] font-medium tracking-[0.08em] uppercase">Spent</p>
-        <p className="text-primary font-display -mt-1 text-[3rem] leading-none">{formatPaisa(totals.spentPaisa)}</p>
+      <SpentByTrade byTrade={totals.byTrade} />
 
-        <dl className="text-muted-foreground mt-4 flex gap-6 text-sm">
-          <div>
-            <dt className="text-[0.75rem] tracking-[0.06em] uppercase">Building</dt>
-            <dd className="text-foreground text-base">{formatPaisa(totals.buildingCostPaisa)}</dd>
-          </div>
-          <div>
-            <dt className="text-[0.75rem] tracking-[0.06em] uppercase">Land</dt>
-            <dd className="text-foreground text-base">{formatPaisa(totals.plotCostPaisa)}</dd>
-          </div>
-        </dl>
-      </header>
+      {/* The one thing deciding whether a house shows billing or a sale. A house built for the partners has no client to bill. */}
+      {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
+    </Page>
+  )
+}
 
-      <main className="mx-auto max-w-lg px-5">
-        {totals.byTrade.length === 0 ? (
-          <p className="text-muted-foreground py-8 text-center">Nothing spent on this house yet.</p>
-        ) : (
-          <ol className="border-border divide-border divide-y border-t border-b">
-            {totals.byTrade.map((trade) => (
-              <li key={trade.tradeId} className="flex items-baseline justify-between gap-4 py-3">
-                <span className="text-foreground min-w-0 truncate">{trade.name}</span>
-                <span className="text-foreground shrink-0 text-lg">{formatPaisa(trade.paisa)}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </main>
-
-      <div className="fixed inset-x-0 bottom-0">
-        <div className="mx-auto max-w-lg px-5 pb-6">
-          <Link
-            to="/sites/$siteId/day"
-            params={{ siteId }}
-            className="bg-primary text-primary-foreground block rounded-md py-3 text-center font-medium shadow-lg"
-          >
-            Put in a day
-          </Link>
-        </div>
-      </div>
+function Amount({ label, paisa, big = false }: { label: string; paisa: number; big?: boolean }) {
+  return (
+    <div>
+      <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">{label}</p>
+      <Figure className={big ? 'text-brass text-[2.5rem] leading-none' : 'text-foreground text-xl'}>
+        {formatPaisa(paisa)}
+      </Figure>
     </div>
   )
 }
