@@ -69,7 +69,7 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
       )}
 
       <StartOne
-        className="fixed right-5 bottom-24 z-10 size-14 justify-center rounded-full shadow-lg sm:hidden"
+        className="fixed right-5 bottom-[calc(var(--phone-bar)+1rem)] z-10 size-14 justify-center rounded-full shadow-lg sm:hidden"
         short
       />
     </Page>
