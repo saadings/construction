@@ -1,9 +1,9 @@
 // @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { api } from '../_generated/api'
 import type { MutationCtx } from '../_generated/server'
 import schema from '../schema'
@@ -68,16 +68,13 @@ describe('adding a bank account', () => {
     const t = convexWithBankAccounts()
     await t.run(anAccount)
 
-    const refusal = await t
-      .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '55555555550000' })
-      .then(
-        () => 'nothing was refused',
-        (thrown: unknown) =>
-          thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-      )
+    const refusal = await refusalFrom(
+      t
+        .withIdentity({ subject: SIGNED_IN_AS })
+        .mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '55555555550000' })
+    )
 
-    expect(refusal).toContain('last four figures')
+    expect(refusal).toBe('That is not the last four figures of an account.')
     expect(await t.run((ctx) => ctx.db.query('bankAccounts').collect())).toEqual([])
   })
 

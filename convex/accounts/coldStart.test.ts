@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test'
 import { Webhook } from 'svix'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { personName } from '../../shared/validation/primitives'
 import { api } from '../_generated/api'
 import schema from '../schema'
@@ -133,14 +134,10 @@ describe('everyone who signs in after', () => {
 
     const aHouse = { name: '1-A, Phase 0', builtForAClient: false, stage: 'building' } as const
 
-    const refusal = await t
-      .withIdentity({ subject: 'user_second' })
-      .mutation(api.sites.mutations.start, aHouse)
-      .then(
-        () => 'nothing was refused',
-        (thrown: unknown) => String(thrown)
-      )
-    expect(refusal).toContain('Ask Nauman to add you')
+    const refusal = await refusalFrom(
+      t.withIdentity({ subject: 'user_second' }).mutation(api.sites.mutations.start, aHouse)
+    )
+    expect(refusal).toBe('Ask Nauman to add you before you start a site.')
 
     // The control: the first account starts one on the same call, so this is the link deciding rather than starting a site being broken for everybody.
     await t.withIdentity({ subject: 'user_first' }).mutation(api.sites.mutations.start, aHouse)

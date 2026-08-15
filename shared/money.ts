@@ -5,11 +5,14 @@ export const MAX_PAISA = 1_000_000_000_000
 
 const TYPED_AMOUNT = /^-?\d+(\.\d{1,2})?$/
 
-export function rupeesToPaisa(input: string | number): number {
+// Two different mistakes, kept apart: something that is not an amount at all, and an amount too large to hold. Whoever asks decides what to say about each, because "that is not a number" is a lie told to somebody who typed one.
+export type AmountRead = { ok: true; paisa: number } | { ok: false; why: 'notAnAmount' | 'largerThanWeKeep' }
+
+export function readRupees(input: string | number): AmountRead {
   const text = String(input).trim().replaceAll(',', '')
 
   if (!TYPED_AMOUNT.test(text)) {
-    throw new Error('That is not an amount of money.')
+    return { ok: false, why: 'notAnAmount' }
   }
 
   const negative = text.startsWith('-')
@@ -17,10 +20,24 @@ export function rupeesToPaisa(input: string | number): number {
   const paisa = Number(whole) * 100 + Number(fraction.padEnd(2, '0'))
 
   if (!Number.isSafeInteger(paisa) || paisa > MAX_PAISA) {
-    throw new Error('That amount is larger than this keeps track of.')
+    return { ok: false, why: 'largerThanWeKeep' }
   }
 
-  return negative ? -paisa : paisa
+  return { ok: true, paisa: negative ? -paisa : paisa }
+}
+
+export function rupeesToPaisa(input: string | number): number {
+  const read = readRupees(input)
+
+  if (!read.ok) {
+    throw new Error(
+      read.why === 'largerThanWeKeep'
+        ? 'That amount is larger than this keeps track of.'
+        : 'That is not an amount of money.'
+    )
+  }
+
+  return read.paisa
 }
 
 export function paisaToRupees(paisa: number): number {

@@ -2,9 +2,9 @@
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
 import { makeFunctionReference } from 'convex/server'
-import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
 import schema from '../schema'
@@ -173,12 +173,7 @@ describe('changing something on a site', () => {
     const siteId = await t.run((ctx) => aSite(ctx, '1-A, Phase 0'))
 
     // What the phone actually receives. A plain `Error` reaches production as "Server Error", so the words are only real if they travel in `data`.
-    const refusal = await t
-      .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(rename, { siteId })
-      .catch((thrown: unknown) =>
-        thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-      )
+    const refusal = await refusalFrom(t.withIdentity({ subject: SIGNED_IN_AS }).mutation(rename, { siteId }))
 
     for (const technical of /record|entry|entity|ledger|sync|category|vendor|field|validation|required|error|database|query|permission|unauthori[sz]ed|forbidden|access/i.source.split(
       '|'
@@ -186,6 +181,6 @@ describe('changing something on a site', () => {
       expect(refusal).not.toMatch(new RegExp(technical, 'i'))
     }
     // The control: the assertion above passes trivially against a message that says nothing at all.
-    expect(refusal).toContain('not one of yours')
+    expect(refusal).toBe('This site is not one of yours.')
   })
 })

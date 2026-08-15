@@ -1,18 +1,28 @@
 import { z } from 'zod'
 
-export const bankAccountLabel = z
-  .string()
-  .transform((value) => value.trim().replace(/\s+/g, ' '))
-  .refine((value) => value.length >= 2 && value.length <= 40, {
-    message: 'Name this account the way you say it: the bank, then its last four figures.',
-  })
+import { boundedText } from './primitives'
+
+export const bankAccountLabel = boundedText({
+  atLeast: 2,
+  atMost: 40,
+  tooShort: 'Name this account the way you say it: the bank, then its last four figures.',
+  tooLong: 'Keep the name shorter: the bank, then its last four figures.',
+})
 
 // Applied on the device, where the whole number is typed. Its last four digits are all that is sent, so the rest never crosses the wire and there is nothing anywhere else to store or log.
 export const lastFourOf = z
   .string()
   .transform((value) => value.replace(/\D/g, ''))
-  .refine((digits) => digits.length >= 4, {
-    message: 'Put in the account number, or at least its last four digits.',
+  .superRefine((digits, ctx) => {
+    // Nothing typed and a number half typed are different mistakes: one is a field not filled in, the other is a hand that stopped.
+    if (digits.length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Put in the account number.' })
+    } else if (digits.length < 4) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'That is not enough of it. Put in the whole number, or its last four digits.',
+      })
+    }
   })
   .transform((digits) => digits.slice(-4))
 

@@ -25,21 +25,51 @@ export function isCalendarDate(value: string): boolean {
   return match !== null && isRealDay(Number(match[1]), Number(match[2]), Number(match[3]))
 }
 
-export function parseCalendarDate(input: string): string {
+// Two different mistakes, kept apart: something that is not a date at all, and a date nobody could have written down -- 31.02 is a slip on the day, not on the whole thing.
+export type DayRead = { ok: true; day: string } | { ok: false; why: 'notADate' | 'notOnTheCalendar' }
+
+export function readCalendarDate(input: string): DayRead {
   const text = input.trim()
 
-  const iso = ISO_DAY.exec(text)
-  if (iso) {
-    return assemble(Number(iso[1]), Number(iso[2]), Number(iso[3]))
+  const parts = partsOfAWrittenDay(text) ?? partsOfATypedDay(text)
+  if (parts === null) {
+    return { ok: false, why: 'notADate' }
   }
 
+  const [year, month, day] = parts
+  if (!isRealDay(year, month, day)) {
+    return { ok: false, why: 'notOnTheCalendar' }
+  }
+
+  return { ok: true, day: assemble(year, month, day) }
+}
+
+// How it is stored and how it comes back from a date field: 2025-10-07.
+function partsOfAWrittenDay(text: string): readonly [number, number, number] | null {
+  const written = ISO_DAY.exec(text)
+
+  return written === null ? null : ([Number(written[1]), Number(written[2]), Number(written[3])] as const)
+}
+
+// How it is written by hand and in the workbooks: 07.10.2025, 7/10/25.
+function partsOfATypedDay(text: string): readonly [number, number, number] | null {
   const typed = TYPED_DAY.exec(text)
-  if (typed) {
-    const year = typed[3].length === 2 ? 2000 + Number(typed[3]) : Number(typed[3])
-    return assemble(year, Number(typed[2]), Number(typed[1]))
+  if (typed === null) {
+    return null
   }
 
-  throw new Error('That is not a date.')
+  const year = typed[3].length === 2 ? 2000 + Number(typed[3]) : Number(typed[3])
+  return [year, Number(typed[2]), Number(typed[1])] as const
+}
+
+export function parseCalendarDate(input: string): string {
+  const read = readCalendarDate(input)
+
+  if (!read.ok) {
+    throw new Error(read.why === 'notOnTheCalendar' ? 'That day does not exist.' : 'That is not a date.')
+  }
+
+  return read.day
 }
 
 // The date the person's own device shows, read rather than converted.

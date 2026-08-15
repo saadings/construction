@@ -1,9 +1,9 @@
 // @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { api } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
@@ -102,13 +102,9 @@ describe('what a signed-in stranger can reach', () => {
     const personId = await t.run(signedInWithNoSite)
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
 
-    const refusal = await signedIn.mutation(api.people.mutations.add, { name: 'The Steel Supplier' }).then(
-      () => 'nothing was refused',
-      (thrown: unknown) =>
-        thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-    )
+    const refusal = await refusalFrom(signedIn.mutation(api.people.mutations.add, { name: 'The Steel Supplier' }))
 
-    expect(refusal).toContain('Ask Nauman to put you on a site first.')
+    expect(refusal).toBe('Ask Nauman to put you on a site first.')
     expect(await t.run((ctx) => ctx.db.query('people').collect())).toHaveLength(1)
 
     // The success that makes the refusal mean something.
@@ -122,9 +118,11 @@ describe('what a signed-in stranger can reach', () => {
     const personId = await t.run(signedInWithNoSite)
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
 
-    await expect(
-      signedIn.mutation(api.bankAccounts.mutations.add, { label: 'Test Bank 0000', lastFourDigits: '0000' })
-    ).rejects.toThrow('Ask Nauman')
+    expect(
+      await refusalFrom(
+        signedIn.mutation(api.bankAccounts.mutations.add, { label: 'Test Bank 0000', lastFourDigits: '0000' })
+      )
+    ).toBe('Ask Nauman to put you on a site first.')
     expect(await t.run((ctx) => ctx.db.query('bankAccounts').collect())).toEqual([])
 
     await t.run((ctx) => alsoAPartner(ctx, personId))

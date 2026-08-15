@@ -1,9 +1,9 @@
 // @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { api } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
@@ -82,14 +82,6 @@ function aCheque(site: Site, over: Record<string, unknown> = {}) {
   }
 }
 
-async function refusalFrom(promise: Promise<unknown>) {
-  return await promise.then(
-    () => 'nothing was refused',
-    (thrown: unknown) =>
-      thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-  )
-}
-
 describe('putting a day of payments in', () => {
   it('stores rupees as whole paisa', async () => {
     const t = convexWithPayments()
@@ -126,7 +118,7 @@ describe('putting a day of payments in', () => {
       })
     )
 
-    expect(refusal).toContain('Add the cheque number.')
+    expect(refusal).toBe('Add the cheque number.')
     expect(await t.run((ctx) => ctx.db.query('payments').collect())).toEqual([])
   })
 
@@ -158,7 +150,7 @@ describe('putting a day of payments in', () => {
           entries: [aCheque(site, { reference: undefined })],
         })
       )
-    ).toContain('Add the cheque number.')
+    ).toBe('Add the cheque number.')
 
     expect(
       await refusalFrom(
@@ -167,7 +159,7 @@ describe('putting a day of payments in', () => {
           entries: [aCheque(site, { method: 'transfer', reference: undefined, bankAccountId: undefined })],
         })
       )
-    ).toContain('Say which account this left.')
+    ).toBe('Say which account this left.')
 
     // The control: cash needs neither, and must go straight through.
     await signedIn.mutation(api.payments.mutations.record, {
@@ -190,7 +182,7 @@ describe('putting a day of payments in', () => {
         .mutation(api.payments.mutations.record, { siteId: elsewhere, entries: [aCheque(site)] })
     )
 
-    expect(refusal).toContain('not one of yours')
+    expect(refusal).toBe('This site is not one of yours.')
     expect(await t.run((ctx) => ctx.db.query('payments').collect())).toEqual([])
   })
 })
@@ -254,7 +246,7 @@ describe('taking a payment back out', () => {
       signedIn.mutation(api.payments.mutations.remove, { siteId: otherSite, paymentId })
     )
 
-    expect(refusal).toContain('not on this site')
+    expect(refusal).toBe('That payment is not on this site.')
     expect(await t.run((ctx) => ctx.db.get('payments', paymentId))).toMatchObject({ removed: false })
   })
 })

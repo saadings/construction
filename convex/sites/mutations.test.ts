@@ -2,9 +2,9 @@
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
 import { makeFunctionReference } from 'convex/server'
-import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { api } from '../_generated/api'
 import { mutation } from '../_generated/server'
 import type { MutationCtx } from '../_generated/server'
@@ -64,14 +64,6 @@ async function anAccountFor(ctx: MutationCtx, { withAPerson }: { withAPerson: bo
   return personId
 }
 
-async function refusalFrom(promise: Promise<unknown>) {
-  return await promise.then(
-    () => 'nothing was refused',
-    (thrown: unknown) =>
-      thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-  )
-}
-
 describe('starting a site', () => {
   it('makes whoever started it a partner on it', async () => {
     // Otherwise the first site anyone makes is one nobody can open, and the link would have to be set by hand on a live deployment.
@@ -125,7 +117,7 @@ describe('starting a site', () => {
       t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.sites.mutations.start, aHouse)
     )
 
-    expect(refusal).toContain('Ask Nauman to add you')
+    expect(refusal).toBe('Ask Nauman to add you before you start a site.')
     expect(await t.run((ctx) => ctx.db.query('sites').collect())).toEqual([])
   })
 
@@ -137,7 +129,7 @@ describe('starting a site', () => {
       t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.sites.mutations.start, { ...aHouse, name: 'R' })
     )
 
-    expect(refusal).toContain('Give this site a name')
+    expect(refusal).toBe('Give this site a name, the way you say it: 1-A, Phase 0.')
     for (const technical of ['record', 'entry', 'entity', 'ledger', 'category', 'field', 'validation', 'required']) {
       expect(refusal).not.toMatch(new RegExp(technical, 'i'))
     }
@@ -154,7 +146,9 @@ describe('starting a site', () => {
         .mutation(api.sites.mutations.start, { ...aHouse, coveredAreaSqft: '550000' })
     )
 
-    expect(refusal).toContain('covered area in square feet')
+    expect(refusal).toBe(
+      'That is larger than any house here. The biggest in ten years is a little over 10,000, and the most this takes is 20,000 square feet.'
+    )
   })
 })
 
