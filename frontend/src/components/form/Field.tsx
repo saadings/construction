@@ -68,6 +68,37 @@ export function Field({
   )
 }
 
+// A row of choices, asked the way `Field` asks a question but not wrapped in a `<label>`.
+
+// A label points at one control, and the first control inside it takes the label's words as its own name -- so inside a `Field`, the first choice in a row announces itself as "How paid How paid" and cannot be found by what is written on it. A screen reader reads exactly what the test could not find.
+export function Choices({
+  label,
+  hint,
+  children,
+  className,
+}: {
+  label: string
+  hint?: string
+  children: ReactNode
+  className?: string
+}) {
+  const said = useId()
+
+  return (
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <span id={said} className="text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase">
+        {label}
+      </span>
+
+      <div role="radiogroup" aria-labelledby={said}>
+        {children}
+      </div>
+
+      {hint ? <span className="text-muted-foreground text-sm">{hint}</span> : null}
+    </div>
+  )
+}
+
 const CONTROL =
   'border-border bg-card text-foreground focus:border-primary focus:ring-primary/25 aria-invalid:border-destructive w-full rounded-none border-0 border-b-2 px-0 py-2.5 text-lg outline-none transition-colors focus:ring-0'
 

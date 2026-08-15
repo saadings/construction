@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
 import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
+import { Route as SitesSiteIdComingInRouteImport } from './routes/sites.$siteId.coming-in'
 
 const PeopleRoute = PeopleRouteImport.update({
   id: '/people',
@@ -46,12 +47,18 @@ const SitesSiteIdDayRoute = SitesSiteIdDayRouteImport.update({
   path: '/sites/$siteId/day',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
+  id: '/sites/$siteId/coming-in',
+  path: '/sites/$siteId/coming-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
   '/people': typeof PeopleRoute
   '/sites/new': typeof SitesNewRoute
+  '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/': typeof SitesSiteIdIndexRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/more': typeof MoreRoute
   '/people': typeof PeopleRoute
   '/sites/new': typeof SitesNewRoute
+  '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId': typeof SitesSiteIdIndexRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/more': typeof MoreRoute
   '/people': typeof PeopleRoute
   '/sites/new': typeof SitesNewRoute
+  '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/': typeof SitesSiteIdIndexRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/more'
     | '/people'
     | '/sites/new'
+    | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
     | '/sites/$siteId/'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/more'
     | '/people'
     | '/sites/new'
+    | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
     | '/sites/$siteId'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/more'
     | '/people'
     | '/sites/new'
+    | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
     | '/sites/$siteId/'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   MoreRoute: typeof MoreRoute
   PeopleRoute: typeof PeopleRoute
   SitesNewRoute: typeof SitesNewRoute
+  SitesSiteIdComingInRoute: typeof SitesSiteIdComingInRoute
   SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
   SitesSiteIdIndexRoute: typeof SitesSiteIdIndexRoute
 }
@@ -152,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitesSiteIdDayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sites/$siteId/coming-in': {
+      id: '/sites/$siteId/coming-in'
+      path: '/sites/$siteId/coming-in'
+      fullPath: '/sites/$siteId/coming-in'
+      preLoaderRoute: typeof SitesSiteIdComingInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   MoreRoute: MoreRoute,
   PeopleRoute: PeopleRoute,
   SitesNewRoute: SitesNewRoute,
+  SitesSiteIdComingInRoute: SitesSiteIdComingInRoute,
   SitesSiteIdDayRoute: SitesSiteIdDayRoute,
   SitesSiteIdIndexRoute: SitesSiteIdIndexRoute,
 }
