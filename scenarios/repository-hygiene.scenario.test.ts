@@ -258,13 +258,37 @@ describe('the checks that run before a commit', () => {
       .filter((name) => name.endsWith('.ts'))
       .flatMap((name) => childProcessCallsIn(readFileSync(join(repoRoot, 'scenarios', name), 'utf8')))
 
-    const unaimed = calls.filter(
-      (call) => !call.includes('cwd: repoRoot') && !call.includes('inThrowaway(') && !call.includes('rev-parse')
-    )
+    const unaimed = calls.filter((call) => !saysWhichRepository(call))
 
     expect(unaimed).toEqual([])
     // The control. A matcher finding nothing passes the line above, and so does a guard pointed at the wrong place.
     expect(calls.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('sees a command started any other way, and does not wave through a git one', () => {
+    // The widening this needed. It read one form alone, so a git command started any other way in a future scenario would inherit GIT_DIR while this reported a clean tree.
+
+    // Assembled rather than written out, because the scan above reads this file too and a literal call here would be flagged as one of its findings.
+    const written = (starts: string, rest: string) => `${starts}(${rest}`
+
+    const started = childProcessCallsIn(
+      [
+        written('execSync', "'git add -u')"),
+        written('spawnSync', "'git', ['reset', '--hard'])"),
+        written('spawn', "'git', ['clean', '-fd'])"),
+        written('execFileSync', "'git', ['status'], { cwd: repoRoot })"),
+        // Not a child process at all, and flagging it is what would get this narrowed back to one form.
+        written('/^a(b)$/.exec', 'line)'),
+      ].join('\n')
+    )
+
+    expect(started).toHaveLength(4)
+    expect(started.filter((call) => !saysWhichRepository(call))).toHaveLength(3)
+
+    // And the exemption is narrow: naming `process.execPath` excuses a node one-liner, never a git command that happens to mention it.
+    expect(saysWhichRepository(written('spawn', "'git', ['clean', '-fd'], { env: { PATH: process.execPath } })"))).toBe(
+      true
+    )
   })
 
   it('leaves this repository untouched even when git points every command at it', () => {
@@ -284,11 +308,27 @@ describe('the checks that run before a commit', () => {
   })
 })
 
+/** What makes a call safe: it is aimed somewhere, or it cannot read a repository at all. */
+function saysWhichRepository(call: string): boolean {
+  // `process.execPath` runs an inline node script rather than a command that reads a repository, so git's environment means nothing to it.
+  return (
+    call.includes('cwd: repoRoot') ||
+    call.includes('inThrowaway(') ||
+    call.includes('rev-parse') ||
+    call.includes('process.execPath')
+  )
+}
+
+// Every way node starts a process, not only the one these files happen to use. A rule that looks at one form reports a clean tree about every other form forever.
+
+// The lookbehind is what keeps `RegExp.exec(` and any method call out: those are not child processes and flagging them would get this narrowed back to one form.
+const STARTS_A_PROCESS = /(?<![.\w])(execFileSync|execSync|spawnSync|spawn|fork|exec)\(/g
+
 // Counts parentheses rather than stopping at the first one: nested join(...) calls truncate a naive match before its env is visible.
 function childProcessCallsIn(source: string): Array<string> {
   const calls: Array<string> = []
 
-  for (const match of source.matchAll(/execFileSync\(/g)) {
+  for (const match of source.matchAll(STARTS_A_PROCESS)) {
     let depth = 0
     let index = match.index + match[0].length - 1
 
