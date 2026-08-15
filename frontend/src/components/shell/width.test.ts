@@ -69,7 +69,7 @@ describe('the width a screen is allowed to take', () => {
 })
 
 describe('room left for something else on the screen', () => {
-  // The bar along the bottom is gone with the shell, and `--phone-bar` goes with its last reader in the change straight after the day sheet's combobox. What does not go is the rule the variable existed to keep.
+  // The bar along the bottom went with the shell, and `--phone-bar` has now gone with its last reader. What does not go is the rule the variable existed to keep.
 
   it("is never a flat guess at another element's height", () => {
     // `bottom-20` was 15px behind the bar on an iPhone, because a guess cannot know about the home indicator's inset. Anything clearing something else reads that thing rather than estimating it.
@@ -78,10 +78,26 @@ describe('room left for something else on the screen', () => {
     expect(guessing).toEqual([])
   })
 
+  it('leaves nothing reading a variable that is no longer written', () => {
+    // Both ends, and the order they have to hold in: a `var()` whose name nobody defines makes the whole `bottom` declaration invalid, and the footer that was stuck to the screen quietly scrolls away with the page. Nothing throws and nothing logs -- it is a thing you can only see by looking.
+    const styles = readFileSync('frontend/src/styles.css', 'utf8')
+
+    expect(styles).not.toContain('--phone-bar')
+    expect(SOURCE.filter((file) => file.text.includes('--phone-bar')).map((file) => file.path)).toEqual([])
+  })
+
   it('is looking at the screens, rather than at an empty list', () => {
     // The floor: a sweep that stopped finding files reports the same clean answer as a tree with nothing wrong in it.
     expect(SOURCE.length).toBeGreaterThan(20)
     expect(SOURCE.map((file) => file.path)).toContain('frontend/src/components/daySheet/DaySheet.tsx')
+  })
+
+  it('reads the stylesheet it is judging, rather than an empty string', () => {
+    // The other end of the check above: `readFileSync` on a moved file would throw, but a stylesheet emptied or renamed to something this cannot see would pass the `not.toContain` perfectly.
+    const styles = readFileSync('frontend/src/styles.css', 'utf8')
+
+    expect(styles).toContain('--background:')
+    expect(styles.length).toBeGreaterThan(500)
   })
 })
 
