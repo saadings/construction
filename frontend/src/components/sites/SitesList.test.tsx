@@ -23,7 +23,7 @@ function renderAt(sites: Array<SiteRow>) {
 
 const aHouse: SiteRow = {
   _id: 's1',
-  name: '359-R, Phase 7',
+  name: '1-A, Phase 0',
   stage: 'building',
   builtForAClient: false,
   spentPaisa: 497498000,
@@ -34,7 +34,7 @@ describe('the sites on the home screen', () => {
     renderAt([aHouse])
 
     const row = await screen.findByRole('listitem')
-    expect(within(row).getByText('359-R, Phase 7')).toBeTruthy()
+    expect(within(row).getByText('1-A, Phase 0')).toBeTruthy()
     expect(within(row).getByText('Building')).toBeTruthy()
     // Comma grouped, no decimals unless the figure has them, the way the workbooks write it.
     expect(within(row).getByText('4,974,980')).toBeTruthy()
@@ -58,7 +58,7 @@ describe('the sites on the home screen', () => {
   })
 
   it('never puts a technical word on the screen', async () => {
-    renderAt([aHouse, { ...aHouse, _id: 's2', name: '478-R, Phase 7', builtForAClient: true, stage: 'sold' }])
+    renderAt([aHouse, { ...aHouse, _id: 's2', name: '478-R, Phase 0', builtForAClient: true, stage: 'sold' }])
 
     await screen.findAllByRole('listitem')
     const onScreen = document.body.textContent.toLowerCase()
@@ -81,6 +81,6 @@ describe('the sites on the home screen', () => {
       expect(onScreen).not.toContain(technical)
     }
     // The control: the loop above passes against a blank screen.
-    expect(onScreen).toContain('359-r, phase 7')
+    expect(onScreen).toContain('1-a, phase 0')
   })
 })

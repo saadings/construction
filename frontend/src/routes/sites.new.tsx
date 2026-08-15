@@ -51,7 +51,7 @@ function StartASite() {
       <div className="mx-auto flex max-w-lg flex-col gap-7 px-5 pt-8 pb-10">
         <h1 className="text-foreground font-display text-[2.25rem] leading-none">Start a site</h1>
 
-        <Field label="Name" hint="The way you say it: 359-R, Phase 7.">
+        <Field label="Name" hint="The way you say it: 1-A, Phase 0.">
           <Line value={name} onChange={(event) => setName(event.target.value)} aria-label="Name" autoComplete="off" />
         </Field>
 
