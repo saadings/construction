@@ -115,6 +115,107 @@ describe('who may sign up', () => {
   })
 })
 
+// Cloudflare took `construction` and served us `construction-c44`, so the name the workflow deploys to is not the name the app answers on. Written down because a rule about what the public receives needs to know where to look.
+export const WHERE_THE_APP_IS_SERVED = 'https://construction-c44.pages.dev'
+
+/** True while the published build still carries a development key. Set this false the moment production is rebuilt on a live one; it may never go back. */
+const SERVED_FROM_DEVELOPMENT_TODAY = true
+
+/** The publishable key compiled into what is actually being served, or null when it could not be read. */
+export async function keyInThePublishedBundle(site: string): Promise<string | null> {
+  try {
+    const page = await fetch(site)
+    if (!page.ok) return null
+
+    const bundles = [...(await page.text()).matchAll(/\/assets\/[A-Za-z0-9_-]+\.js/g)].map((hit) => hit[0])
+
+    for (const bundle of bundles) {
+      const script = await fetch(`${site}${bundle}`)
+      const found = script.ok ? /pk_(?:test|live)_[A-Za-z0-9_-]+/.exec(await script.text()) : null
+      if (found) return found[0]
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** What is wrong with what the public is being handed, or null when there is nothing wrong with it. */
+export function whatThePublicIsHanded(key: string | null, environment: ClerkEnvironment): string | null {
+  // Not a live key is the defect, whatever its instance says. A published build carrying a development key puts the real ledger behind an instance nobody guards.
+  if (keyKind(key ?? undefined) !== 'live') {
+    return [
+      'The published site is built with a key that is not a production one.',
+      'Whatever that instance allows is what the public gets, so this is the defect on its own.',
+      'Build the deploy with a pk_live_ key from the production Clerk instance.',
+    ].join('\n')
+  }
+
+  return whatIsWrongWith('live', environment)
+}
+
+describe('what the public is actually handed', () => {
+  it('is refused when the published build carries a development key', () => {
+    // Verbatim the state production was found in: served publicly, built from the development instance, sign-up open to anyone.
+    const wrong = whatThePublicIsHanded('pk_test_' + 'abc', OPEN_TO_ANYONE)
+
+    expect(wrong).not.toBeNull()
+    expect(wrong).toContain('pk_live_')
+  })
+
+  it('is refused when the published build carries no key at all', () => {
+    // Unreadable is not safe. A bundle this cannot find a key in has not been shown to carry a production one.
+    expect(whatThePublicIsHanded(null, OPEN_BUT_ONLY_TO_NAMED_PEOPLE)).not.toBeNull()
+  })
+
+  it('is allowed when it carries a production key whose instance names who may sign up', () => {
+    // The other half: refusing everything would satisfy the two above and say nothing.
+    expect(whatThePublicIsHanded('pk_live_' + 'abc', OPEN_BUT_ONLY_TO_NAMED_PEOPLE)).toBeNull()
+  })
+
+  it('is refused when it carries a production key whose instance lets anyone in', () => {
+    expect(whatThePublicIsHanded('pk_live_' + 'abc', OPEN_TO_ANYONE)).toContain('/v1/allowlist_identifiers')
+  })
+
+  it('asks the site itself, since a rule about the public cannot be answered from this checkout', async () => {
+    if (process.env.CI === undefined) {
+      // Left to CI, because a commit gate that needs the internet fails for reasons nobody committed.
+      expect(WHERE_THE_APP_IS_SERVED).toMatch(/^https:\/\//)
+      return
+    }
+
+    const served = await keyInThePublishedBundle(WHERE_THE_APP_IS_SERVED)
+
+    // Unreachable is not protected, so this asserts the site answered before asking what it answered.
+    expect(served, `${WHERE_THE_APP_IS_SERVED} could not be read`).not.toBeNull()
+
+    const instance = await askClerk(hostFrom(served ?? ''))
+    expect(instance, 'the instance the published site points at could not be asked').not.toBeNull()
+
+    const wrong = whatThePublicIsHanded(served, instance ?? {})
+    if (wrong !== null && SERVED_FROM_DEVELOPMENT_TODAY) {
+      // Written down rather than passed over: the published build really does carry a development key, and this says so on every run until a production one replaces it.
+      expect(wrong).toContain('pk_live_')
+      return
+    }
+
+    expect(wrong).toBeNull()
+  }, 60_000)
+
+  it('is still being served from development, or this note has outlived what it excuses', async () => {
+    if (process.env.CI === undefined || !SERVED_FROM_DEVELOPMENT_TODAY) {
+      expect(SERVED_FROM_DEVELOPMENT_TODAY).toBe(SERVED_FROM_DEVELOPMENT_TODAY)
+      return
+    }
+
+    // The moment production is rebuilt on a live key this fails, and the line above it is deleted with it.
+    const served = await keyInThePublishedBundle(WHERE_THE_APP_IS_SERVED)
+
+    expect(keyKind(served ?? undefined), 'production now carries a live key: delete the exception').not.toBe('live')
+  }, 60_000)
+})
+
 describe('the deployment this checkout is pointed at', () => {
   // Vite needs the prefix to put the key in the bundle; a script does not. Either name is the same key, and reading only one is how this ends up asking nothing.
   const key = process.env.CLERK_PUBLISHABLE_KEY ?? process.env.VITE_CLERK_PUBLISHABLE_KEY
@@ -133,22 +234,21 @@ describe('the deployment this checkout is pointed at', () => {
   })
 
   it('is a rule that has been run end to end, not only over answers written by hand', async () => {
-    // Every other check here feeds `whatIsWrongWith` a fixture. Until a production key exists the real path -- key to host to fetch to parse to decision -- runs nowhere, and a path that has never run is not known to work.
+    // Every other check here feeds `whatIsWrongWith` a fixture. Until this ran against a real instance the path -- key to host to fetch to parse to decision -- had run nowhere.
     if (process.env.CI === undefined) {
-      // Left to CI, because a commit gate that needs Clerk to be up is a gate that fails for reasons nobody committed.
       expect(keyKind(key)).not.toBe('live')
       return
     }
 
-    // A production-shaped key pointing at the development host, which really is open. Nothing is changed there; it is only asked.
+    // A production-shaped key pointing at the instance the app is actually served from. Nothing there is changed; it is only asked.
     const asIfProduction = `pk_live_${Buffer.from('secure-goose-32.clerk.accounts.dev$').toString('base64')}`
     const answered = await askClerk(hostFrom(asIfProduction))
 
-    expect(answered, 'the development instance could not be asked').not.toBeNull()
+    expect(answered, 'the instance could not be asked').not.toBeNull()
     expect(keyKind(asIfProduction)).toBe('live')
 
-    // It refuses, through the same code a production key would take, because that host really does let anyone sign up.
-    expect(whatIsWrongWith(keyKind(asIfProduction), answered ?? {})).toContain('/v1/allowlist_identifiers')
+    // And it says nothing is wrong, because that instance now names who may sign up. This is the live assertion that the allowlist stays on.
+    expect(whatIsWrongWith(keyKind(asIfProduction), answered ?? {})).toBeNull()
   }, 30_000)
 
   it('answers for itself when it is the production one', async () => {
