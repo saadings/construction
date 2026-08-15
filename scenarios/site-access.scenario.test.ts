@@ -72,6 +72,47 @@ export function skippingTheCheck(declared: Array<DeclaredFunction>): Array<Decla
   return declared.filter((fn) => fn.declaresSiteId && CLIENT_FACING.includes(fn.wrapper))
 }
 
+/** Signed in and nothing further asked: these reach every row of whatever table they open, for anyone with an account. */
+const GLOBAL = ['query', 'mutation', 'authenticatedQuery', 'authenticatedMutation']
+
+/** Global on purpose, each for a reason someone can disagree with. */
+const DELIBERATELY_GLOBAL: Record<string, string> = {
+  'accounts/actions.ts current':
+    "the caller's own row, looked up by the identity making the call, and it has to answer while signed out because the app asks it whether anyone is signed in",
+  'sites/mutations.ts start':
+    'a person holding no site has to be able to start one, and starting it is what makes them its partner',
+  'sites/queries.ts mine': 'reads capacity itself and returns only the sites this person is a partner on',
+  'trades/queries.ts list': 'trade names, which name no person and carry no money',
+}
+
+/** Global by nobody's decision. This list may shrink and must never grow: what each one hands a signed-in non-partner is written beside it. */
+
+// The three bankAccounts entries name functions arriving with the open day-sheet work; they are listed from having read them, so landing them does not turn the gate red on the day they merge.
+const NOT_YET_AUDITED: Record<string, string> = {
+  'people/queries.ts list': 'every person in the ledger, with phone and notes',
+  'people/mutations.ts add': 'inserts a person',
+  'people/mutations.ts edit': "rewrites any person's name, phone and notes",
+  'people/mutations.ts hide': 'removes any person from every list',
+  'bankAccounts/queries.ts list': 'every account label and its last four digits',
+  'bankAccounts/mutations.ts add': 'inserts an account',
+  'bankAccounts/mutations.ts hide': 'hides the account a payment points at',
+}
+
+/** How many are unaudited today. Lower it when one is fixed; a higher one is the defect this exists to stop. */
+const STILL_UNAUDITED = 7
+
+function named(fn: DeclaredFunction): string {
+  return `${fn.file.replace(/^convex\//, '')} ${fn.name}`
+}
+
+/** A function that asks nothing beyond being signed in and has not been written down as either. */
+export function globalAndUnaccountedFor(declared: Array<DeclaredFunction>): Array<string> {
+  return declared
+    .filter((fn) => GLOBAL.includes(fn.wrapper))
+    .map(named)
+    .filter((key) => DELIBERATELY_GLOBAL[key] === undefined && NOT_YET_AUDITED[key] === undefined)
+}
+
 const WRITES = ['mutation', 'authenticatedMutation', 'siteMutation']
 
 /** Convex constrains an id or a literal by shape; it cannot say a name is not blank, so those values need parsing. */
@@ -176,6 +217,9 @@ describe('deciding who may open a site', () => {
       const scanned = convexFiles(elsewhere).flatMap((file) => declaredFunctionsIn(file, readFileSync(file, 'utf8')))
 
       expect(skippingTheCheck(scanned).map((fn) => fn.name)).toEqual(['bypass'])
+
+      // The same file read by the other guard: it names no site as far as that one is concerned, and nobody has written down why it may be global.
+      expect(globalAndUnaccountedFor(scanned).map((key) => key.split(' ')[1])).toEqual(['bypass'])
     } finally {
       rmSync(elsewhere, { recursive: true, force: true })
     }
@@ -228,6 +272,55 @@ describe('deciding who may open a site', () => {
 
     expect(idOnly.map((fn) => fn.name)).toEqual(['hide'])
     expect(storingWhatWasNeverParsed(idOnly)).toEqual([])
+  })
+
+  // The rule above is that a function naming a site must check it. It reports a clean tree over a function that names no site at all, and always would have.
+  it('is asked of a function that names no site either, since that is the one nobody looks at', () => {
+    expect(globalAndUnaccountedFor(declared)).toEqual([])
+  })
+
+  it('catches a new one, so the two lists are doing the work rather than the matcher', () => {
+    const fresh = declaredFunctionsIn(
+      'convex/people/queries.ts',
+      'export const everyPhoneNumber = authenticatedQuery({ handler: async (ctx) => ctx.db.query("people").collect() })'
+    )
+
+    expect(globalAndUnaccountedFor(fresh)).toEqual(['people/queries.ts everyPhoneNumber'])
+  })
+
+  it('leaves a site-scoped function out of it, since that one has already been asked', () => {
+    // The other half of the control: counting every function as global would satisfy the check above while saying nothing.
+    const scoped = declared.filter((fn) => SITE_SCOPED.includes(fn.wrapper))
+
+    expect(scoped.length).toBeGreaterThan(0)
+    expect(globalAndUnaccountedFor(scoped)).toEqual([])
+  })
+
+  it('is looking at every global function this repository has, not at none of them', () => {
+    // The floor, and the one this guard most needed: if the wrapper names stopped matching it would find nothing, which is what a clean tree looks like.
+    const global = declared.filter((fn) => GLOBAL.includes(fn.wrapper)).map(named)
+
+    expect(global.length).toBeGreaterThanOrEqual(8)
+    expect(global).toContain('people/queries.ts list')
+    expect(global).toContain('people/mutations.ts edit')
+
+    // Every one of them accounted for in one list or the other, and none in both.
+    for (const key of global) {
+      expect(
+        (DELIBERATELY_GLOBAL[key] === undefined ? 0 : 1) + (NOT_YET_AUDITED[key] === undefined ? 0 : 1),
+        `${key} is in neither list, or in both`
+      ).toBe(1)
+    }
+  })
+
+  it('has this many nobody has decided about, and the number only goes down', () => {
+    // A new global function can be waved through by adding it to the unaudited list. This is what stops that.
+    expect(Object.keys(NOT_YET_AUDITED).length).toBeLessThanOrEqual(STILL_UNAUDITED)
+
+    // And each is written down as what it hands a signed-in non-partner, not merely named.
+    for (const [key, exposes] of Object.entries(NOT_YET_AUDITED)) {
+      expect(exposes.length, `${key} says nothing about what it exposes`).toBeGreaterThan(10)
+    }
   })
 
   it('reads a site out of the declared arguments, not out of a handler', () => {
