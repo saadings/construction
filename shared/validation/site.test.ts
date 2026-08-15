@@ -45,9 +45,11 @@ describe('the covered area of a house', () => {
   it.each([
     ['Alasdfas', ''],
     ['4,975', '4,975'],
-    ['4a9b7c5', '4975'],
-    ['5 500 sqft', '5500'],
+    ['4a9b7c5', '4,975'],
+    ['5 500 sqft', '5,500'],
     ['-500', '500'],
+    // The one that was wrong: typed bare it stayed bare, and the same house read back for a correction came out grouped.
+    ['4975', '4,975'],
   ])('takes %o as it is typed and holds %o', (typed, held) => {
     expect(areaWhileTyping(typed)).toBe(held)
   })
