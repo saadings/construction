@@ -1,21 +1,11 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
+
+import { everyScreen } from '../../testing/screens'
 
 // Nauman opened the day sheet at desk width and `Rs` was broken over two lines beside the amount. A two-character label sat in a flex row next to an input asking for `w-full`, and flex took the space out of the label rather than out of the box.
 
 // What this can see and what it cannot, said plainly: there is no layout here, so it reads the classes rather than the wrapping. A class is not a rendered pixel -- but the cause of that bug was in the classes, and this is where it can be caught before somebody opens the screen at the width that shows it.
-const SOURCE = join(dirname(new URL(import.meta.url).pathname), '..', '..')
-
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') && !path.endsWith('.test.tsx') ? [path] : []
-  })
-}
 
 /** A class list asking for the whole row. `max-w-full` is a different word and caps a width rather than demanding one, so the boundary in front matters. */
 const ASKS_FOR_EVERYTHING = /className="[^"]*(?<![-\w])w-full\b[^"]*"/g
@@ -73,10 +63,7 @@ export function whatGivesWayIn(source: string): Array<string> {
 }
 
 describe('a label beside a control that takes the rest', () => {
-  const screens = screenFiles(SOURCE).map((path) => ({
-    path: path.split('/src/')[1],
-    source: readFileSync(path, 'utf8'),
-  }))
+  const screens = everyScreen()
 
   it('never gives way, on any row in the app', () => {
     const giving = screens.flatMap(({ path, source }) => whatGivesWayIn(source).map((said) => `${path}: ${said}`))

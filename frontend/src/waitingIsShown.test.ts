@@ -1,21 +1,11 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
+
+import { everyScreen } from './testing/screens'
 
 // Nauman: "Use a skeleton and spinners for all of the loadings, for such UI use skeletons, for buttons submission use spinners".
 
-// Written once here rather than remembered on each screen, for the same reason the pointer cursor is: a rule that has to be re-applied by hand is a rule the next screen forgets. Read relative to itself, because the commit gate runs this in a throwaway checkout that is not a git repository.
-const SOURCE = dirname(new URL(import.meta.url).pathname)
-
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') && !path.endsWith('.test.tsx') ? [path] : []
-  })
-}
+// Written once here rather than remembered on each screen, for the same reason the pointer cursor is: a rule that has to be re-applied by hand is a rule the next screen forgets.
 
 /** Where each `*Waiting` component is written, so a screen handing its waiting to one can be followed to what that one actually puts on the screen. */
 export function whereWaitingIsWritten(files: Array<{ source: string }>): Map<string, Array<string>> {
@@ -77,10 +67,7 @@ const NOT_WAITING_ON_ANYTHING: Record<string, string> = {
 }
 
 describe('what a screen shows while it is waiting', () => {
-  const screens = screenFiles(SOURCE).map((path) => ({
-    path: path.split('/src/')[1],
-    source: readFileSync(path, 'utf8'),
-  }))
+  const screens = everyScreen()
 
   it('is the shape of what is coming, on every screen that reads anything', () => {
     const written = whereWaitingIsWritten(screens)
@@ -175,10 +162,7 @@ describe('what a screen shows while it is waiting', () => {
 const WHERE_IT_IS_WRITTEN = 'components/form/Button.tsx'
 
 describe('what a button does while it is sending', () => {
-  const screens = screenFiles(SOURCE).map((path) => ({
-    path: path.split('/src/')[1],
-    source: readFileSync(path, 'utf8'),
-  }))
+  const screens = everyScreen()
 
   it('is written somewhere, so the one exception below is an exception to something', () => {
     // Without this, deleting Button.tsx leaves a sweep that passes because there is nothing left to sweep.

@@ -1,8 +1,10 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+
+import { everyScreen } from './testing/screens'
 
 // Nauman asked why a section had no contrast. It had none because the text was painted in a background colour -- `--color-muted` is the alternating row tint, so `text-muted` was the same colour as the page at 1.04:1, in both modes.
 
@@ -129,10 +131,7 @@ describe('what a screen sets words in', () => {
   // The other half, and the cause: `--muted` is the row tint and `--muted-foreground` is the readable grey, so `text-muted` painted words in a background. It was used 22 times across 11 files.
 
   // Asked as arithmetic rather than as naming. "It has a `-foreground` partner" would call `text-primary` and `text-destructive` backgrounds too, and both are real ink -- brass is money going out and the refusal red is a refusal. What is actually wrong is a colour nobody could read on the page.
-  const screens = screenFiles(join(dirname(new URL(import.meta.url).pathname))).map((path) => ({
-    path: path.split('/src/')[1],
-    source: readFileSync(path, 'utf8'),
-  }))
+  const screens = everyScreen()
 
   /** Every token a screen could write as `text-x`, with what it comes to and whether it can be read on the page. */
   function tooQuietToRead(): Array<string> {
@@ -185,11 +184,3 @@ describe('what a screen sets words in', () => {
     expect(/text-muted(?![\w-])/.test('<p className="text-muted-foreground text-sm">')).toBe(false)
   })
 })
-
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') && !path.endsWith('.test.tsx') ? [path] : []
-  })
-}

@@ -1,29 +1,18 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
+import { everyScreen } from '../../testing/screens'
 import { withoutComments } from '../../testing/source'
 
 // Nauman twice: a `<select>` rendering in the OS blue, and a `<datalist>` popup in Chrome's mauve sitting over the error text. "Not acceptable."
 
 // Both are the same thing: a control the browser draws, in its own colours, at its own size, in a position we do not set. No CSS we write reaches either of them. So neither is allowed here, and the next person reaching for `<select>` because it is one tag finds this instead of finding out from him.
-const SOURCE = join(dirname(new URL(import.meta.url).pathname), '..', '..')
 
 /** Every tag whose popup the browser draws rather than the app. */
 const DRAWN_BY_THE_BROWSER = ['select', 'datalist']
 
-// shadcn's own, copied in by their CLI. What they use inside themselves is theirs; what this repository writes is what this is about.
-const THEIRS = '/components/ui/'
-
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') && !path.endsWith('.test.tsx') ? [path] : []
-  })
-}
+// shadcn's own, copied in by their CLI. What they use inside themselves is theirs; what this repository writes is what this is about. Said as a path relative to `src`, which is how `everyScreen` names them; the sweep it replaced named them absolutely, and a leading slash left here would have quietly stopped filtering anything.
+const THEIRS = 'components/ui/'
 
 /** Every place a screen opens a control the browser will draw. */
 export function drawnByTheBrowserIn(written: string): Array<string> {
@@ -34,9 +23,7 @@ export function drawnByTheBrowserIn(written: string): Array<string> {
 }
 
 describe('a control the browser draws', () => {
-  const screens = screenFiles(SOURCE)
-    .filter((path) => !path.includes(THEIRS))
-    .map((path) => ({ path: path.split('/src/')[1], source: readFileSync(path, 'utf8') }))
+  const screens = everyScreen().filter(({ path }) => !path.startsWith(THEIRS))
 
   it('is on none of our screens', () => {
     const drawn = screens.flatMap(({ path, source }) =>
