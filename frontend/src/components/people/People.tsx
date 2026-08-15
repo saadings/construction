@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { pakistaniMobile, personName, whatIsWrong } from '~shared/validation/primitives'
 
 import { Field, Line, Lines } from '../form/Field'
+import { NotKnownHere } from '../shell/NotKnownHere'
 import { Form, Page } from '../shell/Page'
 
 export type PersonRow = { _id: string; name: string; phone?: string; notes?: string }
@@ -17,15 +18,25 @@ export function People({
   onAdd,
   onHide,
 }: {
-  people: Array<PersonRow> | null
+  // Three answers, never two: still coming, refused, and a list. Folding the first two together is the spinner nobody could get past.
+  people: Array<PersonRow> | null | undefined
   onAdd: (person: NewPerson) => Promise<void>
   onHide: (personId: string) => Promise<void>
 }) {
+  // The ledger has answered and does not know this sign-in. Nothing on this screen would work, so it offers none of it.
+  if (people === null) {
+    return (
+      <Page title="People">
+        <NotKnownHere />
+      </Page>
+    )
+  }
+
   return (
     <Page title="People">
       <AddSomebody onAdd={onAdd} />
 
-      {people === null ? (
+      {people === undefined ? (
         <p className="text-muted-foreground text-sm">Looking…</p>
       ) : people.length === 0 ? (
         <p className="text-muted-foreground py-6">
