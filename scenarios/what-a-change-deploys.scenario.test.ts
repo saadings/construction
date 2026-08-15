@@ -8,11 +8,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { gitIn, inThrowaway } from './throwaway'
 import { jobsIn, readWorkflow } from './workflowFile'
 
-// A push deploys what `detect-changes` says changed. Say nothing changed and both deploy jobs skip, correctly, and the run is green — so a path class nobody listed ships nowhere and the badge cannot tell you.
+// A push deploys what the filter step says changed. Say nothing changed and every deploy step skips, correctly, and the run is green — so a path class nobody listed ships nowhere and the badge cannot tell you.
 
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
-const script = jobsIn(readWorkflow(repoRoot, 'deploy.yml')).find((job) => job.name === 'detect-changes')?.runs[0]
+// The filter was its own job until a push became one runner; it is a step now, found by what it writes rather than by a job name.
+const script = jobsIn(readWorkflow(repoRoot, 'deploy.yml'))
+  .flatMap((job) => job.runs)
+  .find((run) => run.includes('backend=$backend') && run.includes('GITHUB_OUTPUT'))
 
 const made: Array<string> = []
 

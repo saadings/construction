@@ -277,21 +277,28 @@ describe('the shape of the deploy workflow', () => {
     expect(checks.body).toContain('fetch-depth: 0')
   })
 
-  it('only deploys a frontend it has the artifact for', () => {
-    const frontend = job('deploy-frontend')
-    const checks = job('checks')
+  it('deploys only the frontend it just built, in that order', () => {
+    // The artifact existed to carry a build across a job boundary. In one job it cannot race its own upload -- what has to hold instead is that the build runs before the deploy, and that both are gated on the same answer.
+    const steps = stepsIn(job('deploy').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
 
-    expect(frontend.body).toContain('wrangler-action')
+    const build = at('yarn build')
+    const wrangler = at('wrangler-action')
+    const backend = at('npx convex deploy')
 
-    // deploy-frontend publishes what the build step uploaded, and without the edge the download races the upload.
-    expect(frontend.needs).toContain('checks')
-    expect(checks.body).toContain('name: frontend-build')
-    expect(frontend.body).toContain('name: frontend-build')
+    // Absence before order: findIndex answers -1 for a step that is gone, and -1 comes before everything.
+    expect(build).toBeGreaterThan(-1)
+    expect(wrangler).toBeGreaterThan(-1)
+    expect(backend).toBeGreaterThan(-1)
 
-    // The upload only happens on a push, so both sides of that pairing are asserted rather than assumed.
-    const uploading = stepsIn(checks.body).find((step) => step.body.includes('name: frontend-build'))
-    expect(uploading?.condition).toBe("github.event_name == 'push'")
-    expect(frontend.condition).toContain("github.event_name == 'push'")
+    expect(build).toBeLessThan(wrangler)
+    // The backend goes first, which the two parallel jobs this replaced did not guarantee.
+    expect(backend).toBeLessThan(wrangler)
+
+    // Both frontend steps answer to the same filter output, so one cannot deploy what the other did not build.
+    expect(steps[build].condition).toBe("steps.filter.outputs.frontend == 'true'")
+    expect(steps[wrangler].condition).toBe("steps.filter.outputs.frontend == 'true'")
+    expect(steps[backend].condition).toBe("steps.filter.outputs.backend == 'true'")
   })
 
   it('queues runs against the same branch rather than overlapping them', () => {
@@ -301,7 +308,7 @@ describe('the shape of the deploy workflow', () => {
   })
 
   it('rebuilds the frontend when the script that addresses the backend changes', () => {
-    const lines = job('detect-changes').runs.join('\n').split('\n')
+    const lines = job('deploy').runs.join('\n').split('\n')
     const frontendMatcher = lines.filter((line) => line.includes("changed_matches '^frontend/'"))
     const backendMatcher = lines.filter((line) => line.includes("changed_matches '^convex/'"))
 
@@ -365,26 +372,26 @@ describe('the shape of the deploy workflow', () => {
   })
 
   it('runs on a pull request, because codegen cannot pass until the deployment has its variables', () => {
-    // Gating the whole job on `push` meant a pull request first went green after merging: `auth.config.ts` reads CLERK_FRONTEND_API_URL off the deployment, and codegen validates it there.
-    expect(job('checks').condition ?? '').not.toContain("github.event_name == 'push'")
+    // Gating this on `push` meant a pull request first went green after merging: `auth.config.ts` reads CLERK_FRONTEND_API_URL off the deployment, codegen validates it there, and the step that reads it lives in the job a pull request runs.
+    expect(job('checks').condition).toContain("github.event_name == 'pull_request'")
+    expect(stepsIn(job('checks').body).some((step) => step.body.includes('$(npx convex env get'))).toBe(true)
 
-    // The control: conditions are read at all, and the jobs that really are push-only still say so.
-    expect(job('detect-changes').condition).toContain("github.event_name == 'push'")
+    // The control: conditions are read at all, and the job that really is push-only still says so.
+    expect(job('deploy').condition).toContain("github.event_name == 'push'")
   })
 
   it('writes to the deployment only on a push, and reads on everything else', () => {
-    // `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production. Running that on a pull request is a deploy nobody reads as one, from a branch nobody has reviewed.
-    const steps = stepsIn(job('checks').body)
-    // Matched on the invocation, never the phrase: a comment naming a command is attributed to the step above it, and `convex env set` appears in one.
-    const writing = steps.filter((step) => step.body.includes('| npx convex env set'))
-    const reading = steps.filter((step) => step.body.includes('$(npx convex env get'))
+    // `npx convex env set` writes to whatever CONVEX_DEPLOY_KEY names, which is production, so running it on a pull request is a deploy nobody reads as one -- the two live in different jobs now, and both are matched on the invocation rather than the phrase, because a comment naming a command is attributed to the step above it.
+    const writing = stepsIn(job('deploy').body).filter((step) => step.body.includes('| npx convex env set'))
+    const reading = stepsIn(job('checks').body).filter((step) => step.body.includes('$(npx convex env get'))
 
     // The control: both halves are found at all, so a renamed step fails here rather than leaving an empty list to agree with everything.
     expect(writing).toHaveLength(1)
     expect(reading).toHaveLength(1)
 
-    expect(writing[0].condition).toBe("github.event_name == 'push'")
-    expect(reading[0].condition).toBe("github.event_name != 'push'")
+    // And neither job can run on the other's event.
+    expect(job('deploy').condition).toContain("github.event_name == 'push'")
+    expect(job('checks').condition).toContain("github.event_name == 'pull_request'")
   })
 
   it('never prints a variable it is checking, because three of the four are secrets', () => {
