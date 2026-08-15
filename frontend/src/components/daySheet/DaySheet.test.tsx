@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { pick } from '../../testing/pick'
 import type { Account, Named, Person } from './DaySheet'
 import { DaySheet } from './DaySheet'
 import type { Draft } from './sitting'
@@ -45,11 +46,11 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 }
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
-  await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
-  await user.type(screen.getByLabelText('Who was paid'), 'A mason')
+  await pick(user, 'What for', 'Cement')
+  await pick(user, 'Who was paid', 'A mason')
   await user.type(screen.getByLabelText('How much'), amount)
   await user.type(screen.getByLabelText('Cheque number'), '0001')
-  await user.selectOptions(screen.getByLabelText('Which account'), 'Bank 0000')
+  await pick(user, 'Which account', 'Bank 0000')
 }
 
 describe('a day of payments', () => {
@@ -81,7 +82,8 @@ describe('a day of payments', () => {
     await fillOne(user)
     await user.click(screen.getByRole('button', { name: 'Add another' }))
 
-    expect(screen.getByLabelText<HTMLSelectElement>('Which account').value).toBe('b1')
+    // Said by the name he calls it rather than by the id it is stored under, because the control now holds the row rather than a string.
+    expect(screen.getByLabelText<HTMLInputElement>('Which account').value).toBe('Bank 0000')
     // What does change: it is a different trade, a different person and a different amount every time.
     expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('')
     expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
@@ -163,7 +165,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onAddAccount } = aSheet({ accounts: [] })
 
-    await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
+    await pick(user, 'What for', 'Cement')
     await user.type(screen.getByLabelText('How much'), '25000')
 
     await user.click(screen.getByRole('button', { name: 'Add an account' }))
@@ -175,7 +177,7 @@ describe('a day of payments', () => {
     expect(onAddAccount).toHaveBeenCalledWith('Bank 0000', '0000')
     expect(JSON.stringify(onAddAccount.mock.calls)).not.toContain('5555555555')
     // Back in the sitting with the account chosen, and nothing typed so far thrown away.
-    expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('t1')
+    expect(screen.getByLabelText<HTMLInputElement>('What for').value).toBe('Cement')
     expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('25,000')
   })
 
@@ -193,8 +195,8 @@ describe('a day of payments', () => {
 
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
-    await user.selectOptions(screen.getByLabelText('What for'), 'Bricks')
-    await user.type(screen.getByLabelText('Who was paid'), 'A mason')
+    await pick(user, 'What for', 'Bricks')
+    await pick(user, 'Who was paid', 'A mason')
     await user.type(screen.getByLabelText('How much'), '10000')
     await user.type(screen.getByLabelText('Cheque number'), '0002')
     await user.click(screen.getByRole('button', { name: 'Put them in' }))
@@ -209,7 +211,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onPutIn } = aSheet()
 
-    await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
+    await pick(user, 'What for', 'Cement')
     await user.click(screen.getByRole('button', { name: 'Put them in' }))
 
     expect(screen.getByRole('alert').textContent).toContain('Say who was paid.')
@@ -280,7 +282,7 @@ describe('a question that answers for itself', () => {
     await user.click(screen.getByLabelText('How much'))
     expect(screen.getByText('Pick what this was for.')).toBeTruthy()
 
-    await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
+    await pick(user, 'What for', 'Cement')
 
     // Only that one goes. The amount, which the eye also left, is still unanswered and still says so.
     expect(screen.queryByText('Pick what this was for.')).toBeNull()

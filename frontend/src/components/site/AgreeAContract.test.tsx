@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { pick } from '../../testing/pick'
 import { AgreeAContract } from './AgreeAContract'
 
 afterEach(cleanup)
@@ -28,8 +30,8 @@ describe('agreeing what a client is paying', () => {
     // A lump sum carrying a rate is how one of the two gets left behind holding an old figure the day the other changes.
     const { onAgree } = renderIt()
 
+    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
     fillIn({
-      'Who it is for': 'p1',
       'Agreed on': '2026-04-01',
       'The whole price': '12,500,000',
       'Area agreed': '2,250',
@@ -52,7 +54,8 @@ describe('agreeing what a client is paying', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'A rate per square foot' }))
     // The one box is now asking a different question, so it is found by the words it is asking.
-    fillIn({ 'Who it is for': 'p1', 'Rate per square foot': '5,500', 'Area agreed': '2,250' })
+    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
+    fillIn({ 'Rate per square foot': '5,500', 'Area agreed': '2,250' })
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
 
     await waitFor(() => {
@@ -84,7 +87,8 @@ describe('agreeing what a client is paying', () => {
   it('keeps what was typed when it did not go in, and says why', async () => {
     renderIt(vi.fn().mockRejectedValue({ data: 'This house already has a contract.' }))
 
-    fillIn({ 'Who it is for': 'p1', 'The whole price': '12,500,000', 'Area agreed': '2,250' })
+    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
+    fillIn({ 'The whole price': '12,500,000', 'Area agreed': '2,250' })
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
 
     expect((await screen.findByText('This house already has a contract.')).textContent).toBe(
@@ -97,7 +101,8 @@ describe('agreeing what a client is paying', () => {
     // The same defect the People screen had: clearing what was typed without clearing that focus had been there leaves a form arguing about answers it just accepted.
     renderIt()
 
-    fillIn({ 'Who it is for': 'p1', 'The whole price': '12,500,000', 'Area agreed': '2,250' })
+    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
+    fillIn({ 'The whole price': '12,500,000', 'Area agreed': '2,250' })
     fireEvent.blur(screen.getByLabelText('Area agreed'))
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
 

@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { pick } from '../../testing/pick'
 import type { AgreedShare, Somebody } from './AgreeShares'
 import { AgreeShares } from './AgreeShares'
 import type { Position, WhatThePartnersHave } from './Positions'
@@ -126,10 +128,11 @@ describe('agreeing what each partner takes', () => {
   })
 
   it('lets somebody take a share who has put nothing in', async () => {
+    const user = userEvent.setup()
     const { onAgree } = renderWith()
 
     // Who funded a house and who takes the profit are not always the same people.
-    fireEvent.change(screen.getByLabelText('Somebody else takes a share'), { target: { value: 'p3' } })
+    await pick(user, 'Somebody else takes a share', 'The one who put nothing in')
 
     const put = await screen.findByLabelText('The one who put nothing in’s share')
     fireEvent.change(put, { target: { value: '10' } })
@@ -143,12 +146,16 @@ describe('agreeing what each partner takes', () => {
     })
   })
 
-  it('offers nobody who is already down for a share', () => {
+  it('offers nobody who is already down for a share', async () => {
+    // The list is behind a popup now rather than inside the control, so it is read where somebody would read it: opened.
+    const user = userEvent.setup()
     renderWith()
 
-    const picker = screen.getByLabelText('Somebody else takes a share')
-    expect(within(picker).queryByText('The one who started it')).toBeNull()
-    expect(within(picker).getByText('The one who put nothing in')).toBeTruthy()
+    await user.click(screen.getByRole('combobox', { name: 'Somebody else takes a share' }))
+
+    const offered = screen.getAllByRole('option').map((one) => one.textContent)
+    expect(offered).not.toContain('The one who started it')
+    expect(offered).toContain('The one who put nothing in')
   })
 
   it('takes somebody out who funded the house and takes none of it', async () => {

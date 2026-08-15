@@ -1,25 +1,34 @@
-import { useId } from 'react'
 import { sameName } from '~shared/validation/person'
 
-import { Field, Line } from '../form/Field'
+import type { Choice } from '../form/Pick'
+import { NOT_ON_THE_LIST, Pick } from '../form/Pick'
 
-// One place to answer one question. It was a picker and a name box underneath it, so answering "who" meant first deciding which of the two boxes you meant -- an implementation detail turned into a decision.
+// One place to answer one question. It was a picker with a name box waiting underneath it, then a `<datalist>` whose popup Chrome draws in its own colours over the error text -- Nauman on both: "this is not good UX", "not acceptable".
 
-// Nauman: "This is not good UX".
+// Now one control the app draws itself, where typing a name nobody has offers to use it rather than sending him to a second box.
 export type Named = { _id: string; name: string }
 
 export type WhoIsPaid = { paidToId: string; newPerson: string }
 
-/** What the one box shows: the person picked, or the name typed while nobody is picked. */
-export function whoIsShown(who: WhoIsPaid, people: Array<Named>): string {
-  return people.find((person) => person._id === who.paidToId)?.name ?? who.newPerson
+/** What the one control is holding: the person picked, or the name typed while nobody is picked. */
+export function whoIsShown(who: WhoIsPaid, people: Array<Named>): Choice | null {
+  const picked = people.find((person) => person._id === who.paidToId)
+  if (picked !== undefined) {
+    return picked
+  }
+
+  return who.newPerson === '' ? null : { _id: NOT_ON_THE_LIST, name: who.newPerson }
 }
 
-/** What one typed answer means. A name already on the list is that person however it was spelt, and anything else is a name being used as it stands. */
-export function whoWasMeant(typed: string, people: Array<Named>): WhoIsPaid {
-  const already = people.find((person) => sameName(person.name, typed))
+/** What one answer means. A name already on the list is that person however it was spelt, so a typed name can never make a second row of somebody the ledger already has. */
+export function whoWasMeant(chosen: Choice | null, people: Array<Named>): WhoIsPaid {
+  if (chosen === null) {
+    return { paidToId: '', newPerson: '' }
+  }
 
-  return already === undefined ? { paidToId: '', newPerson: typed } : { paidToId: already._id, newPerson: '' }
+  const already = people.find((person) => person._id === chosen._id || sameName(person.name, chosen.name))
+
+  return already === undefined ? { paidToId: '', newPerson: chosen.name } : { paidToId: already._id, newPerson: '' }
 }
 
 export function WhoWasPaid({
@@ -33,36 +42,25 @@ export function WhoWasPaid({
   problem?: string | null
   onChange: (who: WhoIsPaid) => void
 }) {
-  const list = useId()
-  const shown = whoIsShown(who, people)
-
-  // Typed and not on the list. Said as what will happen rather than as a warning: the ledger has no one-off, because a payment has to point at somebody.
-  const willBeAdded = shown.trim() !== '' && who.paidToId === ''
+  const chosen = whoIsShown(who, people)
 
   return (
-    <Field
+    <Pick
       label="Who was paid"
       hint={
-        willBeAdded ? `Nobody on the list is called that. ${shown.trim()} will be added.` : 'Pick one, or type a name.'
+        chosen !== null && chosen._id === NOT_ON_THE_LIST
+          ? `Nobody on the list is called that. ${chosen.name} will be added.`
+          : 'Pick one, or type a name.'
       }
       problem={problem}
-    >
-      <Line
-        value={shown}
-        onChange={(event) => {
-          onChange(whoWasMeant(event.target.value, people))
-        }}
-        list={list}
-        aria-label="Who was paid"
-        autoComplete="off"
-        placeholder="A person or a shop"
-      />
-      {/* The list the browser offers as he types, rather than a second control to choose between. It filters itself, which forty-odd names need and a picker of that length does not do. */}
-      <datalist id={list}>
-        {people.map((person) => (
-          <option key={person._id} value={person.name} />
-        ))}
-      </datalist>
-    </Field>
+      placeholder="A person or a shop"
+      chosen={chosen}
+      choices={people}
+      // A shop nobody will be paid twice is still a person here, because a payment has to point at somebody.
+      canUseANewName
+      onPick={(picked) => {
+        onChange(whoWasMeant(picked, people))
+      }}
+    />
   )
 }

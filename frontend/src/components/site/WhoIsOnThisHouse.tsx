@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
 
 import { Button } from '../form/Button'
-import { Field, Line, Picker } from '../form/Field'
+import { Field, Line } from '../form/Field'
+import { Pick } from '../form/Pick'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -266,35 +267,27 @@ function TheForm({
   return (
     <div className="border-border flex w-full max-w-2xl flex-col gap-5 rounded-md border p-4">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Who" problem={wrongPerson}>
-          <Picker
-            value={personId}
-            onChange={(event) => setPersonId(pickedFrom(people, event.target.value))}
-            aria-label="Who"
-          >
-            <option value="">Pick one</option>
-            {people.map((person) => (
-              <option key={person._id} value={person._id}>
-                {person.name}
-              </option>
-            ))}
-          </Picker>
-        </Field>
+        <Pick
+          label="Who"
+          problem={wrongPerson}
+          placeholder="Pick one"
+          chosen={people.find((person) => person._id === personId) ?? null}
+          choices={people}
+          onPick={(picked) => {
+            setPersonId(picked === null ? '' : pickedFrom(people, picked._id))
+          }}
+        />
 
-        <Field label="What for" problem={wrongTrade}>
-          <Picker
-            value={tradeId}
-            onChange={(event) => setTradeId(pickedFrom(trades, event.target.value))}
-            aria-label="What for"
-          >
-            <option value="">Pick one</option>
-            {trades.map((trade) => (
-              <option key={trade._id} value={trade._id}>
-                {trade.name}
-              </option>
-            ))}
-          </Picker>
-        </Field>
+        <Pick
+          label="What for"
+          problem={wrongTrade}
+          placeholder="Pick one"
+          chosen={trades.find((trade) => trade._id === tradeId) ?? null}
+          choices={trades}
+          onPick={(picked) => {
+            setTradeId(picked === null ? '' : pickedFrom(trades, picked._id))
+          }}
+        />
       </div>
 
       <Field
