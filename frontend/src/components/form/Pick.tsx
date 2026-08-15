@@ -55,7 +55,10 @@ export function Pick({
         itemToStringValue={(choice: Choice) => choice.name}
         onInputValueChange={setTyped}
       >
-        <ComboboxInput placeholder={placeholder} aria-label={label} />
+        {/* Undoing shadcn's own `md:text-sm`, which is the trap the day picker fell into and this one had it on ten call sites: measured in the gallery at 1280, every picker in the app was 14px while everything beside it was 16 to 44. Below `md` it was already 16, so a phone never shows it, which is what makes it the half nobody looks at. */}
+
+        {/* Said at the box rather than on it, because a `ComboboxInput` hands its `className` to the group it wraps and never to the input inside. A descendant selector is more specific than the utility it is undoing, so this reaches what a prop cannot. */}
+        <ComboboxInput placeholder={placeholder} aria-label={label} className="[&_input]:md:text-base" />
 
         <ComboboxContent>
           {/* Said once. The offer to use a typed name lives below the list, where it is the same offer whether anything matched or not -- two of them appeared here the first time, one in this slot and one under the list, and two identical offers is a choice nobody asked to make. */}

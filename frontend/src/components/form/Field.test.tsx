@@ -3,7 +3,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { Choices, Field, Line, Lines } from './Field'
+import type { Look } from './Field'
+import { Choices, Field, Line, Lines, NEVER_SMALLER_THAN } from './Field'
+import { Pick } from './Pick'
+import { whatDecidesTheSizeOf, whatSizeItComesTo } from './theSizeOnAPhone'
 
 afterEach(cleanup)
 
@@ -183,8 +186,12 @@ describe('a question asked as a group rather than wrapped in a label', () => {
 
 describe('what shadcn brings that this app has to undo', () => {
   // Each of these is one of their defaults meeting one of ours in the same class list. What is asserted is the outcome of the merge, not the presence of a word: a class that lost is gone from the string entirely, so a neutraliser that stopped working shows up as their value coming back.
-  function classesOn(control: 'line' | 'lines'): string {
-    render(<Field label="Covered area">{control === 'line' ? <Line value="" onChange={() => {}} /> : <Lines />}</Field>)
+  function classesOn(control: 'line' | 'lines', look?: Look): string {
+    render(
+      <Field label="Covered area">
+        {control === 'line' ? <Line look={look} value="" onChange={() => {}} /> : <Lines look={look} />}
+      </Field>
+    )
 
     return screen.getByLabelText('Covered area').className
   }
@@ -208,6 +215,52 @@ describe('what shadcn brings that this app has to undo', () => {
     expect(classes).toContain('rounded-none')
     expect(classes).not.toContain('rounded-md')
     expect(classes).toContain('border-b-2')
+  })
+
+  it('leaves no box this app draws smaller than a person can use, whichever draws it', () => {
+    // Every component that puts a box on a screen, not only the two built on `Line`. `Pick` is the one that proves the point: it goes through shadcn's combobox rather than through a look, so nothing above covered it, and it was 14px on ten call sites at every width above `md`.
+    for (const [what, draw] of [
+      ['Pick', () => <Pick label="What for" chosen={null} choices={[]} onPick={() => {}} />],
+      [
+        'Line',
+        () => (
+          <Field label="What for">
+            <Line value="" onChange={() => {}} />
+          </Field>
+        ),
+      ],
+      [
+        'Lines',
+        () => (
+          <Field label="What for">
+            <Lines />
+          </Field>
+        ),
+      ],
+    ] as const) {
+      render(draw())
+      const { onAPhone, onADesk } = whatSizeItComesTo(whatDecidesTheSizeOf(screen.getByLabelText('What for')))
+
+      expect(onAPhone, `${what} is ${onAPhone}px on a phone`).toBeGreaterThanOrEqual(NEVER_SMALLER_THAN)
+      expect(onADesk, `${what} is ${onADesk}px on a desk`).toBeGreaterThanOrEqual(NEVER_SMALLER_THAN)
+
+      cleanup()
+    }
+  })
+
+  it('leaves no look of any kind small enough to zoom a phone', () => {
+    // The half the sweep beside this cannot see. It reads what a *screen* hands a box; this reads what the box brings on its own, which is where the defect actually was — `beside` carried shadcn's `md:text-sm` through untouched, and the day picker came out at 14px on the control this app is tapped on most.
+    for (const look of ['asked', 'beside', 'amount'] as const) {
+      for (const control of ['line', 'lines'] as const) {
+        const { onAPhone, onADesk } = whatSizeItComesTo(classesOn(control, look))
+
+        expect(onAPhone, `${control} as ${look} sets no size at all`).not.toBeNull()
+        expect(onAPhone, `${control} as ${look} is ${onAPhone}px on a phone`).toBeGreaterThanOrEqual(NEVER_SMALLER_THAN)
+        expect(onADesk, `${control} as ${look} is ${onADesk}px on a desk`).toBeGreaterThanOrEqual(NEVER_SMALLER_THAN)
+
+        cleanup()
+      }
+    }
   })
 
   it('is undone on a box of several lines too', () => {

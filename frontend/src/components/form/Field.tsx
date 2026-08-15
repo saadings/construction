@@ -111,8 +111,8 @@ const LOOKS = {
   // The answer to a question: a line under it rather than a box round it, in the display size, because the figure is the thing being read.
   asked:
     'border-border bg-card focus:border-primary aria-invalid:border-destructive w-full rounded-none border-0 border-b-2 px-0 py-2.5 text-lg md:text-lg',
-  // A box sitting inside something that is already drawn -- the day at the top of a sitting, the date beside a stage. It brings no rule and no room of its own, because what it sits in has both.
-  beside: 'rounded-none border-0 bg-transparent p-0',
+  // A box sitting inside something that is already drawn -- the day at the top of a sitting, the date beside a stage. It brings no rule and no room of its own, because what it sits in has both. It does bring a size: this look carried shadcn's `md:text-sm` at 14px, and the day picker is tapped on every entry of a day sheet.
+  beside: 'rounded-none border-0 bg-transparent p-0 text-base md:text-base',
   // The amount, which is the one thing on a day sheet worth looking at. Its size is here rather than at the one place that asks for it because of the trap in the line below: shadcn's input is `text-base md:text-sm`, so a size written without its `md:` twin is the size somebody sees on a phone and not the size they see on a desk. Nobody here can open the app to notice a headline turning into 14px at 768px.
   amount:
     'font-display placeholder:text-muted-foreground/40 min-w-0 flex-1 rounded-none border-0 bg-transparent py-1 text-[2.75rem] leading-tight md:text-[2.75rem]',
@@ -122,6 +122,9 @@ const LOOKS = {
 
 // `w-full` is not here on purpose. It belongs to the look that fills a row; put in a box that is asked to take what is left, it is the `Rs` bug -- a control demanding the whole row while the label beside it gives way.
 const ALWAYS = 'text-foreground h-auto shadow-none transition-colors outline-none focus-visible:ring-0'
+
+// The floor every look has to clear, and the reason it is a floor rather than a preference. iOS Safari zooms the whole page when focus lands in a control set under 16px, and it does not zoom back: the person pinches out again, on every entry, on the screen he is in all day. Nothing in this repository can render, so it is asserted off the classes -- at the base size and at `md` separately, because a size written without its `md:` twin is the size on a phone and not the size on a desk. That is what put the day picker at 14px, on the one control this app is tapped on most.
+export const NEVER_SMALLER_THAN = 16
 
 export function Line({ look = 'asked', className, ...props }: React.ComponentProps<'input'> & { look?: Look }) {
   const asked = useWhatIsAsked()
