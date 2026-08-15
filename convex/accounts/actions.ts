@@ -28,12 +28,23 @@ export const upsert = internalMutation({
     }
 
     const account = await accountByExternalId(ctx, data.id)
-    if (account === null) {
-      await ctx.db.insert('accounts', accountAttributes)
-    } else {
-      // Patched field by field, never replaced: `personId` is set here in the app and Clerk knows nothing about it.
+    if (account !== null) {
+      // Patched field by field, never replaced: `personId` belongs to the app and Clerk knows nothing about it.
       await ctx.db.patch('accounts', account._id, accountAttributes)
+      return
     }
+
+    // The cold start: the very first sign-in on a deployment is the person setting it up, so it declares itself, there being nobody to ask.
+
+    // Everyone after arrives unlinked and waits to be joined to a person already in the ledger, because guessing which one would put one partner's money under another's name.
+    const personId = (await anyoneLinkedYet(ctx))
+      ? undefined
+      : await ctx.db.insert('people', {
+          name: accountAttributes.name === '' ? accountAttributes.primaryEmail : accountAttributes.name,
+          hidden: false,
+        })
+
+    await ctx.db.insert('accounts', { ...accountAttributes, personId })
   },
 })
 
@@ -62,6 +73,13 @@ export async function currentAccount(ctx: QueryCtx) {
     return null
   }
   return await accountByExternalId(ctx, identity.subject)
+}
+
+// Asked of the deployment rather than of this webhook, so a half-set-up one can still be rescued without anybody editing the database by hand.
+async function anyoneLinkedYet(ctx: QueryCtx): Promise<boolean> {
+  const accounts = await ctx.db.query('accounts').collect()
+
+  return accounts.some((account) => account.personId !== undefined)
 }
 
 async function accountByExternalId(ctx: QueryCtx, externalId: string) {
