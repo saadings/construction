@@ -36,13 +36,23 @@ function OneHouse() {
     <Page
       title={site.name}
       beside={
-        <Link
-          to="/sites/$siteId/day"
-          params={{ siteId }}
-          className="bg-brass text-background rounded-md px-4 py-2 text-sm font-medium"
-        >
-          Put in a day
-        </Link>
+        <span className="flex flex-wrap items-center gap-2">
+          {/* Money in and money out, the two halves of the house, reached the same way. */}
+          <Link
+            to="/sites/$siteId/coming-in"
+            params={{ siteId }}
+            className="border-border text-foreground rounded-md border px-4 py-2 text-sm font-medium"
+          >
+            Money coming in
+          </Link>
+          <Link
+            to="/sites/$siteId/day"
+            params={{ siteId }}
+            className="bg-brass text-background rounded-md px-4 py-2 text-sm font-medium"
+          >
+            Put in a day
+          </Link>
+        </span>
       }
     >
       <section className="flex flex-wrap items-baseline gap-x-10 gap-y-4">

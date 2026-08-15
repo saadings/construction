@@ -74,8 +74,7 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'bills.remove': 'and nothing takes one back',
   'engagements.agree': 'what was agreed with a contractor has no screen, so the spread reads agreed as nothing',
   'engagements.hide': 'nor a way to take it back',
-  'moneyIn.record': 'money coming in can be recorded by nobody at all, which is half the ledger',
-  'moneyIn.remove': 'and cannot be taken back out',
+  'moneyIn.remove': 'money coming in can be put in and never taken back out',
   'payments.remove': 'a payment can be put in and never taken out, and the removal is signed for nobody',
   'people.edit': 'a person can be added and hidden, and never corrected',
   'sites.edit': 'a house is named once and never renamed',
@@ -125,8 +124,9 @@ describe('every way of writing something down', () => {
 
   it('knows which half of the ledger is missing, and says so rather than leaving it to be noticed', () => {
     // Not a formality: money coming in is the half the workbooks kept in a separate file, and it is the half nobody can enter today.
-    expect(NOBODY_CAN_REACH_YET['moneyIn.record']).toBeDefined()
     expect(NOBODY_CAN_REACH_YET['engagements.agree']).toBeDefined()
     expect(NOBODY_CAN_REACH_YET['bills.raise']).toBeDefined()
+    // And the one this guard was written for is off the list, because a screen now reaches it.
+    expect(NOBODY_CAN_REACH_YET['moneyIn.record']).toBeUndefined()
   })
 })
