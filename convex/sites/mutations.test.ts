@@ -194,7 +194,7 @@ describe('the sites on the home screen', () => {
       if (!personId) throw new Error('no person')
 
       const siteId = await ctx.db.insert('sites', {
-        name: '359-R, Phase 7',
+        name: '1-A, Phase 0',
         builtForAClient: false,
         stage: 'building',
         hidden: false,
