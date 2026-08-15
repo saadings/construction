@@ -1,5 +1,8 @@
 import { Link } from '@tanstack/react-router'
+import { Plus } from 'lucide-react'
 import { formatPaisa } from '~shared/money'
+
+import { Figure, Page } from '../shell/Page'
 
 export type SiteRow = {
   _id: string
@@ -18,57 +21,71 @@ const STAGE: Record<SiteRow['stage'], string> = {
   sold: 'Sold',
 }
 
+// One row a house, and the columns line up because a house and its spending are read down the page rather than one at a time.
+
+// The same markup at every width: a phone gets the name and the figure, a desk gets the two columns between them as well. Two renderings of one list is how they drift.
+const ROW = 'grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]'
+
 export function SitesList({ sites }: { sites: Array<SiteRow> }) {
   return (
-    <div className="bg-background min-h-dvh pb-28">
-      <header className="mx-auto max-w-lg px-5 pt-8 pb-5">
-        <h1 className="text-foreground font-display text-[2.25rem] leading-none">Sites</h1>
-      </header>
+    <Page title="Sites" beside={<StartOne className="hidden sm:inline-flex" />}>
+      {sites.length === 0 ? (
+        <p className="text-muted-foreground py-10">No houses yet. Start one and the spending goes under it.</p>
+      ) : (
+        <div className="flex flex-col">
+          <div
+            className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
+          >
+            <span>House</span>
+            <span>Where it has got to</span>
+            <span>Whose</span>
+            <span className="text-right">Spent</span>
+          </div>
 
-      <main className="mx-auto max-w-lg px-5">
-        {sites.length === 0 ? (
-          <p className="text-muted-foreground py-10 text-center">
-            No houses yet. Start one and the spending goes under it.
-          </p>
-        ) : (
-          <ol className="border-border divide-border divide-y border-t border-b">
+          <ol className="divide-hairline flex flex-col divide-y">
             {sites.map((site) => (
               <li key={site._id}>
                 <Link
                   to="/sites/$siteId"
                   params={{ siteId: site._id }}
-                  className="flex items-baseline justify-between gap-4 py-4"
+                  className={`${ROW} hover:bg-row-alt -mx-3 rounded-md px-3 py-3.5 transition-colors`}
                 >
-                  <span className="min-w-0">
-                    <span className="text-foreground block truncate text-[1.0625rem]">{site.name}</span>
-                    <span className="text-muted-foreground block text-sm">
-                      {STAGE[site.stage]}
-                      {site.builtForAClient ? ' · For a client' : ''}
-                    </span>
+                  <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{site.name}</span>
+
+                  <span className="text-muted-foreground order-last col-span-2 text-sm sm:order-none sm:col-span-1">
+                    {STAGE[site.stage]}
                   </span>
-                  <span className="shrink-0 text-right">
-                    <span className="text-foreground block text-lg">{formatPaisa(site.spentPaisa)}</span>
-                    <span className="text-muted-foreground block text-[0.75rem] tracking-[0.06em] uppercase">
-                      Spent
-                    </span>
+                  <span className="text-muted-foreground hidden text-sm sm:block">
+                    {site.builtForAClient ? 'For a client' : 'Ours to sell'}
                   </span>
+
+                  {/* Brass, because it is money going out. Nothing else on this screen is coloured at all. */}
+                  <Figure className="text-brass text-right text-lg">{formatPaisa(site.spentPaisa)}</Figure>
                 </Link>
               </li>
             ))}
           </ol>
-        )}
-      </main>
-
-      <div className="fixed inset-x-0 bottom-0">
-        <div className="mx-auto max-w-lg px-5 pb-6">
-          <Link
-            to="/sites/new"
-            className="bg-primary text-primary-foreground block rounded-md py-3 text-center font-medium shadow-lg"
-          >
-            Start a site
-          </Link>
         </div>
-      </div>
-    </div>
+      )}
+
+      <StartOne
+        className="fixed right-5 bottom-[calc(var(--phone-bar)+1rem)] z-10 size-14 justify-center rounded-full shadow-lg sm:hidden"
+        short
+      />
+    </Page>
+  )
+}
+
+// One button in two shapes: beside the heading where there is room, and under the thumb where there is not.
+function StartOne({ className, short = false }: { className?: string; short?: boolean }) {
+  return (
+    <Link
+      to="/sites/new"
+      aria-label="Start a house"
+      className={`bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-md px-4 py-2.5 font-medium ${className ?? ''}`}
+    >
+      <Plus className="size-5" aria-hidden />
+      {short ? null : 'Start a house'}
+    </Link>
   )
 }

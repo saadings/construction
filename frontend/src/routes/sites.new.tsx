@@ -7,6 +7,7 @@ import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 
 import { api } from '../../../convex/_generated/api'
 import { Field, Line, Picker } from '../components/form/Field'
+import { Form, Page } from '../components/shell/Page'
 
 export const Route = createFileRoute('/sites/new')({ component: StartASite })
 
@@ -49,10 +50,8 @@ function StartASite() {
   }
 
   return (
-    <div className="bg-background min-h-dvh">
-      <div className="mx-auto flex max-w-lg flex-col gap-7 px-5 pt-8 pb-10">
-        <h1 className="text-foreground font-display text-[2.25rem] leading-none">Start a site</h1>
-
+    <Page title="Start a house">
+      <Form>
         {/* What is wrong is worked out on every keystroke and shown by `Field` only once the eye has left the answer. */}
         <Field label="Name" hint="The way you say it: 1-A, Phase 0." problem={whatIsWrong(siteName, name)}>
           <Line value={name} onChange={(event) => setName(event.target.value)} aria-label="Name" autoComplete="off" />
@@ -127,7 +126,7 @@ function StartASite() {
         >
           {saving ? 'Starting…' : 'Start it'}
         </button>
-      </div>
-    </div>
+      </Form>
+    </Page>
   )
 }

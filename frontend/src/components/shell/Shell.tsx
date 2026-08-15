@@ -14,7 +14,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <TopBar />
 
       {/* No width cap here. A table of payments is the reason a desk is wider than a phone, and a column down the middle of a 1440px screen throws that away. */}
-      <main className="flex-1 pb-20 sm:pb-0">{children}</main>
+      <main className="flex-1 pb-[var(--phone-bar)] sm:pb-0">{children}</main>
 
       <PhoneBar />
     </div>
