@@ -22,8 +22,8 @@ function convexWithBankAccounts() {
 async function anAccount(ctx: MutationCtx) {
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
-    primaryEmail: 'nauman@example.com',
+    name: 'The partner',
+    primaryEmail: 'partner@example.com',
     otherEmails: [],
   })
 }
@@ -36,11 +36,11 @@ describe('adding a bank account', () => {
 
     const bankAccountId = await t
       .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.bankAccounts.mutations.add, { label: '  Askari   2192 ', lastFourDigits: '2192' })
+      .mutation(api.bankAccounts.mutations.add, { label: '  Bank   0000 ', lastFourDigits: '2192' })
 
     const stored = await t.run((ctx) => ctx.db.get('bankAccounts', bankAccountId))
 
-    expect(stored?.label).toBe('Askari 2192')
+    expect(stored?.label).toBe('Bank 0000')
     expect(stored?.lastFourDigits).toBe('2192')
     // The property is that there is nowhere to put a full number, not that something remembers to mask one.
     expect(
@@ -57,7 +57,7 @@ describe('adding a bank account', () => {
 
     const refusal = await t
       .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.bankAccounts.mutations.add, { label: 'Askari 2192', lastFourDigits: '01234567892192' })
+      .mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '01234567892192' })
       .then(
         () => 'nothing was refused',
         (thrown: unknown) =>
@@ -72,7 +72,7 @@ describe('adding a bank account', () => {
     const t = convexWithBankAccounts()
 
     await expect(
-      t.mutation(api.bankAccounts.mutations.add, { label: 'Askari 2192', lastFourDigits: '2192' })
+      t.mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '2192' })
     ).rejects.toThrow()
     expect(await t.run((ctx) => ctx.db.query('bankAccounts').collect())).toEqual([])
   })
@@ -83,7 +83,7 @@ describe('adding a bank account', () => {
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const bankAccountId = await signedIn.mutation(api.bankAccounts.mutations.add, {
-      label: 'Askari 2192',
+      label: 'Bank 0000',
       lastFourDigits: '2192',
     })
     await signedIn.mutation(api.bankAccounts.mutations.hide, { bankAccountId })

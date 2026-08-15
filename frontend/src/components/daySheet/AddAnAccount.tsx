@@ -52,7 +52,7 @@ export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits:
         <Line
           value={label}
           onChange={(event) => setLabel(event.target.value)}
-          placeholder="Askari 2192"
+          placeholder="Bank 0000"
           aria-label="What you call it"
           autoComplete="off"
         />
