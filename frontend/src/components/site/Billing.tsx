@@ -8,6 +8,7 @@ import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { AgreeAContract } from './AgreeAContract'
 import { ChangeTheContract } from './ChangeTheContract'
+import { Stages } from './Stages'
 
 // What a client is being charged: the contract, the stages it is billed in, and the work that was outside it. Only a house built for a client has any of this.
 export function Billing({ siteId }: { siteId: Id<'sites'> }) {
@@ -20,6 +21,8 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
   const measure = useMutation(api.contracts.mutations.measure)
   const revise = useMutation(api.contracts.mutations.revise)
   const cancel = useMutation(api.contracts.mutations.cancel)
+  const addStage = useMutation(api.milestones.mutations.add)
+  const billStage = useMutation(api.milestones.mutations.bill)
 
   // Nothing at all here would be a section that appears out of the page once it arrives, pushing everything under it down.
   if (contract === undefined || stages === undefined || extra === undefined || people === undefined) {
@@ -94,34 +97,22 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
         />
       </section>
 
-      <section className="flex flex-col gap-3">
-        <Heading>Billed in stages</Heading>
-        {stages.stages.length === 0 ? (
-          <p className="text-muted">No stages set out yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[30rem] border-collapse text-left">
-              <tbody className="divide-hairline divide-y">
-                {stages.stages.map((stage) => (
-                  <tr key={stage._id}>
-                    <td className="text-foreground py-2.5 pr-4">{stage.description}</td>
-                    <td className="py-2.5 pr-4">
-                      <Figure className="text-muted">{stage.percent}%</Figure>
-                    </td>
-                    {/* Green is money owed to him. */}
-                    <td className="py-2.5 pr-4 text-right">
-                      <Figure className="text-green">{formatPaisa(stage.amountPaisa)}</Figure>
-                    </td>
-                    <td className="text-muted py-2.5 text-right text-sm">
-                      {stage.billedOn === undefined ? 'Not billed' : stage.billedOn}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <Stages
+        stages={stages.stages}
+        percentAgreed={stages.percentAgreed}
+        onAdd={async (stage) => {
+          await addStage({ siteId, contractId: contract._id, ...stage })
+        }}
+        onBill={async (milestoneId, billedOn) => {
+          // Looked up in the list it came from rather than cast, the same way the client is: the row is in hand here, and a cast would be a promise about a string.
+          const stage = stages.stages.find((one) => one._id === milestoneId)
+          if (stage === undefined) {
+            throw new ConvexError('That stage is not on this house.')
+          }
+
+          await billStage({ siteId, milestoneId: stage._id, billedOn })
+        }}
+      />
 
       <section className="flex flex-col gap-3">
         <Heading>Work outside the contract</Heading>
