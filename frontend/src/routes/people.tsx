@@ -13,8 +13,8 @@ function Everyone() {
 
   return (
     <People
-      // Undefined while the answer is on its way, null when the sign-in has not landed here yet. The screen says "looking" for both, because both are a moment rather than a state anybody stays in.
-      people={people ?? null}
+      // Handed over as it came: `undefined` is a read still in flight, `null` is the ledger saying it does not know this sign-in. Answering the second on its behalf is what left somebody watching "Looking…" with nothing on the way.
+      people={people}
       onAdd={async (person) => {
         await add(person)
       }}
