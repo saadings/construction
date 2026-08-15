@@ -5,6 +5,7 @@ import { bankAccountsSchema } from './bankAccounts/schema'
 import { contractsSchema } from './contracts/schema'
 import { extraWorkBillLinesSchema, extraWorkBillsSchema } from './extraWork/schema'
 import { milestonesSchema } from './milestones/schema'
+import { moneyInSchema } from './moneyIn/schema'
 import { paymentsSchema } from './payments/schema'
 import { peopleSchema } from './people/schema'
 import { siteRolesSchema } from './siteRoles/schema'
@@ -18,6 +19,7 @@ export default defineSchema({
   extraWorkBillLines: extraWorkBillLinesSchema,
   extraWorkBills: extraWorkBillsSchema,
   milestones: milestonesSchema,
+  moneyIn: moneyInSchema,
   payments: paymentsSchema,
   people: peopleSchema,
   siteRoles: siteRolesSchema,

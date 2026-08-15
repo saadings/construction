@@ -1,10 +1,12 @@
 import { rupeesToPaisa } from '~shared/money'
-import type { BeingTyped, HowPaid } from '~shared/validation/payment'
-import { asksForBank, asksForChequeNumber, whatIsMissing } from '~shared/validation/payment'
+import type { HowPaid } from '~shared/validation/howMoneyMoved'
+import { asksForBank, asksForChequeNumber } from '~shared/validation/howMoneyMoved'
+import type { BeingTyped } from '~shared/validation/payment'
+import { whatIsMissing } from '~shared/validation/payment'
 
 import type { Id } from '../../../../convex/_generated/dataModel'
 
-// Which questions each way of paying asks, and the words for what is missing, come from the file the server refuses by. Restating either here is how two copies of one rule drift into disagreeing.
+// Which questions each way of paying asks, and the words for what is missing, come from the files the server refuses by. Restating either here is how two copies of one rule drift into disagreeing.
 export { asksForBank, asksForChequeNumber, whatIsMissing }
 export type { HowPaid }
 
