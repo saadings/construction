@@ -104,7 +104,7 @@ describe('what a site has cost', () => {
     const asRead = []
     for (const order of [aRun, [...aRun].reverse()]) {
       const t = convexWithPayments()
-      const siteId = await t.run(async (ctx) => {
+      const { siteId, tradeId } = await t.run(async (ctx) => {
         const { siteId, nauman } = await aSiteWithSpending(ctx)
         const trade = await ctx.db.query('trades').first()
         if (trade === null) throw new Error('the fixture wrote no trades')
@@ -114,7 +114,6 @@ describe('what a site has cost', () => {
             siteId,
             tradeId: trade._id,
             paidToId: nauman,
-            paidById: nauman,
             day: '2025-11-03',
             amountPaisa: rupees * 100,
             method: 'cash',
@@ -123,10 +122,12 @@ describe('what a site has cost', () => {
             addedByExternalId: SIGNED_IN_AS,
           })
         }
-        return siteId
+        return { siteId, tradeId: trade._id }
       })
 
-      const listed = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.payments.queries.forSite, { siteId })
+      const listed = await t
+        .withIdentity({ subject: SIGNED_IN_AS })
+        .query(api.payments.queries.onTrade, { siteId, tradeId })
       asRead.push((listed ?? []).slice(0, 3).map((payment) => payment.amountPaisa))
     }
 
@@ -271,21 +272,26 @@ describe('what a site has cost', () => {
 
   it('shows every house in the ledger, and nothing for one that is not there', async () => {
     const t = convexWithPayments()
-    await t.run(aSiteWithSpending)
+    const { paymentIds } = await t.run(aSiteWithSpending)
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const [first] = paymentIds
+    if (!first) throw new Error('the fixture wrote no payments')
+    const tradeId = await t.run(async (ctx) => (await ctx.db.get('payments', first))?.tradeId)
+    if (!tradeId) throw new Error('the fixture wrote no payments')
 
     const elsewhere = await t.run((ctx) =>
       ctx.db.insert('sites', { name: '2-B, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
     // A house somebody else started, with nothing on it yet: zero rather than nothing at all.
     expect(await signedIn.query(api.payments.queries.totals, { siteId: elsewhere })).toMatchObject({ spentPaisa: 0 })
-    expect(await signedIn.query(api.payments.queries.forSite, { siteId: elsewhere })).toEqual([])
+    expect(await signedIn.query(api.payments.queries.onTrade, { siteId: elsewhere, tradeId })).toEqual([])
 
     const gone = await t.run(async (ctx) => {
       await ctx.db.delete('sites', elsewhere)
       return elsewhere
     })
     expect(await signedIn.query(api.payments.queries.totals, { siteId: gone })).toBeNull()
-    expect(await signedIn.query(api.payments.queries.forSite, { siteId: gone })).toBeNull()
+    expect(await signedIn.query(api.payments.queries.onTrade, { siteId: gone, tradeId })).toBeNull()
   })
 })

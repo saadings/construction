@@ -22,8 +22,16 @@ function everyFileUnder(from: string, matching: RegExp): Array<string> {
   })
 }
 
+// Reads as well as writes. A query nobody opens is the same defect from the other side -- work that shipped into the dark -- and this guard was blind to it for as long as it counted only mutations. `owed.position` sat finished and unreachable while four rounds of it passed.
+type Kind = 'mutations' | 'queries'
+
+const DECLARES: Record<Kind, RegExp> = {
+  mutations: /^export const (\w+) = \w*[Mm]utation\(/gm,
+  queries: /^export const (\w+) = \w*[Qq]uery\(/gm,
+}
+
 // Every file, not only the ones called `mutations.ts`. `accounts/actions.ts` holds two of them, and a sweep that looks only where they are usually kept reports a clean tree about a file it never opened.
-function waysOfWriting(): Array<AWayOfWriting> {
+function waysOf(kind: Kind): Array<AWayOfWriting> {
   const found: Array<AWayOfWriting> = []
 
   for (const path of everyFileUnder(join(repoRoot, 'convex'), /\.ts$/)) {
@@ -32,11 +40,11 @@ function waysOfWriting(): Array<AWayOfWriting> {
       continue
     }
 
-    // Named by the table it writes rather than by the file it sits in, which is how the lists below name them.
+    // Named by the table it touches rather than by the file it sits in, which is how the lists below name them.
     const module = inside.split('/').slice(0, -1).join('/')
     const source = readFileSync(path, 'utf8')
 
-    for (const [, name] of source.matchAll(/^export const (\w+) = \w*[Mm]utation\(/gm)) {
+    for (const [, name] of source.matchAll(DECLARES[kind])) {
       found.push({ module, name })
     }
   }
@@ -44,13 +52,14 @@ function waysOfWriting(): Array<AWayOfWriting> {
   return found
 }
 
-function whatTheScreensCall(): Set<string> {
+function whatTheScreensCall(kind: Kind): Set<string> {
   const called = new Set<string>()
+  const reaches = new RegExp(String.raw`api\.([\w.]+)\.${kind}\.(\w+)`, 'g')
 
   for (const path of everyFileUnder(join(repoRoot, 'frontend', 'src'), /\.tsx?$/)) {
     const source = readFileSync(path, 'utf8')
 
-    for (const [, module, name] of source.matchAll(/api\.([\w.]+)\.mutations\.(\w+)/g)) {
+    for (const [, module, name] of source.matchAll(reaches)) {
       called.add(`${module}.${name}`)
     }
   }
@@ -80,8 +89,20 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'sites.hide': 'and never put away',
 }
 
-const declared = waysOfWriting()
-const reachable = whatTheScreensCall()
+/** A reading no screen opens. The same rule as above and the same instruction: lower this list, and never add to it without saying why in a review. */
+const NOBODY_CAN_OPEN_YET: Record<string, string> = {
+  'engagements.spread':
+    'what was agreed against what has been billed and paid has no screen, because nothing agrees one yet',
+  'moneyIn.totals': 'the house page adds up what came in from the rows rather than asking for a total',
+  'owed.position':
+    'what everybody is owed across every house -- the market payables register, which has no screen of its own',
+}
+
+const declared = waysOf('mutations')
+const reachable = whatTheScreensCall('mutations')
+
+const readings = waysOf('queries')
+const opened = whatTheScreensCall('queries')
 
 describe('every way of writing something down', () => {
   it('is reachable from a screen, or written down as not yet with the reason', () => {
@@ -135,5 +156,44 @@ describe('every way of writing something down', () => {
     expect(NOBODY_CAN_REACH_YET['bills.raise']).toBeDefined()
     // And the one this guard was written for is off the list, because a screen now reaches it.
     expect(NOBODY_CAN_REACH_YET['moneyIn.record']).toBeUndefined()
+  })
+})
+
+describe('every way of reading something back', () => {
+  it('is opened by a screen, or written down as not yet with the reason', () => {
+    const unopened = readings
+      .map((way) => `${way.module}.${way.name}`)
+      .filter((key) => !opened.has(key) && NOBODY_CAN_OPEN_YET[key] === undefined)
+
+    expect(unopened).toEqual([])
+  })
+
+  it('is looking at every reading this repository has, rather than at none of them', () => {
+    // The floor. A matcher that stopped matching would report the same clean result as a tree with nothing wrong in it.
+    expect(readings.length).toBeGreaterThan(10)
+    expect(readings.map((way) => `${way.module}.${way.name}`)).toContain('payments.totals')
+    expect(readings.map((way) => `${way.module}.${way.name}`)).toContain('owed.statement')
+  })
+
+  it('is reading the screens too, rather than counting every reading as unopened', () => {
+    // The other half of the floor: a broken reader would put every query on the list and look like a very honest audit.
+    expect(opened.has('sites.all')).toBe(true)
+    expect(opened.has('owed.statement')).toBe(true)
+    expect(opened.size).toBeGreaterThan(3)
+  })
+
+  it('has nothing on the list that this repository does not have, and nothing a screen now opens', () => {
+    const there = new Set(readings.map((way) => `${way.module}.${way.name}`))
+
+    for (const key of Object.keys(NOBODY_CAN_OPEN_YET)) {
+      expect(there.has(key), `${key} is named on the list and is not a way of reading anything`).toBe(true)
+      expect(opened.has(key), `${key} is written down as unopened and a screen now opens it`).toBe(false)
+    }
+  })
+
+  it('knows the statement is reachable now, which is what this half of the guard was added for', () => {
+    // `owed.statement` is what the workbooks were kept open to answer, and it could be reached by nobody until the screen that opens it was built. The register beside it still cannot, and says so.
+    expect(NOBODY_CAN_OPEN_YET['owed.statement']).toBeUndefined()
+    expect(NOBODY_CAN_OPEN_YET['owed.position']).toBeDefined()
   })
 })

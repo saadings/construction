@@ -13,7 +13,7 @@ const EVERYONE: Array<PersonRow> = [
   { _id: 'p2', name: 'A steel supplier' },
 ]
 
-// The screen carries no links, but it is rendered where it really lives so a router-only failure cannot hide here.
+// Every name is the way into that person's account, so the screen needs somewhere for them to point.
 function renderWith(people: Array<PersonRow> | null | undefined, onAdd = vi.fn(), onHide = vi.fn()) {
   const root = createRootRoute({ component: () => <People people={people} onAdd={onAdd} onHide={onHide} /> })
   const router = createRouter({ routeTree: root, history: createMemoryHistory({ initialEntries: ['/'] }) })
@@ -32,6 +32,14 @@ describe('the people in the ledger', () => {
     expect(within(rows[0]).getByText('0300-0000000')).toBeTruthy()
     // Nothing known is a dash rather than a gap, so a row does not read as half-loaded.
     expect(within(rows[1]).getByText('—')).toBeTruthy()
+  })
+
+  it('opens a person’s account from their name, which is what the workbooks were kept open to read', async () => {
+    // The statement existed, was tested, and could be reached by nobody: tapping a name did nothing but offer to take them off the list.
+    renderWith(EVERYONE)
+
+    const rows = await screen.findAllByRole('listitem')
+    expect(within(rows[0]).getByRole('link', { name: 'A mason' }).getAttribute('href')).toBe('/people/p1')
   })
 
   it('says what to do when there is nobody yet', async () => {

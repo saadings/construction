@@ -14,21 +14,6 @@ async function standingOn(ctx: SiteQueryCtx): Promise<Array<Doc<'payments'>>> {
   return all.filter((payment) => !payment.removed)
 }
 
-// Newest first, because a day sheet is checked against what was just put in rather than against the beginning of the house.
-export const forSite = siteQuery({
-  handler: async (ctx) => {
-    const standing = await standingOn(ctx)
-
-    // The day carries no time, and a cheque run puts eight payments on one day. What separates them is written down rather than left to whichever order the rows came back in, so the list reads the same twice.
-
-    // Largest first, because that is the one being looked for. The id settles the rest: two payments alike in day and amount are the same thing to anyone reading them, so the last step only has to be steady.
-    return standing.sort(
-      (one, other) =>
-        other.day.localeCompare(one.day) || other.amountPaisa - one.amountPaisa || one._id.localeCompare(other._id)
-    )
-  },
-})
-
 // What went on one trade, in the words somebody reads them in: who was paid, when, how much, and how. A figure on the house page is a sum, and this is what it is a sum of -- which is where a wrong one is found and taken out.
 export const onTrade = siteQuery({
   args: { tradeId: v.id('trades') },
