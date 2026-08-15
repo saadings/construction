@@ -82,7 +82,6 @@ export function DaySheet({
     // What carries from one payment to the next in a real cheque run: the same account, the same money, the same person more often than not.
     setDraft(
       anEmptyDraft({
-        paidById: draft.paidById,
         method: draft.method,
         bankAccountId: draft.bankAccountId,
       })
@@ -220,21 +219,6 @@ export function DaySheet({
             onChange={(amount) => change({ amount })}
             problem={whatIsWrongWith('amount', draft)}
           />
-
-          <Field label="Whose money" problem={whatIsWrongWith('paidBy', draft)}>
-            <Picker
-              value={draft.paidById}
-              onChange={(event) => change({ paidById: pickedFrom(people, event.target.value) })}
-              aria-label="Whose money"
-            >
-              <option value="">Pick one</option>
-              {people.map((person) => (
-                <option key={person._id} value={person._id}>
-                  {person.name}
-                </option>
-              ))}
-            </Picker>
-          </Field>
 
           <Field label="How paid">
             <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="How paid">
