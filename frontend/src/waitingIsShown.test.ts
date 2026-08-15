@@ -35,7 +35,13 @@ export function waitsWithoutASkeleton(source: string, written: Map<string, Array
   // Asked of anything that branches on `undefined`, not only of the file that does the reading: the screen holding the waiting UI is usually not the one that called `useQuery`. Requiring both left `People.tsx` and every component like it unswept.
 
   // A reading is always a bare local -- `stages === undefined`. `contract.actualAreaSqft === undefined` is a field that may be absent, which is a fact about a contract and not a screen waiting on anything.
-  if (!/(?<![.\w])\w+\s*===\s*undefined/.test(source)) return false
+
+  // And one answered by throwing is not a screen waiting either: it is a click handler refusing, where there is nothing on the screen to hold a shape. A screen that waits returns something to look at.
+  const waits = [...source.matchAll(/(?<![.\w])\w+\s*===\s*undefined/g)].some(
+    (found) => !/^\s*\)?\s*\{?\s*throw\b/.test(source.slice(found.index + found[0].length))
+  )
+
+  if (!waits) return false
 
   // The grey bars themselves, and nothing that merely mentions them. This asked whether the name `Waiting` appeared in the file at all, and passed a screen that names its waiting component and then renders a word inside it -- a definition with no use, one turn on from the import with no definition it already caught.
   if (source.includes('<Skeleton')) return false
@@ -117,6 +123,10 @@ describe('what a screen shows while it is waiting', () => {
 
     // A screen that never asks whether an answer has arrived is not waiting on one.
     expect(waitsWithoutASkeleton('if (problem === null) return null')).toBe(false)
+    // Nor is a click handler refusing. There is nothing on the screen at that moment to hold a shape, and a screen that waits returns something to look at.
+    expect(waitsWithoutASkeleton('if (trades === undefined) { throw new ConvexError("still coming") }')).toBe(false)
+    // But the same reading answered with something to look at is exactly what this is about.
+    expect(waitsWithoutASkeleton('if (trades === undefined) { return <p>Looking…</p> }')).toBe(true)
     // Nor is one asking whether a field is there. A contract that nobody has measured is a contract, not a read in flight.
     expect(waitsWithoutASkeleton('contract.actualAreaSqft === undefined ? none : some')).toBe(false)
     expect(waitsWithoutASkeleton('stage.billedOn === undefined ? "Not billed" : stage.billedOn')).toBe(false)
