@@ -24,8 +24,8 @@ https://claude.ai/code/artifact/15408f18-a188-499e-83a2-61656ef96d83
 | Question | Decision |
 |---|---|
 | Historical data | None migrated. The app starts empty. Excel becomes the archive, including for the site currently under construction. |
-| Who signs in | Nauman and his business partners. No clients, no site staff, no office account. |
-| Partner rights | Full equal access on any site they are on — add, edit, remove. |
+| Who signs in | Whoever Nauman invites. *"I should be able to invite users to the app, and then they can sign up."* An invitation is sent, they click it, they sign up, they are in. Nobody signs themselves up uninvited. |
+| Partner rights | Full equal access to every house — add, edit, remove. One partnership, one set of books, no per-house gate. |
 | Connectivity | Light offline. A connection is expected; nothing typed is ever lost when it drops. |
 | First version scope | Spending, vendors and what they are owed, money coming in, and client contracts with billing. All four. |
 | Organising principle | Sites first. Sites are the structure the business already thinks in. |
@@ -53,11 +53,41 @@ field, validation, required, error, database, query.
 Amounts are written the way the workbooks write them — `4,974,980`, comma
 grouped, no decimals unless the underlying figure has them.
 
+## How it looks
+
+A warm console. The ground is paper warmed by lamplight rather than white, and
+it stays warm after dark, because a blue-black ground makes brass look dirty and
+brass is the colour of money here. Both light and dark are designed, and dark is
+three states rather than two — chosen light, chosen dark, and following the
+phone, which is the default and says nothing either way.
+
+**Two colours carry meaning and no others.** Brass is money going out. Green is
+money owed to him — an advance he is holding, a credit balance, a share of a
+sale still to come. Everything else is ink. A refusal is not a figure and so is
+not held to the two, because a refusal in the same colour as everything else is
+a refusal nobody sees.
+
+**Every figure is monospaced with lining digits**, through one component rather
+than by remembering. A column of amounts has to read as a column, and a figure
+that shifts width between two rows is a figure the eye has to re-find.
+
 ## Screens
 
-Three tabs and one add button. Nothing else in the navigation.
+Three places to go and one add button. Nothing else in the navigation.
 
-**Sites · People · More**, with a floating **+**.
+**Sites · People · More**, written down once and read by all three shapes of the
+navigation, so a destination cannot appear in one and be missing from another:
+
+- a bar along the bottom under the thumb on a phone, which holds four and no
+  more, with the add button floating above it
+- a row across the top on a tablet
+- a rail down the left on a laptop, where the add button sits beside the heading
+  it belongs to instead of floating
+
+Mobile-first is how the screens are ordered and what they ask for, not a phone
+column stranded in the middle of a laptop. A page fills the width it is given;
+a form inside it stops at a comfortable reading measure and no page is capped at
+phone width at any size.
 
 ### Sites (home)
 
@@ -66,13 +96,22 @@ for an own build, still to collect for a client job.
 
 ### Inside a site
 
-Name, then two figures side by side (out and in), then four sections:
+Name, then two figures side by side (out and in), then five sections:
 
 - **Where the money went** — trades with totals, tapping through to the payments
 - **People on this site** — who is on which trade, and for each of them agreed,
   billed, paid, and the balance still standing
 - **Money coming in** — partner money, client payments, sale
+- **Partners** — what each put in, his share, what he is owed of the profit, what
+  has gone back to him, and what is left
 - **Billing** — client sites only. Stages, billed, received, due.
+
+Nothing is owed to a partner until the house is sold — *"the shareholder profits
+are calculated when a house is sold"* — so until then that column is a dash and
+not a zero, because a zero looks like a figure somebody worked out. What a share
+would come to if it sold today is shown, in a box of its own below the table and
+never in a column beside what is owed, marked in Nauman's own words as an
+estimate. Once the house is sold it goes.
 
 ### Adding a payment
 
@@ -116,11 +155,16 @@ rather than as an error.
 
 ### More
 
-Account, partners, setting up a site, the trade list.
+Account, how it looks, who can sign in, setting up a site, the trade list.
+
+**Who can sign in** is the invitation list: an address is typed, an invitation
+goes out, and it sits there as waiting until they take it up or it is taken
+back. Nobody is approved after the fact and nobody is linked to anybody — taking
+up the invitation is the whole of getting in.
 
 ## Data model
 
-Fourteen tables. One rule governs the shape: **nothing that can be added up is
+Sixteen tables. One rule governs the shape: **nothing that can be added up is
 ever stored.** Every total that is a formula today becomes a calculation; every
 total that is hand-typed today also becomes a calculation.
 
@@ -141,10 +185,24 @@ supplier on others; a role on the person would be wrong on day one.
 live on the relationship, so one person holds different capacities on different
 sites without contradiction.
 
+**A role decides nothing about who may look.** Nauman: *"this is a simple ledger
+app, where users should be allowed to login at will, they should be able to add
+the partners, the contractors."* One partnership keeps one set of books, so
+whoever the invitation list lets in sees every house. Roles are what a profit
+share and a client's account are worked out from, and nothing else.
+
 ### accounts
 
-The subset of people who sign in — Nauman and the partners. Linked to a Clerk
-identity. Clients and vendors exist as people but never log in.
+The people who sign in, written by the Clerk webhook and keyed by the identity
+Clerk proves.
+
+The table can point at a person in the ledger, and **as things stand nothing
+writes that field and nothing reads it**. Signing in is the whole of the rule:
+an account with no person attached reaches everything, which is every account
+there is. The field is kept for the day a screen wants to say *"you"* about a
+figure — if that day does not come, it should go, because a field that is always
+absent is a promise the schema cannot keep. Clients and vendors exist as people
+and never sign in.
 
 ### sites
 
@@ -229,8 +287,14 @@ The heart of the app. One filled amount cell in a workbook equals one row here.
 | bank | which account it left |
 | note | free text, kept as written |
 | extra work | the flag behind `LESS EXTRA WORK` |
-| paid by | whose money it was — this is the partner split |
+| ~~paid by~~ | gone — see below |
 | added by, changed at | never shown up front |
+
+**Nobody is asked whose money paid for it.** Nauman: *"We dont need to specify
+whos money was used to pay in the pull in day. As the investment is total and
+the shareholder profits are calculated when a house is sold."* Money going out
+is a cost of the house and comes from one pot; what each partner put in is
+`moneyIn`, and that is what a profit share is worked out from.
 
 Two consequences fall out of this shape:
 
@@ -238,8 +302,10 @@ Two consequences fall out of this shape:
   to* is Nauman. That makes them a site cost and his income simultaneously, from
   one row, entered once.
 - **Parallel partner ledgers disappear.** The 487-R arrangement of two separate
-  ledgers on one house becomes one site with each payment tagged by whose money
-  it was. The 58,641 reconciliation gap becomes arithmetically impossible.
+  ledgers on one house becomes one house with one ledger: money going out is a
+  cost of the house and nothing else, and what each partner put in is `moneyIn`.
+  The 58,641 reconciliation gap becomes arithmetically impossible — there are no
+  longer two sets of books to disagree.
 
 ### moneyIn
 
@@ -248,6 +314,31 @@ which bank, and optionally which billing stage it settles.
 
 Replaces the 22 figures currently welded inside a single spreadsheet formula
 with no dates and no detail.
+
+### profitShares
+
+What a partner agreed to take of the profit on one house, in basis points of the
+whole — 33.33% is `3333`, and three of them come to 9,999 with one point left
+over that has to go somewhere named rather than nowhere.
+
+Written down only where it differs from what he put in. Absent for a house means
+proportional to capital, which is the default and only the default: *"every
+partner will be given a profit based on their investment, which will be
+customisable."* Who funded a house and who agreed to take the profit are not
+always the same people, so the agreement cannot be a thing only ever calculated
+from the money.
+
+### profitPayouts
+
+Profit going back out to a partner: day, amount, how, and hidden rather than
+erased so a disagreement about what was paid can be settled.
+
+Deliberately not a payment. A payment is what the house cost; putting a
+partner's share in there would make the house look more expensive every time one
+of them was paid, which is the mistake the workbooks make.
+
+Between these two and `moneyIn`, what Nauman asked to keep — *"the amount due to
+the investor and already paid"* — is a subtraction rather than a stored figure.
 
 ### contracts
 
@@ -319,11 +410,16 @@ in the tree, not just that the visible naming reads "construction".
 
 **The Clerk organisation tables are stripped.** The template ships
 `organizations` and `organizationMembers` to mirror Clerk organisations. This app
-grants access through `siteRoles` — a person is a partner *on a site*, not a
-member of a company-wide organisation. Keeping both would leave two membership
-concepts side by side, one of which does no work, which is exactly the sort of
-thing that misleads whoever next reads the schema. Site roles stay; the
-organisation tables and their webhook handlers go.
+has no membership concept at all — signing in is the whole of it, and site
+roles say what somebody is to the money rather than what they may open. Keeping
+the organisation tables would leave a membership concept that does no work,
+which is exactly the sort of thing that misleads whoever next reads the schema.
+The organisation tables and their webhook handlers go.
+
+**Who may sign in is Clerk's invitation list**, and nothing of ours: an
+invitation is sent, they click it, they sign up, the webhook writes their
+account, and they have the whole ledger. No allowlist of our own, no linking
+step, no approval afterwards.
 
 **Convex deployments.** Both supplied by Nauman, both empty and never deployed
 at the time of writing.
@@ -447,14 +543,25 @@ API URL is the issuer domain it needs. Three pieces:
    time. Resolved on `secure-goose-32`; see *What is still open* below for what
    the dashboard's Convex integration does and does not do.
 
-The backend API is only needed if the app ever calls Clerk directly to look up
-users. Nothing in the first version requires it.
+**Inviting people in** is the one thing that calls Clerk's backend API:
+`/v1/invitations` to send one, list what is still pending, and take one back.
+All three go through a Convex action, never the browser, because the secret key
+would otherwise be in the bundle for anyone to read. Clerk's own words are
+logged and never shown — they are English written for developers, and this app
+does not put that on a screen. Only the address, when it was asked, and an id
+come back out.
 
-**Access.** Clerk proves identity; Convex decides reach. Every query and
-mutation runs the same check — does this person hold a role on this site? If
-not, the data never leaves the server. This is a server condition, not a hidden
-button. Nauman can create sites and add partners; a partner has full equal
-access on sites he is on.
+**Access.** Clerk proves identity; Convex checks it is there. Every query and
+mutation runs the same check — has this sign-in come through? If not, the data
+never leaves the server. This is a server condition, not a hidden button.
+
+There is no second gate behind it, on Nauman's instruction: *"this is a simple
+ledger app, where users should be allowed to login at will, they should be able
+to add the partners, the contractors."* One partnership keeps one set of books,
+so anyone who is in sees every house and can add, edit and remove on all of
+them. What a person is *to the money* — partner, client, investor — is still
+recorded, because a profit share and a client's account are worked out from it;
+it is simply not a permission.
 
 **Live by default.** Convex queries are reactive. A partner records a payment on
 his phone and it appears on everyone else's without a refresh, because there is
@@ -532,7 +639,6 @@ export const paymentEntry = z.object({
   amount:        money,
   paidToId:      zid("people").optional(),
   newPerson:     personName.optional(),
-  paidById:      zid("people"),
   method:        z.enum(HOW_PAID),
   reference:     chequeNumber.optional(),
   bankAccountId: zid("bankAccounts").optional(),
@@ -573,7 +679,7 @@ refuses by — so this is where they appear, not what they say.
 
 | Field | Rule |
 |---|---|
-| Amount | required, non-zero, up to 2 decimals, converted to whole paisa. No maximum a person will meet — anything above Rs 5,000,000 asks for confirmation once rather than being refused, since single plot payments reach Rs 41,475,000. A ceiling of Rs 10,000,000,000 does exist — roughly 240× the largest figure in the workbooks — because a bound has to exist somewhere for the `Number.isSafeInteger` check to mean anything rather than being decorative. Nothing in this business approaches it. Numeric keypad on phone, commas appear while typing |
+| Amount | required, non-zero, up to 2 decimals, converted to whole paisa. No maximum a person will meet, and nothing asks "are you sure" on the way past a figure somebody picked — single plot payments reach Rs 41,475,000, so a warning at any round number would fire on ordinary days and be dismissed unread. A ceiling of Rs 10,000,000,000 does exist — roughly 240× the largest figure in the workbooks — because a bound has to exist somewhere for the `Number.isSafeInteger` check to mean anything rather than being decorative. Nothing in this business approaches it. Numeric keypad on phone, commas appear while typing |
 | Date | required, a real date, not later than today, warns but does not block if earlier than the site's start date |
 | How paid | cheque / cash / transfer / pay order — one must be chosen |
 | Cheque number | required when paying by cheque, not asked for otherwise |
@@ -676,8 +782,11 @@ Vitest, written alongside the code. Four areas, ordered by cost of being wrong.
    client's outstanding balance. Balances are tested across sites and through a
    credit position, since an advance must come out negative rather than clamped
    at zero.
-4. **Access.** A person with no role on a site receives nothing, tested at the
-   Convex function level with `convex-test`, not by hiding a button.
+4. **Access.** A signed-out caller receives nothing, tested at the Convex
+   function level with `convex-test`, not by hiding a button. Signing in is the
+   whole of the rule now, so this is the one thing there is to test — and each
+   test carries a control that passes for a signed-in caller, since a query that
+   is broken outright also refuses everybody.
 
 **Golden test against reality.** Figures lifted from the workbooks are used as
 test fixtures:
@@ -711,8 +820,9 @@ pass leaves the app working and usable — nothing is half-finished between them
 2. **People and what they are owed.** Bills, engagements, the running account
    per person with its balance, market payables as a calculation, and the
    agreed-versus-billed-versus-paid spread on every engagement.
-3. **Money coming in.** Partner capital, sale proceeds, and the profit figure
-   that depends on them.
+3. **Money coming in.** Partner capital, sale proceeds, and each partner's
+   position: what he put in, what he is owed of the profit, what has gone back
+   to him, and what is left.
 4. **Client jobs.** Contracts, stages, billing, re-measurement, extra-work bills.
 
 Each pass gets its own implementation plan.
@@ -741,9 +851,13 @@ Each pass gets its own implementation plan.
    Still unproven either way: a real minted token reaching a Convex query with an
    access check passing. The issuer half is confirmed — `CLERK_FRONTEND_API_URL`
    reads `https://secure-goose-32.clerk.accounts.dev` on the dev deployment.
-2. **Partner profit shares.** The workbooks record what each partner happened to
-   pay but never state an agreed ratio. Is profit split by capital contributed,
-   or by a fixed agreement?
+2. ~~**Partner profit shares.**~~ Answered: *"every partner will be given a
+   profit based on their investment, which will be customisable. We should also
+   maintain the amount due to the investor and already paid."* Proportional to
+   capital by default, overridable per partner per house, and held to summing to
+   the whole. And *"the shareholder profits are calculated when a house is
+   sold"* — nothing is due before that, though what a share would come to if it
+   sold today is shown as an estimate, never as a figure owed.
 3. **Trade list.** The seeded list of roughly 45 trades needs one review pass
    before go-live, to confirm names and which of them count as building cost.
 
