@@ -21,7 +21,8 @@ export function MoneyLine({
     <label className="flex flex-col gap-1.5" onBlur={onBlur}>
       <span className="text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase">How much</span>
       <div className="border-border focus-within:border-primary flex items-baseline gap-2 border-b-2 transition-colors">
-        <span className="text-muted-foreground font-display text-2xl leading-none">Rs</span>
+        {/* Never allowed to give up its width. It is two characters beside a box that asks for all of them, so flex took the space out of the label and broke `Rs` over two lines at desk width. */}
+        <span className="text-muted-foreground font-display shrink-0 text-2xl leading-none">Rs</span>
         <input
           value={value}
           onChange={(event) => onChange(groupWhileTyping(event.target.value))}
@@ -30,7 +31,8 @@ export function MoneyLine({
           autoComplete="off"
           placeholder="0"
           aria-label="How much"
-          className="text-foreground placeholder:text-muted-foreground/40 font-display w-full min-w-0 border-0 bg-transparent py-1 text-[2.75rem] leading-tight outline-none"
+          // `flex-1` says what is meant -- take what is left -- where `w-full` asks for the whole row and leaves its sibling to give way.
+          className="text-foreground placeholder:text-muted-foreground/40 font-display min-w-0 flex-1 border-0 bg-transparent py-1 text-[2.75rem] leading-tight outline-none"
         />
       </div>
       {showing ? (

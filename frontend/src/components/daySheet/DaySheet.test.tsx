@@ -46,7 +46,7 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
   await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
-  await user.selectOptions(screen.getByLabelText('Who was paid'), 'A mason')
+  await user.type(screen.getByLabelText('Who was paid'), 'A mason')
   await user.type(screen.getByLabelText('How much'), amount)
   await user.type(screen.getByLabelText('Cheque number'), '0001')
   await user.selectOptions(screen.getByLabelText('Which account'), 'Bank 0000')
@@ -194,7 +194,7 @@ describe('a day of payments', () => {
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
     await user.selectOptions(screen.getByLabelText('What for'), 'Bricks')
-    await user.selectOptions(screen.getByLabelText('Who was paid'), 'A mason')
+    await user.type(screen.getByLabelText('Who was paid'), 'A mason')
     await user.type(screen.getByLabelText('How much'), '10000')
     await user.type(screen.getByLabelText('Cheque number'), '0002')
     await user.click(screen.getByRole('button', { name: 'Put them in' }))

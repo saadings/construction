@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 
 import { refusalFrom } from '../../shared/testing/refusals'
+import { sameName } from '../../shared/validation/person'
 import { api } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
@@ -269,5 +270,62 @@ describe('taking a payment back out', () => {
 
     expect(refusal).toBe('That payment is not on this site.')
     expect(await t.run((ctx) => ctx.db.get('payments', paymentId))).toMatchObject({ removed: false })
+  })
+})
+
+describe('a name typed on the day sheet rather than picked', () => {
+  it('points at the person already called that, rather than making a second of him', async () => {
+    // The people screen refuses two rows under one name. This was the door that did not: a name typed here inserted regardless, and two rows for one man split his money across both.
+    const t = convexWithPayments()
+    const site = await t.run(aSiteThePartnerIsOn)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    await signedIn.mutation(api.payments.mutations.record, {
+      siteId: site.siteId,
+      entries: [aCheque(site, { paidToId: undefined, newPerson: 'A steel supplier', amount: '40,000' })],
+    })
+
+    // Typed again, spelt the way somebody in a hurry spells it.
+    await signedIn.mutation(api.payments.mutations.record, {
+      siteId: site.siteId,
+      entries: [aCheque(site, { paidToId: undefined, newPerson: '  a steel   supplier ', amount: '10,000' })],
+    })
+
+    const everyone = await t.run((ctx) => ctx.db.query('people').collect())
+    expect(everyone.filter((person) => sameName(person.name, 'A steel supplier'))).toHaveLength(1)
+
+    // And both payments point at the one row, so what he is owed is one figure rather than two halves.
+    const payments = await t.run((ctx) => ctx.db.query('payments').collect())
+    expect(new Set(payments.map((payment) => payment.paidToId)).size).toBe(1)
+  })
+
+  it('points at somebody taken off the list without putting them back on it', async () => {
+    // Hiding somebody is a decision about the list. It is not a statement that they were never paid.
+    const t = convexWithPayments()
+    const site = await t.run(aSiteThePartnerIsOn)
+    const hidden = await t.run((ctx) => ctx.db.insert('people', { name: 'A retired mason', hidden: true }))
+
+    await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.payments.mutations.record, {
+      siteId: site.siteId,
+      entries: [aCheque(site, { paidToId: undefined, newPerson: 'A retired mason', amount: '5,000' })],
+    })
+
+    const payments = await t.run((ctx) => ctx.db.query('payments').collect())
+    expect(payments.map((payment) => payment.paidToId)).toEqual([hidden])
+    expect(await t.run((ctx) => ctx.db.get('people', hidden))).toMatchObject({ hidden: true })
+  })
+
+  it('still makes a person of a name nobody has used before', async () => {
+    // The control. Reusing what is there must not become refusing to write anything new.
+    const t = convexWithPayments()
+    const site = await t.run(aSiteThePartnerIsOn)
+
+    await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.payments.mutations.record, {
+      siteId: site.siteId,
+      entries: [aCheque(site, { paidToId: undefined, newPerson: 'A hardware shop', amount: '2,000' })],
+    })
+
+    const everyone = await t.run((ctx) => ctx.db.query('people').collect())
+    expect(everyone.map((person) => person.name)).toContain('A hardware shop')
   })
 })

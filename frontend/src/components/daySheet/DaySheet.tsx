@@ -8,6 +8,7 @@ import { Choices, Field, Line, Lines, Picker } from '../form/Field'
 import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
+import { WhoWasPaid } from './WhoWasPaid'
 import type { Draft } from './sitting'
 import {
   HOW_PAID,
@@ -200,36 +201,15 @@ export function DaySheet({
             </Picker>
           </Field>
 
-          <Field
-            label="Who was paid"
-            hint={draft.paidToId ? undefined : 'Or type a name nobody will be paid again.'}
+          <WhoWasPaid
+            who={{ paidToId: draft.paidToId, newPerson: draft.newPerson }}
+            people={people}
             problem={whatIsWrongWith('paidTo', draft)}
-          >
-            <Picker
-              value={draft.paidToId}
-              onChange={(event) => change({ paidToId: pickedFrom(people, event.target.value) })}
-              aria-label="Who was paid"
-            >
-              <option value="">Pick one</option>
-              {people.map((person) => (
-                <option key={person._id} value={person._id}>
-                  {person.name}
-                </option>
-              ))}
-            </Picker>
-          </Field>
-
-          {draft.paidToId === '' ? (
-            <Field label="Or a name">
-              <Line
-                value={draft.newPerson}
-                onChange={(event) => change({ newPerson: event.target.value })}
-                placeholder="Shop or person"
-                aria-label="Or a name"
-                autoComplete="off"
-              />
-            </Field>
-          ) : null}
+            onChange={(who) => {
+              // Looked up in the list it was drawn from rather than trusted, the same as every other picked answer here.
+              change({ paidToId: pickedFrom(people, who.paidToId), newPerson: who.newPerson })
+            }}
+          />
 
           <MoneyLine
             value={draft.amount}
