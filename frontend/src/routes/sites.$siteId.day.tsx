@@ -43,8 +43,8 @@ function ADayOnSite() {
 
     try {
       await record({ ...forSite, entries: drafts.map((draft) => asAnEntry(draft, day)) })
-      // The router, never a page load: he has just committed a day's work and wants to watch the number move, not a white flash and a re-fetch.
-      await router.navigate({ to: '/' })
+      // Back to the site itself, not the list: the number he has just moved is that house's, and watching it move is the whole reason the day was entered.
+      await router.navigate({ to: '/sites/$siteId', params: { siteId } })
     } catch (thrown) {
       setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
     } finally {
@@ -63,7 +63,7 @@ function ADayOnSite() {
       saving={saving}
       refusal={refusal}
       onPutIn={putThemIn}
-      onAddAccount={async (label, number) => await addAccount({ label, number })}
+      onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}
     />
   )
 }

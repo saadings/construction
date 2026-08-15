@@ -35,7 +35,7 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
             {sites.map((site) => (
               <li key={site._id}>
                 <Link
-                  to="/sites/$siteId/day"
+                  to="/sites/$siteId"
                   params={{ siteId: site._id }}
                   className="flex items-baseline justify-between gap-4 py-4"
                 >

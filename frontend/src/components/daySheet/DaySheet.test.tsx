@@ -142,7 +142,9 @@ describe('a day of payments', () => {
     await user.type(screen.getByLabelText('Account number'), '01234567892192')
     await user.click(screen.getByRole('button', { name: 'Save it' }))
 
-    expect(onAddAccount).toHaveBeenCalledWith('Askari 2192', '01234567892192')
+    // The whole number was typed; only its last four digits were handed on, so the rest never crosses the wire.
+    expect(onAddAccount).toHaveBeenCalledWith('Askari 2192', '2192')
+    expect(JSON.stringify(onAddAccount.mock.calls)).not.toContain('0123456789')
     // Back in the sitting with the account chosen, and nothing typed so far thrown away.
     expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('t1')
     expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('25,000')

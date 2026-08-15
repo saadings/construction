@@ -1,18 +1,20 @@
 import { v } from 'convex/values'
 
-import { bankAccountInput } from '../../shared/validation/bankAccount'
+import { bankAccountArriving } from '../../shared/validation/bankAccount'
 import { authenticatedMutation } from '../utils/auth'
 import { checked } from '../utils/checked'
 
-// The full number is typed here and never leaves this function. Only the last four digits are written down, so there is nothing to leak from a screenshot later.
+// The whole account number never leaves the device. The screen keeps only its last four digits and sends those, so there is nothing here to store, nothing to log and nothing to leak.
+
+// Checked again on arrival anyway, because a caller is never the authority on what it sent and four digits is cheap to insist on.
 export const add = authenticatedMutation({
-  args: { label: v.string(), number: v.string() },
+  args: { label: v.string(), lastFourDigits: v.string() },
   handler: async (ctx, args) => {
-    const account = checked(bankAccountInput, args)
+    const account = checked(bankAccountArriving, args)
 
     return await ctx.db.insert('bankAccounts', {
       label: account.label,
-      lastFourDigits: account.number,
+      lastFourDigits: account.lastFourDigits,
       hidden: false,
     })
   },

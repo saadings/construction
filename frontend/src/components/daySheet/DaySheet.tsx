@@ -31,7 +31,7 @@ export type DaySheetProps = {
   saving: boolean
   refusal: string | null
   onPutIn: (drafts: Array<Draft>) => void
-  onAddAccount: (label: string, number: string) => Promise<Account['_id']>
+  onAddAccount: (label: string, lastFourDigits: string) => Promise<Account['_id']>
 }
 
 function niceDay(day: string): string {
@@ -270,8 +270,8 @@ export function DaySheet({
               </Picker>
               {/* Offered here rather than named somewhere else, so a half-typed sitting survives adding one. */}
               <AddAnAccount
-                onAdd={async (label, number) => {
-                  change({ bankAccountId: await onAddAccount(label, number) })
+                onAdd={async (label, lastFourDigits) => {
+                  change({ bankAccountId: await onAddAccount(label, lastFourDigits) })
                 }}
               />
             </Field>

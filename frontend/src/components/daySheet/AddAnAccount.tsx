@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { lastFourOf } from '~shared/validation/bankAccount'
 
 import { Line } from './Field'
 
 // Offered where it is needed, not on another screen. Sending him elsewhere mid-sitting means retyping the payment when he comes back, which is the friction that ends with Excel reopened.
-export function AddAnAccount({ onAdd }: { onAdd: (label: string, number: string) => Promise<void> }) {
+export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string) => Promise<void> }) {
   const [open, setOpen] = useState(false)
   const [label, setLabel] = useState('')
   const [number, setNumber] = useState('')
@@ -22,8 +23,16 @@ export function AddAnAccount({ onAdd }: { onAdd: (label: string, number: string)
     setSaving(true)
     setProblem(null)
 
+    // The last four digits are taken here, on the device, so the rest of the number never crosses the wire.
+    const kept = lastFourOf.safeParse(number)
+    if (!kept.success) {
+      setProblem(kept.error.issues[0]?.message ?? 'Put in the account number.')
+      setSaving(false)
+      return
+    }
+
     try {
-      await onAdd(label, number)
+      await onAdd(label, kept.data)
       setOpen(false)
       setLabel('')
       setNumber('')
@@ -60,8 +69,8 @@ export function AddAnAccount({ onAdd }: { onAdd: (label: string, number: string)
           aria-label="Account number"
           autoComplete="off"
         />
-        {/* Only the last four digits are kept, so there is nothing else to leak from a screenshot. */}
-        <span className="text-muted-foreground text-sm">Only the last four figures are kept.</span>
+        {/* True end to end: the rest is dropped here, before anything is sent. */}
+        <span className="text-muted-foreground text-sm">Only the last four figures leave this phone.</span>
       </label>
 
       {problem ? <span className="text-destructive text-sm">{problem}</span> : null}
