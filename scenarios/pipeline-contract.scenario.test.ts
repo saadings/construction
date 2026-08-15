@@ -1,9 +1,10 @@
 import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { type WorkflowJob, jobsIn, readWorkflow } from './workflowFile'
 
@@ -130,9 +131,27 @@ describe('the check that reads the types', () => {
 })
 
 describe('the port the dev server takes back', () => {
-  // High enough to be nobody's default, and asserted free before it is used.
-  const port = 45871
-  const marker = join(tmpdir(), 'construction-reclaim-port.marker')
+  // A port is machine-wide, so a fixed one makes two concurrent runs of this suite fight: each sees the other's victim and reads it as its own.
+  let port = 0
+  // Named after the run that made it, for the same reason.
+  const marker = join(tmpdir(), `construction-reclaim-port-${process.pid}.marker`)
+
+  /** A port the kernel says is free, taken and released so the victim can bind it a moment later. */
+  async function unusedPort(): Promise<number> {
+    const server = createServer()
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') {
+      throw new Error('the kernel did not hand back a numbered port')
+    }
+    const chosen = address.port
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    return chosen
+  }
+
+  beforeEach(async () => {
+    port = await unusedPort()
+  })
 
   function holderOf(): string {
     return run('bash', ['-c', `lsof -ti:${port} || true`]).output.trim()
@@ -216,6 +235,14 @@ describe('the port the dev server takes back', () => {
     expect(result.status).toBe(0)
     expect(result.output.trim()).toBe('')
     await Promise.resolve()
+  })
+
+  it('is a different port for every test, so a second run of this suite is not fighting the first', async () => {
+    // The control. Sharing one port made a concurrent run's victim visible here as this run's own, which reads exactly like the script misbehaving.
+    const seen = new Set<number>([port, await unusedPort(), await unusedPort()])
+
+    expect(port).toBeGreaterThan(0)
+    expect(seen.size).toBe(3)
   })
 
   it('is what the dev server uses', () => {

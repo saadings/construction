@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { accessSync, chmodSync, constants, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { accessSync, chmodSync, constants, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -123,5 +123,49 @@ describe('what the gate does to work it was not asked to commit', () => {
     // And it is still there at the end, still unstaged, exactly as it was.
     expect(readFileSync(join(dir, BYSTANDER), 'utf8')).toBe(IN_PROGRESS)
     expect(stagedIn(dir)).not.toContain(BYSTANDER)
+  })
+})
+
+describe('what a scenario is allowed to write', () => {
+  /** Every path a scenario hands to `writeFileSync`, resolved through a variable when it was assigned from one. */
+  function writesIn(source: string): Array<string> {
+    return [...source.matchAll(/writeFileSync\(\s*([^,]+),/g)].map((match) => {
+      const target = match[1].trim()
+      if (/^[A-Za-z_$][\w$]*$/.test(target)) {
+        // A bare name says nothing on its own. Read where it came from, because unreadable must not pass as harmless.
+        const assigned = new RegExp(`\\b(?:const|let|var)\\s+${target}\\s*=\\s*([^\\n]+)`).exec(source)
+        return assigned ? `${target} = ${assigned[1].trim()}` : `${target} = (assigned somewhere this cannot read)`
+      }
+      return target
+    })
+  }
+
+  /** Every scenario write that lands somewhere the lint, typecheck and test runs are reading. */
+  function intoTheTree(): Array<string> {
+    return readdirSync(join(repoRoot, 'scenarios'))
+      .filter((name) => name.endsWith('.ts'))
+      .flatMap((name) =>
+        writesIn(readFileSync(join(repoRoot, 'scenarios', name), 'utf8'))
+          .filter((target) => target.includes('repoRoot') || target.includes('cannot read'))
+          .map((target) => `${name} writes ${target}`)
+      )
+  }
+
+  it('is only the two places a probe cannot be written anywhere else', () => {
+    // Named rather than counted: an empty list is what a matcher that stopped reading returns, and these two prove it is still reading.
+    expect(intoTheTree()).toEqual([
+      "pipeline-contract.scenario.test.ts writes canary = join(repoRoot, 'convex', 'typecheckCanary.ts')",
+      "repository-hygiene.scenario.test.ts writes control = join(repoRoot, 'scenarios', 'control.scenario.test.ts')",
+    ])
+  })
+
+  it('reads a target through the name it was assigned to, so an unreadable one cannot pass as harmless', () => {
+    // Composed rather than written out, because a fixture spelling the call in full reads to the scan above as a write this file makes.
+    const CALL = 'writeFileSync'
+    const named = writesIn(`const probe = join(repoRoot, 'convex', 'p.ts')\n${CALL}(probe, body)\n`)
+    const opaque = writesIn(`${CALL}(somewhereElse, body)\n`)
+
+    expect(named).toEqual(["probe = join(repoRoot, 'convex', 'p.ts')"])
+    expect(opaque).toEqual(['somewhereElse = (assigned somewhere this cannot read)'])
   })
 })
