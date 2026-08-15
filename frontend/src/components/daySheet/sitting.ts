@@ -14,7 +14,6 @@ export type { HowPaid }
 export type Draft = BeingTyped & {
   tradeId: Id<'trades'> | ''
   paidToId: Id<'people'> | ''
-  paidById: Id<'people'> | ''
   bankAccountId: Id<'bankAccounts'> | ''
 }
 
@@ -30,7 +29,6 @@ export function anEmptyDraft(keeping: Partial<Draft> = {}): Draft {
     paidToId: '',
     newPerson: '',
     amount: '',
-    paidById: '',
     method: 'cheque',
     reference: '',
     bankAccountId: '',
@@ -61,7 +59,7 @@ export function sittingTotalPaisa(drafts: Array<Draft>): number {
 
 // Only what the server takes. Anything a way of paying does not ask for is left off rather than sent empty.
 export function asAnEntry(draft: Draft, day: string) {
-  if (draft.tradeId === '' || draft.paidById === '') {
+  if (draft.tradeId === '') {
     // Cannot be reached: `whatIsMissing` refuses this first. Named out loud rather than asserted away, so the type stays honest about what a half-filled draft holds.
     throw new Error('a payment was sent before it was finished')
   }
@@ -72,7 +70,6 @@ export function asAnEntry(draft: Draft, day: string) {
     amount: draft.amount,
     paidToId: draft.paidToId || undefined,
     newPerson: draft.paidToId ? undefined : draft.newPerson.trim(),
-    paidById: draft.paidById,
     method: draft.method,
     reference: asksForChequeNumber(draft.method) ? draft.reference.trim() : undefined,
     bankAccountId: (asksForBank(draft.method) ? draft.bankAccountId : '') || undefined,

@@ -48,7 +48,6 @@ async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,
   await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
   await user.selectOptions(screen.getByLabelText('Who was paid'), 'A mason')
   await user.type(screen.getByLabelText('How much'), amount)
-  await user.selectOptions(screen.getByLabelText('Whose money'), 'The partner')
   await user.type(screen.getByLabelText('Cheque number'), '0001')
   await user.selectOptions(screen.getByLabelText('Which account'), 'Bank 0000')
 }
@@ -75,14 +74,13 @@ describe('a day of payments', () => {
     expect(screen.getByText('35,000')).toBeTruthy()
   })
 
-  it('keeps the site, the day, the account and whose money for the next payment', async () => {
+  it('keeps the site, the day and the account for the next payment', async () => {
     const user = userEvent.setup()
     aSheet()
 
     await fillOne(user)
     await user.click(screen.getByRole('button', { name: 'Add another' }))
 
-    expect(screen.getByLabelText<HTMLSelectElement>('Whose money').value).toBe('p1')
     expect(screen.getByLabelText<HTMLSelectElement>('Which account').value).toBe('b1')
     // What does change: it is a different trade, a different person and a different amount every time.
     expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('')
@@ -185,6 +183,13 @@ describe('a day of payments', () => {
 
     expect(screen.getByRole('alert').textContent).toContain('Say who was paid.')
     expect(onPutIn).not.toHaveBeenCalled()
+  })
+
+  it('does not ask whose money it was, because there is one pot', async () => {
+    // Nauman: "We dont need to specify whos money was used to pay in the pull in day." The partners' money is pooled the moment it goes in, so the question has no answer worth recording -- and it was one more thing to answer on every row of a cheque run.
+    aSheet()
+
+    expect(screen.queryByLabelText('Whose money')).toBeNull()
   })
 
   it('never puts a technical word on the screen', async () => {

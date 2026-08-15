@@ -16,7 +16,6 @@ function anEntry(over: Record<string, unknown> = {}) {
     day: '2025-10-07',
     amount: '49,150',
     paidToId: A_PERSON,
-    paidById: A_PERSON,
     method: 'cheque',
     reference: '0001',
     bankAccountId: AN_ACCOUNT,
@@ -30,7 +29,6 @@ function beingTyped(over: Partial<BeingTyped> = {}): BeingTyped {
     paidToId: A_PERSON,
     newPerson: '',
     amount: '49,150',
-    paidById: A_PERSON,
     method: 'cheque',
     reference: '0001',
     bankAccountId: AN_ACCOUNT,
@@ -81,7 +79,6 @@ describe('what is missing, as it is typed', () => {
     [{ tradeId: '' }, SAY.trade],
     [{ paidToId: '', newPerson: '  ' }, SAY.paidTo],
     [{ amount: '' }, SAY.amount],
-    [{ paidById: '' }, SAY.paidBy],
     [{ reference: '' }, SAY.reference],
     [{ bankAccountId: '' }, SAY.bank],
   ] as Array<[Partial<BeingTyped>, string]>)('says %o is missing', (missing, said) => {
