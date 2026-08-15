@@ -11,8 +11,8 @@ const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encodin
 
 const SOURCE = /\.(ts|tsx|js|mjs|cjs|css|ya?ml|sh)$/
 
-/** Nobody writes these, so a line limit on them would only ever fail. */
-const GENERATED = [/^frontend\/src\/routeTree\.gen\.ts$/, /^convex\/_generated\//]
+/** Nobody writes these, so a line limit on them would only ever fail. `components/ui` is shadcn's, copied in by their CLI and updated the same way: held to our rules it reports their style as this repository's problems. */
+const GENERATED = [/^frontend\/src\/routeTree\.gen\.ts$/, /^convex\/_generated\//, /^frontend\/src\/components\/ui\//]
 
 /** Instructions to tooling rather than commentary, so they do not extend a run. */
 const DIRECTIVE =

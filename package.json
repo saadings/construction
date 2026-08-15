@@ -23,6 +23,7 @@
     "setup:cloudflare": "tsx scripts/setupCloudflareProject.ts"
   },
   "dependencies": {
+    "@base-ui/react": "^1.7.0",
     "@clerk/backend": "^3.0.2",
     "@clerk/tanstack-react-start": "^1.0.2",
     "@clerk/themes": "^2.4.57",
@@ -54,6 +55,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.71.2",
+    "recharts": "3.8.0",
     "svix": "^1.87.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.1.18",

@@ -13,7 +13,11 @@ export default defineConfig(({ mode }) => {
 
   // The same alias the app builds with. Without it here, a module the frontend imports resolves in the browser and not under test.
   const resolve = {
-    alias: { '~shared': fileURLToPath(new URL('./shared', import.meta.url)) },
+    alias: {
+      '~shared': fileURLToPath(new URL('./shared', import.meta.url)),
+      // What shadcn's own components import themselves by. Declared in both tsconfigs already, so this is that same mapping said where the test runner can read it rather than a second convention.
+      '@': fileURLToPath(new URL('./frontend/src', import.meta.url)),
+    },
   }
 
   return {
