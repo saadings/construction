@@ -52,9 +52,11 @@ export const coveredArea = z.union([z.string(), z.number()]).transform((value, c
 
 // A keyboard hint opens a phone on digits and does nothing at all on a desktop, which is how `Alasdfas` got into a covered area. The field takes figures as they are typed and lets nothing else in, so it can never hold what it will only refuse later.
 
-// Commas stay, because that is how the figure is written: 4,975.
+// Grouped as it is typed, because that is how the figure is written: 4,975. It used to let a comma stay and never add one, so a house started as `4975` was read back as `4,975` the moment somebody opened it to correct -- one number, two spellings, in one form.
 export function areaWhileTyping(typed: string): string {
-  return typed.replace(/[^\d,]/g, '')
+  const digits = typed.replace(/\D/g, '')
+
+  return digits === '' ? '' : Number(digits).toLocaleString('en-US')
 }
 
 export const siteStage = z.enum(['planning', 'building', 'finishing', 'complete', 'sold'])
