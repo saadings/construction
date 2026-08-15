@@ -18,11 +18,11 @@ export const addressPart = z
     message: 'Keep this short, the way it is written on the papers.',
   })
 
-// The largest house in the workbooks is a little over 10,000 square feet, so anything past 100,000 is a slip of the finger rather than a house.
+// Between 100 and 20,000 square feet, which is the spec's bound and a tighter one than "positive": the largest house in the workbooks is a little over 10,000, and a figure below 100 is a hand slipping off the keypad rather than a house.
 export const coveredArea = z.union([z.string(), z.number()]).transform((value, ctx) => {
   const sqft = Number(String(value).replaceAll(',', '').trim())
 
-  if (!Number.isFinite(sqft) || sqft <= 0 || sqft > 100_000) {
+  if (!Number.isFinite(sqft) || sqft < 100 || sqft > 20_000) {
     ctx.addIssue({ code: 'custom', message: 'Put in the covered area in square feet.' })
     return z.NEVER
   }
