@@ -77,18 +77,12 @@ const NOT_FROM_A_SCREEN: Record<string, string> = {
 
 /** No screen yet, and that is a gap rather than a decision. Lower this list; never add to it without saying why in a review. */
 const NOBODY_CAN_REACH_YET: Record<string, string> = {
-  'bills.raise': 'a bill is what somebody says they are owed, and nothing asks for one',
-  'bills.remove': 'and nothing takes one back',
-  'engagements.agree':
-    'what was agreed with a contractor has no screen, so the spread reads agreed as nothing, and there is no way to take one back because none was written',
   'profitPayouts.record': 'nothing is due until a house sells, so nobody can be paid out on one that has not',
   'profitPayouts.remove': 'and nothing takes a payout back',
 }
 
 /** A reading no screen opens. The same rule as above and the same instruction: lower this list, and never add to it without saying why in a review. */
 const NOBODY_CAN_OPEN_YET: Record<string, string> = {
-  'engagements.spread':
-    'what was agreed against what has been billed and paid has no screen, because nothing agrees one yet',
   'moneyIn.totals': 'the house page adds up what came in from the rows rather than asking for a total',
   'owed.position':
     'what everybody is owed across every house -- the market payables register, which has no screen of its own',
@@ -146,12 +140,17 @@ describe('every way of writing something down', () => {
     }
   })
 
-  it('knows which half of the ledger is missing, and says so rather than leaving it to be noticed', () => {
-    // Not a formality: money coming in is the half the workbooks kept in a separate file, and it is the half nobody can enter today.
-    expect(NOBODY_CAN_REACH_YET['engagements.agree']).toBeDefined()
-    expect(NOBODY_CAN_REACH_YET['bills.raise']).toBeDefined()
-    // And the one this guard was written for is off the list, because a screen now reaches it.
-    expect(NOBODY_CAN_REACH_YET['moneyIn.record']).toBeUndefined()
+  it('has nothing left on it that is a gap rather than a decision', () => {
+    // The list started as an apology for half the ledger and is down to the one thing that is deliberately not built: nothing is due to a partner until a house sells, so there is nobody to pay out on one that has not.
+    expect(Object.keys(NOBODY_CAN_REACH_YET).sort()).toEqual(['profitPayouts.record', 'profitPayouts.remove'])
+  })
+
+  it('has the gaps it was written about closed from both sides, not only taken off the list', () => {
+    // A line deleted from the list and a screen that reaches the function are two different facts, and only one of them is what the app can do.
+    for (const key of ['moneyIn.record', 'bills.raise', 'bills.remove', 'engagements.agree']) {
+      expect(NOBODY_CAN_REACH_YET[key], `${key} is still written down as a gap`).toBeUndefined()
+      expect(reachable.has(key), `${key} is off the list and no screen reaches it`).toBe(true)
+    }
   })
 })
 
@@ -191,5 +190,9 @@ describe('every way of reading something back', () => {
     // `owed.statement` is what the workbooks were kept open to answer, and it could be reached by nobody until the screen that opens it was built. The register beside it still cannot, and says so.
     expect(NOBODY_CAN_OPEN_YET['owed.statement']).toBeUndefined()
     expect(NOBODY_CAN_OPEN_YET['owed.position']).toBeDefined()
+
+    // And the spread it found on its first run, closed from both sides: off the list, and opened by a screen.
+    expect(NOBODY_CAN_OPEN_YET['engagements.spread']).toBeUndefined()
+    expect(opened.has('engagements.spread')).toBe(true)
   })
 })
