@@ -1,8 +1,12 @@
 import { type GenericMutationCtx, type GenericQueryCtx, type UserIdentity } from 'convex/server'
+import { ConvexError } from 'convex/values'
 import type { ObjectType, PropertyValidators } from 'convex/values'
 
 import type { DataModel } from '../_generated/dataModel'
 import { mutation, query } from '../_generated/server'
+
+// What a phone is shown when a sign-in has run out mid-sitting, which is ordinary rather than an edge: it happens to somebody standing on a site with a cheque book. A plain `Error` would reach them as "Server Error" and tell them nothing to do about it.
+export const SIGNED_OUT = 'You have been signed out. Sign in again to carry on.'
 
 // Written as types, never asserted onto the builder: an `as QueryBuilder` erases the `identity` these wrappers exist to add.
 export type AuthenticatedQueryCtx = GenericQueryCtx<DataModel> & { identity: UserIdentity }
@@ -21,7 +25,7 @@ export function authenticatedQuery<
     handler: async (ctx, args) => {
       const identity = await ctx.auth.getUserIdentity()
       if (!identity) {
-        throw new Error('Not authenticated')
+        throw new ConvexError(SIGNED_OUT)
       }
       // Spread, not `Object.assign(ctx, …)`: the context is Convex's, and writing to it reaches back into the caller.
       return await fn.handler({ ...ctx, identity }, args)
@@ -40,7 +44,7 @@ export function authenticatedMutation<
     handler: async (ctx, args) => {
       const identity = await ctx.auth.getUserIdentity()
       if (!identity) {
-        throw new Error('Not authenticated')
+        throw new ConvexError(SIGNED_OUT)
       }
       return await fn.handler({ ...ctx, identity }, args)
     },

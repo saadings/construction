@@ -2,10 +2,11 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { ConvexError } from 'convex/values'
 import { useState } from 'react'
-import { areaWhileTyping } from '~shared/validation/site'
+import { whatIsWrong } from '~shared/validation/primitives'
+import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 
 import { api } from '../../../convex/_generated/api'
-import { Field, Line, Picker } from '../components/daySheet/Field'
+import { Field, Line, Picker } from '../components/form/Field'
 
 export const Route = createFileRoute('/sites/new')({ component: StartASite })
 
@@ -52,11 +53,17 @@ function StartASite() {
       <div className="mx-auto flex max-w-lg flex-col gap-7 px-5 pt-8 pb-10">
         <h1 className="text-foreground font-display text-[2.25rem] leading-none">Start a site</h1>
 
-        <Field label="Name" hint="The way you say it: 1-A, Phase 0.">
+        {/* What is wrong is worked out on every keystroke and shown by `Field` only once the eye has left the answer. */}
+        <Field label="Name" hint="The way you say it: 1-A, Phase 0." problem={whatIsWrong(siteName, name)}>
           <Line value={name} onChange={(event) => setName(event.target.value)} aria-label="Name" autoComplete="off" />
         </Field>
 
-        <Field label="Covered area" hint="In square feet. Leave it empty if it is not settled yet.">
+        <Field
+          label="Covered area"
+          hint="In square feet. Leave it empty if it is not settled yet."
+          // Nothing typed is a perfectly good answer here, so an empty one has nothing wrong with it.
+          problem={coveredAreaSqft.trim() === '' ? null : whatIsWrong(coveredArea, coveredAreaSqft)}
+        >
           <Line
             value={coveredAreaSqft}
             // The keyboard hint below is a hint on a phone and nothing at all on a desktop, so what may be typed is decided here.

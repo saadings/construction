@@ -1,9 +1,17 @@
+import type { ZodType } from 'zod'
 import { z } from 'zod'
 
 import { notInTheFuture, readCalendarDate } from '../calendarDate'
 import { readRupees } from '../money'
 
 // Written once and reused, so the form, the server and the types cannot drift apart.
+
+// What is wrong with one answer, in the words the server would refuse it with. The first problem and no more, which is the same rule `checked()` follows on the way in: eight problems at once reads as the app being broken rather than as a question unanswered.
+export function whatIsWrong(rule: ZodType, typed: unknown): string | null {
+  const read = rule.safeParse(typed)
+
+  return read.success ? null : (read.error.issues[0]?.message ?? 'Check what you have put in.')
+}
 
 // One mistake, one sentence. A rule that answers "nothing there", "too long" and "not that at all" with a single message tells whoever typed 50 that he did not put in square feet, when he did.
 

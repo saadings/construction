@@ -5,8 +5,9 @@ import { makeFunctionReference } from 'convex/server'
 import { v } from 'convex/values'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import schema from '../schema'
-import { authenticatedMutation, authenticatedQuery } from './auth'
+import { SIGNED_OUT, authenticatedMutation, authenticatedQuery } from './auth'
 
 // Every rejection is checked against a side effect that must not have happened: a wrapper throwing after the handler gives the same message.
 
@@ -61,17 +62,24 @@ beforeEach(() => {
 })
 
 describe('a caller who is not signed in', () => {
+  it('is told what to do about it, in words with nothing technical in them', () => {
+    // The sentence itself, held to the rule every other refusal is held to.
+    expect(SIGNED_OUT).not.toMatch(/\b(authenticat|token|session|unauthori[sz]ed|error|server|identity)\w*/i)
+    expect(SIGNED_OUT).toContain('Sign in again')
+  })
+
   it('is refused by the query before the handler runs', async () => {
     const t = convexWithProbe()
 
-    await expect(t.query(whoIsAsking, {})).rejects.toThrow('Not authenticated')
+    // The whole sentence, and as a `ConvexError`: this is the refusal a phone meets when a sign-in runs out mid-sitting, and a plain `Error` reaches it as "Server Error".
+    expect(await refusalFrom(t.query(whoIsAsking, {}))).toBe(SIGNED_OUT)
     expect(reached).toEqual([])
   })
 
   it('is refused by the mutation before anything is written', async () => {
     const t = convexWithProbe()
 
-    await expect(t.mutation(remember, { name: 'The partner' })).rejects.toThrow('Not authenticated')
+    expect(await refusalFrom(t.mutation(remember, { name: 'The partner' }))).toBe(SIGNED_OUT)
 
     expect(reached).toEqual([])
     expect(await t.run((ctx) => ctx.db.query('accounts').collect())).toEqual([])
