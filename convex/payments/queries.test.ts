@@ -3,6 +3,7 @@
 import { convexTest } from 'convex-test'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { api } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
@@ -133,6 +134,99 @@ describe('what a site has cost', () => {
     expect(asRead[0]).toEqual(asRead[1])
     // And the order itself, so this cannot pass by both readings being wrong in the same way.
     expect(asRead[0]).toEqual([8700000, 1225000, 150000])
+  })
+
+  it('reads out what went on one trade, in the words the screen shows', async () => {
+    const t = convexWithPayments()
+    const { siteId, paymentIds } = await t.run(aSiteWithSpending)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const cement = await t.run(async (ctx) => {
+      const [first] = paymentIds
+      if (!first) throw new Error('the fixture wrote no payments')
+      const payment = await ctx.db.get('payments', first)
+      if (payment === null) throw new Error('the fixture wrote no payments')
+
+      // A second one on the same trade, on a later day and to a shop nobody will be paid again.
+      await ctx.db.insert('payments', {
+        siteId,
+        tradeId: payment.tradeId,
+        day: '2025-11-03',
+        amountPaisa: 1500 * 100,
+        method: 'cheque',
+        reference: '0184',
+        isExtraWork: false,
+        removed: false,
+        addedByExternalId: SIGNED_IN_AS,
+      })
+
+      return payment.tradeId
+    })
+
+    const went = await signedIn.query(api.payments.queries.onTrade, { siteId, tradeId: cement })
+
+    // Newest first, because a wrong figure is usually the one just put in.
+    expect(went?.map((one) => one.amountPaisa)).toEqual([150000, 257048100])
+    expect(went?.[0]).toMatchObject({ day: '2025-11-03', method: 'cheque', reference: '0184' })
+    // Nobody to name, so it says so rather than leaving the row anonymous.
+    expect(went?.[0]?.paidToName).toBe('A one-off')
+    expect(went?.[1]?.paidToName).toBe('The partner')
+  })
+
+  it('leaves a payment that was taken out off the trade it was on', async () => {
+    const t = convexWithPayments()
+    const { siteId, paymentIds } = await t.run(aSiteWithSpending)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const [cementPayment] = paymentIds
+    if (!cementPayment) throw new Error('nothing was written to take back out')
+    const cement = await t.run(async (ctx) => (await ctx.db.get('payments', cementPayment))?.tradeId)
+    if (!cement) throw new Error('nothing was written to take back out')
+
+    expect(await signedIn.query(api.payments.queries.onTrade, { siteId, tradeId: cement })).toHaveLength(1)
+
+    await signedIn.mutation(api.payments.mutations.remove, { siteId, paymentId: cementPayment })
+
+    expect(await signedIn.query(api.payments.queries.onTrade, { siteId, tradeId: cement })).toEqual([])
+  })
+
+  it('refuses to take out a payment that is on another house, rather than taking it out anyway', async () => {
+    // The screen only ever names a payment it has just read, so this is about a call that did not come from one.
+    const t = convexWithPayments()
+    const { paymentIds } = await t.run(aSiteWithSpending)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const elsewhere = await t.run((ctx) =>
+      ctx.db.insert('sites', { name: '2-B, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
+    )
+    const [somebodyElses] = paymentIds
+    if (!somebodyElses) throw new Error('nothing was written to take back out')
+
+    expect(
+      await refusalFrom(
+        signedIn.mutation(api.payments.mutations.remove, { siteId: elsewhere, paymentId: somebodyElses })
+      )
+    ).toBe('That payment is not on this site.')
+
+    // And it is still standing where it was.
+    expect(await t.run((ctx) => ctx.db.get('payments', somebodyElses))).toMatchObject({ removed: false })
+  })
+
+  it('signs a removal, because a removal nobody signed is what a disagreement turns on', async () => {
+    const t = convexWithPayments()
+    const { siteId, paymentIds } = await t.run(aSiteWithSpending)
+
+    const [cementPayment] = paymentIds
+    if (!cementPayment) throw new Error('nothing was written to take back out')
+
+    await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.payments.mutations.remove, {
+      siteId,
+      paymentId: cementPayment,
+    })
+
+    const taken = await t.run((ctx) => ctx.db.get('payments', cementPayment))
+    expect(taken?.changedByExternalId).toBe(SIGNED_IN_AS)
+    expect(typeof taken?.changedAt).toBe('number')
   })
 
   it('drops a payment that was taken out, from both sides at once', async () => {
