@@ -56,7 +56,7 @@ async function anAccountFor(ctx: MutationCtx, { withAPerson }: { withAPerson: bo
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
     name: 'The partner',
-    primaryEmail: 'partner@example.com',
+    primaryEmail: 'nauman@example.com',
     otherEmails: [],
     personId,
   })

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
+import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const SitesNewRoute = SitesNewRouteImport.update({
   path: '/sites/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitesSiteIdIndexRoute = SitesSiteIdIndexRouteImport.update({
+  id: '/sites/$siteId/',
+  path: '/sites/$siteId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitesSiteIdDayRoute = SitesSiteIdDayRouteImport.update({
   id: '/sites/$siteId/day',
   path: '/sites/$siteId/day',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
+  '/sites/$siteId/': typeof SitesSiteIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
+  '/sites/$siteId': typeof SitesSiteIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
+  '/sites/$siteId/': typeof SitesSiteIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sites/new' | '/sites/$siteId/day'
+  fullPaths: '/' | '/sites/new' | '/sites/$siteId/day' | '/sites/$siteId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sites/new' | '/sites/$siteId/day'
-  id: '__root__' | '/' | '/sites/new' | '/sites/$siteId/day'
+  to: '/' | '/sites/new' | '/sites/$siteId/day' | '/sites/$siteId'
+  id: '__root__' | '/' | '/sites/new' | '/sites/$siteId/day' | '/sites/$siteId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SitesNewRoute: typeof SitesNewRoute
   SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
+  SitesSiteIdIndexRoute: typeof SitesSiteIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sites/$siteId/': {
+      id: '/sites/$siteId/'
+      path: '/sites/$siteId'
+      fullPath: '/sites/$siteId/'
+      preLoaderRoute: typeof SitesSiteIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sites/$siteId/day': {
       id: '/sites/$siteId/day'
       path: '/sites/$siteId/day'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SitesNewRoute: SitesNewRoute,
   SitesSiteIdDayRoute: SitesSiteIdDayRoute,
+  SitesSiteIdIndexRoute: SitesSiteIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

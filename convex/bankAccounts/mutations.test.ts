@@ -31,17 +31,19 @@ async function anAccount(ctx: MutationCtx) {
 describe('adding a bank account', () => {
   it('has nowhere to put anything but the last four digits', async () => {
     // The screen promises "only the last four figures leave this phone". This holds the stored document to it, and the mutation's arguments to it as well.
+
+    // The label carries no digits of its own on purpose: sharing them with the last four would let a swapped or derived value pass unnoticed.
     const t = convexWithBankAccounts()
     await t.run(anAccount)
 
     const bankAccountId = await t
       .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.bankAccounts.mutations.add, { label: '  Bank   0000 ', lastFourDigits: '0000' })
+      .mutation(api.bankAccounts.mutations.add, { label: '  Second   account ', lastFourDigits: '4242' })
 
     const stored = await t.run((ctx) => ctx.db.get('bankAccounts', bankAccountId))
 
-    expect(stored?.label).toBe('Bank 0000')
-    expect(stored?.lastFourDigits).toBe('0000')
+    expect(stored?.label).toBe('Second account')
+    expect(stored?.lastFourDigits).toBe('4242')
     // The property is that there is nowhere to put a full number, not that something remembers to mask one.
     expect(
       Object.keys(stored ?? {})
