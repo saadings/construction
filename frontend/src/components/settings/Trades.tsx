@@ -4,10 +4,10 @@ import { tradeName } from '~shared/validation/trade'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
-import { Form } from '../shell/Page'
+import { Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
-// What money is spent on, which is the first thing Nauman asked for by name. Until this screen the list was whatever a deployment was seeded with.
+// The list a day sheet picks from, named after the field that picks from it. Nauman was looking straight at `WHAT FOR` on the day sheet and could not find where the list came from -- it was called "what money is spent on", which is a true description and not the words in front of him.
 
 export type TradeRow = { _id: string; name: string; countsAsBuildingCost: boolean }
 export type NewTrade = { name: string; countsAsBuildingCost: boolean }
@@ -27,21 +27,34 @@ export function Trades({
   onEdit: (tradeId: string, trade: NewTrade) => Promise<void>
   onTakeOff: (tradeId: string) => Promise<void>
 }) {
+  // Closed until asked for. The form used to sit above the list, so forty-seven things he has were below a box for one he has not.
+  const [adding, setAdding] = useState(false)
+
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-foreground text-base font-medium">What money is spent on</h2>
+    <Page
+      title="What for"
+      beside={
+        adding ? null : (
+          <Button className="py-2 text-sm" onClick={() => setAdding(true)}>
+            Add one
+          </Button>
+        )
+      }
+    >
       <p className="text-muted-foreground max-w-prose text-sm">
-        The list a day sheet picks from. It starts with the ones the workbooks used, in roughly the order a house is
-        built, and anything you add goes after them.
+        The list a day sheet picks from. Money spent on the first group is part of what the house cost; the second is
+        what the ground under it cost.
       </p>
 
+      {adding ? <AddATrade onAdd={onAdd} onDone={() => setAdding(false)} /> : null}
+
       {trades === undefined ? (
-        <WhileWaiting what="Getting what money is spent on">
+        <WhileWaiting what="Getting what a day sheet picks from">
           <div className="divide-hairline flex flex-col divide-y">
             {[0, 1, 2, 3].map((row) => (
               <div key={row} className="flex items-center justify-between gap-4 py-3">
                 <Skeleton className="h-4 w-40 max-w-full" />
-                <Skeleton className="h-4 w-32 shrink-0" />
+                <Skeleton className="h-4 w-16 shrink-0" />
               </div>
             ))}
           </div>
@@ -49,15 +62,52 @@ export function Trades({
       ) : trades === null ? (
         <p className="text-muted text-sm">The list did not come back. Sign out and in again.</p>
       ) : (
-        <ul aria-label="What money is spent on" className="divide-hairline flex flex-col divide-y">
-          {trades.map((trade) => (
-            <OneTrade key={trade._id} trade={trade} onEdit={onEdit} onTakeOff={onTakeOff} />
-          ))}
-        </ul>
+        <TwoSides trades={trades} onEdit={onEdit} onTakeOff={onTakeOff} />
       )}
+    </Page>
+  )
+}
 
-      <AddATrade onAdd={onAdd} />
-    </section>
+// Grouped by side rather than a mark on every row. Three of forty-seven are not building cost, and that is where a wrong one hides: to find it on a marked list you read all forty-seven, and here you read three.
+function TwoSides({
+  trades,
+  onEdit,
+  onTakeOff,
+}: {
+  trades: Array<TradeRow>
+  onEdit: (tradeId: string, trade: NewTrade) => Promise<void>
+  onTakeOff: (tradeId: string) => Promise<void>
+}) {
+  const sides = [
+    { said: BUILDING, on: trades.filter((trade) => trade.countsAsBuildingCost) },
+    { said: NOT_BUILDING, on: trades.filter((trade) => !trade.countsAsBuildingCost) },
+  ]
+
+  if (trades.length === 0) {
+    return <p className="text-muted-foreground py-4 text-sm">Nothing on the list yet.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {sides.map((side) => (
+        <section key={side.said} className="flex flex-col gap-1">
+          {/* The count is beside the heading because it is the answer to "how many are on the wrong side", which is the question he has about this list. */}
+          <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">
+            {side.said} · {side.on.length}
+          </h2>
+
+          {side.on.length === 0 ? (
+            <p className="text-muted-foreground py-2 text-sm">Nothing on this side.</p>
+          ) : (
+            <ul aria-label={side.said} className="divide-hairline flex flex-col divide-y">
+              {side.on.map((trade) => (
+                <OneTrade key={trade._id} trade={trade} onEdit={onEdit} onTakeOff={onTakeOff} />
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+    </div>
   )
 }
 
@@ -95,20 +145,18 @@ function OneTrade({
 
   if (!changing) {
     return (
-      <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
+      <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5">
+        {/* Which side it is on is the heading above it now, so the row carries the name and the way to change it and nothing else. */}
         <span className="text-foreground">{trade.name}</span>
-        <span className="flex items-baseline gap-4">
-          <span className="text-muted-foreground text-sm">{trade.countsAsBuildingCost ? BUILDING : NOT_BUILDING}</span>
-          <button
-            type="button"
-            onClick={() => {
-              setChanging(true)
-            }}
-            className="text-primary shrink-0 text-sm font-medium"
-          >
-            Change
-          </button>
-        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setChanging(true)
+          }}
+          className="text-primary shrink-0 text-sm font-medium"
+        >
+          Change
+        </button>
         {refusal === null ? null : (
           <span role="alert" className="text-destructive w-full text-sm">
             {refusal}
@@ -175,12 +223,11 @@ function OneTrade({
   )
 }
 
-function AddATrade({ onAdd }: { onAdd: (trade: NewTrade) => Promise<void> }) {
+function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void>; onDone: () => void }) {
   const [name, setName] = useState('')
   const [building, setBuilding] = useState(true)
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
-  const [added, setAdded] = useState(0)
 
   async function add() {
     setSaving(true)
@@ -188,9 +235,7 @@ function AddATrade({ onAdd }: { onAdd: (trade: NewTrade) => Promise<void> }) {
 
     try {
       await onAdd({ name, countsAsBuildingCost: building })
-      setName('')
-      setBuilding(true)
-      setAdded((before) => before + 1)
+      onDone()
     } catch (thrown) {
       const said: unknown = (thrown as { data?: unknown }).data
       setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
@@ -200,7 +245,7 @@ function AddATrade({ onAdd }: { onAdd: (trade: NewTrade) => Promise<void> }) {
   }
 
   return (
-    <Form className="gap-4" freshAfter={added}>
+    <div className="border-border flex w-full max-w-2xl flex-col gap-4 rounded-md border p-4">
       <Field label="Something else it is spent on" problem={whatIsWrong(tradeName, name)}>
         <Line
           value={name}
@@ -221,12 +266,15 @@ function AddATrade({ onAdd }: { onAdd: (trade: NewTrade) => Promise<void> }) {
         </p>
       )}
 
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <Button onClick={add} busy={saving} className="py-2 text-sm">
           Put it on the list
         </Button>
+        <button type="button" onClick={onDone} className="text-muted-foreground text-sm underline underline-offset-4">
+          Never mind
+        </button>
       </div>
-    </Form>
+    </div>
   )
 }
 

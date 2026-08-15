@@ -13,8 +13,14 @@ import { Route as PeopleRouteImport } from './routes/people'
 import { Route as OwedRouteImport } from './routes/owed'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MoreIndexRouteImport } from './routes/more.index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
 import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
+import { Route as MoreYourSignInRouteImport } from './routes/more.your-sign-in'
+import { Route as MoreWhoCanSignInRouteImport } from './routes/more.who-can-sign-in'
+import { Route as MoreWhichAccountRouteImport } from './routes/more.which-account'
+import { Route as MoreWhatForRouteImport } from './routes/more.what-for'
+import { Route as MoreHowItLooksRouteImport } from './routes/more.how-it-looks'
 import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdSharesRouteImport } from './routes/sites.$siteId.shares'
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
@@ -40,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MoreIndexRoute = MoreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MoreRoute,
+} as any)
 const SitesNewRoute = SitesNewRouteImport.update({
   id: '/sites/new',
   path: '/sites/new',
@@ -49,6 +60,31 @@ const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
   id: '/$personId',
   path: '/$personId',
   getParentRoute: () => PeopleRoute,
+} as any)
+const MoreYourSignInRoute = MoreYourSignInRouteImport.update({
+  id: '/your-sign-in',
+  path: '/your-sign-in',
+  getParentRoute: () => MoreRoute,
+} as any)
+const MoreWhoCanSignInRoute = MoreWhoCanSignInRouteImport.update({
+  id: '/who-can-sign-in',
+  path: '/who-can-sign-in',
+  getParentRoute: () => MoreRoute,
+} as any)
+const MoreWhichAccountRoute = MoreWhichAccountRouteImport.update({
+  id: '/which-account',
+  path: '/which-account',
+  getParentRoute: () => MoreRoute,
+} as any)
+const MoreWhatForRoute = MoreWhatForRouteImport.update({
+  id: '/what-for',
+  path: '/what-for',
+  getParentRoute: () => MoreRoute,
+} as any)
+const MoreHowItLooksRoute = MoreHowItLooksRouteImport.update({
+  id: '/how-it-looks',
+  path: '/how-it-looks',
+  getParentRoute: () => MoreRoute,
 } as any)
 const SitesSiteIdIndexRoute = SitesSiteIdIndexRouteImport.update({
   id: '/sites/$siteId/',
@@ -73,11 +109,17 @@ const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/more': typeof MoreRoute
+  '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/more/how-it-looks': typeof MoreHowItLooksRoute
+  '/more/what-for': typeof MoreWhatForRoute
+  '/more/which-account': typeof MoreWhichAccountRoute
+  '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
+  '/more/your-sign-in': typeof MoreYourSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
+  '/more/': typeof MoreIndexRoute
   '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/shares': typeof SitesSiteIdSharesRoute
@@ -85,11 +127,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/more': typeof MoreRoute
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/more/how-it-looks': typeof MoreHowItLooksRoute
+  '/more/what-for': typeof MoreWhatForRoute
+  '/more/which-account': typeof MoreWhichAccountRoute
+  '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
+  '/more/your-sign-in': typeof MoreYourSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
+  '/more': typeof MoreIndexRoute
   '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/shares': typeof SitesSiteIdSharesRoute
@@ -98,11 +145,17 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/more': typeof MoreRoute
+  '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/more/how-it-looks': typeof MoreHowItLooksRoute
+  '/more/what-for': typeof MoreWhatForRoute
+  '/more/which-account': typeof MoreWhichAccountRoute
+  '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
+  '/more/your-sign-in': typeof MoreYourSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
+  '/more/': typeof MoreIndexRoute
   '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/shares': typeof SitesSiteIdSharesRoute
@@ -115,8 +168,14 @@ export interface FileRouteTypes {
     | '/more'
     | '/owed'
     | '/people'
+    | '/more/how-it-looks'
+    | '/more/what-for'
+    | '/more/which-account'
+    | '/more/who-can-sign-in'
+    | '/more/your-sign-in'
     | '/people/$personId'
     | '/sites/new'
+    | '/more/'
     | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
     | '/sites/$siteId/shares'
@@ -124,11 +183,16 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/more'
     | '/owed'
     | '/people'
+    | '/more/how-it-looks'
+    | '/more/what-for'
+    | '/more/which-account'
+    | '/more/who-can-sign-in'
+    | '/more/your-sign-in'
     | '/people/$personId'
     | '/sites/new'
+    | '/more'
     | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
     | '/sites/$siteId/shares'
@@ -139,8 +203,14 @@ export interface FileRouteTypes {
     | '/more'
     | '/owed'
     | '/people'
+    | '/more/how-it-looks'
+    | '/more/what-for'
+    | '/more/which-account'
+    | '/more/who-can-sign-in'
+    | '/more/your-sign-in'
     | '/people/$personId'
     | '/sites/new'
+    | '/more/'
     | '/sites/$siteId/coming-in'
     | '/sites/$siteId/day'
     | '/sites/$siteId/shares'
@@ -149,7 +219,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MoreRoute: typeof MoreRoute
+  MoreRoute: typeof MoreRouteWithChildren
   OwedRoute: typeof OwedRoute
   PeopleRoute: typeof PeopleRouteWithChildren
   SitesNewRoute: typeof SitesNewRoute
@@ -189,6 +259,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/more/': {
+      id: '/more/'
+      path: '/'
+      fullPath: '/more/'
+      preLoaderRoute: typeof MoreIndexRouteImport
+      parentRoute: typeof MoreRoute
+    }
     '/sites/new': {
       id: '/sites/new'
       path: '/sites/new'
@@ -202,6 +279,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/people/$personId'
       preLoaderRoute: typeof PeoplePersonIdRouteImport
       parentRoute: typeof PeopleRoute
+    }
+    '/more/your-sign-in': {
+      id: '/more/your-sign-in'
+      path: '/your-sign-in'
+      fullPath: '/more/your-sign-in'
+      preLoaderRoute: typeof MoreYourSignInRouteImport
+      parentRoute: typeof MoreRoute
+    }
+    '/more/who-can-sign-in': {
+      id: '/more/who-can-sign-in'
+      path: '/who-can-sign-in'
+      fullPath: '/more/who-can-sign-in'
+      preLoaderRoute: typeof MoreWhoCanSignInRouteImport
+      parentRoute: typeof MoreRoute
+    }
+    '/more/which-account': {
+      id: '/more/which-account'
+      path: '/which-account'
+      fullPath: '/more/which-account'
+      preLoaderRoute: typeof MoreWhichAccountRouteImport
+      parentRoute: typeof MoreRoute
+    }
+    '/more/what-for': {
+      id: '/more/what-for'
+      path: '/what-for'
+      fullPath: '/more/what-for'
+      preLoaderRoute: typeof MoreWhatForRouteImport
+      parentRoute: typeof MoreRoute
+    }
+    '/more/how-it-looks': {
+      id: '/more/how-it-looks'
+      path: '/how-it-looks'
+      fullPath: '/more/how-it-looks'
+      preLoaderRoute: typeof MoreHowItLooksRouteImport
+      parentRoute: typeof MoreRoute
     }
     '/sites/$siteId/': {
       id: '/sites/$siteId/'
@@ -234,6 +346,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface MoreRouteChildren {
+  MoreHowItLooksRoute: typeof MoreHowItLooksRoute
+  MoreWhatForRoute: typeof MoreWhatForRoute
+  MoreWhichAccountRoute: typeof MoreWhichAccountRoute
+  MoreWhoCanSignInRoute: typeof MoreWhoCanSignInRoute
+  MoreYourSignInRoute: typeof MoreYourSignInRoute
+  MoreIndexRoute: typeof MoreIndexRoute
+}
+
+const MoreRouteChildren: MoreRouteChildren = {
+  MoreHowItLooksRoute: MoreHowItLooksRoute,
+  MoreWhatForRoute: MoreWhatForRoute,
+  MoreWhichAccountRoute: MoreWhichAccountRoute,
+  MoreWhoCanSignInRoute: MoreWhoCanSignInRoute,
+  MoreYourSignInRoute: MoreYourSignInRoute,
+  MoreIndexRoute: MoreIndexRoute,
+}
+
+const MoreRouteWithChildren = MoreRoute._addFileChildren(MoreRouteChildren)
+
 interface PeopleRouteChildren {
   PeoplePersonIdRoute: typeof PeoplePersonIdRoute
 }
@@ -247,7 +379,7 @@ const PeopleRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MoreRoute: MoreRoute,
+  MoreRoute: MoreRouteWithChildren,
   OwedRoute: OwedRoute,
   PeopleRoute: PeopleRouteWithChildren,
   SitesNewRoute: SitesNewRoute,
