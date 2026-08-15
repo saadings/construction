@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { formatPaisa } from '~shared/money'
 
 import { Figure } from '../shell/Page'
@@ -34,7 +35,9 @@ function asPercent(basisPoints: number): string {
 }
 
 // Handed the read as it came. `undefined` is still on its way; `null` is the house not being there, which the page around this has already said. Answering either on its behalf is how a screen ends up watching for something that is not coming.
-export function Positions({ what }: { what: WhatThePartnersHave | null | undefined }) {
+
+// The way to the screen that sets these is handed in rather than built here, so this stays a thing that reads and the page around it keeps knowing where its own links go.
+export function Positions({ what, beside }: { what: WhatThePartnersHave | null | undefined; beside?: ReactNode }) {
   if (what === undefined) {
     return <PositionsWaiting />
   }
@@ -47,8 +50,9 @@ export function Positions({ what }: { what: WhatThePartnersHave | null | undefin
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h2 className="text-foreground text-base font-medium">What each partner is owed</h2>
-        <p className="text-muted-foreground text-sm">
-          {what.sharesAgreed ? 'Shares agreed between them.' : 'Shares follow what each of them put in.'}
+        <p className="text-muted-foreground flex items-baseline gap-3 text-sm">
+          <span>{what.sharesAgreed ? 'Shares agreed between them.' : 'Shares follow what each of them put in.'}</span>
+          {beside}
         </p>
       </div>
 
