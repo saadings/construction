@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import { everyScreen } from '../../testing/screens'
 
-// `Field` renders a `<label>`, and a label points at one control: the first labelable thing inside it takes the label's words as its own name. So a row of choices inside a `Field` announces its first choice as the field's own label -- "Ours to sell" read out as "Whose house", "Cheque" read out as "How paid How paid".
+// A `Field` holds one control, and the reason changed under it without the rule changing. It used to render a `<label>` wrapped round everything, where the first labelable thing inside took the label's words as its own name: "Ours to sell" read out as "Whose house", "Cheque" read out as "How paid How paid". Found in four places by four different accidents, and `Choices` exists to fix it.
 
-// Found in four places by four different accidents, and `Choices` exists to fix it. Nothing obliged anybody to use it, which is a rule living in a comment.
+// `Field` is now a group with a label pointing at an id the field hands its control, and the same rule holds for a sharper reason: there is one id to give. Two controls in one `Field` are handed the same one, so the document has two elements answering to a single name and the label reaches whichever comes first. Asserted as rendered output in `Field.test.tsx`; this is where it is kept off the screens.
 
-/** Everything a `<label>` would try to name, which is every element a person can put an answer into. */
+/** Everything a `Field` would try to name, which is every element a person can put an answer into. */
 const A_CONTROL = /<(Line|Lines|Picker|MoneyLine|input|select|textarea|button)\b/g
 
 /** Each `<Field …>` block, from its opening tag to the `</Field>` that closes it. `Field` never nests inside `Field`, so the first close is the right one. */
@@ -26,19 +26,19 @@ export function fieldsIn(source: string): Array<string> {
 
 /** What is wrong with one `Field`, in the words of what a person would hear, or nothing. */
 export function whatIsWrongWithTheField(block: string): string | null {
-  // A group of choices is the case this was found in four times. The first of them takes the field's label as its name and cannot be found -- by a test or by anybody listening -- by what is written on it.
+  // A group of choices is the case this was found in four times. No one of them is the answer, so none of them can be what the field's label points at: a radio group is named by pointing the other way, which is what `Choices` does.
   if (/role="(radio|checkbox|switch)"/.test(block) || /type="(radio|checkbox)"/.test(block)) {
-    return 'a row of choices inside a Field, where the first one takes the label as its own name: use Choices'
+    return 'a row of choices inside a Field, which cannot be named by pointing at one of them: use Choices'
   }
 
-  // A label inside a label names nothing predictable, and the inner one is usually a control that brought its own.
+  // The field already writes the label for what it holds. A second one competes with it for the same control, and usually arrived with something that brought its own.
   if (/<label\b/.test(block)) {
-    return 'a label inside a Field, which is a label inside a label'
+    return 'a label inside a Field, which already has one'
   }
 
   const controls = block.match(A_CONTROL) ?? []
   if (controls.length > 1) {
-    return `${controls.length} controls inside one Field (${controls.join(' ')}), and a label names only the first`
+    return `${controls.length} controls inside one Field (${controls.join(' ')}), which would share one id between them`
   }
 
   return null
@@ -85,12 +85,12 @@ describe('what one Field is allowed to hold', () => {
   })
 
   it('would notice two answers asked under one label', () => {
-    // Not the same defect, the same cause: the label names the first and the second is left with nothing.
+    // Not the same defect, the same cause: the field has one id and one label, and the second answer gets neither of them to itself. Rendered and asserted in `Field.test.tsx` -- both boxes really do come out carrying the same id.
     expect(
       whatIsWrongWithTheField('<Field label="Name"><Line value={first} /><Line value={second} /></Field>')
     ).toContain('2 controls')
     expect(whatIsWrongWithTheField('<Field label="Number"><Line value={one} /><label>and</label>')).toContain(
-      'a label inside a label'
+      'a label inside a Field'
     )
   })
 

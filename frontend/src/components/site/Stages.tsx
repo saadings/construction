@@ -113,14 +113,16 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
   return (
     <span className="flex flex-col items-end gap-1">
       <span className="flex items-center justify-end gap-2">
-        <input
+        {/* Named on the box, because the question it answers is the row it is on. */}
+        <Line
+          look="beside"
           value={day}
           onChange={(event) => {
             setDay(event.target.value)
           }}
           type="date"
           aria-label={`When ${stage.description} was billed`}
-          className="border-border text-muted-foreground rounded-md border px-2 py-1 text-sm"
+          className="border-border text-muted-foreground w-auto rounded-md border px-2 py-1 text-sm"
         />
         <Button look="beside" busy={saving} className="px-3 py-1 text-sm" onClick={bill}>
           Bill it

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { everyScreen } from './testing/screens'
-import { withoutComments } from './testing/source'
+import { tagsWrittenIn } from './testing/tags'
 
 // Nauman: "everything should be done in shadcn ui".
 
@@ -25,11 +25,7 @@ const THEY_USED_TO_HOLD_ONE = [
 
 /** Every place a screen opens a table tag itself. */
 export function drawnByHandIn(written: string): Array<string> {
-  // The code, not the prose about it. This slice's own comments say what the hand-rolled `<tr>` did wrong, and two guards here have already been tripped by exactly that.
-  const source = withoutComments(written)
-
-  // The boundary matters: without it `<th` would take `<thead`, and `<tr` would take any component whose name begins with those letters.
-  return A_TABLE_BY_HAND.filter((tag) => new RegExp(`<${tag}[\\s>/]`).test(source))
+  return tagsWrittenIn(written, A_TABLE_BY_HAND)
 }
 
 describe('a table drawn by hand', () => {
