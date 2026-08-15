@@ -4,7 +4,9 @@ import { z } from 'zod'
 import { calendarDay, note, positiveMoney } from './primitives'
 
 // A house is between 100 and 20,000 square feet, the same bound a site's covered area is held to.
-const areaSqft = z.union([z.string(), z.number()]).transform((value, ctx) => {
+
+// Exported so the screen asking for it can hold one answer to the same rule the server refuses by, rather than a second rule written to look like it.
+export const areaSqft = z.union([z.string(), z.number()]).transform((value, ctx) => {
   const sqft = Number(String(value).replaceAll(',', '').trim())
 
   if (!Number.isFinite(sqft) || sqft < 100 || sqft > 20_000) {

@@ -1,18 +1,28 @@
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
+import { ConvexError } from 'convex/values'
 import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
+import { AgreeAContract } from './AgreeAContract'
+import { ChangeTheContract } from './ChangeTheContract'
 
 // What a client is being charged: the contract, the stages it is billed in, and the work that was outside it. Only a house built for a client has any of this.
 export function Billing({ siteId }: { siteId: Id<'sites'> }) {
+  const contract = useQuery(api.contracts.queries.forSite, { siteId })
   const stages = useQuery(api.milestones.queries.forSite, { siteId })
   const extra = useQuery(api.extraWork.queries.forSite, { siteId })
+  const people = useQuery(api.people.queries.list, {})
+
+  const agree = useMutation(api.contracts.mutations.agree)
+  const measure = useMutation(api.contracts.mutations.measure)
+  const revise = useMutation(api.contracts.mutations.revise)
+  const cancel = useMutation(api.contracts.mutations.cancel)
 
   // Nothing at all here would be a section that appears out of the page once it arrives, pushing everything under it down.
-  if (stages === undefined || extra === undefined) {
+  if (contract === undefined || stages === undefined || extra === undefined || people === undefined) {
     return (
       <WhileWaiting what="Getting the billing">
         <Skeleton className="h-3 w-24" />
@@ -28,12 +38,31 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
     )
   }
 
-  // Both answer null to a caller who may not open the house. Nothing to show is the same thing to look at either way, so they are read together.
-  if (stages === null || extra === null) {
+  // No contract yet, which is where every house built for somebody starts. It used to say so and stop, and there was nowhere in the app to say what was agreed.
+  if (contract === null || stages === null) {
     return (
-      <section className="flex flex-col gap-2">
-        <Heading>Billing</Heading>
-        <p className="text-muted">No contract agreed on this house yet.</p>
+      <section className="flex flex-col gap-3">
+        <Heading>The contract</Heading>
+        <p className="text-muted max-w-prose">
+          Nothing agreed on this house yet. Put in what the client is paying, and the stages and the bills follow it.
+        </p>
+        {people === null ? (
+          // Nobody to pick from is not an empty list: the read was refused, and offering a picker with nothing in it would look like a house with no client to choose.
+          <p className="text-muted">The list of people did not come back. Open the house again.</p>
+        ) : (
+          <AgreeAContract
+            people={people}
+            onAgree={async ({ clientId, ...agreed }) => {
+              // Looked up rather than cast: the picker holds a plain string, and the one place that string becomes a person is here, where the list it came from is in hand.
+              const client = people.find((person) => person._id === clientId)
+              if (client === undefined) {
+                throw new ConvexError('Say who the house is being built for.')
+              }
+
+              await agree({ siteId, clientId: client._id, ...agreed })
+            }}
+          />
+        )}
       </section>
     )
   }
@@ -50,6 +79,19 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
             <Figure className="text-foreground text-xl">{stages.percentAgreed}%</Figure>
           </div>
         </div>
+
+        <ChangeTheContract
+          contract={contract}
+          onMeasure={async (actualAreaSqft) => {
+            await measure({ siteId, contractId: contract._id, actualAreaSqft })
+          }}
+          onRevise={async (revision) => {
+            await revise({ siteId, contractId: contract._id, ...revision })
+          }}
+          onCancel={async () => {
+            await cancel({ siteId, contractId: contract._id })
+          }}
+        />
       </section>
 
       <section className="flex flex-col gap-3">
@@ -83,7 +125,10 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
 
       <section className="flex flex-col gap-3">
         <Heading>Work outside the contract</Heading>
-        {extra.length === 0 ? (
+        {extra === null ? (
+          // A refusal rather than an absence. Every other read on this house came back, so saying "none billed" here would be inventing an answer nobody gave.
+          <p className="text-muted">This part did not come back. Open the house again.</p>
+        ) : extra.length === 0 ? (
           <p className="text-muted">None billed.</p>
         ) : (
           <ol className="flex flex-col gap-5">

@@ -20,7 +20,9 @@ function screenFiles(dir: string): Array<string> {
 /** A screen that waits on a reading and puts nothing in the shape of what is coming. */
 export function waitsWithoutASkeleton(source: string): boolean {
   // Asked of anything that branches on `undefined`, not only of the file that does the reading: the screen holding the waiting UI is usually not the one that called `useQuery`. Requiring both left `People.tsx` and every component like it unswept.
-  if (!source.includes('=== undefined')) return false
+
+  // A reading is always a bare local -- `stages === undefined`. `contract.actualAreaSqft === undefined` is a field that may be absent, which is a fact about a contract and not a screen waiting on anything.
+  if (!/(?<![.\w])\w+\s*===\s*undefined/.test(source)) return false
 
   // Put on the screen, not merely imported: an import left behind by a screen that went back to saying a word satisfies a check for the word `WhileWaiting` and nothing else. Either the shape is here, or it is handed to a component named for the waiting it does -- `SitesListWaiting`, `Waiting`.
   return !/<([A-Z]\w*)?Waiting\b/.test(source)
@@ -70,6 +72,11 @@ describe('what a screen shows while it is waiting', () => {
     ).toBe(true)
     // A screen that never asks whether an answer has arrived is not waiting on one.
     expect(waitsWithoutASkeleton('if (problem === null) return null')).toBe(false)
+    // Nor is one asking whether a field is there. A contract that nobody has measured is a contract, not a read in flight.
+    expect(waitsWithoutASkeleton('contract.actualAreaSqft === undefined ? none : some')).toBe(false)
+    expect(waitsWithoutASkeleton('stage.billedOn === undefined ? "Not billed" : stage.billedOn')).toBe(false)
+    // And the bare local it is really about is still caught.
+    expect(waitsWithoutASkeleton('if (stages === undefined) return <p>Looking…</p>')).toBe(true)
   })
 })
 
