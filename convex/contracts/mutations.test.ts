@@ -118,33 +118,28 @@ describe('what a client agreed to pay', () => {
     expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
   })
 
-  it('is not reachable on a house the caller is not a partner on', async () => {
+  it('is reachable by anybody signed in, holding no role on the house', async () => {
     const t = convexWithContracts()
     const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
 
     const other = await t.run(async (ctx) => {
-      const stranger = await ctx.db.insert('people', { name: 'A stranger', hidden: false })
       await ctx.db.insert('accounts', {
         externalId: 'user_stranger',
-        name: 'A stranger',
-        primaryEmail: 'stranger@example.com',
+        name: 'Another partner',
+        primaryEmail: 'another@example.com',
         otherEmails: [],
-        personId: stranger,
       })
       return 'user_stranger'
     })
 
-    const refusal = await t
+    // One partnership, one set of books: a sign-in with no person and no role agrees a contract on any house in it.
+    await t
       .withIdentity({ subject: other })
       .mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
-      .then(() => 'nothing was refused', theWordsIn)
 
-    expect(refusal).toBe('This site is not one of yours.')
-    expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toEqual([])
-    // The control: the same call from the partner does land, so this refusal is the access check and not a broken mutation.
-    await t
-      .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+    expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
+    // And it is still the door: somebody not signed in at all writes nothing.
+    await expect(t.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })).rejects.toThrow()
     expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
   })
 

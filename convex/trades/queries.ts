@@ -1,7 +1,7 @@
-import { partnerQuery } from '../utils/partnerAccess'
+import { ledgerQuery } from '../utils/ledgerAccess'
 
 // The trade list a day sheet picks from, in the order the workbooks put them rather than alphabetically, because that order is how the work happens.
-export const list = partnerQuery({
+export const list = ledgerQuery({
   handler: async (ctx) => {
     const trades = await ctx.db.query('trades').collect()
 

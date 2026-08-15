@@ -79,9 +79,6 @@ const GLOBAL = ['query', 'mutation', 'authenticatedQuery', 'authenticatedMutatio
 const DELIBERATELY_GLOBAL: Record<string, string> = {
   'accounts/actions.ts current':
     "the caller's own row, looked up by the identity making the call, and it has to answer while signed out because the app asks it whether anyone is signed in",
-  'sites/mutations.ts start':
-    'a person holding no site has to be able to start one, and starting it is what makes them its partner',
-  'sites/queries.ts mine': 'reads capacity itself and returns only the sites this person is a partner on',
 }
 
 /** Global by nobody's decision. This list may shrink and must never grow: what each one hands a signed-in non-partner is written beside it. */
@@ -112,7 +109,7 @@ const UNPARSED_ON_PURPOSE: Record<string, string> = {
   'accounts/actions.ts remove':
     'looks an account up by the id it was handed and deletes it, writing none of that string anywhere',
   'accounts/actions.ts upsert':
-    "mirrors Clerk's own record of a sign-in, from a payload Svix has proved came from Clerk; the one value that leaves the mirror for the ledger is the person's name, and personName parses it",
+    "mirrors Clerk's own record of a sign-in, from a payload Svix has proved came from Clerk, and nothing in it leaves the mirror: no person is made, and personId is never written from it",
 }
 
 /** Convex constrains an id or a literal by shape; it cannot say a name is not blank, so those values need parsing. */
@@ -256,11 +253,12 @@ describe('deciding who may open a site', () => {
   })
 
   it('holds a write excused on purpose to the reason it was excused for', () => {
-    // An excuse silences the rule for good, so what it claims has to be checkable. `upsert` is excused because the one value reaching the ledger is parsed; if that stops being true the excuse is a lie and this says so.
+    // An excuse silences the rule for good, so what it claims has to be checkable. `upsert` is excused because nothing in the payload reaches the ledger; if it ever writes a person or a link again, the excuse is a lie and this says so.
     const upsert = readFileSync(join(repoRoot, 'convex', 'accounts', 'actions.ts'), 'utf8')
 
-    expect(UNPARSED_ON_PURPOSE['accounts/actions.ts upsert']).toContain('personName')
-    expect(upsert, 'upsert is excused for parsing the name and no longer parses it').toContain('personName.safeParse')
+    expect(UNPARSED_ON_PURPOSE['accounts/actions.ts upsert']).toContain('no person is made')
+    expect(upsert, 'upsert is excused for writing no person and now writes one').not.toContain("insert('people'")
+    expect(upsert, 'upsert is excused for writing no link and now writes one').not.toContain('personId:')
   })
 
   it('has this many writes nobody has parsed yet, and the number only goes down', () => {
@@ -348,7 +346,7 @@ describe('deciding who may open a site', () => {
       expect(global, `${key} is written down as global by design and is not in the tree`).toContain(key)
     }
 
-    expect(Object.keys(DELIBERATELY_GLOBAL).length).toBeGreaterThanOrEqual(2)
+    expect(Object.keys(DELIBERATELY_GLOBAL).length).toBeGreaterThanOrEqual(1)
 
     // Every one of them accounted for in one list or the other, and none in both.
     for (const key of global) {
@@ -363,8 +361,6 @@ describe('deciding who may open a site', () => {
     // An excuse silences the rule for good. What each one claims is read out of the file it excuses, so a reason that stops being true fails here rather than going quiet.
     const claims: Record<string, { file: Array<string>; says?: string; neverSays?: Array<string> }> = {
       'accounts/actions.ts current': { file: ['convex', 'accounts', 'actions.ts'], says: 'identity.subject' },
-      'sites/mutations.ts start': { file: ['convex', 'sites', 'mutations.ts'], says: "capacity: 'partner'" },
-      'sites/queries.ts mine': { file: ['convex', 'sites', 'queries.ts'], says: "capacity === 'partner'" },
     }
 
     // Every excuse is checked, so adding one without a way to check it fails rather than passing quietly.

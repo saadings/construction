@@ -175,41 +175,33 @@ describe('the stages a contract is billed in', () => {
     expect(refusal).toBe('That contract is not on this house.')
   })
 
-  it('is not reachable on a house the caller is not a partner on', async () => {
+  it('is reachable by anybody signed in, holding no role on the house', async () => {
     const t = convexWithMilestones()
     const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const contractId = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
 
     await t.run(async (ctx) => {
-      const stranger = await ctx.db.insert('people', { name: 'A stranger', hidden: false })
       await ctx.db.insert('accounts', {
         externalId: 'user_stranger',
-        name: 'A stranger',
-        primaryEmail: 'stranger@example.com',
+        name: 'Another partner',
+        primaryEmail: 'another@example.com',
         otherEmails: [],
-        personId: stranger,
       })
     })
 
-    const refusal = await refusalFrom(
-      t.withIdentity({ subject: 'user_stranger' }).mutation(api.milestones.mutations.add, {
-        siteId,
-        contractId,
-        description: 'On handover',
-        percent: '25',
-      })
-    )
-
-    expect(refusal).toBe('This site is not one of yours.')
-    expect(await t.run((ctx) => ctx.db.query('milestones').collect())).toEqual([])
-    // The control: the same call from the partner lands, so this is the access check and not a broken mutation.
-    await signedIn.mutation(api.milestones.mutations.add, {
+    // One partnership, one set of books: a sign-in with no person and no role adds a stage on any house in it.
+    await t.withIdentity({ subject: 'user_stranger' }).mutation(api.milestones.mutations.add, {
       siteId,
       contractId,
       description: 'On handover',
       percent: '25',
     })
+
+    // And it is still the door: somebody not signed in at all writes nothing.
+    await expect(
+      t.mutation(api.milestones.mutations.add, { siteId, contractId, description: 'On handover', percent: '25' })
+    ).rejects.toThrow()
     expect(await t.run((ctx) => ctx.db.query('milestones').collect())).toHaveLength(1)
   })
 })

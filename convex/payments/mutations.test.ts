@@ -169,20 +169,44 @@ describe('putting a day of payments in', () => {
     expect(await t.run((ctx) => ctx.db.query('payments').collect())).toHaveLength(1)
   })
 
-  it('refuses a payment on a site that is not one of yours', async () => {
+  it('takes a payment on any house in the ledger, not only the one you started', async () => {
+    // One partnership, one set of books. A house somebody else started is not somebody else's house.
     const t = convexWithPayments()
     const site = await t.run(aSiteThePartnerIsOn)
     const elsewhere = await t.run((ctx) =>
       ctx.db.insert('sites', { name: '2-B, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
 
+    await t
+      .withIdentity({ subject: SIGNED_IN_AS })
+      .mutation(api.payments.mutations.record, { siteId: elsewhere, entries: [aCheque(site)] })
+
+    expect(await t.run((ctx) => ctx.db.query('payments').collect())).toHaveLength(1)
+  })
+
+  it('refuses a payment on a house that is not in the ledger, and writes nothing', async () => {
+    // What the old rule was also quietly doing: without this, a mistyped id writes payments into nothing.
+    const t = convexWithPayments()
+    const site = await t.run(aSiteThePartnerIsOn)
+    const gone = await t.run(async (ctx) => {
+      const siteId = await ctx.db.insert('sites', {
+        name: '3-C, Phase 0',
+        builtForAClient: false,
+        stage: 'building',
+        hidden: false,
+      })
+      await ctx.db.delete('sites', siteId)
+      return siteId
+    })
+
     const refusal = await refusalFrom(
-      t
-        .withIdentity({ subject: SIGNED_IN_AS })
-        .mutation(api.payments.mutations.record, { siteId: elsewhere, entries: [aCheque(site)] })
+      t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.payments.mutations.record, {
+        siteId: gone,
+        entries: [aCheque(site)],
+      })
     )
 
-    expect(refusal).toBe('This site is not one of yours.')
+    expect(refusal).toBe('That house is not in the ledger.')
     expect(await t.run((ctx) => ctx.db.query('payments').collect())).toEqual([])
   })
 })
