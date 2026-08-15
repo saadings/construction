@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { coveredArea, siteInput, siteName } from './site'
+import { areaWhileTyping, coveredArea, siteInput, siteName } from './site'
 
 describe('the covered area of a house', () => {
   it.each([
@@ -12,18 +12,44 @@ describe('the covered area of a house', () => {
     expect(coveredArea.parse(typed)).toBe(sqft)
   })
 
+  // What is wrong decides what is said. One sentence for all of these told whoever typed 50 that he had not put in square feet, when he had.
   it.each([
-    ['99', 'a hand slipping off the keypad'],
-    ['20001', 'larger than any house in ten years of workbooks'],
-    ['550000', 'a comma that should have been a decimal point'],
-    ['0', 'nothing at all'],
-    ['-500', 'a minus that means nothing here'],
-    ['not a number', 'words'],
-  ])('refuses %o, which is %s', (typed) => {
+    ['99', 'a hand slipping off the keypad', 'too small'],
+    ['0', 'nothing at all', 'too small'],
+    ['-500', 'a minus that means nothing here', 'too small'],
+    ['20001', 'larger than any house in ten years of workbooks', 'too large'],
+    ['550000', 'a comma that should have been a decimal point', 'too large'],
+    ['not a number', 'words', 'not figures'],
+  ])('refuses %o, which is %s, and says it is %s', (typed, _because, said) => {
     const checked = coveredArea.safeParse(typed)
+    const message = checked.error?.issues[0]?.message ?? 'nothing was refused'
 
     expect(checked.success).toBe(false)
-    expect(checked.error?.issues[0]?.message).toBe('Put in the covered area in square feet.')
+    expect({
+      'too small': 'That is too small for a house. The least this takes is 100 square feet.',
+      'too large':
+        'That is larger than any house here. The biggest in ten years is a little over 10,000, and the most this takes is 20,000 square feet.',
+      'not figures': 'Put in the covered area in figures, like 4,975.',
+    }).toHaveProperty([said], message)
+  })
+
+  it('never answers two different mistakes with one sentence', () => {
+    const refusals = ['50', '99999', 'Alasdfas', ''].map(
+      (typed) => coveredArea.safeParse(typed).error?.issues[0]?.message
+    )
+
+    expect(new Set(refusals).size).toBe(3)
+  })
+
+  // `Alasdfas` was typed into this field on a desktop and screenshotted. A keyboard hint is a hint on a phone and nothing at all anywhere else.
+  it.each([
+    ['Alasdfas', ''],
+    ['4,975', '4,975'],
+    ['4a9b7c5', '4975'],
+    ['5 500 sqft', '5500'],
+    ['-500', '500'],
+  ])('takes %o as it is typed and holds %o', (typed, held) => {
+    expect(areaWhileTyping(typed)).toBe(held)
   })
 
   it('is optional on a site, because it is often not settled when the plot is bought', () => {

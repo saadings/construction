@@ -1,9 +1,9 @@
 // @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { refusalFrom } from '../../shared/testing/refusals'
 import { api } from '../_generated/api'
 import type { MutationCtx } from '../_generated/server'
 import schema from '../schema'
@@ -60,16 +60,11 @@ describe('adding someone the business deals with', () => {
     const t = convexWithPeople()
     await t.run(anAccount)
 
-    const refusal = await t
-      .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.people.mutations.add, { name: 'S' })
-      .then(
-        () => 'nothing was refused',
-        (thrown: unknown) =>
-          thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-      )
+    const refusal = await refusalFrom(
+      t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.people.mutations.add, { name: 'S' })
+    )
 
-    expect(refusal).toContain('name of the person or shop')
+    expect(refusal).toBe('Put in the name of the person or shop paid.')
     // Only the partner set up above is there. Nothing was written for the name that was refused.
     expect((await t.run((ctx) => ctx.db.query('people').collect())).map((person) => person.name)).toEqual([
       'The partner',

@@ -1,55 +1,81 @@
 import { z } from 'zod'
 
-import { notInTheFuture, parseCalendarDate } from '../calendarDate'
-import { rupeesToPaisa } from '../money'
+import { notInTheFuture, readCalendarDate } from '../calendarDate'
+import { readRupees } from '../money'
 
 // Written once and reused, so the form, the server and the types cannot drift apart.
 
-// Above this an amount is confirmed rather than refused: the largest single payment in the workbooks is a plot at Rs 41,475,000.
-export const LARGE_AMOUNT_PAISA = 500_000_000
+// One mistake, one sentence. A rule that answers "nothing there", "too long" and "not that at all" with a single message tells whoever typed 50 that he did not put in square feet, when he did.
+
+// A floor comes with the words for falling under it, or not at all: nothing typed is a perfectly good note, and a rule with no floor should not have to carry a sentence nobody can reach.
+type Bounds = { atMost: number; tooLong: string } & (
+  | { atLeast: number; tooShort: string }
+  | { atLeast?: undefined; tooShort?: undefined }
+)
+
+export function boundedText(bounds: Bounds) {
+  return z
+    .string()
+    .transform((value) => value.trim().replace(/\s+/g, ' '))
+    .superRefine((value, ctx) => {
+      if (bounds.tooShort !== undefined && value.length < bounds.atLeast) {
+        ctx.addIssue({ code: 'custom', message: bounds.tooShort })
+      } else if (value.length > bounds.atMost) {
+        ctx.addIssue({ code: 'custom', message: bounds.tooLong })
+      }
+    })
+}
 
 export const money = z.union([z.string(), z.number()]).transform((value, ctx) => {
-  let paisa: number
+  const read = readRupees(value)
 
-  try {
-    paisa = rupeesToPaisa(value)
-  } catch {
-    ctx.addIssue({ code: 'custom', message: 'Put in how much was paid, in numbers.' })
+  if (!read.ok) {
+    ctx.addIssue({
+      code: 'custom',
+      // Never one sentence for both. Telling somebody who typed 999,999,999,999 that it is not a number is how an app teaches people not to read it.
+      message:
+        read.why === 'largerThanWeKeep'
+          ? 'That is more than this keeps track of. Check the figure.'
+          : 'Put in how much was paid, in numbers.',
+    })
     return z.NEVER
   }
 
-  if (paisa === 0) {
+  if (read.paisa === 0) {
     ctx.addIssue({ code: 'custom', message: 'Put in how much was paid.' })
     return z.NEVER
   }
 
-  return paisa
+  return read.paisa
 })
 
 export const calendarDay = z.string().transform((value, ctx) => {
-  let day: string
+  const read = readCalendarDate(value)
 
-  try {
-    day = parseCalendarDate(value)
-  } catch {
-    ctx.addIssue({ code: 'custom', message: 'Pick the day this happened.' })
+  if (!read.ok) {
+    ctx.addIssue({
+      code: 'custom',
+      // A slip on the day is not the same as no date at all, and saying so is the difference between correcting 31.04 and retyping the lot.
+      message:
+        read.why === 'notOnTheCalendar' ? 'That day is not on the calendar. Check it.' : 'Pick the day this happened.',
+    })
     return z.NEVER
   }
 
-  if (!notInTheFuture(day)) {
+  if (!notInTheFuture(read.day)) {
     ctx.addIssue({ code: 'custom', message: 'Pick a day that has already happened.' })
     return z.NEVER
   }
 
-  return day
+  return read.day
 })
 
-export const personName = z
-  .string()
-  .transform((value) => value.trim().replace(/\s+/g, ' '))
-  .refine((value) => value.length >= 2 && value.length <= 80, {
-    message: 'Put in the name of the person or shop paid.',
-  })
+export const personName = boundedText({
+  atLeast: 2,
+  atMost: 80,
+  tooShort: 'Put in the name of the person or shop paid.',
+  tooLong: 'Keep the name shorter.',
+})
 
 // Written five different ways across the workbooks, so every one of them is normalised rather than refused.
 export const pakistaniMobile = z
@@ -60,16 +86,12 @@ export const pakistaniMobile = z
   })
   .transform((digits) => `${digits.slice(0, 4)}-${digits.slice(4)}`)
 
-export const chequeNumber = z
-  .string()
-  .transform((value) => value.trim())
-  .refine((value) => value.length >= 1 && value.length <= 20, {
-    message: 'Put in the number written on the cheque.',
-  })
+export const chequeNumber = boundedText({
+  atLeast: 1,
+  atMost: 20,
+  tooShort: 'Put in the number written on the cheque.',
+  tooLong: 'That is longer than a cheque number. Put in what is printed on it.',
+})
 
-export const note = z
-  .string()
-  .transform((value) => value.trim())
-  .refine((value) => value.length <= 300, {
-    message: 'Keep the note shorter.',
-  })
+// No floor: nothing written is a perfectly good note.
+export const note = boundedText({ atMost: 300, tooLong: 'Keep the note shorter.' })

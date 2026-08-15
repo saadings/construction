@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 
-import { daySheet } from '../../shared/validation/payment'
+import { SAY, daySheet } from '../../shared/validation/payment'
 import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
@@ -31,8 +31,9 @@ export const record = siteMutation({
       // A name typed once for a shop nobody will pay again still becomes a person, because the payment has to point at somebody.
       let paidToId = entry.paidToId
       if (paidToId === undefined) {
+        // The schema has already refused an entry paid to nobody. This is how the type sees that, and it says the same sentence, so one mistake can never come back worded two ways.
         if (entry.newPerson === undefined) {
-          throw new ConvexError('Say who was paid.')
+          throw new ConvexError(SAY.paidTo)
         }
         paidToId = await ctx.db.insert('people', { name: entry.newPerson, hidden: false })
       }

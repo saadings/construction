@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { bankAccountLabel } from './bankAccount'
 import { calendarDay, chequeNumber, money, note, pakistaniMobile, personName } from './primitives'
+import { addressPart, siteName } from './site'
 
 function refusalFor(schema: { safeParse: (value: unknown) => { success: boolean } }, value: unknown): string {
   const result = schema.safeParse(value) as { success: boolean; error?: { issues: Array<{ message: string }> } }
@@ -10,6 +12,45 @@ function refusalFor(schema: { safeParse: (value: unknown) => { success: boolean 
 // The words the design bans on screen, plus the vocabulary a Zod default message is written in.
 const BANNED_ON_SCREEN =
   /\b(record|entry|entity|ledger|sync|category|vendor|field|validation|required|error|database|query|invalid|expected|received|NaN)\b/i
+
+// The rule that made this file worth rereading: one sentence answering several different mistakes is a wrong answer to most of them.
+
+// Every rule with a floor and a ceiling is here. A new one that says the same thing at both ends fails this the day it is written.
+describe('one mistake, one sentence', () => {
+  const BOUNDED = [
+    { what: 'a person', rule: personName, tooShort: 'A', tooLong: 'x'.repeat(81) },
+    { what: 'a cheque number', rule: chequeNumber, tooShort: '', tooLong: '9'.repeat(40) },
+    { what: 'the name of a house', rule: siteName, tooShort: 'R', tooLong: 'x'.repeat(81) },
+    { what: 'a part of an address', rule: addressPart, tooShort: '', tooLong: 'x'.repeat(41) },
+    { what: 'the name of an account', rule: bankAccountLabel, tooShort: 'H', tooLong: 'x'.repeat(41) },
+  ]
+
+  it.each(BOUNDED)('$what says one thing for nothing typed and another for too much', ({ rule, tooShort, tooLong }) => {
+    const forTooShort = refusalFor(rule, tooShort)
+    const forTooLong = refusalFor(rule, tooLong)
+
+    expect(forTooShort.length).toBeGreaterThan(0)
+    expect(forTooLong.length).toBeGreaterThan(0)
+    expect(forTooShort).not.toBe(forTooLong)
+  })
+
+  it.each(BOUNDED)('$what says both of them in words a phone can show', ({ rule, tooShort, tooLong }) => {
+    expect(refusalFor(rule, tooShort)).not.toMatch(BANNED_ON_SCREEN)
+    expect(refusalFor(rule, tooLong)).not.toMatch(BANNED_ON_SCREEN)
+  })
+
+  it('tells an amount that is not one apart from an amount too big to hold', () => {
+    // Both were "Put in how much was paid, in numbers", which is a lie told to somebody who typed 999,999,999,999.
+    expect(refusalFor(money, 'sixty thousand')).not.toBe(refusalFor(money, '99,999,999,999'))
+    expect(refusalFor(money, '99,999,999,999')).not.toMatch(BANNED_ON_SCREEN)
+  })
+
+  it('tells a day that is not one apart from a day not on the calendar', () => {
+    // 31.04 is a slip on the day, and saying so is the difference between correcting it and retyping the lot.
+    expect(refusalFor(calendarDay, 'Alasdfas')).not.toBe(refusalFor(calendarDay, '31.04.2025'))
+    expect(refusalFor(calendarDay, '31.04.2025')).not.toMatch(BANNED_ON_SCREEN)
+  })
+})
 
 describe('an amount someone typed', () => {
   it('arrives as paisa, not as what was typed', () => {

@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { ConvexError } from 'convex/values'
 import { useState } from 'react'
+import { areaWhileTyping } from '~shared/validation/site'
 
 import { api } from '../../../convex/_generated/api'
 import { Field, Line, Picker } from '../components/daySheet/Field'
@@ -58,7 +59,8 @@ function StartASite() {
         <Field label="Covered area" hint="In square feet. Leave it empty if it is not settled yet.">
           <Line
             value={coveredAreaSqft}
-            onChange={(event) => setArea(event.target.value)}
+            // The keyboard hint below is a hint on a phone and nothing at all on a desktop, so what may be typed is decided here.
+            onChange={(event) => setArea(areaWhileTyping(event.target.value))}
             inputMode="numeric"
             aria-label="Covered area"
             autoComplete="off"
