@@ -27,14 +27,18 @@ function renderIt(trades: Array<TradeRow> | null | undefined = THREE, handlers =
 }
 
 function theRowFor(name: string) {
-  return within(screen.getByRole('list', { name: 'What money is spent on' }))
-    .getAllByRole('listitem')
-    .filter((row) => row.textContent.includes(name))[0]
+  return screen.getAllByRole('listitem').filter((row) => row.textContent.includes(name))[0]
 }
 
-describe('what money is spent on', () => {
+// The form is behind a button now: 47 things he has used to sit below a box for one he has not.
+function openTheForm() {
+  fireEvent.click(screen.getByRole('button', { name: 'Add one' }))
+}
+
+describe('what for', () => {
   it('puts something else on the list, saying whether the house cost it', async () => {
     const { onAdd } = renderIt()
+    openTheForm()
 
     fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
     fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
@@ -47,6 +51,7 @@ describe('what money is spent on', () => {
   it('asks in words he would use, not by the name of the field', async () => {
     // `countsAsBuildingCost` decides what a house cost. Buying the land is money spent and is not building, and a tick box saying "counts as building cost" is the app talking to itself.
     const { onAdd } = renderIt()
+    openTheForm()
 
     fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Society dues' } })
     fireEvent.click(screen.getByRole('radio', { name: 'Land, taxes and commission' }))
@@ -58,11 +63,40 @@ describe('what money is spent on', () => {
     expect(document.body.textContent).not.toMatch(/countsAsBuildingCost/)
   })
 
-  it('says of each one which it is, without opening anything', () => {
+  it('groups by side, so the few that are not building cost are read without reading the rest', () => {
+    // Three of forty-seven are land. On a list with a mark per row you read forty-seven to find a wrong one; here you read three.
     renderIt()
 
-    expect(theRowFor('Civil labour').textContent).toContain('Part of what the house cost')
-    expect(theRowFor('Plot purchase').textContent).toContain('Land, taxes and commission')
+    const house = screen.getByRole('list', { name: 'Part of what the house cost' })
+    const land = screen.getByRole('list', { name: 'Land, taxes and commission' })
+
+    expect(within(house).getAllByRole('listitem')).toHaveLength(2)
+    expect(within(land).getAllByRole('listitem')).toHaveLength(1)
+    expect(within(land).getByText('Plot purchase')).toBeTruthy()
+  })
+
+  it('says how many are on each side, which is the question he has about this list', () => {
+    renderIt()
+
+    expect(screen.getByText(/Part of what the house cost · 2/)).toBeTruthy()
+    expect(screen.getByText(/Land, taxes and commission · 1/)).toBeTruthy()
+  })
+
+  it('is named after the field that picks from it, which is where he went looking', () => {
+    // He was on the day sheet looking at `WHAT FOR` and could not find this screen, because it was called "what money is spent on" -- true, and not the words in front of him.
+    renderIt()
+
+    expect(screen.getByRole('heading', { name: 'What for' })).toBeTruthy()
+    expect(document.body.textContent).not.toContain('What money is spent on')
+  })
+
+  it('shows the list before the form, rather than a box for one he has not above the ones he has', () => {
+    renderIt()
+
+    expect(screen.queryByLabelText('Something else it is spent on')).toBeNull()
+
+    openTheForm()
+    expect(screen.getByLabelText('Something else it is spent on')).toBeTruthy()
   })
 
   it('corrects a name and what it is for together, because they are the two things a trade is', async () => {
@@ -110,23 +144,34 @@ describe('what money is spent on', () => {
     expect(screen.getByLabelText<HTMLInputElement>('What Cement is').value).toBe('Civil labour')
   })
 
-  it('starts empty again once one has gone on, and does not turn red doing it', async () => {
+  it('closes the form once one has gone on, and leaves it open with what was typed when it did not', async () => {
     renderIt()
+    openTheForm()
 
     fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
     fireEvent.blur(screen.getByLabelText('Something else it is spent on'))
     fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
 
     await waitFor(() => {
-      expect(screen.getByLabelText<HTMLInputElement>('Something else it is spent on').value).toBe('')
+      expect(screen.queryByLabelText('Something else it is spent on')).toBeNull()
     })
     expect(screen.queryByRole('alert')).toBeNull()
+
+    cleanup()
+    renderIt(THREE, { onAdd: vi.fn().mockRejectedValue({ data: 'Scaffolding is already on the list.' }) })
+    openTheForm()
+
+    fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe('Scaffolding is already on the list.')
+    expect(screen.getByLabelText<HTMLInputElement>('Something else it is spent on').value).toBe('Scaffolding')
   })
 
   it('shows the shape of the list while it is coming, and says so when it does not come', () => {
     // Rendered without going through `renderIt`, because passing `undefined` to a parameter with a default is how you get the default -- which is the list, which is the opposite of what this asks.
     render(<Trades trades={undefined} onAdd={vi.fn()} onEdit={vi.fn()} onTakeOff={vi.fn()} />)
-    expect(screen.getByRole('status', { name: 'Getting what money is spent on' })).toBeTruthy()
+    expect(screen.getByRole('status', { name: 'Getting what a day sheet picks from' })).toBeTruthy()
 
     cleanup()
     renderIt(null)
