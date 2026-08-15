@@ -8,6 +8,7 @@ import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { AgreeAContract } from './AgreeAContract'
 import { ChangeTheContract } from './ChangeTheContract'
+import { ExtraWork } from './ExtraWork'
 import { Stages } from './Stages'
 
 // What a client is being charged: the contract, the stages it is billed in, and the work that was outside it. Only a house built for a client has any of this.
@@ -23,6 +24,8 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
   const cancel = useMutation(api.contracts.mutations.cancel)
   const addStage = useMutation(api.milestones.mutations.add)
   const billStage = useMutation(api.milestones.mutations.bill)
+  const raiseExtra = useMutation(api.extraWork.mutations.raise)
+  const takeBackExtra = useMutation(api.extraWork.mutations.takeBack)
 
   // Nothing at all here would be a section that appears out of the page once it arrives, pushing everything under it down.
   if (contract === undefined || stages === undefined || extra === undefined || people === undefined) {
@@ -114,49 +117,28 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
         }}
       />
 
-      <section className="flex flex-col gap-3">
-        <Heading>Work outside the contract</Heading>
-        {extra === null ? (
-          // A refusal rather than an absence. Every other read on this house came back, so saying "none billed" here would be inventing an answer nobody gave.
-          <p className="text-muted">This part did not come back. Open the house again.</p>
-        ) : extra.length === 0 ? (
-          <p className="text-muted">None billed.</p>
-        ) : (
-          <ol className="flex flex-col gap-5">
-            {extra.map((bill) => (
-              <li key={bill._id} className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                  <span className="text-foreground">{bill.description}</span>
-                  <Figure className="text-green text-lg">{formatPaisa(bill.totalPaisa)}</Figure>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[30rem] border-collapse text-left">
-                    <tbody className="divide-hairline divide-y">
-                      {bill.lines.map((line) => (
-                        <tr key={line._id}>
-                          <td className="text-muted py-2 pr-4 text-sm">{line.description}</td>
-                          {/* The working exactly as it was measured on site. It is what makes the bill defensible. */}
-                          <td className="py-2 pr-4">
-                            <Figure className="text-faint text-sm">{line.working ?? ''}</Figure>
-                          </td>
-                          <td className="py-2 pr-4 text-right">
-                            <Figure className="text-muted text-sm">
-                              {line.quantity} {line.unit}
-                            </Figure>
-                          </td>
-                          <td className="py-2 text-right">
-                            <Figure className="text-foreground text-sm">{formatPaisa(line.amountPaisa)}</Figure>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      {extra === null ? (
+        // A refusal rather than an absence. Every other read on this house came back, so saying "none billed" here would be inventing an answer nobody gave.
+        <section className="flex flex-col gap-3">
+          <p className="text-muted">Work outside the contract did not come back. Open the house again.</p>
+        </section>
+      ) : (
+        <ExtraWork
+          bills={extra}
+          onRaise={async (bill) => {
+            await raiseExtra({ siteId, ...bill })
+          }}
+          onTakeBack={async (billId) => {
+            // Looked up in the list it came from rather than cast, the same as the client and the stage.
+            const bill = extra.find((one) => one._id === billId)
+            if (bill === undefined) {
+              throw new ConvexError('That bill is not on this house.')
+            }
+
+            await takeBackExtra({ siteId, billId: bill._id })
+          }}
+        />
+      )}
     </div>
   )
 }

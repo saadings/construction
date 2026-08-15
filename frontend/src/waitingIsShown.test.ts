@@ -58,6 +58,12 @@ export function sendsWithoutTheSpinner(source: string): Array<string> {
     .map((attributes) => attributes.replace(/\s+/g, ' ').trim().slice(0, 60))
 }
 
+// A bare local compared to `undefined` is the shape of a reading, and it is also the shape of an optional prop. The sweep cannot tell them apart, so the ones that are not readings are named here with the reason -- the same way a function that is deliberately global is named rather than quietly skipped.
+const NOT_WAITING_ON_ANYTHING: Record<string, string> = {
+  'components/site/ExtraWork.tsx':
+    'onTakeOff === undefined asks whether the caller passed a way to take a line off, which is a question about a prop; every figure on this screen is handed to it already read',
+}
+
 describe('what a screen shows while it is waiting', () => {
   const screens = screenFiles(SOURCE).map((path) => ({
     path: path.split('/src/')[1],
@@ -67,7 +73,23 @@ describe('what a screen shows while it is waiting', () => {
   it('is the shape of what is coming, on every screen that reads anything', () => {
     const written = whereWaitingIsWritten(screens)
 
-    expect(screens.filter(({ source }) => waitsWithoutASkeleton(source, written)).map(({ path }) => path)).toEqual([])
+    expect(
+      screens
+        .filter(({ path, source }) => !(path in NOT_WAITING_ON_ANYTHING) && waitsWithoutASkeleton(source, written))
+        .map(({ path }) => path)
+    ).toEqual([])
+  })
+
+  it('has nothing named as not waiting that is not there any more, or does not ask', () => {
+    // An exemption outlives what it was written for, and a stale one silently excuses whatever takes that path next.
+    for (const path of Object.keys(NOT_WAITING_ON_ANYTHING)) {
+      const named = screens.find((screen) => screen.path === path)
+
+      expect(named, `${path} is named as not waiting and is not a screen any more`).toBeDefined()
+      expect(named?.source, `${path} no longer asks about undefined, so the line naming it can go`).toMatch(
+        /(?<![.\w])\w+\s*===\s*undefined/
+      )
+    }
   })
 
   it('is read over the screens it is actually asked of', () => {

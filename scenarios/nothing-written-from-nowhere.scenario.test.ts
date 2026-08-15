@@ -63,8 +63,6 @@ const NOT_FROM_A_SCREEN: Record<string, string> = {
 const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'bankAccounts.hide': 'an account can be added from the day sheet and taken off nowhere',
   'bills.raise': 'a bill is what somebody says they are owed, and nothing asks for one',
-  'extraWork.raise': 'extra work can be read and never raised',
-  'extraWork.takeBack': 'and never taken back',
   'bills.remove': 'and nothing takes one back',
   'engagements.agree': 'what was agreed with a contractor has no screen, so the spread reads agreed as nothing',
   'engagements.hide': 'nor a way to take it back',
