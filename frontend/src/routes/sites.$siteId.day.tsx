@@ -9,6 +9,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import type { Draft } from '../components/daySheet/sitting'
 import { asAnEntry } from '../components/daySheet/sitting'
+import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 
 export const Route = createFileRoute('/sites/$siteId/day')({ component: ADayOnSite })
 
@@ -68,10 +69,23 @@ function ADayOnSite() {
   )
 }
 
+// The sheet's own shape: a heading, the day, and the first payment's questions. It is what is coming, so nothing jumps when it does.
 function Waiting() {
   return (
-    <main className="bg-background text-muted-foreground flex min-h-dvh items-center justify-center p-6">
-      <p>Getting the site…</p>
+    <main className="bg-background min-h-dvh p-5 sm:p-7">
+      <WhileWaiting what="Getting the day sheet">
+        <Skeleton className="h-8 w-52 max-w-full" />
+        <Skeleton className="h-11 w-44 max-w-full" />
+
+        <div className="border-border mt-2 flex flex-col gap-5 rounded-md border p-4">
+          {[0, 1, 2].map((question) => (
+            <div key={question} className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-9 w-full max-w-md" />
+            </div>
+          ))}
+        </div>
+      </WhileWaiting>
     </main>
   )
 }

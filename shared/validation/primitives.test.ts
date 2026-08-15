@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { bankAccountLabel } from './bankAccount'
-import { calendarDay, chequeNumber, money, note, pakistaniMobile, personName } from './primitives'
+import { calendarDay, chequeNumber, money, note, pakistaniMobile, personName, whatIsWrong } from './primitives'
 import { addressPart, siteName } from './site'
 
 function refusalFor(schema: { safeParse: (value: unknown) => { success: boolean } }, value: unknown): string {
@@ -107,6 +107,12 @@ describe('a person', () => {
 
   it('refuses a name of only spaces', () => {
     expect(personName.safeParse('     ').success).toBe(false)
+  })
+
+  it('asks for one in words that are true wherever it is asked for', () => {
+    // The same rule is behind "Name" on the people screen and behind who was paid on the day sheet. Nauman was adding partners, investors and clients and being told to put in the name of the person or shop paid.
+    expect(whatIsWrong(personName, 'S')).toBe('Put in a name. A person, a shop or a company.')
+    expect(whatIsWrong(personName, 'S')).not.toMatch(/paid|payment|owed|invest|client/i)
   })
 })
 

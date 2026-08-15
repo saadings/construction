@@ -10,7 +10,6 @@ export const SAY = {
   trade: 'Pick what this was for.',
   paidTo: 'Say who was paid.',
   amount: 'Put in how much was paid.',
-  paidBy: 'Say whose money this was.',
   reference: 'Add the cheque number.',
   bank: 'Say which account this left.',
   nothing: 'Put in at least one payment.',
@@ -25,8 +24,6 @@ export const paymentEntry = z
     // Either someone already known, or a name typed once for a shop nobody will pay again.
     paidToId: zid('people').optional(),
     newPerson: personName.optional(),
-    // Whose money it was. This is the partner split, and it is why two parallel ledgers on one house cannot happen again.
-    paidById: zid('people'),
     method: z.enum(HOW_PAID),
     reference: chequeNumber.optional(),
     bankAccountId: zid('bankAccounts').optional(),
@@ -55,7 +52,6 @@ export type BeingTyped = {
   paidToId: string
   newPerson: string
   amount: string
-  paidById: string
   method: HowPaid
   reference: string
   bankAccountId: string
@@ -65,7 +61,7 @@ export type BeingTyped = {
 // What is wrong with one answer, so it can be said beside the question that asked it rather than under a button the eye has already left.
 
 // A question that asks nothing in this state has nothing wrong with it: a cash payment is not missing a cheque number.
-export type Asked = 'trade' | 'paidTo' | 'amount' | 'paidBy' | 'reference' | 'bank'
+export type Asked = 'trade' | 'paidTo' | 'amount' | 'reference' | 'bank'
 
 export function whatIsWrongWith(asked: Asked, typed: BeingTyped): string | null {
   switch (asked) {
@@ -75,8 +71,6 @@ export function whatIsWrongWith(asked: Asked, typed: BeingTyped): string | null 
       return typed.paidToId || typed.newPerson.trim() ? null : SAY.paidTo
     case 'amount':
       return isAnAmount(typed.amount) ? null : SAY.amount
-    case 'paidBy':
-      return typed.paidById ? null : SAY.paidBy
     case 'reference':
       return !asksForChequeNumber(typed.method) || typed.reference.trim() ? null : SAY.reference
     case 'bank':
@@ -87,7 +81,7 @@ export function whatIsWrongWith(asked: Asked, typed: BeingTyped): string | null 
 // Asked by the screen as it is typed, answered from the same rules the schema refuses by, so the two cannot drift into disagreeing.
 
 // Never more than the first thing wrong, because eight problems at once reads as the app being broken rather than as a question unanswered. It is the same order the questions are asked in, and the same words each of them would say for itself.
-const IN_THE_ORDER_ASKED: Array<Asked> = ['trade', 'paidTo', 'amount', 'paidBy', 'reference', 'bank']
+const IN_THE_ORDER_ASKED: Array<Asked> = ['trade', 'paidTo', 'amount', 'reference', 'bank']
 
 export function whatIsMissing(typed: BeingTyped): string | null {
   for (const asked of IN_THE_ORDER_ASKED) {

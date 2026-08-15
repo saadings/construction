@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react'
 import { formatPaisa } from '~shared/money'
 
 import { Figure, Page } from '../shell/Page'
+import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type SiteRow = {
   _id: string
@@ -72,6 +73,36 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
         className="fixed right-5 bottom-[calc(var(--phone-bar)+1rem)] z-10 size-14 justify-center rounded-full shadow-lg sm:hidden"
         short
       />
+    </Page>
+  )
+}
+
+// The same page, the same grid, the same row height, with nothing in it yet. Built from `ROW` alongside the list itself so the two cannot drift into different shapes and make the screen jump when the houses arrive.
+export function SitesListWaiting() {
+  return (
+    <Page title="Sites" beside={<StartOne className="hidden sm:inline-flex" />}>
+      <WhileWaiting what="Getting your houses">
+        <div className="flex flex-col">
+          <div className={`${ROW} border-border hidden border-b pb-2 sm:grid`}>
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="ml-auto h-3 w-12" />
+          </div>
+
+          <div className="divide-hairline flex flex-col divide-y">
+            {/* Three, because a house being built for somebody is a short list and a screenful of grey bars is a worse promise than a short one. */}
+            {[0, 1, 2].map((row) => (
+              <div key={row} className={`${ROW} py-3.5`}>
+                <Skeleton className="h-5 w-40 max-w-full" />
+                <Skeleton className="order-last col-span-2 h-4 w-20 sm:order-none sm:col-span-1" />
+                <Skeleton className="hidden h-4 w-24 sm:block" />
+                <Skeleton className="ml-auto h-5 w-24" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </WhileWaiting>
     </Page>
   )
 }

@@ -74,7 +74,6 @@ function aCheque(site: Site, over: Record<string, unknown> = {}) {
     day: '2025-10-07',
     amount: '49,150',
     paidToId: site.nauman,
-    paidById: site.nauman,
     method: 'cheque' as const,
     reference: '0001',
     bankAccountId: site.bankAccountId,

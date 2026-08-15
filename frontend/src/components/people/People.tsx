@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { pakistaniMobile, personName, whatIsWrong } from '~shared/validation/primitives'
 
+import { Button } from '../form/Button'
 import { Field, Line, Lines } from '../form/Field'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Form, Page } from '../shell/Page'
+import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type PersonRow = { _id: string; name: string; phone?: string; notes?: string }
 export type NewPerson = { name: string; phone?: string; notes?: string }
@@ -37,7 +39,17 @@ export function People({
       <AddSomebody onAdd={onAdd} />
 
       {people === undefined ? (
-        <p className="text-muted-foreground text-sm">Looking…</p>
+        <WhileWaiting what="Getting the people">
+          <div className="divide-hairline flex flex-col divide-y">
+            {[0, 1, 2, 3].map((row) => (
+              <div key={row} className={`${ROW} py-3.5`}>
+                <Skeleton className="h-5 w-36 max-w-full" />
+                <Skeleton className="order-last col-span-2 h-4 w-28 sm:order-none sm:col-span-1" />
+                <Skeleton className="hidden h-4 w-44 max-w-full sm:block" />
+              </div>
+            ))}
+          </div>
+        </WhileWaiting>
       ) : people.length === 0 ? (
         <p className="text-muted-foreground py-6">
           Nobody yet. Add the partners and the contractors, and the money goes against their names.
@@ -88,6 +100,8 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
+  // Counted rather than a flag, because the second person added has to reset the form as thoroughly as the first.
+  const [gonein, setGoneIn] = useState(0)
 
   // Nothing typed is a perfectly good answer for a number, so an empty one has nothing wrong with it.
   const wrongPhone = phone.trim() === '' ? null : whatIsWrong(pakistaniMobile, phone)
@@ -105,6 +119,7 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
       setName('')
       setPhone('')
       setNotes('')
+      setGoneIn((before) => before + 1)
     } catch (thrown) {
       const said: unknown = (thrown as { data?: unknown }).data
       setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
@@ -114,7 +129,7 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
   }
 
   return (
-    <Form className="gap-5">
+    <Form className="gap-5" freshAfter={gonein}>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Name" hint="The way you say it." problem={whatIsWrong(personName, name)}>
           <Line
@@ -158,14 +173,9 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
       )}
 
       <div>
-        <button
-          type="button"
-          onClick={add}
-          disabled={saving}
-          className="bg-primary text-primary-foreground rounded-md px-5 py-3 font-medium disabled:opacity-50"
-        >
-          {saving ? 'Adding…' : 'Add them'}
-        </button>
+        <Button onClick={add} busy={saving}>
+          Add them
+        </Button>
       </div>
     </Form>
   )

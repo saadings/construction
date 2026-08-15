@@ -45,7 +45,8 @@ describe('the people in the ledger', () => {
   it('says it is still looking before the answer arrives', async () => {
     renderWith(undefined)
 
-    expect(await screen.findByText('Looking…')).toBeTruthy()
+    // The shape of the list that is coming, rather than a word telling somebody to wait for it.
+    expect(await screen.findByRole('status', { name: 'Getting the people' })).toBeTruthy()
     expect(screen.queryByText(/Nobody yet/)).toBeNull()
   })
 
@@ -54,7 +55,7 @@ describe('the people in the ledger', () => {
     renderWith(null)
 
     expect(await screen.findByText('Setting your sign-in up.')).toBeTruthy()
-    expect(screen.queryByText('Looking…')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
     // And nothing to fill in, because every one of these would be refused by the same ledger.
     expect(screen.queryByLabelText('Name')).toBeNull()
   })
@@ -85,14 +86,29 @@ describe('the people in the ledger', () => {
     expect(screen.getByLabelText<HTMLInputElement>('Number').value).toBe('')
   })
 
+  it('does not turn red under a box nobody has touched once somebody has gone in', async () => {
+    // Nauman saw this: he added somebody, the name emptied and went red, that read as a failure, so he pressed Add again and there were two of him. Every field remembers focus has left it so it can hold its tongue while somebody types; clearing the values did not clear that, and an emptied box that has been left reads as an answer somebody deleted.
+    renderWith([], vi.fn().mockResolvedValue(undefined))
+    await screen.findByLabelText('Name')
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A steel supplier' } })
+    fireEvent.blur(screen.getByLabelText('Name'))
+    fireEvent.click(screen.getByRole('button', { name: 'Add them' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('')
+    })
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('keeps what was typed when it did not go in, and says why', async () => {
-    renderWith([], vi.fn().mockRejectedValue({ data: 'Put in the name of the person or shop paid.' }))
+    renderWith([], vi.fn().mockRejectedValue({ data: 'Put in a name. A person, a shop or a company.' }))
     await screen.findByLabelText('Name')
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add them' }))
 
-    expect((await screen.findByRole('alert')).textContent).toBe('Put in the name of the person or shop paid.')
+    expect((await screen.findByRole('alert')).textContent).toBe('Put in a name. A person, a shop or a company.')
     expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('A')
   })
 
