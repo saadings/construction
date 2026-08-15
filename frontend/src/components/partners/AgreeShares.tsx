@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 import { percentAsBasisPoints, saySharesDoNotAddUp, shortOfTheWhole } from '~shared/validation/profitShare'
@@ -38,6 +39,7 @@ export function AgreeShares({
   refusal,
   onAgree,
   onFollowTheMoney,
+  beneath,
 }: {
   siteName: string
   // As it came. `undefined` is a reading on its way; `null` is a house that is not there.
@@ -47,22 +49,30 @@ export function AgreeShares({
   refusal: string | null
   onAgree: (agreedOn: string, shares: Array<AgreedShare>) => Promise<boolean>
   onFollowTheMoney: () => Promise<boolean>
+  // What has actually gone back to them, under the shares that decide how much would. Handed in rather than built here for the same reason the links are: this stays a thing that asks about shares, and the page around it keeps knowing what else is on it.
+
+  // Asked for with the reading rather than handed over as a finished element, because what goes underneath is about the same partners this form is about. A plain node has to be built before this component decides whether the reading arrived, so the page around it ends up writing `what?.positions ?? []` -- which is a house still loading and a house with no partners in it, told apart nowhere.
+  beneath?: (what: WhatThePartnersHave) => ReactNode
 }) {
   return (
     <Page title="What each partner takes" beside={<span className="text-muted-foreground text-sm">{siteName}</span>}>
       {what === undefined ? (
         <SharesWaiting />
       ) : what === null ? null : (
-        <Setting
-          siteName={siteName}
-          partners={what.positions}
-          everybody={everybody ?? []}
-          sharesAgreed={what.sharesAgreed}
-          saving={saving}
-          refusal={refusal}
-          onAgree={onAgree}
-          onFollowTheMoney={onFollowTheMoney}
-        />
+        <>
+          <Setting
+            siteName={siteName}
+            partners={what.positions}
+            everybody={everybody ?? []}
+            sharesAgreed={what.sharesAgreed}
+            saving={saving}
+            refusal={refusal}
+            onAgree={onAgree}
+            onFollowTheMoney={onFollowTheMoney}
+          />
+
+          {beneath?.(what)}
+        </>
       )}
     </Page>
   )

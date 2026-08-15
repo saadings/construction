@@ -6,7 +6,7 @@ import { siteMutation } from '../utils/siteAccess'
 
 // A partner taking his share out. Kept apart from payments on purpose: a payment is what the house cost, and a share going back is not a cost.
 
-// not-yet: nothing is due until a house sells, so nobody can be paid out on one that has not
+// Allowed before the house is sold, and deliberately. Nothing is *due* until it sells, but partners take money out against a profit that has not happened yet -- the workbooks are full of it -- and a ledger that refused to record it would be a ledger that disagreed with the cheque book. What the screen must not do is call it a debt settled, and that is the screen's problem rather than this one's.
 export const record = siteMutation({
   args: {
     personId: v.id('people'),
@@ -36,8 +36,6 @@ export const record = siteMutation({
 })
 
 // Taken out of the ledger, never erased, and signed. A removal nobody signed is the exact case a disagreement about money turns on.
-
-// not-yet: and nothing takes a payout back, for the same reason there is nothing to take back yet
 export const remove = siteMutation({
   args: { payoutId: v.id('profitPayouts') },
   handler: async (ctx, args) => {

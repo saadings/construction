@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { AgreeShares } from '../components/partners/AgreeShares'
+import { PayOut } from '../components/shares/PayOut'
 
 export const Route = createFileRoute('/sites/$siteId/shares')({ component: WhoTakesWhat })
 
@@ -16,13 +17,19 @@ function WhoTakesWhat() {
   const site = useQuery(api.sites.queries.one, forSite)
   const what = useQuery(api.partners.queries.positions, forSite)
   const everybody = useQuery(api.people.queries.list, {})
+  const paidOut = useQuery(api.profitPayouts.queries.forSite, forSite)
+  const accounts = useQuery(api.bankAccounts.queries.list, {})
   const agree = useMutation(api.profitShares.mutations.agree)
   const followTheMoney = useMutation(api.profitShares.mutations.followTheMoney)
+  const payOut = useMutation(api.profitPayouts.mutations.record)
+  const takeBack = useMutation(api.profitPayouts.mutations.remove)
 
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
 
   // The sentence the server refused with, which is written for him. Anything else is the app failing rather than him being wrong.
+
+  // This pair belongs to the shares form. What goes back to a partner keeps its own, because one refusal shared between two forms shows the sentence about a share under the button that records a cheque.
   async function through(sending: Promise<unknown>): Promise<boolean> {
     setSaving(true)
     setRefusal(null)
@@ -50,6 +57,43 @@ function WhoTakesWhat() {
       refusal={refusal}
       onAgree={(agreedOn, shares) => through(agree({ ...forSite, agreedOn, shares: asIds(shares) }))}
       onFollowTheMoney={() => through(followTheMoney(forSite))}
+      beneath={(arrived) => (
+        <PayOut
+          // Who is on this house, worked out by the same reading the table above uses. Handed back by `AgreeShares` once it has arrived, so there is no reading still on its way to mistake for a house nobody has put money into.
+          partners={arrived.positions.map((position) => ({ _id: position.personId, name: position.name }))}
+          paidOut={paidOut}
+          accounts={accounts}
+          onPayOut={async (payout) => {
+            await payOut({
+              ...forSite,
+              personId: payout.personId as Id<'people'>,
+              day: payout.day,
+              amount: payout.amount,
+              method: payout.method,
+              reference: payout.reference,
+              bankAccountId: payout.bankAccountId as Id<'bankAccounts'> | undefined,
+              note: payout.note,
+            })
+          }}
+          onTakeBack={async (payoutId) => {
+            // Looked up in the list it came from rather than cast, and waiting is not refused: `paidOut ?? []` would say the payout is gone when the read had simply not come back.
+            if (paidOut === undefined) {
+              throw new ConvexError('What has gone back to them is still loading. Try again in a moment.')
+            }
+
+            if (paidOut === null) {
+              throw new ConvexError('What has gone back to them did not load. Open the house again.')
+            }
+
+            const one = paidOut.find((each) => each._id === payoutId)
+            if (one === undefined) {
+              throw new ConvexError('That payment out is not on this house.')
+            }
+
+            await takeBack({ ...forSite, payoutId: one._id })
+          }}
+        />
+      )}
     />
   )
 }
