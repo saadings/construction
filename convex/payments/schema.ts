@@ -11,8 +11,10 @@ export const paymentsSchema = defineTable({
   amountPaisa: v.number(),
   // Absent for a one-off shop nobody will be paid again.
   paidToId: v.optional(v.id('people')),
-  // Whose money it was, which is what makes a partner split add up on its own rather than being reconciled by hand.
-  paidById: v.id('people'),
+  // Whose money it was. Nothing asks for this any more and nothing reads it: money going out comes from one pot, because the partners' money is pooled the moment it goes in, and what each of them put in is `moneyIn` instead.
+
+  // Optional rather than gone, because rows written before that was settled still carry it. It comes out once they no longer do.
+  paidById: v.optional(v.id('people')),
   method: v.union(v.literal('cheque'), v.literal('cash'), v.literal('transfer'), v.literal('payOrder')),
   // The cheque number. There are 7,109 of them across the workbooks.
   reference: v.optional(v.string()),

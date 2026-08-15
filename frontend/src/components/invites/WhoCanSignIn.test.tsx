@@ -38,7 +38,7 @@ describe('who can sign in', () => {
   it('says it is still looking before the answer arrives', () => {
     render(<WhoCanSignIn waiting={null} onInvite={vi.fn()} onTakeOff={vi.fn()} />)
 
-    expect(screen.getByText('Looking…')).toBeTruthy()
+    expect(screen.getByRole('status', { name: 'Getting who is waiting' })).toBeTruthy()
     expect(screen.queryByText('Nobody is waiting. Everyone invited has signed in.')).toBeNull()
   })
 

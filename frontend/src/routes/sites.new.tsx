@@ -6,6 +6,7 @@ import { whatIsWrong } from '~shared/validation/primitives'
 import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 
 import { api } from '../../../convex/_generated/api'
+import { Button } from '../components/form/Button'
 import { Field, Line, Picker } from '../components/form/Field'
 import { Form, Page } from '../components/shell/Page'
 
@@ -118,14 +119,9 @@ function StartASite() {
           </p>
         ) : null}
 
-        <button
-          type="button"
-          onClick={put}
-          disabled={saving}
-          className="bg-primary text-primary-foreground rounded-md py-3 font-medium disabled:opacity-50"
-        >
-          {saving ? 'Starting…' : 'Start it'}
-        </button>
+        <Button onClick={put} busy={saving}>
+          Start it
+        </Button>
       </Form>
     </Page>
   )

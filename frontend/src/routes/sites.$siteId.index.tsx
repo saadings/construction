@@ -5,6 +5,7 @@ import { formatPaisa } from '~shared/money'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Figure, Page } from '../components/shell/Page'
+import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { Billing } from '../components/site/Billing'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 
@@ -18,7 +19,7 @@ function OneHouse() {
   const totals = useQuery(api.payments.queries.totals, forSite)
 
   if (site === undefined || totals === undefined) {
-    return <Page title="…">{null}</Page>
+    return <OneHouseWaiting />
   }
 
   if (site === null || totals === null) {
@@ -65,6 +66,37 @@ function OneHouse() {
 
       {/* The one thing deciding whether a house shows billing or a sale. A house built for the partners has no client to bill. */}
       {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
+    </Page>
+  )
+}
+
+// The three figures and the table under them, in their own shape and at their own sizes. A page that says "…" and then lays itself out is a page that moves under the eye the moment it arrives.
+function OneHouseWaiting() {
+  return (
+    <Page title="Getting the house">
+      <WhileWaiting what="Getting the house">
+        <section className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-10 w-56 max-w-full" />
+          </div>
+          {[0, 1].map((figure) => (
+            <div key={figure} className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-14" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+          ))}
+        </section>
+
+        <div className="divide-hairline mt-4 flex flex-col divide-y">
+          {[0, 1, 2, 3].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-4 py-2.5">
+              <Skeleton className="h-4 w-32 max-w-full" />
+              <Skeleton className="h-4 w-24 shrink-0" />
+            </div>
+          ))}
+        </div>
+      </WhileWaiting>
     </Page>
   )
 }

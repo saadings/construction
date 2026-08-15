@@ -3,6 +3,7 @@ import { formatPaisa } from '~shared/money'
 import { whatIsWrongWith } from '~shared/validation/payment'
 
 import { cn } from '../../lib/utils'
+import { Button } from '../form/Button'
 import { Field, Line, Lines, Picker } from '../form/Field'
 import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
@@ -82,7 +83,6 @@ export function DaySheet({
     // What carries from one payment to the next in a real cheque run: the same account, the same money, the same person more often than not.
     setDraft(
       anEmptyDraft({
-        paidById: draft.paidById,
         method: draft.method,
         bankAccountId: draft.bankAccountId,
       })
@@ -221,21 +221,6 @@ export function DaySheet({
             problem={whatIsWrongWith('amount', draft)}
           />
 
-          <Field label="Whose money" problem={whatIsWrongWith('paidBy', draft)}>
-            <Picker
-              value={draft.paidById}
-              onChange={(event) => change({ paidById: pickedFrom(people, event.target.value) })}
-              aria-label="Whose money"
-            >
-              <option value="">Pick one</option>
-              {people.map((person) => (
-                <option key={person._id} value={person._id}>
-                  {person.name}
-                </option>
-              ))}
-            </Picker>
-          </Field>
-
           <Field label="How paid">
             <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="How paid">
               {HOW_PAID.map((how) => (
@@ -313,22 +298,12 @@ export function DaySheet({
             </p>
           ) : null}
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={keepAndStartAnother}
-              disabled={saving}
-              className="border-border text-foreground flex-1 rounded-md border py-3 font-medium disabled:opacity-50"
-            >
+            <Button look="beside" onClick={keepAndStartAnother} disabled={saving} className="flex-1">
               Add another
-            </button>
-            <button
-              type="button"
-              onClick={putThemIn}
-              disabled={saving}
-              className="bg-primary text-primary-foreground flex-1 rounded-md py-3 font-medium disabled:opacity-50"
-            >
-              {saving ? 'Putting in…' : 'Put them in'}
-            </button>
+            </Button>
+            <Button onClick={putThemIn} busy={saving} className="flex-1">
+              Put them in
+            </Button>
           </div>
         </div>
       </footer>
