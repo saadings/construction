@@ -18,6 +18,8 @@ export const paymentsSchema = defineTable({
   reference: v.optional(v.string()),
   // Which account the money left. Optional here because cash leaves none; a cheque or transfer without one is refused where the rule can be written.
   bankAccountId: v.optional(v.id('bankAccounts')),
+  // Money goes out on account -- 50,000 to the tile fixer, not against bill seven -- so this is offered for the cases where it matters and never asked for.
+  billId: v.optional(v.id('bills')),
   note: v.optional(v.string()),
   // Outside the contracted scope, which is what LESS EXTRA WORK meant.
   isExtraWork: v.boolean(),
@@ -32,3 +34,5 @@ export const paymentsSchema = defineTable({
   .index('bySiteAndDay', ['siteId', 'day'])
   .index('bySiteAndTrade', ['siteId', 'tradeId'])
   .index('byPaidTo', ['paidToId'])
+  // A person's account is their bills and their payments in date order across every site, which is one read of this and one of the bills.
+  .index('byPaidToAndDay', ['paidToId', 'day'])
