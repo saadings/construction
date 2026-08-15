@@ -2,7 +2,7 @@ import { defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 export const sitesSchema = defineTable({
-  // As it is spoken about: "359-R, Phase 7".
+  // As it is spoken about: "1-A, Phase 0".
   name: v.string(),
   plotNumber: v.optional(v.string()),
   block: v.optional(v.string()),

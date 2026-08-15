@@ -43,12 +43,12 @@ async function aSite(ctx: MutationCtx, name: string): Promise<Id<'sites'>> {
 
 /** Everything a signed-in partner needs, so each test below can take exactly one piece away. */
 async function aPartnerOnASite(ctx: MutationCtx) {
-  const siteId = await aSite(ctx, '359-R, Phase 7')
-  const personId = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+  const siteId = await aSite(ctx, '1-A, Phase 0')
+  const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
+    name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
     personId,
@@ -64,7 +64,7 @@ describe('opening a site', () => {
 
     const site = await t.withIdentity({ subject: SIGNED_IN_AS }).query(one, { siteId })
 
-    expect(site?.name).toBe('359-R, Phase 7')
+    expect(site?.name).toBe('1-A, Phase 0')
   })
 
   it('shows nothing to someone who is not signed in', async () => {
@@ -89,10 +89,10 @@ describe('opening a site', () => {
     const t = convexWithProbe()
 
     const siteId = await t.run(async (ctx) => {
-      const siteId = await aSite(ctx, '359-R, Phase 7')
+      const siteId = await aSite(ctx, '1-A, Phase 0')
       await ctx.db.insert('accounts', {
         externalId: SIGNED_IN_AS,
-        name: 'Nauman Saeed',
+        name: 'The partner',
         primaryEmail: 'nauman@example.com',
         otherEmails: [],
       })
@@ -110,7 +110,7 @@ describe('opening a site', () => {
     const otherSite = await t.run(async (ctx) => {
       await aPartnerOnASite(ctx)
       // Reach is per site, not per account. Being a partner somewhere must not open everywhere.
-      return await aSite(ctx, '478-R, Phase 7')
+      return await aSite(ctx, '478-R, Phase 0')
     })
 
     const site = await t.withIdentity({ subject: SIGNED_IN_AS }).query(one, { siteId: otherSite })
@@ -123,12 +123,12 @@ describe('opening a site', () => {
     const t = convexWithProbe()
 
     const siteId = await t.run(async (ctx) => {
-      const siteId = await aSite(ctx, '359-R, Phase 7')
-      const personId = await ctx.db.insert('people', { name: 'Dr Khalid Mirza', hidden: false })
+      const siteId = await aSite(ctx, '1-A, Phase 0')
+      const personId = await ctx.db.insert('people', { name: 'Dr A client', hidden: false })
       await ctx.db.insert('siteRoles', { personId, siteId, capacity })
       await ctx.db.insert('accounts', {
         externalId: SIGNED_IN_AS,
-        name: 'Dr Khalid Mirza',
+        name: 'Dr A client',
         primaryEmail: 'khalid@example.com',
         otherEmails: [],
         personId,
@@ -157,7 +157,7 @@ describe('changing something on a site', () => {
 
     const otherSite = await t.run(async (ctx) => {
       await aPartnerOnASite(ctx)
-      return await aSite(ctx, '478-R, Phase 7')
+      return await aSite(ctx, '478-R, Phase 0')
     })
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
@@ -165,12 +165,12 @@ describe('changing something on a site', () => {
 
     // Silence would read as saved, so the mutation throws where the query returns nothing.
     expect(reached.length).toBe(reachedBefore)
-    expect(await t.run((ctx) => ctx.db.get('sites', otherSite))).toMatchObject({ name: '478-R, Phase 7' })
+    expect(await t.run((ctx) => ctx.db.get('sites', otherSite))).toMatchObject({ name: '478-R, Phase 0' })
   })
 
   it('refuses in words Nauman would use', async () => {
     const t = convexWithProbe()
-    const siteId = await t.run((ctx) => aSite(ctx, '359-R, Phase 7'))
+    const siteId = await t.run((ctx) => aSite(ctx, '1-A, Phase 0'))
 
     // What the phone actually receives. A plain `Error` reaches production as "Server Error", so the words are only real if they travel in `data`.
     const refusal = await t

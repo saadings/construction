@@ -12,13 +12,13 @@ async function aSite(ctx: MutationCtx, name: string): Promise<Id<'sites'>> {
 
 describe('the shape the money lives in', () => {
   it('lets one person be different things on different sites', async () => {
-    // Sajid Bhai puts money into one site and sells steel to another. A role column on the person cannot say that.
+    // A mason puts money into one site and sells steel to another. A role column on the person cannot say that.
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     await t.run(async (ctx) => {
-      const personId = await ctx.db.insert('people', { name: 'Sajid Bhai', hidden: false })
-      const investing = await aSite(ctx, '359-R, Phase 7')
-      const supplying = await aSite(ctx, '478-R, Phase 7')
+      const personId = await ctx.db.insert('people', { name: 'A mason', hidden: false })
+      const investing = await aSite(ctx, '1-A, Phase 0')
+      const supplying = await aSite(ctx, '478-R, Phase 0')
 
       await ctx.db.insert('siteRoles', { personId, siteId: investing, capacity: 'investor' })
       await ctx.db.insert('siteRoles', { personId, siteId: supplying, capacity: 'partner' })
@@ -36,14 +36,14 @@ describe('the shape the money lives in', () => {
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     await t.run(async (ctx) => {
-      const siteId = await aSite(ctx, '359-R, Phase 7')
+      const siteId = await aSite(ctx, '1-A, Phase 0')
       const tradeId = await ctx.db.insert('trades', {
         name: 'Cement',
         countsAsBuildingCost: true,
         position: 3,
         hidden: false,
       })
-      const paidById = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const paidById = await ctx.db.insert('people', { name: 'The partner', hidden: false })
 
       const paymentId = await ctx.db.insert('payments', {
         siteId,
@@ -52,7 +52,7 @@ describe('the shape the money lives in', () => {
         day: '2025-10-07',
         amountPaisa: 4915000,
         method: 'cheque',
-        reference: '3894',
+        reference: '0001',
         isExtraWork: false,
         removed: false,
         addedByExternalId: 'user_nauman',
@@ -70,15 +70,15 @@ describe('the shape the money lives in', () => {
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     await t.run(async (ctx) => {
-      const siteId = await aSite(ctx, '359-R, Phase 7')
-      const other = await aSite(ctx, '478-R, Phase 7')
+      const siteId = await aSite(ctx, '1-A, Phase 0')
+      const other = await aSite(ctx, '478-R, Phase 0')
       const tradeId = await ctx.db.insert('trades', {
         name: 'Cement',
         countsAsBuildingCost: true,
         position: 3,
         hidden: false,
       })
-      const paidById = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const paidById = await ctx.db.insert('people', { name: 'The partner', hidden: false })
 
       for (const day of ['2025-10-05', '2025-10-06', '2025-10-07']) {
         await ctx.db.insert('payments', {
@@ -121,8 +121,8 @@ describe('the shape the money lives in', () => {
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     const { building, land } = await t.run(async (ctx) => {
-      const siteId = await aSite(ctx, '359-R, Phase 7')
-      const paidById = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const siteId = await aSite(ctx, '1-A, Phase 0')
+      const paidById = await ctx.db.insert('people', { name: 'The partner', hidden: false })
 
       const tradeIds = new Map<string, Id<'trades'>>()
       for (const [position, trade] of CANONICAL_TRADES.entries()) {
@@ -182,16 +182,16 @@ describe('the shape the money lives in', () => {
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     const removed = await t.run(async (ctx) => {
-      const siteId = await aSite(ctx, '359-R, Phase 7')
+      const siteId = await aSite(ctx, '1-A, Phase 0')
       const tradeId = await ctx.db.insert('trades', {
         name: 'Cement',
         countsAsBuildingCost: true,
         position: 3,
         hidden: false,
       })
-      const paidById = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+      const paidById = await ctx.db.insert('people', { name: 'The partner', hidden: false })
       const bankAccountId = await ctx.db.insert('bankAccounts', {
-        label: 'Askari 2192',
+        label: 'Bank 0000',
         lastFourDigits: '2192',
         hidden: false,
       })
@@ -204,7 +204,7 @@ describe('the shape the money lives in', () => {
         day: '2025-10-07',
         amountPaisa: 4915000,
         method: 'cheque',
-        reference: '3894',
+        reference: '0001',
         isExtraWork: false,
         removed: false,
         addedByExternalId: 'user_nauman',
@@ -232,7 +232,7 @@ describe('the shape the money lives in', () => {
 
     const account = await t.run(async (ctx) => {
       const id = await ctx.db.insert('bankAccounts', {
-        label: 'Askari 2192',
+        label: 'Bank 0000',
         lastFourDigits: '2192',
         hidden: false,
       })
@@ -253,13 +253,13 @@ describe('the shape the money lives in', () => {
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     const reached = await t.run(async (ctx) => {
-      const personId = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
-      const siteId = await aSite(ctx, '359-R, Phase 7')
+      const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
+      const siteId = await aSite(ctx, '1-A, Phase 0')
       await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
 
       await ctx.db.insert('accounts', {
         externalId: 'user_nauman',
-        name: 'Nauman Saeed',
+        name: 'The partner',
         primaryEmail: 'nauman@example.com',
         otherEmails: [],
         personId,

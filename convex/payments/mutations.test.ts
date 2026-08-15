@@ -30,10 +30,10 @@ type Site = {
   supervision: Id<'trades'>
 }
 
-async function aSiteNaumanIsOn(ctx: MutationCtx): Promise<Site> {
-  const nauman = await ctx.db.insert('people', { name: 'Nauman Saeed', hidden: false })
+async function aSiteThePartnerIsOn(ctx: MutationCtx): Promise<Site> {
+  const nauman = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   const siteId = await ctx.db.insert('sites', {
-    name: '359-R, Phase 7',
+    name: '1-A, Phase 0',
     builtForAClient: false,
     stage: 'building',
     hidden: false,
@@ -41,14 +41,14 @@ async function aSiteNaumanIsOn(ctx: MutationCtx): Promise<Site> {
   await ctx.db.insert('siteRoles', { personId: nauman, siteId, capacity: 'partner' })
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
-    name: 'Nauman Saeed',
+    name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
     personId: nauman,
   })
 
   const bankAccountId = await ctx.db.insert('bankAccounts', {
-    label: 'Askari 2192',
+    label: 'Bank 0000',
     lastFourDigits: '2192',
     hidden: false,
   })
@@ -76,7 +76,7 @@ function aCheque(site: Site, over: Record<string, unknown> = {}) {
     paidToId: site.nauman,
     paidById: site.nauman,
     method: 'cheque' as const,
-    reference: '3894',
+    reference: '0001',
     bankAccountId: site.bankAccountId,
     ...over,
   }
@@ -93,7 +93,7 @@ async function refusalFrom(promise: Promise<unknown>) {
 describe('putting a day of payments in', () => {
   it('stores rupees as whole paisa', async () => {
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const [paymentId] = await signedIn.mutation(api.payments.mutations.record, {
@@ -111,7 +111,7 @@ describe('putting a day of payments in', () => {
   it('writes eight trades in one sitting, all of them or none', async () => {
     // One cheque run on a Tuesday touching eight trades. A half-saved day is the thing three disagreeing files were made of.
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const refusal = await refusalFrom(
@@ -132,23 +132,23 @@ describe('putting a day of payments in', () => {
 
   it('makes a person out of a name typed once, in the same write', async () => {
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const [paymentId] = await signedIn.mutation(api.payments.mutations.record, {
       siteId: site.siteId,
-      entries: [aCheque(site, { paidToId: undefined, newPerson: '  Ashfaq  ' })],
+      entries: [aCheque(site, { paidToId: undefined, newPerson: '  A supplier  ' })],
     })
 
     const payment = await t.run((ctx) => ctx.db.get('payments', paymentId))
     const paidToId = payment?.paidToId
     const paidTo = paidToId ? await t.run((ctx) => ctx.db.get('people', paidToId)) : null
-    expect(paidTo?.name).toBe('Ashfaq')
+    expect(paidTo?.name).toBe('A supplier')
   })
 
   it('will not take a cheque without its number, or a transfer without an account', async () => {
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
 
     expect(
@@ -179,9 +179,9 @@ describe('putting a day of payments in', () => {
 
   it('refuses a payment on a site that is not one of yours', async () => {
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
     const elsewhere = await t.run((ctx) =>
-      ctx.db.insert('sites', { name: '478-R, Phase 7', builtForAClient: false, stage: 'building', hidden: false })
+      ctx.db.insert('sites', { name: '478-R, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
 
     const refusal = await refusalFrom(
@@ -198,7 +198,7 @@ describe('putting a day of payments in', () => {
 describe('taking a payment back out', () => {
   it('signs the removal and keeps who put it in', async () => {
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const [paymentId] = await signedIn.mutation(api.payments.mutations.record, {
@@ -230,7 +230,7 @@ describe('taking a payment back out', () => {
 
   it('cannot reach a payment belonging to another site', async () => {
     const t = convexWithPayments()
-    const site = await t.run(aSiteNaumanIsOn)
+    const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const [paymentId] = await signedIn.mutation(api.payments.mutations.record, {
@@ -240,7 +240,7 @@ describe('taking a payment back out', () => {
 
     const otherSite = await t.run(async (ctx) => {
       const id = await ctx.db.insert('sites', {
-        name: '478-R, Phase 7',
+        name: '478-R, Phase 0',
         builtForAClient: false,
         stage: 'building',
         hidden: false,
