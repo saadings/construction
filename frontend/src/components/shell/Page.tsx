@@ -16,8 +16,21 @@ export function Page({ title, beside, children }: { title: string; beside?: Reac
 }
 
 // A form reads badly at 1440px: the eye loses the line between a label and the box it belongs to. So a form is capped inside the content rather than the page being capped around it.
-export function Form({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('flex w-full max-w-2xl flex-col gap-6', className)}>{children}</div>
+export function Form({
+  className,
+  children,
+  freshAfter = 0,
+}: {
+  className?: string
+  children: ReactNode
+  // How many times this form has been sent. Every `Field` remembers on its own whether focus has ever left it, so it can hold its tongue while somebody is still typing, and emptying the boxes does not empty that: an emptied box that has been left reads as an answer somebody deleted, so the form turns red under a name that has just gone in perfectly well. Nauman read that as a failure and pressed Add again, and there were two of him. Counting up here makes the whole form new, which is what a reset is -- it forgets what was typed and it forgets having been visited.
+  freshAfter?: number
+}) {
+  return (
+    <div key={freshAfter} className={cn('flex w-full max-w-2xl flex-col gap-6', className)}>
+      {children}
+    </div>
+  )
 }
 
 // Every figure in the app: the mono face and lining digits are what make a column of amounts read as a column rather than as a list of different-width strings.

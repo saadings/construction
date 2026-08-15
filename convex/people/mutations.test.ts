@@ -64,11 +64,84 @@ describe('adding someone the business deals with', () => {
       t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.people.mutations.add, { name: 'S' })
     )
 
-    expect(refusal).toBe('Put in the name of the person or shop paid.')
+    expect(refusal).toBe('Put in a name. A person, a shop or a company.')
     // Only the partner set up above is there. Nothing was written for the name that was refused.
     expect((await t.run((ctx) => ctx.db.query('people').collect())).map((person) => person.name)).toEqual([
       'The partner',
     ])
+  })
+
+  it('refuses a name already in the ledger, and says whose it is', async () => {
+    // Nauman has two rows for one man in production. Two rows split his money across two records, and every figure about him is then wrong and quietly so: his balance, what he is owed, what he put in.
+    const t = convexWithPeople()
+    await t.run(anAccount)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    await signedIn.mutation(api.people.mutations.add, { name: 'Malik Sharif' })
+
+    const refusal = await refusalFrom(signedIn.mutation(api.people.mutations.add, { name: 'Malik Sharif' }))
+
+    // Named, because "already exists" leaves him looking down a list to find out which one.
+    expect(refusal).toBe('There is already somebody called Malik Sharif.')
+    expect(
+      (await t.run((ctx) => ctx.db.query('people').collect())).filter((one) => one.name === 'Malik Sharif')
+    ).toHaveLength(1)
+  })
+
+  it('refuses it however it was typed, because the same man is the same man', async () => {
+    const t = convexWithPeople()
+    await t.run(anAccount)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    await signedIn.mutation(api.people.mutations.add, { name: 'Malik Sharif' })
+
+    // Case, and the spacing the name is already normalised through.
+    for (const typed of ['malik sharif', 'MALIK SHARIF', '  Malik   Sharif  ']) {
+      expect(await refusalFrom(signedIn.mutation(api.people.mutations.add, { name: typed }))).toBe(
+        'There is already somebody called Malik Sharif.'
+      )
+    }
+  })
+
+  it('brings back somebody taken off the list rather than making a second of him', async () => {
+    // Refusing here and stopping would be a dead end: the name is taken by somebody he cannot see and there is nowhere to go. Adding him again is what he means by it.
+    const t = convexWithPeople()
+    await t.run(anAccount)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    const first = await signedIn.mutation(api.people.mutations.add, { name: 'Malik Sharif', phone: '0300-0000000' })
+    await signedIn.mutation(api.people.mutations.hide, { personId: first })
+
+    const again = await signedIn.mutation(api.people.mutations.add, { name: 'Malik Sharif', notes: 'Steel' })
+
+    // The same row, so every payment already pointing at him still does.
+    expect(again).toBe(first)
+    expect(await t.run((ctx) => ctx.db.get('people', first))).toMatchObject({
+      hidden: false,
+      notes: 'Steel',
+    })
+    expect(
+      (await t.run((ctx) => ctx.db.query('people').collect())).filter((one) => one.name === 'Malik Sharif')
+    ).toHaveLength(1)
+  })
+
+  it('will not rename somebody onto a name that is taken', async () => {
+    // The same defect through the other door. Without this, two rows for one man are one edit away.
+    const t = convexWithPeople()
+    await t.run(anAccount)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    await signedIn.mutation(api.people.mutations.add, { name: 'Malik Sharif' })
+    const other = await signedIn.mutation(api.people.mutations.add, { name: 'A mason' })
+
+    const refusal = await refusalFrom(
+      signedIn.mutation(api.people.mutations.edit, { personId: other, name: 'Malik Sharif' })
+    )
+
+    expect(refusal).toBe('There is already somebody called Malik Sharif.')
+    // And a person may still be edited without changing their name, which is most edits.
+    await signedIn.mutation(api.people.mutations.edit, { personId: other, name: 'A mason', phone: '0300-0000000' })
+    expect(await t.run((ctx) => ctx.db.get('people', other))).toMatchObject({ name: 'A mason', phone: '0300-0000000' })
   })
 
   it('turns away a caller who is not signed in', async () => {

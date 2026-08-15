@@ -100,7 +100,7 @@ export const calendarDay = z.string().transform((value, ctx) => {
 export const personName = boundedText({
   atLeast: 2,
   atMost: 80,
-  tooShort: 'Put in the name of the person or shop paid.',
+  tooShort: 'Put in a name. A person, a shop or a company.',
   tooLong: 'Keep the name shorter.',
 })
 
