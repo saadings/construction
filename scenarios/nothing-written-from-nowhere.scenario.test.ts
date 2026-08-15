@@ -82,9 +82,9 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
 }
 
 /** A reading no screen opens. The same rule as above and the same instruction: lower this list, and never add to it without saying why in a review. */
-const NOBODY_CAN_OPEN_YET: Record<string, string> = {
-  'moneyIn.totals': 'the house page adds up what came in from the rows rather than asking for a total',
-}
+
+// Empty, and that is the point rather than an oversight: every reading this repository has is opened by a screen. The floors below are what keep an empty list from reading like a sweep that stopped sweeping.
+const NOBODY_CAN_OPEN_YET: Record<string, string> = {}
 
 const declared = waysOf('mutations')
 const reachable = whatTheScreensCall('mutations')
@@ -185,8 +185,8 @@ describe('every way of reading something back', () => {
   })
 
   it('knows the readings it was added for are reachable now, from both sides', () => {
-    // Both halves of what the workbooks were kept open for -- one man's account and what is owed altogether -- and the spread this half of the guard found on its first run. Off the list and opened by a screen are two different facts, so each is checked for both.
-    for (const key of ['owed.statement', 'owed.position', 'engagements.spread']) {
+    // Both halves of what the workbooks were kept open for -- one man's account and what is owed altogether -- the spread this half of the guard found on its first run, and what has come in on a house. Off the list and opened by a screen are two different facts, so each is checked for both.
+    for (const key of ['owed.statement', 'owed.position', 'engagements.spread', 'moneyIn.totals']) {
       expect(NOBODY_CAN_OPEN_YET[key], `${key} is still written down as unopened`).toBeUndefined()
       expect(opened.has(key), `${key} is off the list and no screen opens it`).toBe(true)
     }

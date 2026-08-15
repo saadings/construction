@@ -14,6 +14,8 @@ export type Destination = {
 // A tab that goes nowhere is the dead end we have already fixed once, and a test holds every destination here to a route that exists.
 
 // Owed takes the fourth place, which is every place the bar has. A fifth is a decision about what leaves rather than something that quietly overflows.
+
+// Money coming in is not one of these and is not waiting to be: it belongs to a house and is reached from one, the same way a day of spending is. A destination for it here would ask which house before it could show anything.
 export const DESTINATIONS: Array<Destination> = [
   { to: '/', label: 'Sites', icon: Building2, onThePhone: true },
   { to: '/people', label: 'People', icon: Users, onThePhone: true },
