@@ -1,10 +1,9 @@
 import { ConvexError, v } from 'convex/values'
 
-import { personInput, sameName, sayTheNameIsTaken } from '../../shared/validation/person'
-import type { Doc } from '../_generated/dataModel'
+import { personInput, sayTheNameIsTaken } from '../../shared/validation/person'
 import { checked } from '../utils/checked'
-import type { LedgerMutationCtx } from '../utils/ledgerAccess'
 import { ledgerMutation } from '../utils/ledgerAccess'
+import { personAlreadyCalled } from './theSamePerson'
 
 const typedIn = {
   name: v.string(),
@@ -12,20 +11,11 @@ const typedIn = {
   notes: v.optional(v.string()),
 }
 
-// Two rows for one man split his money across two records, and every figure about him is then wrong and quietly so: his balance, what he is owed, what he put in. Nobody would find it from the screen.
-
-// Read whole rather than through `byName`, because the index answers about the name exactly as typed and the same man is the same man in any case and any spacing.
-async function whoIsAlreadyCalled(ctx: LedgerMutationCtx, name: string): Promise<Doc<'people'> | null> {
-  const everyone = await ctx.db.query('people').withIndex('byName').collect()
-
-  return everyone.find((person) => sameName(person.name, name)) ?? null
-}
-
 export const add = ledgerMutation({
   args: typedIn,
   handler: async (ctx, args) => {
     const person = checked(personInput, args)
-    const already = await whoIsAlreadyCalled(ctx, person.name)
+    const already = await personAlreadyCalled(ctx, person.name)
 
     if (already === null) {
       return await ctx.db.insert('people', { ...person, hidden: false })
@@ -46,7 +36,7 @@ export const edit = ledgerMutation({
   args: { personId: v.id('people'), ...typedIn },
   handler: async (ctx, args) => {
     const person = checked(personInput, args)
-    const already = await whoIsAlreadyCalled(ctx, person.name)
+    const already = await personAlreadyCalled(ctx, person.name)
 
     // The same defect through the other door: without this, two rows for one man are one edit away. Renaming somebody to what they are already called is not that.
     if (already !== null && already._id !== args.personId) {

@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test'
 import { ConvexError } from 'convex/values'
 import { describe, expect, it } from 'vitest'
 
+import { sameName } from '../../shared/validation/person'
 import { api } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
@@ -229,5 +230,40 @@ describe('taking money back out of the ledger', () => {
 
     expect(refusal).toBe('That money is not on this site.')
     expect(await t.run((ctx) => ctx.db.get('moneyIn', receiptId))).toMatchObject({ removed: false })
+  })
+})
+
+describe('a name typed on the money coming in screen rather than picked', () => {
+  it('points at the partner already called that, so his capital is one figure', async () => {
+    // Worse here than anywhere. Money in as `partnerMoney` is capital, and capital is what the whole profit split is worked out from -- a partner split across two rows has his share worked out from half his money.
+    const t = convexWithMoneyIn()
+    const site = await t.run(aSiteThePartnerIsOn)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    await signedIn.mutation(
+      api.moneyIn.mutations.record,
+      aCheque(site, { fromId: undefined, newPerson: 'the   PARTNER', why: 'partnerMoney', amount: '600,000' })
+    )
+
+    const everyone = await t.run((ctx) => ctx.db.query('people').collect())
+    expect(everyone.filter((person) => sameName(person.name, 'The partner'))).toHaveLength(1)
+
+    // And it is the row that was already there, so what he has put in is read as one figure.
+    const receipts = await t.run((ctx) => ctx.db.query('moneyIn').collect())
+    expect(receipts.map((one) => one.fromId)).toEqual([site.partner])
+  })
+
+  it('points at somebody taken off the list without putting them back on it', async () => {
+    const t = convexWithMoneyIn()
+    const site = await t.run(aSiteThePartnerIsOn)
+    const gone = await t.run((ctx) => ctx.db.insert('people', { name: 'A former buyer', hidden: true }))
+
+    await t
+      .withIdentity({ subject: SIGNED_IN_AS })
+      .mutation(api.moneyIn.mutations.record, aCheque(site, { fromId: undefined, newPerson: 'A former buyer' }))
+
+    const receipts = await t.run((ctx) => ctx.db.query('moneyIn').collect())
+    expect(receipts.map((one) => one.fromId)).toEqual([gone])
+    expect(await t.run((ctx) => ctx.db.get('people', gone))).toMatchObject({ hidden: true })
   })
 })
