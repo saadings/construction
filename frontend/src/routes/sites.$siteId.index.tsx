@@ -4,6 +4,7 @@ import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { Positions } from '../components/partners/Positions'
 import { Figure, Page } from '../components/shell/Page'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { Billing } from '../components/site/Billing'
@@ -66,6 +67,8 @@ function OneHouse() {
 
       {/* The one thing deciding whether a house shows billing or a sale. A house built for the partners has no client to bill. */}
       {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
+
+      <WhatThePartnersAreOwed siteId={forSite.siteId} />
     </Page>
   )
 }
@@ -110,4 +113,12 @@ function Amount({ label, paisa, big = false }: { label: string; paisa: number; b
       </Figure>
     </div>
   )
+}
+
+// Asked for separately from the totals above, so a house with nobody's money in it yet still opens rather than waiting on a figure it does not need.
+function WhatThePartnersAreOwed({ siteId }: { siteId: Id<'sites'> }) {
+  const what = useQuery(api.partners.queries.positions, { siteId })
+
+  // Handed over as it came: two different unknowns, and flattening them is what left a screen watching "Looking…" with nothing on the way.
+  return <Positions what={what} />
 }

@@ -1,6 +1,13 @@
 # Only the already-staged paths are re-staged after the fixers: a bare `git add -u` sweeps in every other modified file.
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
+# Refreshes convex/_generated when a deployment is linked; not having one is no reason to refuse a commit, since CI generates its own.
+
+# It must say so loudly when it cannot, because stale generated types make `ctx.db` an `any` and the typecheck below then passes while checking nothing.
+
+# First, because everything below reads these types: run after the linter and a branch adding a table dies on a hundred errors about `any` that have nothing to do with the change.
+npx convex codegen --typecheck disable || npx tsx scripts/generatedTypes.ts stale
+
 # The checks run against a throwaway checkout of the index rather than against this tree, which is never stashed or modified.
 gate=$(mktemp -d)
 # shellcheck disable=SC2064
@@ -36,11 +43,6 @@ for path in $staged; do
   fi
   git update-index --cacheinfo "$mode,$blob,$path"
 done
-
-# Refreshes convex/_generated when a deployment is linked; not having one is no reason to refuse a commit, since CI generates its own.
-
-# It must say so loudly when it cannot, because stale generated types make `ctx.db` an `any` and the typecheck below then passes while checking nothing.
-npx convex codegen --typecheck disable || npx tsx scripts/generatedTypes.ts stale
 
 (cd "$gate" && yarn typecheck && yarn build && yarn test)
 
