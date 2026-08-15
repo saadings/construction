@@ -36,6 +36,9 @@
   /* A refusal is not a figure, so it is not held to the two colours. A refusal the same colour as everything else is a refusal nobody sees. */
   --refusal: #8f3521;
 
+  /* How much room the bar along the bottom of a phone takes, written once: its own height plus whatever the phone keeps clear for the home indicator. Anything sitting above it reads this rather than guessing, because a flat guess is 15px behind the bar on an iPhone and reads as a button that is hard to hit rather than one that is missing. */
+  --phone-bar: calc(3.9rem + env(safe-area-inset-bottom));
+
   --background: var(--ground);
   --foreground: var(--ink);
   --card: var(--panel);

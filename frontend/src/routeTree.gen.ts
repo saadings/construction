@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PeopleRouteImport } from './routes/people'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
 import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
 
+const PeopleRoute = PeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MoreRoute = MoreRouteImport.update({
   id: '/more',
   path: '/more',
@@ -44,6 +50,7 @@ const SitesSiteIdDayRoute = SitesSiteIdDayRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
+  '/people': typeof PeopleRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/': typeof SitesSiteIdIndexRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
+  '/people': typeof PeopleRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId': typeof SitesSiteIdIndexRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
+  '/people': typeof PeopleRoute
   '/sites/new': typeof SitesNewRoute
   '/sites/$siteId/day': typeof SitesSiteIdDayRoute
   '/sites/$siteId/': typeof SitesSiteIdIndexRoute
@@ -68,15 +77,23 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/more'
+    | '/people'
     | '/sites/new'
     | '/sites/$siteId/day'
     | '/sites/$siteId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/more' | '/sites/new' | '/sites/$siteId/day' | '/sites/$siteId'
+  to:
+    | '/'
+    | '/more'
+    | '/people'
+    | '/sites/new'
+    | '/sites/$siteId/day'
+    | '/sites/$siteId'
   id:
     | '__root__'
     | '/'
     | '/more'
+    | '/people'
     | '/sites/new'
     | '/sites/$siteId/day'
     | '/sites/$siteId/'
@@ -85,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MoreRoute: typeof MoreRoute
+  PeopleRoute: typeof PeopleRoute
   SitesNewRoute: typeof SitesNewRoute
   SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
   SitesSiteIdIndexRoute: typeof SitesSiteIdIndexRoute
@@ -92,6 +110,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/people': {
+      id: '/people'
+      path: '/people'
+      fullPath: '/people'
+      preLoaderRoute: typeof PeopleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/more': {
       id: '/more'
       path: '/more'
@@ -133,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MoreRoute: MoreRoute,
+  PeopleRoute: PeopleRoute,
   SitesNewRoute: SitesNewRoute,
   SitesSiteIdDayRoute: SitesSiteIdDayRoute,
   SitesSiteIdIndexRoute: SitesSiteIdIndexRoute,
