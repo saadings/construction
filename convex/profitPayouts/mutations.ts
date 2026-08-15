@@ -5,6 +5,8 @@ import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
 // A partner taking his share out. Kept apart from payments on purpose: a payment is what the house cost, and a share going back is not a cost.
+
+// not-yet: nothing is due until a house sells, so nobody can be paid out on one that has not
 export const record = siteMutation({
   args: {
     personId: v.id('people'),
@@ -34,6 +36,8 @@ export const record = siteMutation({
 })
 
 // Taken out of the ledger, never erased, and signed. A removal nobody signed is the exact case a disagreement about money turns on.
+
+// not-yet: and nothing takes a payout back, for the same reason there is nothing to take back yet
 export const remove = siteMutation({
   args: { payoutId: v.id('profitPayouts') },
   handler: async (ctx, args) => {

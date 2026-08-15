@@ -3,6 +3,7 @@ import { type Validator, v } from 'convex/values'
 
 import { type QueryCtx, internalMutation } from '../_generated/server'
 
+// not-from-a-screen: the Clerk webhook, mirroring their record of a sign-in; no screen writes it and none should
 export const upsert = internalMutation({
   args: { data: v.any() as Validator<UserJSON> },
   async handler(ctx, { data }) {
@@ -32,6 +33,7 @@ export const upsert = internalMutation({
   },
 })
 
+// not-from-a-screen: the Clerk webhook again, when a sign-in is deleted at their end
 export const remove = internalMutation({
   args: { clerkUserId: v.string() },
   async handler(ctx, { clerkUserId }) {
