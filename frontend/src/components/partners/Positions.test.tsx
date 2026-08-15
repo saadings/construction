@@ -32,7 +32,27 @@ const TWO_PARTNERS: WhatThePartnersHave = {
   broughtInPaisa: 12_000_000,
   spentPaisa: 8_500_000,
   profitPaisa: 3_500_000,
+  sold: true,
   sharesAgreed: false,
+  ifItSoldToday: null,
+}
+
+// The same house before it is sold: nothing is due to anybody, and what a share would come to is an estimate underneath.
+const STILL_BEING_BUILT: WhatThePartnersHave = {
+  ...TWO_PARTNERS,
+  sold: false,
+  positions: TWO_PARTNERS.positions.map((position) => ({
+    ...position,
+    duePaisa: 0,
+    balancePaisa: -position.paidPaisa,
+  })),
+  ifItSoldToday: {
+    profitPaisa: 3_500_000,
+    shares: [
+      { personId: 'p1', name: 'The partner', paisa: 2_625_000 },
+      { personId: 'p2', name: 'Another partner', paisa: 875_000 },
+    ],
+  },
 }
 
 describe('what each partner is owed', () => {
@@ -104,10 +124,18 @@ describe('what each partner is owed', () => {
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
-  it('says it is still looking before the answer arrives', () => {
-    render(<Positions what={null} />)
+  it('says it is still looking while the answer is on its way', () => {
+    render(<Positions what={undefined} />)
 
     expect(screen.getByText('Looking…')).toBeTruthy()
+    expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
+  it('says nothing at all for a house that is not there, rather than watching for it', () => {
+    // The two unknowns are different: one is a read in flight, the other is an answer. Flattening them is the permanent spinner.
+    render(<Positions what={null} />)
+
+    expect(screen.queryByText('Looking…')).toBeNull()
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
@@ -126,5 +154,39 @@ describe('what each partner is owed', () => {
     await screen.findAllByRole('listitem')
 
     expect(document.body.textContent).not.toMatch(/basis|paisa|record|entity|query|database|null|undefined/i)
+  })
+})
+
+describe('a house that has not been sold', () => {
+  it('shows nothing due, rather than a zero somebody could read as worked out', async () => {
+    render(<Positions what={STILL_BEING_BUILT} />)
+
+    const rows = await screen.findAllByRole('listitem')
+    expect(within(rows[0]).getByText('—')).toBeTruthy()
+  })
+
+  it('says what a share would come to, and says it is an estimate', () => {
+    render(<Positions what={STILL_BEING_BUILT} />)
+
+    expect(screen.getByText('If this sold today')).toBeTruthy()
+    expect(screen.getByText(/an estimate, not owed to anybody yet/)).toBeTruthy()
+    expect(screen.getByText('26,250')).toBeTruthy()
+  })
+
+  it('keeps the estimate out of the table, where what is owed lives', async () => {
+    // The seam. One column cannot be read for the other if they are not in the same column.
+    render(<Positions what={STILL_BEING_BUILT} />)
+
+    const rows = await screen.findAllByRole('listitem')
+    // The rows of the table are the first two; the estimate's own rows come after them.
+    expect(within(rows[0]).queryByText('26,250')).toBeNull()
+    expect(within(rows[1]).queryByText('8,750')).toBeNull()
+  })
+
+  it('says nothing about an estimate once the house is sold', () => {
+    render(<Positions what={TWO_PARTNERS} />)
+
+    expect(screen.queryByText('If this sold today')).toBeNull()
+    expect(screen.queryByText(/an estimate/)).toBeNull()
   })
 })

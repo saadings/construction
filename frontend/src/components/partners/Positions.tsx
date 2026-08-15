@@ -17,7 +17,10 @@ export type WhatThePartnersHave = {
   broughtInPaisa: number
   spentPaisa: number
   profitPaisa: number
+  sold: boolean
   sharesAgreed: boolean
+  // What a share would come to if the house sold today. Never in the table above, and gone once it really is sold.
+  ifItSoldToday: { profitPaisa: number; shares: Array<{ personId: string; name: string; paisa: number }> } | null
 }
 
 // The same markup at every width. A phone gets the name and what is left; a desk gets what he put in, his share, what he is owed and what he has had as well.
@@ -29,9 +32,14 @@ function asPercent(basisPoints: number): string {
   return `${String(Math.round(basisPoints) / 100)}%`
 }
 
-export function Positions({ what }: { what: WhatThePartnersHave | null }) {
-  if (what === null) {
+// Handed the read as it came. `undefined` is still on its way; `null` is the house not being there, which the page around this has already said. Answering either on its behalf is how a screen ends up watching for something that is not coming.
+export function Positions({ what }: { what: WhatThePartnersHave | null | undefined }) {
+  if (what === undefined) {
     return <p className="text-muted-foreground text-sm">Looking…</p>
+  }
+
+  if (what === null) {
+    return null
   }
 
   return (
@@ -69,7 +77,8 @@ export function Positions({ what }: { what: WhatThePartnersHave | null }) {
 
                 <Cell label="Put in">{formatPaisa(position.capitalPaisa)}</Cell>
                 <Cell label="Share">{asPercent(position.basisPoints)}</Cell>
-                <Cell label="Due">{formatPaisa(position.duePaisa)}</Cell>
+                {/* Nothing is due until the house is sold, and a dash says that better than a zero, which reads as a figure somebody worked out. */}
+                <Cell label="Due">{what.sold ? formatPaisa(position.duePaisa) : '—'}</Cell>
                 {/* Brass, because it is money that has gone out to him. */}
                 <Cell label="Paid" tone="text-brass">
                   {formatPaisa(position.paidPaisa)}
@@ -83,7 +92,29 @@ export function Positions({ what }: { what: WhatThePartnersHave | null }) {
           </ul>
         </div>
       )}
+
+      {what.ifItSoldToday === null ? null : <IfItSoldToday what={what.ifItSoldToday} />}
     </section>
+  )
+}
+
+// Under the table and never in it. A guess about a house still being built is not what anybody is owed, and the moment the two sit in one column somebody reads one for the other.
+function IfItSoldToday({ what }: { what: NonNullable<WhatThePartnersHave['ifItSoldToday']> }) {
+  return (
+    <div className="border-border flex flex-col gap-2 rounded-md border border-dashed px-4 py-3">
+      <p className="text-muted-foreground text-sm">
+        <span className="text-foreground font-medium">If this sold today</span> — an estimate, not owed to anybody yet.
+      </p>
+
+      <ul className="flex flex-col gap-1">
+        {what.shares.map((share) => (
+          <li key={share.personId} className="flex items-baseline justify-between gap-4">
+            <span className="text-muted-foreground min-w-0 truncate text-sm">{share.name}</span>
+            <Figure className="text-muted-foreground text-sm">{formatPaisa(share.paisa)}</Figure>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
