@@ -5,87 +5,108 @@
 
 @import '@fontsource/instrument-serif/400.css';
 @import '@fontsource-variable/ibm-plex-sans/index.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
 
-@custom-variant dark (&:is(.dark *));
-
-/* Ink on ledger paper: the ground is warmed rather than pure white and the ink is blue-black rather than grey, because a page of figures read in daylight is what this replaces. */
-
-/* Brass is the only colour carrying meaning. It marks money and the one action that writes it, and appears nowhere else. */
-:root {
-  --background: oklch(0.985 0.007 85);
-  --foreground: oklch(0.235 0.021 252);
-  --card: oklch(0.997 0.004 85);
-  --card-foreground: oklch(0.235 0.021 252);
-  --popover: oklch(0.997 0.004 85);
-  --popover-foreground: oklch(0.235 0.021 252);
-  --primary: oklch(0.585 0.126 62);
-  --primary-foreground: oklch(0.995 0.004 85);
-  --secondary: oklch(0.955 0.011 85);
-  --secondary-foreground: oklch(0.235 0.021 252);
-  --muted: oklch(0.955 0.011 85);
-  --muted-foreground: oklch(0.515 0.019 252);
-  --accent: oklch(0.945 0.019 78);
-  --accent-foreground: oklch(0.34 0.078 58);
-  --destructive: oklch(0.512 0.163 27);
-  --destructive-foreground: oklch(0.995 0.004 85);
-  --border: oklch(0.895 0.013 82);
-  --input: oklch(0.895 0.013 82);
-  --ring: oklch(0.585 0.126 62);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.871 0.006 286.286);
+/* Dark is three states, not two: chosen light, chosen dark, and following the phone, which is the default and stamps nothing. So a dark style has to answer to both the attribute and the device. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='light']) *) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme='dark'] *) {
+    @slot;
+  }
 }
 
-/* The same page after dark: ink becomes the ground and the paper becomes the writing. Brass lifts so it still reads as the one thing worth looking at. */
-.dark {
-  --background: oklch(0.201 0.019 252);
-  --foreground: oklch(0.945 0.009 85);
-  --card: oklch(0.243 0.021 252);
-  --card-foreground: oklch(0.945 0.009 85);
-  --popover: oklch(0.243 0.021 252);
-  --popover-foreground: oklch(0.945 0.009 85);
-  --primary: oklch(0.755 0.117 68);
-  --primary-foreground: oklch(0.201 0.019 252);
-  --secondary: oklch(0.275 0.021 252);
-  --secondary-foreground: oklch(0.945 0.009 85);
-  --muted: oklch(0.275 0.021 252);
-  --muted-foreground: oklch(0.715 0.017 252);
-  --accent: oklch(0.312 0.032 62);
-  --accent-foreground: oklch(0.875 0.068 72);
-  --destructive: oklch(0.601 0.164 27);
-  --destructive-foreground: oklch(0.201 0.019 252);
-  --border: oklch(0.312 0.019 252);
-  --input: oklch(0.312 0.019 252);
-  --ring: oklch(0.755 0.117 68);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.442 0.017 285.786);
+/* A warm console. The ground is paper warmed by lamplight rather than white, and it stays warm after dark: a blue-black ground makes brass look dirty, and brass is the colour of money here. */
+
+/* Two colours carry meaning and no others. Brass is money going out. Green is money owed to him, which is what an advance held or a credit balance is. Everything else is ink. */
+:root {
+  --ground: #faf7f0;
+  --panel: #f2ede2;
+  --row-alt: #f6f2e9;
+  --hairline: #f0ebe0;
+  --ink: #1c1a17;
+  --muted-ink: #8a8274;
+  --faint: #a09786;
+  --brass: #8a5a1e;
+  --green: #4a6b52;
+  /* A refusal is not a figure, so it is not held to the two colours. A refusal the same colour as everything else is a refusal nobody sees. */
+  --refusal: #8f3521;
+
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--panel);
+  --card-foreground: var(--ink);
+  --popover: var(--panel);
+  --popover-foreground: var(--ink);
+  --primary: var(--brass);
+  --primary-foreground: var(--ground);
+  --secondary: var(--panel);
+  --secondary-foreground: var(--ink);
+  --muted: var(--row-alt);
+  --muted-foreground: var(--muted-ink);
+  --accent: var(--hairline);
+  --accent-foreground: var(--ink);
+  --destructive: var(--refusal);
+  --destructive-foreground: var(--ground);
+  --border: #e3ddd0;
+  --input: #e3ddd0;
+  --ring: var(--brass);
+  --radius: 0.5rem;
+  --sidebar: var(--panel);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brass);
+  --sidebar-primary-foreground: var(--ground);
+  --sidebar-accent: var(--hairline);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: #e3ddd0;
+  --sidebar-ring: var(--brass);
+}
+
+/* Following the phone, which is what the app does unless somebody says otherwise. Guarded so that choosing light beats a phone in dark mode. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ground: #17150f;
+    --panel: #1e1b14;
+    --row-alt: #1c1912;
+    --hairline: #241f18;
+    --ink: #f0ebe0;
+    --muted-ink: #a8a08e;
+    --faint: #7d7566;
+    --brass: #d19a4a;
+    --green: #7da888;
+    --refusal: #e0876a;
+    --border: #2e2a20;
+    --input: #2e2a20;
+    --sidebar-border: #2e2a20;
+  }
+}
+
+/* Chosen dark, which has to win over a phone in light mode. The same tokens as the block above, and a test holds the two to each other, because a mode that only half exists is exactly what nobody notices for a week. */
+:root[data-theme='dark'] {
+  --ground: #17150f;
+  --panel: #1e1b14;
+  --row-alt: #1c1912;
+  --hairline: #241f18;
+  --ink: #f0ebe0;
+  --muted-ink: #a8a08e;
+  --faint: #7d7566;
+  --brass: #d19a4a;
+  --green: #7da888;
+  --refusal: #e0876a;
+  --border: #2e2a20;
+  --input: #2e2a20;
+  --sidebar-border: #2e2a20;
 }
 
 @theme inline {
   --font-sans: 'IBM Plex Sans Variable', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  /* Every figure is set in this. It is the whole reason a column of amounts reads as a column. */
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -105,11 +126,12 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+  --color-panel: var(--panel);
+  --color-row-alt: var(--row-alt);
+  --color-hairline: var(--hairline);
+  --color-faint: var(--faint);
+  --color-brass: var(--brass);
+  --color-green: var(--green);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

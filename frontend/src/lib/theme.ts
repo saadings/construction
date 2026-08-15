@@ -1,19 +1,55 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
-// The app follows the device and only the device; an override can return when there is a screen to put it on.
+// Three states, not two. Following the phone is what the app does unless somebody says otherwise, and it is right nearly always -- the overrides exist for standing on a site in daylight with a phone stuck in dark mode.
+export const HOW_IT_LOOKS = ['follow', 'light', 'dark'] as const
+export type HowItLooks = (typeof HOW_IT_LOOKS)[number]
+
 const DARK_SCHEME = '(prefers-color-scheme: dark)'
+const REMEMBERED = 'howItLooks'
 
-// Tailwind keys dark styles off the class; `colorScheme` is what stops scrollbars and date pickers staying white.
-export function applyColourScheme(prefersDark: boolean): void {
-  const root = document.documentElement
-
-  root.classList.toggle('dark', prefersDark)
-  root.classList.toggle('light', !prefersDark)
-  root.style.colorScheme = prefersDark ? 'dark' : 'light'
+function isHowItLooks(value: string | null): value is HowItLooks {
+  return value !== null && HOW_IT_LOOKS.some((how) => how === value)
 }
 
-// Runs in `<head>` before first paint, repeating applyColourScheme because the bundle does not exist yet.
-export const THEME_INIT_SCRIPT = `(function(){try{var d=window.matchMedia('${DARK_SCHEME}').matches;var r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d);r.style.colorScheme=d?'dark':'light';}catch(e){}})();`
+export function howItLooksNow(): HowItLooks {
+  try {
+    const remembered = window.localStorage.getItem(REMEMBERED)
+    return isHowItLooks(remembered) ? remembered : 'follow'
+  } catch {
+    // A phone with storage turned off follows the device, which is what it would have done anyway.
+    return 'follow'
+  }
+}
+
+// Following stamps nothing, so the media query in the stylesheet decides. A choice stamps the attribute, which beats the device in both directions.
+export function applyHowItLooks(chosen: HowItLooks, prefersDark: boolean): void {
+  const root = document.documentElement
+  const dark = chosen === 'dark' || (chosen === 'follow' && prefersDark)
+
+  if (chosen === 'follow') {
+    root.removeAttribute('data-theme')
+  } else {
+    root.setAttribute('data-theme', chosen)
+  }
+
+  // What stops scrollbars, date pickers and form controls staying the other mode's colour.
+  root.style.colorScheme = dark ? 'dark' : 'light'
+
+  // Clerk's own screens are styled from JavaScript rather than from these tokens, and this is what they read.
+  root.classList.toggle('dark', dark)
+  root.classList.toggle('light', !dark)
+}
+
+export function rememberHowItLooks(chosen: HowItLooks): void {
+  try {
+    window.localStorage.setItem(REMEMBERED, chosen)
+  } catch {
+    // Nothing to do: the choice holds for this sitting and the app follows the phone next time.
+  }
+}
+
+// Runs in `<head>` before first paint, repeating what the module does because the bundle does not exist yet. Without it the page is drawn in one mode and repainted in the other.
+export const THEME_INIT_SCRIPT = `(function(){try{var c=window.localStorage.getItem('${REMEMBERED}');var d=window.matchMedia('${DARK_SCHEME}').matches;var r=document.documentElement;if(c==='light'||c==='dark'){r.setAttribute('data-theme',c);d=c==='dark';}else{r.removeAttribute('data-theme');}r.style.colorScheme=d?'dark':'light';r.classList.toggle('dark',d);r.classList.toggle('light',!d);}catch(e){}})();`
 
 function subscribeToColourScheme(onSchemeChange: () => void): () => void {
   const media = window.matchMedia(DARK_SCHEME)
@@ -32,4 +68,35 @@ export function usePrefersDark(): boolean {
     () => window.matchMedia(DARK_SCHEME).matches,
     () => false
   )
+}
+
+const listeners = new Set<() => void>()
+
+function subscribeToTheChoice(onChoiceChange: () => void): () => void {
+  listeners.add(onChoiceChange)
+
+  // Another tab of the same app, changed by the same person.
+  window.addEventListener('storage', onChoiceChange)
+
+  return () => {
+    listeners.delete(onChoiceChange)
+    window.removeEventListener('storage', onChoiceChange)
+  }
+}
+
+export function useHowItLooks(): { chosen: HowItLooks; choose: (chosen: HowItLooks) => void; dark: boolean } {
+  const prefersDark = usePrefersDark()
+  const chosen = useSyncExternalStore(subscribeToTheChoice, howItLooksNow, () => 'follow' as HowItLooks)
+
+  const choose = useCallback((choice: HowItLooks) => {
+    rememberHowItLooks(choice)
+    applyHowItLooks(choice, window.matchMedia(DARK_SCHEME).matches)
+
+    // Told to every screen reading the choice, because `localStorage` says nothing on the tab that wrote it.
+    for (const listener of listeners) {
+      listener()
+    }
+  }, [])
+
+  return { chosen, choose, dark: chosen === 'dark' || (chosen === 'follow' && prefersDark) }
 }
