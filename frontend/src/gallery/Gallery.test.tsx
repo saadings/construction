@@ -55,3 +55,49 @@ describe('every screen in the gallery', () => {
     expect(screen.getByRole('note').textContent).toMatch(/Nothing here is the ledger/)
   })
 })
+
+describe('the gallery in front of a camera', () => {
+  afterEach(() => {
+    window.history.replaceState({}, '', window.location.pathname)
+  })
+
+  function forACamera() {
+    window.history.replaceState({}, '', '?camera')
+  }
+
+  it('takes its own furniture out of the layout, rather than making it smaller', () => {
+    // Hiding it was the second wrong answer. The banner and the chips came to 287px of an 844px phone, and at that height the day sheet's amount box sat under its own footer -- so a picture of that would have shown a bug that is not there. What is drawn has to be the app and nothing else.
+    forACamera()
+    window.location.hash = 'day-sheet'
+    render(<Gallery />)
+
+    expect(screen.queryByRole('button', { name: 'What each partner takes' })).toBeNull()
+    expect(screen.queryByText('a house, then the day sheet')).toBeNull()
+  })
+
+  it('keeps saying it is not the ledger, because that is the half a photograph carries away', () => {
+    forACamera()
+    window.location.hash = 'day-sheet'
+    render(<Gallery />)
+
+    expect(screen.getByRole('note').textContent).toMatch(/Nothing here is the ledger/)
+  })
+
+  it('still draws the screen it was asked for', async () => {
+    // The floor. Everything above is satisfied by a camera mode that draws nothing at all.
+    forACamera()
+    window.location.hash = 'owed'
+    render(<Gallery />)
+
+    expect(await within(drawn()).findByRole('heading', { name: 'Owed' })).toBeTruthy()
+  })
+
+  it('leaves the furniture there for somebody looking rather than photographing', () => {
+    // The other end: a camera mode that was always on would be a gallery nobody could get around.
+    window.location.hash = 'day-sheet'
+    render(<Gallery />)
+
+    expect(screen.getByRole('button', { name: 'What each partner takes' })).toBeTruthy()
+    expect(screen.getByText('a house, then the day sheet')).toBeTruthy()
+  })
+})

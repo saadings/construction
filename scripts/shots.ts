@@ -24,6 +24,9 @@ const SCREENS_READ_ON = [
 /** The day every picture is taken on, so two runs a week apart are the same picture. The same day the gallery's fixtures are written around. */
 const A_DAY = '2026-07-04'
 
+/** How far down the app's screen may begin before the picture stops being a picture of a phone. Not zero, because a browser rounds a fractional layout; anything above this is furniture. */
+const TOP_OF_THE_SCREEN = 2
+
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -117,7 +120,7 @@ async function main(): Promise<void> {
       await on.clock.install({ time: new Date(`${A_DAY}T09:00:00`) })
 
       for (const screen of screens) {
-        await on.goto(`${server.at}/#${screen.slug}`)
+        await on.goto(`${server.at}/?camera#${screen.slug}`)
 
         // Waited for by what the screen says rather than by a timer. A screenshot on a timeout is a picture of whatever had loaded, and it looks exactly like a screenshot.
 
@@ -128,8 +131,24 @@ async function main(): Promise<void> {
           .first()
           .waitFor({ timeout: 15_000 })
 
-        // The gallery's own way of getting between screens, put away. It is a third of a 390-wide screen, and a picture of a phone that is one third my navigation is not a picture anybody can judge the app by. What stays is the note saying none of it is the ledger, because an image gets forwarded and the words that say what it is have to travel with it.
-        await on.addStyleTag({ content: '[data-gallery="chrome"] { display: none !important }' })
+        // The picture is only a picture of a phone if the app starts where a phone's screen starts. Hiding the gallery's furniture was not enough and was the second wrong answer: it left 287px of an 844px screen to the banner and the chips, and at that height the day sheet's amount box sat under its own footer. Anybody reading those images would have found a bug that is not there.
+
+        // Asserted every time rather than checked once. Furniture creeps back, and when it does every picture silently becomes a third furniture again with nothing saying so.
+        const box = await on.locator('[data-testid="the-screen"]').boundingBox()
+
+        // `null` is not a position. It means the screen is not on the page at all, which would otherwise read as a top of zero and pass this perfectly.
+        if (box === null) {
+          throw new Error(`Nothing drew on ${screen.slug} at ${String(size.width)}: there is no screen to measure.`)
+        }
+
+        const startsAt = box.y
+
+        if (startsAt > TOP_OF_THE_SCREEN) {
+          throw new Error(
+            `The app's screen starts ${String(Math.round(startsAt))}px down on ${screen.slug} at ${String(size.width)}. ` +
+              `A picture with the gallery's own furniture in it is not a picture of a phone.`
+          )
+        }
 
         // The screen and not the whole page. `fullPage` expands the viewport and leaves anything `sticky` pinned to where the bottom used to be -- the day sheet's footer came out in the middle of its own form, which reads as a broken screen and is a broken photograph. What somebody holds is a screen, so that is what this is a picture of.
         await on.screenshot({ path: join(SHOTS, `${screen.slug}-${String(size.width)}.png`) })
