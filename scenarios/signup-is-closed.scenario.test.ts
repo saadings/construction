@@ -26,22 +26,21 @@ export function keyKind(key: string | undefined): KeyKind {
 }
 
 const HOW_TO_CLOSE_IT = [
-  'Sign-up is open on the production instance, so the first stranger to find the URL becomes its first partner.',
-  'Close it by naming who may sign up:',
-  '  PATCH /v1/instance/restrictions  with  { allowlist: true }',
-  '  POST  /v1/allowlist_identifiers  once per partner',
+  'Anybody who finds this address can make themselves an account, and the first account on a deployment keeps the books.',
+  'People join by invitation. Set the instance to restricted:',
+  '  PATCH /v1/beta_features/instance_settings  with  { restricted_to_allowlist: true }',
+  '  then read the mode back, because one endpoint accepts sign_up_mode and ignores it.',
 ].join('\n')
 
-/** What is wrong with this deployment's sign-up, or null when there is nothing wrong with it. */
-export function whatIsWrongWith(kind: KeyKind, environment: ClerkEnvironment): string | null {
-  // Development staying open is convenient and costs nothing now that no real person is in the fixtures.
-  if (kind !== 'live') return null
+/** What is wrong with who may sign up here, or null when there is nothing wrong with it. */
+export function whatIsWrongWith(_kind: KeyKind, environment: ClerkEnvironment): string | null {
+  // Every instance, not production alone. One instance serves both today, and invitation-only is the rule for the app rather than for an environment.
 
-  const settings = environment.user_settings ?? {}
-  const open = (settings.sign_up?.mode ?? 'public') === 'public'
-  const named = settings.restrictions?.allowlist?.enabled === true
+  // Nothing is said about the allowlist. Clerk switches it off by itself when the mode becomes restricted, so its being off is the correct state and asserting either way would be asserting a thing that is not the question.
+  const mode = environment.user_settings?.sign_up?.mode
 
-  return open && !named ? HOW_TO_CLOSE_IT : null
+  // Unreadable counts as open. A settings block this cannot find has not been shown to be closed.
+  return mode === undefined || mode === 'public' ? HOW_TO_CLOSE_IT : null
 }
 
 /** The Frontend API host, carried inside the key itself: base64, with a trailing `$`. */
@@ -70,33 +69,43 @@ const OPEN_TO_ANYONE: ClerkEnvironment = {
   user_settings: { sign_up: { mode: 'public' }, restrictions: { allowlist: { enabled: false } } },
 }
 
-const OPEN_BUT_ONLY_TO_NAMED_PEOPLE: ClerkEnvironment = {
-  user_settings: { sign_up: { mode: 'public' }, restrictions: { allowlist: { enabled: true } } },
+// The live state today: restricted, with the allowlist switched off by Clerk itself. Invitations are the single way in.
+const OPEN_ONLY_TO_THE_INVITED: ClerkEnvironment = {
+  user_settings: { sign_up: { mode: 'restricted' }, restrictions: { allowlist: { enabled: false } } },
 }
 
-const OPEN_ONLY_BY_INVITATION: ClerkEnvironment = {
-  user_settings: { sign_up: { mode: 'restricted' }, restrictions: { allowlist: { enabled: false } } },
+// An allowlist left on alongside restricted. Still closed to strangers, and the rule says nothing about it either way.
+const RESTRICTED_WITH_A_LIST_AS_WELL: ClerkEnvironment = {
+  user_settings: { sign_up: { mode: 'restricted' }, restrictions: { allowlist: { enabled: true } } },
 }
 
 describe('who may sign up', () => {
   // This rule cannot fire until a production instance exists, so it is proved here against answers written by hand. A guard nobody has seen fail is a guard nobody has tested.
-  it('is refused on production when anyone may', () => {
+  it('is refused wherever anyone may make themselves an account', () => {
     const wrong = whatIsWrongWith('live', OPEN_TO_ANYONE)
 
     expect(wrong).not.toBeNull()
-    // The message carries the fix, so whoever hits it does not have to find the two calls again.
-    expect(wrong).toContain('/v1/instance/restrictions')
-    expect(wrong).toContain('/v1/allowlist_identifiers')
+    // The message carries the fix, and the warning that one endpoint accepts the setting and ignores it.
+    expect(wrong).toContain('restricted_to_allowlist')
+    expect(wrong).toContain('read the mode back')
   })
 
-  it('is allowed on production when the people who may are named', () => {
-    // The other half. Refusing everything would satisfy the check above while saying nothing.
-    expect(whatIsWrongWith('live', OPEN_BUT_ONLY_TO_NAMED_PEOPLE)).toBeNull()
-    expect(whatIsWrongWith('live', OPEN_ONLY_BY_INVITATION)).toBeNull()
+  it('is refused on a development key too, because the rule is the app rather than the environment', () => {
+    // One instance serves both today. There is no environment where a stranger may make himself an account.
+    expect(whatIsWrongWith('test', OPEN_TO_ANYONE)).not.toBeNull()
+    expect(whatIsWrongWith('none', OPEN_TO_ANYONE)).not.toBeNull()
   })
 
-  it('leaves development open, which is where every check in this repository runs', () => {
-    expect(whatIsWrongWith('test', OPEN_TO_ANYONE)).toBeNull()
+  it('says nothing about the allowlist, because that is no longer the question', () => {
+    // Clerk switches the allowlist off by itself when the mode becomes restricted, so off is the correct state and on is also fine.
+    expect(whatIsWrongWith('live', OPEN_ONLY_TO_THE_INVITED)).toBeNull()
+    expect(whatIsWrongWith('live', RESTRICTED_WITH_A_LIST_AS_WELL)).toBeNull()
+  })
+
+  it('treats a settings block it cannot read as open, rather than as fine', () => {
+    // Unreadable is not closed. A shape this cannot find a mode in has not been shown to refuse anybody.
+    expect(whatIsWrongWith('live', {})).not.toBeNull()
+    expect(whatIsWrongWith('live', { user_settings: {} })).not.toBeNull()
   })
 
   it('reads which deployment a key belongs to out of the key', () => {
@@ -166,16 +175,16 @@ describe('what the public is actually handed', () => {
 
   it('is refused when the published build carries no key at all', () => {
     // Unreadable is not safe. A bundle this cannot find a key in has not been shown to carry a production one.
-    expect(whatThePublicIsHanded(null, OPEN_BUT_ONLY_TO_NAMED_PEOPLE)).not.toBeNull()
+    expect(whatThePublicIsHanded(null, OPEN_ONLY_TO_THE_INVITED)).not.toBeNull()
   })
 
   it('is allowed when it carries a production key whose instance names who may sign up', () => {
     // The other half: refusing everything would satisfy the two above and say nothing.
-    expect(whatThePublicIsHanded('pk_live_' + 'abc', OPEN_BUT_ONLY_TO_NAMED_PEOPLE)).toBeNull()
+    expect(whatThePublicIsHanded('pk_live_' + 'abc', OPEN_ONLY_TO_THE_INVITED)).toBeNull()
   })
 
   it('is refused when it carries a production key whose instance lets anyone in', () => {
-    expect(whatThePublicIsHanded('pk_live_' + 'abc', OPEN_TO_ANYONE)).toContain('/v1/allowlist_identifiers')
+    expect(whatThePublicIsHanded('pk_live_' + 'abc', OPEN_TO_ANYONE)).toContain('restricted_to_allowlist')
   })
 
   it('asks the site itself, since a rule about the public cannot be answered from this checkout', async () => {
