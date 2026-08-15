@@ -1,8 +1,11 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { Linter } from 'eslint'
 import { describe, expect, it } from 'vitest'
+
+import { singleLineComments } from '../eslint-rules/singleLineComments'
 
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
@@ -110,37 +113,28 @@ describe('the length of a comment', () => {
 
   // The eslint rule is a second implementation of this one, and it disagreed: it read a `#!` line as a comment and failed the line below it.
   it('agrees with the eslint rule that enforces it in TypeScript', () => {
-    const probe = join(repoRoot, 'eslint-rules', 'commentProbe.ts')
-
+    // In process, never a written file: a probe under `eslint-rules/` is inside tsconfig, and a concurrent typecheck fails when it is cleaned up.
     function complaintsAbout(source: string): number {
-      writeFileSync(probe, source)
+      const linter = new Linter()
+      const reported = linter.verify(source, {
+        plugins: { local: { rules: { 'single-line-comments': singleLineComments } } },
+        rules: { 'local/single-line-comments': 'error' },
+      })
 
-      // eslint exits non-zero whenever it reports anything, so the report arrives on the throw as often as on the return.
-      let report: string
-      try {
-        report = execFileSync('npx', ['eslint', '--format', 'json', probe], {
-          cwd: repoRoot,
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'pipe'],
-        })
-      } catch (error) {
-        report = (error as { stdout?: string }).stdout ?? ''
-      }
-
-      if (report.trim() === '') throw new Error('eslint produced no report for the probe file')
-
-      return (JSON.parse(report) as Array<{ messages: Array<{ ruleId: string | null }> }>)
-        .flatMap((file) => file.messages)
-        .filter((message) => message.ruleId === 'local/single-line-comments').length
+      return reported.filter((message) => message.ruleId === 'local/single-line-comments').length
     }
 
-    try {
-      // The control. The rule is loaded and firing, so the zero below means it accepted the shebang rather than that eslint skipped the file.
-      expect(complaintsAbout('// One line.\n// And a second, which is one too many.\nexport const probe = 1\n')).toBe(1)
+    // The control. The rule is loaded and firing, so the zero below means it accepted the shebang rather than that nothing ran.
+    expect(complaintsAbout('// One line.\n// And a second, which is one too many.\nexport const probe = 1\n')).toBe(1)
 
-      expect(complaintsAbout('#!/usr/bin/env tsx\n// One line, under a shebang.\nexport const probe = 1\n')).toBe(0)
-    } finally {
-      rmSync(probe, { force: true })
-    }
-  }, 180_000)
+    expect(complaintsAbout('#!/usr/bin/env tsx\n// One line, under a shebang.\nexport const probe = 1\n')).toBe(0)
+  })
+
+  it('is the rule this repository actually loads, not one only this test knows about', () => {
+    // The other half: verifying a rule in process says nothing about whether eslint is configured to run it.
+    const config = readFileSync(join(repoRoot, 'eslint.config.ts'), 'utf8')
+
+    expect(config).toContain('singleLineComments')
+    expect(config).toContain("'local/single-line-comments': 'error'")
+  })
 })

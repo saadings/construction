@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -21,7 +22,8 @@ export type DeclaredFunction = {
   body: string
 }
 
-function convexFiles(): Array<string> {
+/** Takes a root so a probe can be walked somewhere nothing else is looking, rather than written into the tree everything reads. */
+function convexFiles(root: string = join(repoRoot, 'convex')): Array<string> {
   const walk = (dir: string): Array<string> =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const path = join(dir, entry.name)
@@ -29,7 +31,7 @@ function convexFiles(): Array<string> {
       return path.endsWith('.ts') ? [path] : []
     })
 
-  return walk(join(repoRoot, 'convex'))
+  return walk(root)
 }
 
 /** Counts braces rather than stopping at the first one, so a nested object does not truncate the body before its args are visible. */
@@ -162,19 +164,20 @@ describe('deciding who may open a site', () => {
     expect(caught.map((fn) => fn.name)).toEqual(['bypass'])
   })
 
-  it('catches it as a file in the tree, not only as a string handed to the reader', () => {
-    const probe = join(repoRoot, 'convex', 'sites', 'bypassProbe.ts')
+  it('catches it as a file on disk, not only as a string handed to the reader', () => {
+    // Walked in a throwaway, never written into `convex/`: a probe there is inside tsconfig, and a concurrent whole-project typecheck fails when it disappears.
+    const elsewhere = mkdtempSync(join(tmpdir(), 'construction-site-access-'))
 
-    writeFileSync(probe, THE_BYPASS)
     try {
+      mkdirSync(join(elsewhere, 'sites'), { recursive: true })
+      writeFileSync(join(elsewhere, 'sites', 'bypassProbe.ts'), THE_BYPASS)
+
       // The walker and the reader together, which is what runs in the gate. Either one failing alone reports a clean tree.
-      const scanned = convexFiles().flatMap((file) =>
-        declaredFunctionsIn(file.slice(repoRoot.length + 1), readFileSync(file, 'utf8'))
-      )
+      const scanned = convexFiles(elsewhere).flatMap((file) => declaredFunctionsIn(file, readFileSync(file, 'utf8')))
 
       expect(skippingTheCheck(scanned).map((fn) => fn.name)).toEqual(['bypass'])
     } finally {
-      rmSync(probe, { force: true })
+      rmSync(elsewhere, { recursive: true, force: true })
     }
   })
 
