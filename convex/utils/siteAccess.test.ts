@@ -110,7 +110,7 @@ describe('opening a site', () => {
     const otherSite = await t.run(async (ctx) => {
       await aPartnerOnASite(ctx)
       // Reach is per site, not per account. Being a partner somewhere must not open everywhere.
-      return await aSite(ctx, '478-R, Phase 0')
+      return await aSite(ctx, '2-B, Phase 0')
     })
 
     const site = await t.withIdentity({ subject: SIGNED_IN_AS }).query(one, { siteId: otherSite })
@@ -157,7 +157,7 @@ describe('changing something on a site', () => {
 
     const otherSite = await t.run(async (ctx) => {
       await aPartnerOnASite(ctx)
-      return await aSite(ctx, '478-R, Phase 0')
+      return await aSite(ctx, '2-B, Phase 0')
     })
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
@@ -165,7 +165,7 @@ describe('changing something on a site', () => {
 
     // Silence would read as saved, so the mutation throws where the query returns nothing.
     expect(reached.length).toBe(reachedBefore)
-    expect(await t.run((ctx) => ctx.db.get('sites', otherSite))).toMatchObject({ name: '478-R, Phase 0' })
+    expect(await t.run((ctx) => ctx.db.get('sites', otherSite))).toMatchObject({ name: '2-B, Phase 0' })
   })
 
   it('refuses in words Nauman would use', async () => {

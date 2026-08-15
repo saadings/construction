@@ -37,6 +37,14 @@ const TAKEN_FROM_THE_WORKBOOKS = new Set([
   '707f6b27b35675b3ef29ba1e1075c03324e79f8796f43e5a99e76e098ee12b64',
   '1521628568a3e2c3f6455cab87d6f10167816c770ba4f9dc36dfd80385b8f6af',
   '0f33e04ac3b3762d50f9530393b85019c1d935777def125e9ac56fcea8622c1f',
+  '9587740ea2f5a2d997b84ba6d1b07977abbc1487c7125bb115dc00d9bb823ca2',
+  'fea25466ffad9fef240652204f67597d201c902f6ed1482dc493c457aef2abec',
+  'fe0d97d1ae2ace37941f95ae252ac3cd156300cf7a48be9412395a0b4399a0b6',
+  '3027cf0ecb7b75810d2f396966e686be0459f8adf2bb1808f3d3e84608b1907d',
+  '94e4f0c813bd4d9dba190ac985d3f85390d68df1eaff77c1cc2954f7cfd1ddfc',
+  '9af2921d3fd57fe886c9022d1fcc055d53a79e4032fa6137e397583884e1a5de',
+  '9e742dec65d49f1d078c0508e17eb547e0f79a86c20d6d850dedcadfe5627889',
+  'e6d05e580635a8f66551a34534761aaa11e0fa692697eb4c0acac49b82ab89d5',
 ])
 
 function digestOf(value: string): string {
@@ -53,6 +61,10 @@ function trackedSource(): Array<string> {
 }
 
 // A value removed as part of a longer one is itself a known-bad value: the label went and the four digits it was renamed for stayed, in another file, in a field of their own.
+
+// And a value scrubbed in one commit while this list was built in another is a value with nothing behind it: both houses were replaced everywhere and neither was ever written down here, so either could come back and this would say nothing.
+
+// A digest carrying punctuation is reachable only when a whole quoted string matches it, because the word reader splits on punctuation. So `359-R` is written down the way that reader sees it as well.
 
 /** Every run of one to three words, punctuation and line breaks ignored, so a name wrapped across two lines and a fragment sitting alone both read the same. */
 export function wordRunsIn(source: string): Array<string> {

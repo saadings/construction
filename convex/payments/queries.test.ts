@@ -142,7 +142,7 @@ describe('what a site has cost', () => {
     const t = convexWithPayments()
     await t.run(aSiteWithSpending)
     const elsewhere = await t.run((ctx) =>
-      ctx.db.insert('sites', { name: '478-R, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
+      ctx.db.insert('sites', { name: '2-B, Phase 0', builtForAClient: false, stage: 'building', hidden: false })
     )
 
     expect(
