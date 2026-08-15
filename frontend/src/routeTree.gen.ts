@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PeopleRouteImport } from './routes/people'
+import { Route as OwedRouteImport } from './routes/owed'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
@@ -22,6 +23,11 @@ import { Route as SitesSiteIdComingInRouteImport } from './routes/sites.$siteId.
 const PeopleRoute = PeopleRouteImport.update({
   id: '/people',
   path: '/people',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwedRoute = OwedRouteImport.update({
+  id: '/owed',
+  path: '/owed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MoreRoute = MoreRouteImport.update({
@@ -68,6 +74,7 @@ const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
+  '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
+  '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/more': typeof MoreRoute
+  '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/people/$personId': typeof PeoplePersonIdRoute
   '/sites/new': typeof SitesNewRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/more'
+    | '/owed'
     | '/people'
     | '/people/$personId'
     | '/sites/new'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/more'
+    | '/owed'
     | '/people'
     | '/people/$personId'
     | '/sites/new'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/more'
+    | '/owed'
     | '/people'
     | '/people/$personId'
     | '/sites/new'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MoreRoute: typeof MoreRoute
+  OwedRoute: typeof OwedRoute
   PeopleRoute: typeof PeopleRouteWithChildren
   SitesNewRoute: typeof SitesNewRoute
   SitesSiteIdComingInRoute: typeof SitesSiteIdComingInRoute
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/people'
       fullPath: '/people'
       preLoaderRoute: typeof PeopleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owed': {
+      id: '/owed'
+      path: '/owed'
+      fullPath: '/owed'
+      preLoaderRoute: typeof OwedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/more': {
@@ -228,6 +248,7 @@ const PeopleRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MoreRoute: MoreRoute,
+  OwedRoute: OwedRoute,
   PeopleRoute: PeopleRouteWithChildren,
   SitesNewRoute: SitesNewRoute,
   SitesSiteIdComingInRoute: SitesSiteIdComingInRoute,
