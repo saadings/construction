@@ -3,6 +3,7 @@ import { formatPaisa } from '~shared/money'
 
 import { cn } from '../../lib/utils'
 import { Field, Line, Lines, Picker } from '../form/Field'
+import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
 import type { Draft } from './sitting'
@@ -108,9 +109,9 @@ export function DaySheet({
   }
 
   return (
-    <div className="bg-background min-h-dvh pb-40">
+    <div className="flex flex-col">
       <header className="border-border bg-background/95 sticky top-0 z-10 border-b backdrop-blur-sm">
-        <div className="mx-auto flex max-w-lg flex-col gap-3 px-5 pt-4 pb-4">
+        <div className="flex flex-col gap-3 px-5 pt-4 pb-4 sm:px-7 lg:px-9">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
             <label className="text-muted-foreground shrink-0 text-sm">
@@ -130,9 +131,9 @@ export function DaySheet({
               <p className="text-muted-foreground text-[0.75rem] font-medium tracking-[0.08em] uppercase">
                 This sitting
               </p>
-              <p className="text-primary font-display -mt-1 text-[2.5rem] leading-none">
+              <Figure className="text-brass -mt-1 block text-[2.5rem] leading-none">
                 {runningTotal === 0 ? '0' : formatPaisa(runningTotal)}
-              </p>
+              </Figure>
             </div>
             <p className="text-muted-foreground pb-1 text-sm">
               {done.length === 0 ? niceDay(day) : `${done.length} put down · ${niceDay(day)}`}
@@ -141,26 +142,32 @@ export function DaySheet({
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg px-5">
-        {done.length > 0 ? (
-          <ol className="border-border divide-border divide-y border-b">
-            {done.map((each, index) => (
-              <li key={index} className="flex items-baseline justify-between gap-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-foreground truncate text-[0.9375rem]">
-                    {nameOf(trades, each.tradeId) ?? 'Something else'}
-                  </p>
-                  <p className="text-muted-foreground truncate text-sm">
-                    {nameOf(people, each.paidToId) ?? each.newPerson}
-                  </p>
-                </div>
-                <p className="text-foreground shrink-0 text-lg">{formatPaisa(paisaIn(each))}</p>
-              </li>
-            ))}
-          </ol>
-        ) : null}
+      {/* Beside the form at a desk, above it on a phone: the width is there, and a sitting is read against what is already in it. */}
+      <main className="flex flex-col gap-7 px-5 py-6 sm:px-7 lg:grid lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start lg:gap-12 lg:px-9">
+        <section className="flex flex-col gap-6 lg:order-2">
+          <p className="text-faint hidden text-[0.75rem] tracking-[0.06em] uppercase lg:block">In this sitting</p>
+          {done.length > 0 ? (
+            <ol className="border-border divide-hairline divide-y border-b lg:border-t">
+              {done.map((each, index) => (
+                <li key={index} className="flex items-baseline justify-between gap-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-foreground truncate text-[0.9375rem]">
+                      {nameOf(trades, each.tradeId) ?? 'Something else'}
+                    </p>
+                    <p className="text-muted-foreground truncate text-sm">
+                      {nameOf(people, each.paidToId) ?? each.newPerson}
+                    </p>
+                  </div>
+                  <Figure className="text-brass shrink-0 text-lg">{formatPaisa(paisaIn(each))}</Figure>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-muted-foreground hidden text-sm lg:block">Nothing put down yet.</p>
+          )}
+        </section>
 
-        <section className="flex flex-col gap-6 pt-7">
+        <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
           <Field label="What for">
             <Picker
               value={draft.tradeId}
@@ -288,8 +295,9 @@ export function DaySheet({
         </section>
       </main>
 
-      <footer className="border-border bg-background/95 fixed inset-x-0 bottom-0 border-t backdrop-blur-sm">
-        <div className="mx-auto flex max-w-lg flex-col gap-2 px-5 pt-3 pb-5">
+      {/* Above the bar along the bottom of a phone rather than under it, and at the foot of the page everywhere else. */}
+      <footer className="border-border bg-background/95 sticky bottom-20 z-10 border-t backdrop-blur-sm sm:bottom-0">
+        <div className="flex flex-col gap-2 px-5 pt-3 pb-5 sm:px-7 lg:px-9">
           {(problem ?? refusal) ? (
             <p className="text-destructive text-sm" role="alert">
               {problem ?? refusal}
