@@ -3,6 +3,7 @@ import { defineSchema } from 'convex/server'
 import { accountsSchema } from './accounts/schema'
 import { bankAccountsSchema } from './bankAccounts/schema'
 import { contractsSchema } from './contracts/schema'
+import { extraWorkBillLinesSchema, extraWorkBillsSchema } from './extraWork/schema'
 import { paymentsSchema } from './payments/schema'
 import { peopleSchema } from './people/schema'
 import { siteRolesSchema } from './siteRoles/schema'
@@ -13,6 +14,8 @@ export default defineSchema({
   accounts: accountsSchema,
   bankAccounts: bankAccountsSchema,
   contracts: contractsSchema,
+  extraWorkBills: extraWorkBillsSchema,
+  extraWorkBillLines: extraWorkBillLinesSchema,
   payments: paymentsSchema,
   people: peopleSchema,
   siteRoles: siteRolesSchema,
