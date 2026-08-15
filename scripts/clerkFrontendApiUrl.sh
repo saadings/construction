@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# Prints the Clerk issuer named by CLERK_PUBLISHABLE_KEY — a wrong one reads as a permissions bug rather than a broken build.
+# Prints the Clerk issuer named by the Clerk publishable key — a wrong one reads as a permissions bug rather than a broken build.
 set -euo pipefail
 
-key=${CLERK_PUBLISHABLE_KEY:-}
+# Two names for one public value, both correct: Vite needs the VITE_ prefix to put it in the bundle, CI and scripts do not. Unset falls back rather than empty, so a key deliberately blanked still refuses instead of quietly reading the other one.
+key=${CLERK_PUBLISHABLE_KEY-${VITE_CLERK_PUBLISHABLE_KEY:-}}
 
 # Clerk ships the host as unpadded base64, and every decoder drops an incomplete final group — "…accounts.de", not "…accounts.dev".
 raw=${key#pk_*_}
 
 # An empty key trips this too: the strip is a no-op, so nothing was removed.
 if [ "$raw" = "$key" ]; then
-  echo "CLERK_PUBLISHABLE_KEY is empty or is not a pk_test_/pk_live_ key" >&2
+  echo "Neither CLERK_PUBLISHABLE_KEY nor VITE_CLERK_PUBLISHABLE_KEY holds a pk_test_/pk_live_ key" >&2
   exit 1
 fi
 
