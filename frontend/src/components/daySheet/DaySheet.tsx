@@ -4,7 +4,8 @@ import { whatIsWrongWith } from '~shared/validation/payment'
 
 import { cn } from '../../lib/utils'
 import { Button } from '../form/Button'
-import { Choices, Field, Line, Lines, Picker } from '../form/Field'
+import { Choices, Field, Line, Lines } from '../form/Field'
+import { Pick, asChoices } from '../form/Pick'
 import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
@@ -186,20 +187,16 @@ export function DaySheet({
         </section>
 
         <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
-          <Field label="What for" problem={whatIsWrongWith('trade', draft)}>
-            <Picker
-              value={draft.tradeId}
-              onChange={(event) => change({ tradeId: pickedFrom(trades, event.target.value) })}
-              aria-label="What for"
-            >
-              <option value="">Pick one</option>
-              {trades.map((trade) => (
-                <option key={trade._id} value={trade._id}>
-                  {trade.name}
-                </option>
-              ))}
-            </Picker>
-          </Field>
+          <Pick
+            label="What for"
+            problem={whatIsWrongWith('trade', draft)}
+            placeholder="Pick one"
+            chosen={trades.find((trade) => trade._id === draft.tradeId) ?? null}
+            choices={trades}
+            onPick={(picked) => {
+              change({ tradeId: picked === null ? '' : pickedFrom(trades, picked._id) })
+            }}
+          />
 
           <WhoWasPaid
             who={{ paidToId: draft.paidToId, newPerson: draft.newPerson }}
@@ -253,26 +250,24 @@ export function DaySheet({
           ) : null}
 
           {asksForBank(draft.method) ? (
-            <Field label="Which account" problem={whatIsWrongWith('bank', draft)}>
-              <Picker
-                value={draft.bankAccountId}
-                onChange={(event) => change({ bankAccountId: pickedFrom(accounts, event.target.value) })}
-                aria-label="Which account"
-              >
-                <option value="">{accounts.length === 0 ? 'No accounts yet' : 'Pick one'}</option>
-                {accounts.map((account) => (
-                  <option key={account._id} value={account._id}>
-                    {account.label}
-                  </option>
-                ))}
-              </Picker>
+            <>
+              <Pick
+                label="Which account"
+                problem={whatIsWrongWith('bank', draft)}
+                placeholder={accounts.length === 0 ? 'No accounts yet' : 'Pick one'}
+                chosen={asChoices(accounts).find((account) => account._id === draft.bankAccountId) ?? null}
+                choices={asChoices(accounts)}
+                onPick={(picked) => {
+                  change({ bankAccountId: picked === null ? '' : pickedFrom(accounts, picked._id) })
+                }}
+              />
               {/* Offered here rather than named somewhere else, so a half-typed sitting survives adding one. */}
               <AddAnAccount
                 onAdd={async (label, lastFourDigits) => {
                   change({ bankAccountId: await onAddAccount(label, lastFourDigits) })
                 }}
               />
-            </Field>
+            </>
           ) : null}
 
           <Field label="Note">

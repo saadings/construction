@@ -20,6 +20,7 @@ import { ExtraWork } from './components/site/ExtraWork'
 import { SpentByTrade } from './components/site/SpentByTrade'
 import { Stages } from './components/site/Stages'
 import { HouseDetails } from './components/sites/HouseDetails'
+import { pick } from './testing/pick'
 
 afterEach(cleanup)
 
@@ -276,9 +277,9 @@ describe('the same money, read off two screens', () => {
       />
     )
 
-    await user.selectOptions(screen.getByLabelText('What for'), 'Steel')
-    // One box now, typed into rather than picked from: answering "who" used to mean deciding which of two boxes you meant.
-    await user.type(screen.getByLabelText('Who was paid'), 'A steel supplier')
+    await pick(user, 'What for', 'Steel')
+    // One control now, opened and chosen from. Answering "who" used to mean first deciding which of two boxes you meant.
+    await pick(user, 'Who was paid', 'A steel supplier')
     await user.type(screen.getByLabelText('How much'), '500000')
     // A row of choices since it stopped being a picker, which is the fix that came out of the label defect.
     await user.click(screen.getByRole('radio', { name: 'Cash' }))

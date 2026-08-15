@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { pick } from '../../testing/pick'
 import type { Claimed, Engaged, Named, NewBill, NewEngagement } from './WhoIsOnThisHouse'
 import { WhoIsOnThisHouse } from './WhoIsOnThisHouse'
 
@@ -100,11 +102,12 @@ describe('who is on a house', () => {
   })
 
   it('puts somebody on a trade with a whole figure', async () => {
+    const user = userEvent.setup()
     const { onAgree } = renderWith()
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
-    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
-    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    await pick(user, 'Who', 'A mason')
+    await pick(user, 'What for', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
 
@@ -120,11 +123,12 @@ describe('who is on a house', () => {
   })
 
   it('puts somebody on a trade with a rate instead, which is the other way it is agreed', async () => {
+    const user = userEvent.setup()
     const { onAgree } = renderWith()
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
-    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p2' } })
-    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't2' } })
+    await pick(user, 'Who', 'A tile fixer')
+    await pick(user, 'What for', 'Tiles')
     fireEvent.change(screen.getByLabelText('Or a rate'), { target: { value: '45' } })
     fireEvent.change(screen.getByLabelText('For each'), { target: { value: 'square foot' } })
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
@@ -151,11 +155,12 @@ describe('who is on a house', () => {
   })
 
   it('takes a bill somebody has raised, with their own number on it', async () => {
+    const user = userEvent.setup()
     const { onRaise } = renderWith()
 
     fireEvent.click(screen.getByRole('button', { name: 'Somebody has billed us' }))
-    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
-    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    await pick(user, 'Who', 'A mason')
+    await pick(user, 'What for', 'Civil labour')
     fireEvent.change(screen.getByLabelText('How much they have billed'), { target: { value: '340000' } })
     fireEvent.change(screen.getByLabelText('Their bill number'), { target: { value: 'CH-12' } })
     fireEvent.click(screen.getByRole('button', { name: 'Put it down' }))
@@ -181,22 +186,25 @@ describe('who is on a house', () => {
     expect(screen.queryByLabelText('Which day')).toBeNull()
   })
 
-  it('keeps the form open with what was typed when the server refused it', () => {
+  it('keeps the form open with what was typed when the server refused it', async () => {
+    const user = userEvent.setup()
     renderWith({ refusal: 'Put in what was agreed, either a whole figure or a rate.' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
-    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
+    await pick(user, 'Who', 'A mason')
 
     expect(screen.getByRole('alert').textContent).toBe('Put in what was agreed, either a whole figure or a rate.')
-    expect(screen.getByLabelText<HTMLSelectElement>('Who').value).toBe('p1')
+    // Said by the name rather than by the id it is stored under, because the control holds the row now rather than a string.
+    expect(screen.getByLabelText<HTMLInputElement>('Who').value).toBe('A mason')
   })
 
   it('closes the form once it has gone in', async () => {
+    const user = userEvent.setup()
     renderWith()
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
-    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
-    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    await pick(user, 'Who', 'A mason')
+    await pick(user, 'What for', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
 
@@ -207,12 +215,13 @@ describe('who is on a house', () => {
   })
 
   it('leaves the form open when it did not go in, so nothing typed is lost', async () => {
+    const user = userEvent.setup()
     const { onAgree } = renderWith()
     onAgree.mockResolvedValue(false)
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
-    fireEvent.change(screen.getByLabelText('Who'), { target: { value: 'p1' } })
-    fireEvent.change(screen.getByLabelText('What for'), { target: { value: 't1' } })
+    await pick(user, 'Who', 'A mason')
+    await pick(user, 'What for', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
     fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
 

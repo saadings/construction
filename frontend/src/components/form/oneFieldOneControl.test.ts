@@ -74,7 +74,8 @@ describe('what one Field is allowed to hold', () => {
   it('is asked of the questions this app really asks', () => {
     // The floor. A reader that stopped finding `Field` would report the same clean sweep as a tree with nothing wrong in it.
     expect(fields.length).toBeGreaterThan(20)
-    expect(fields.some((field) => field.block.includes('<Picker'))).toBe(true)
+    // Anchored on a control that exists today rather than on one that has been replaced: `Picker` was a `<select>` and is gone, which is exactly the kind of anchor that rots into a floor about nothing.
+    expect(fields.some((field) => field.block.includes('<Line'))).toBe(true)
   })
 
   it('is read over the screens that already do it the right way', () => {

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { pick } from '../../testing/pick'
 import type { Account, NewReceipt, Person, Received } from './ComingIn'
 import { ComingIn } from './ComingIn'
 
@@ -67,11 +69,12 @@ describe('money coming in', () => {
   })
 
   it('takes a receipt, with what it is asked at the time', async () => {
+    const user = userEvent.setup()
     const { onPutIn } = renderWith({ received: [] })
     await screen.findByLabelText('How much')
 
     fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
-    fireEvent.change(screen.getByLabelText('Who it came from'), { target: { value: 'p1' } })
+    await pick(user, 'Who it came from', 'The one it is built for')
     fireEvent.click(screen.getByRole('radio', { name: 'The house sold' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
@@ -148,11 +151,12 @@ describe('money coming in', () => {
   })
 
   it('empties the boxes once it has gone in', async () => {
+    const user = userEvent.setup()
     renderWith({ received: [] })
     await screen.findByLabelText('How much')
 
     fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
-    fireEvent.change(screen.getByLabelText('Who it came from'), { target: { value: 'p1' } })
+    await pick(user, 'Who it came from', 'The one it is built for')
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
@@ -161,13 +165,14 @@ describe('money coming in', () => {
   })
 
   it('keeps what was typed when the server refused it', async () => {
+    const user = userEvent.setup()
     // The refusal is about the amount in the box. Emptying the box on a no leaves him reading a sentence about a figure that is no longer on the screen, and typing the whole receipt again to see it.
     const { onPutIn } = renderWith({ received: [] })
     onPutIn.mockResolvedValue(false)
     await screen.findByLabelText('How much')
 
     fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
-    fireEvent.change(screen.getByLabelText('Who it came from'), { target: { value: 'p1' } })
+    await pick(user, 'Who it came from', 'The one it is built for')
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {

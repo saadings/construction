@@ -3,7 +3,8 @@ import { formatPaisa } from '~shared/money'
 import { percentAsBasisPoints, saySharesDoNotAddUp, shortOfTheWhole } from '~shared/validation/profitShare'
 
 import { Button } from '../form/Button'
-import { Field, Line, Picker, useSaidOnceLeft } from '../form/Field'
+import { Field, Line, useSaidOnceLeft } from '../form/Field'
+import { Pick } from '../form/Pick'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import type { Position, WhatThePartnersHave } from './Positions'
@@ -153,16 +154,16 @@ function Setting({
       <AddsUp short={short} siteName={siteName} />
 
       {notYetIn.length === 0 ? null : (
-        <Field label="Somebody else takes a share" hint="Anybody taking a share without having put money in.">
-          <Picker value="" onChange={(event) => put(event.target.value)} aria-label="Somebody else takes a share">
-            <option value="">Pick one</option>
-            {notYetIn.map((person) => (
-              <option key={person._id} value={person._id}>
-                {person.name}
-              </option>
-            ))}
-          </Picker>
-        </Field>
+        <Pick
+          label="Somebody else takes a share"
+          hint="Anybody taking a share without having put money in."
+          placeholder="Pick one"
+          chosen={null}
+          choices={notYetIn}
+          onPick={(picked) => {
+            if (picked !== null) put(picked._id)
+          }}
+        />
       )}
 
       <Field label="Agreed on">

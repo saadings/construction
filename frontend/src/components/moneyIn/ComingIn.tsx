@@ -6,7 +6,8 @@ import type { WhyItCame } from '~shared/validation/moneyIn'
 import { SAY_IN } from '~shared/validation/moneyIn'
 
 import { Button } from '../form/Button'
-import { Choices, Field, Line, Lines, Picker } from '../form/Field'
+import { Choices, Field, Line, Lines } from '../form/Field'
+import { Pick, asChoices } from '../form/Pick'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
@@ -148,20 +149,18 @@ function Taking({
         </Field>
       </div>
 
-      <Field label="Who it came from" problem={wrongFrom}>
-        <Picker
-          value={fromId}
-          onChange={(event) => setFromId(pickedFrom(people, event.target.value))}
-          aria-label="Who it came from"
-        >
-          <option value="">Pick one</option>
-          {people.map((person) => (
-            <option key={person._id} value={person._id}>
-              {person.name}
-            </option>
-          ))}
-        </Picker>
-      </Field>
+      <Pick
+        label="Who it came from"
+        problem={wrongFrom}
+        placeholder="Pick one, or type a name"
+        chosen={people.find((person) => person._id === fromId) ?? null}
+        choices={people}
+        // A buyer is nobody in the ledger until the day he pays, so a name typed here becomes a person the same way a payee does.
+        canUseANewName
+        onPick={(picked) => {
+          setFromId(picked === null ? '' : pickedFrom(people, picked._id))
+        }}
+      />
 
       <Choices label="What this money is">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -191,20 +190,16 @@ function Taking({
       ) : null}
 
       {asksForBank(method) ? (
-        <Field label="Which account it landed in" problem={wrongBank}>
-          <Picker
-            value={bankAccountId}
-            onChange={(event) => setBankAccountId(pickedFrom(accounts, event.target.value))}
-            aria-label="Which account it landed in"
-          >
-            <option value="">Pick one</option>
-            {accounts.map((account) => (
-              <option key={account._id} value={account._id}>
-                {account.label}
-              </option>
-            ))}
-          </Picker>
-        </Field>
+        <Pick
+          label="Which account it landed in"
+          problem={wrongBank}
+          placeholder="Pick one"
+          chosen={asChoices(accounts).find((account) => account._id === bankAccountId) ?? null}
+          choices={asChoices(accounts)}
+          onPick={(picked) => {
+            setBankAccountId(picked === null ? '' : pickedFrom(accounts, picked._id))
+          }}
+        />
       ) : null}
 
       <Field label="Note">

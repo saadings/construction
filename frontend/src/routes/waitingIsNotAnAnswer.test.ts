@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
+import { withoutComments } from '../testing/source'
+
 // A Convex read answers `undefined` while it is in flight and `null` when it refuses. Collapsing them shows a refusal as a spinner, and the person waits for something that has already happened.
 
 // Nauman waited on "Getting your sites…" forever for exactly this. Waiting could never have worked: the answer had arrived and said no.
@@ -15,11 +17,6 @@ function screenFiles(dir: string): Array<string> {
     if (entry.isDirectory()) return screenFiles(path)
     return path.endsWith('.tsx') ? [path] : []
   })
-}
-
-/** The code, without the prose about it. A comment saying why `people ?? []` would be wrong is not a screen doing it, and reading one as the other means the way to keep this guard quiet is to stop explaining anything. */
-export function withoutComments(source: string): string {
-  return source.replaceAll(/\/\*[\s\S]*?\*\//g, ' ').replaceAll(/\/\/[^\n]*/g, ' ')
 }
 
 /** The readings a screen takes off Convex, which are the only ones that answer `undefined` and `null` for different reasons. */

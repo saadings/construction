@@ -5,7 +5,8 @@ import { areaSqft } from '~shared/validation/contract'
 import { calendarDay, note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
-import { Choices, Field, Line, Lines, Picker } from '../form/Field'
+import { Choices, Field, Line, Lines } from '../form/Field'
+import { Pick } from '../form/Pick'
 import { Form } from '../shell/Page'
 
 // What a client agreed to pay for a house. Nothing else about billing works without it: a stage is a percentage of this, and until it is here the whole billing half of the screen has figures with nothing behind them.
@@ -72,22 +73,16 @@ export function AgreeAContract({
   return (
     <Form className="gap-5" freshAfter={agreed}>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Who it is for" problem={clientId === '' ? 'Say who the house is being built for.' : null}>
-          <Picker
-            value={clientId}
-            onChange={(event) => {
-              setClientId(event.target.value)
-            }}
-            aria-label="Who it is for"
-          >
-            <option value="">Pick one</option>
-            {people.map((person) => (
-              <option key={person._id} value={person._id}>
-                {person.name}
-              </option>
-            ))}
-          </Picker>
-        </Field>
+        <Pick
+          label="Who it is for"
+          problem={clientId === '' ? 'Say who the house is being built for.' : null}
+          placeholder="Pick one"
+          chosen={people.find((person) => person._id === clientId) ?? null}
+          choices={people}
+          onPick={(picked) => {
+            setClientId(picked === null ? '' : picked._id)
+          }}
+        />
 
         <Field label="Agreed on" problem={whatIsWrong(calendarDay, agreedOn)}>
           <Line

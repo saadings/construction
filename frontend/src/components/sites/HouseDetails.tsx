@@ -3,7 +3,8 @@ import { whatIsWrong } from '~shared/validation/primitives'
 import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 
 import { Button } from '../form/Button'
-import { Choices, Field, Line, Picker } from '../form/Field'
+import { Choices, Field, Line } from '../form/Field'
+import { Pick } from '../form/Pick'
 import { Form } from '../shell/Page'
 
 // What a house is, asked once. Starting one and correcting one ask exactly the same questions, and two forms would drift until correcting a house lost the answer starting it had taken.
@@ -17,6 +18,9 @@ export const STAGES = [
 ] as const
 
 export type Stage = (typeof STAGES)[number]['value']
+
+// The same five, said the way a control that deals in rows wants them.
+const AS_CHOICES = STAGES.map((each) => ({ _id: each.value, name: each.label }))
 
 export type HouseAsTyped = {
   name: string
@@ -108,22 +112,15 @@ export function HouseDetails({
         />
       </Field>
 
-      <Field label="Where it has got to">
-        <Picker
-          value={stage}
-          // Looked up in the list it was drawn from rather than asserted, so nothing unknown can become a stage.
-          onChange={(event) => {
-            setStage(STAGES.find((each) => each.value === event.target.value)?.value ?? stage)
-          }}
-          aria-label="Where it has got to"
-        >
-          {STAGES.map((each) => (
-            <option key={each.value} value={each.value}>
-              {each.label}
-            </option>
-          ))}
-        </Picker>
-      </Field>
+      <Pick
+        label="Where it has got to"
+        chosen={AS_CHOICES.find((each) => each._id === stage) ?? null}
+        choices={AS_CHOICES}
+        // Looked up in the list it was drawn from rather than asserted, so nothing unknown can become a stage.
+        onPick={(picked) => {
+          setStage(STAGES.find((each) => each.value === picked?._id)?.value ?? stage)
+        }}
+      />
 
       {/* Not a `Field`: a label points at one control, and the first choice inside one takes the label's words as its own name. "Ours to sell" announced itself as "Whose house". */}
       <Choices label="Whose house">

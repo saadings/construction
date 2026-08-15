@@ -102,29 +102,6 @@ export function Choices({
 const CONTROL =
   'border-border bg-card text-foreground focus:border-primary focus:ring-primary/25 aria-invalid:border-destructive w-full rounded-none border-0 border-b-2 px-0 py-2.5 text-lg outline-none transition-colors focus:ring-0'
 
-// Ruled like a line on the page rather than boxed, because eight of these boxed becomes a wall.
-export function Picker({
-  value,
-  onChange,
-  children,
-  ...rest
-}: React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
-  const asked = useWhatIsAsked()
-
-  return (
-    <select
-      value={value}
-      onChange={onChange}
-      aria-invalid={asked.invalid || undefined}
-      aria-describedby={asked.describedBy}
-      className={cn(CONTROL, 'appearance-none bg-none')}
-      {...rest}
-    >
-      {children}
-    </select>
-  )
-}
-
 export function Line(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const asked = useWhatIsAsked()
 
