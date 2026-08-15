@@ -18,7 +18,7 @@ describe('the shape the money lives in', () => {
     await t.run(async (ctx) => {
       const personId = await ctx.db.insert('people', { name: 'A mason', hidden: false })
       const investing = await aSite(ctx, '1-A, Phase 0')
-      const supplying = await aSite(ctx, '478-R, Phase 0')
+      const supplying = await aSite(ctx, '2-B, Phase 0')
 
       await ctx.db.insert('siteRoles', { personId, siteId: investing, capacity: 'investor' })
       await ctx.db.insert('siteRoles', { personId, siteId: supplying, capacity: 'partner' })
@@ -71,7 +71,7 @@ describe('the shape the money lives in', () => {
 
     await t.run(async (ctx) => {
       const siteId = await aSite(ctx, '1-A, Phase 0')
-      const other = await aSite(ctx, '478-R, Phase 0')
+      const other = await aSite(ctx, '2-B, Phase 0')
       const tradeId = await ctx.db.insert('trades', {
         name: 'Cement',
         countsAsBuildingCost: true,

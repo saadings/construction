@@ -169,7 +169,7 @@ describe('the sites on the home screen', () => {
 
       for (const [name, capacity] of [
         ['1-A, Phase 0', 'partner'],
-        ['478-R, Phase 0', 'investor'],
+        ['2-B, Phase 0', 'investor'],
         ['12-C, Phase 5', 'client'],
       ] as const) {
         const siteId = await ctx.db.insert('sites', {
