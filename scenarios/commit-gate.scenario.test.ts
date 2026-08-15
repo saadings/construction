@@ -61,6 +61,20 @@ describe('the gate every commit has to pass', () => {
     expect(process.env.HUSKY).not.toBe('0')
   })
 
+  it('generates the Convex types before anything reads them', () => {
+    // A branch adding a table linted against last commit's types and died on 130 errors about `any`, none of them about the change. The gate was refusing work that was fine.
+    const hook = readFileSync(join(repoRoot, '.husky', 'pre-commit'), 'utf8')
+
+    const generated = hook.indexOf('convex codegen')
+    const read = [...hook.matchAll(/yarn (lint:fix|typecheck|build|test)\b/g)].map((step) => step.index)
+
+    // Absence asserted before order: `indexOf` answers -1 for a step that is gone, and -1 comes before everything.
+    expect(generated).toBeGreaterThan(-1)
+    expect(read.length).toBeGreaterThan(2)
+
+    for (const step of read) expect(generated).toBeLessThan(step)
+  })
+
   it('names gates this project actually has', () => {
     // The control for the check above. A renamed script would otherwise be asserted against a hook that no longer runs it.
     const scripts = (
