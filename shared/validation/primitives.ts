@@ -56,6 +56,18 @@ export const positiveMoney = money.refine((paisa) => paisa > 0, {
   message: 'Put in an amount greater than nothing.',
 })
 
+// A share of something, not an amount of money. Written out rather than reaching for `money`, because a primitive brings its own words with it and "put in how much was paid" is the wrong sentence beside a percentage.
+export const percent = z.union([z.string(), z.number()]).transform((value, ctx) => {
+  const share = Number(String(value).replaceAll('%', '').replaceAll(',', '').trim())
+
+  if (!Number.isFinite(share) || share <= 0 || share > 100) {
+    ctx.addIssue({ code: 'custom', message: 'Put in a share between nothing and a hundred percent.' })
+    return z.NEVER
+  }
+
+  return share
+})
+
 export const calendarDay = z.string().transform((value, ctx) => {
   const read = readCalendarDate(value)
 
