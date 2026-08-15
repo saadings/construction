@@ -1,0 +1,168 @@
+// @vitest-environment edge-runtime
+/// <reference types="vite/client" />
+import { convexTest } from 'convex-test'
+import { ConvexError } from 'convex/values'
+import { describe, expect, it } from 'vitest'
+
+import { api } from '../_generated/api'
+import type { Id } from '../_generated/dataModel'
+import type { MutationCtx } from '../_generated/server'
+import schema from '../schema'
+
+const SIGNED_IN_AS = 'user_partner'
+
+function convexWithContracts() {
+  return convexTest(schema, {
+    ...import.meta.glob('../**/*.*s'),
+    '../contracts/mutations.ts': () => import('./mutations'),
+    '../contracts/queries.ts': () => import('./queries'),
+  })
+}
+
+type AHouse = { siteId: Id<'sites'>; clientId: Id<'people'> }
+
+async function aHouseBuiltForAClient(ctx: MutationCtx): Promise<AHouse> {
+  const partner = await ctx.db.insert('people', { name: 'The partner', hidden: false })
+  const clientId = await ctx.db.insert('people', { name: 'A client', hidden: false })
+  const siteId = await ctx.db.insert('sites', {
+    name: '1-A, Phase 0',
+    builtForAClient: true,
+    stage: 'building',
+    hidden: false,
+  })
+
+  await ctx.db.insert('siteRoles', { personId: partner, siteId, capacity: 'partner' })
+  await ctx.db.insert('siteRoles', { personId: clientId, siteId, capacity: 'client' })
+  await ctx.db.insert('accounts', {
+    externalId: SIGNED_IN_AS,
+    name: 'The partner',
+    primaryEmail: 'partner@example.com',
+    otherEmails: [],
+    personId: partner,
+  })
+
+  return { siteId, clientId }
+}
+
+const aRateContract = (clientId: Id<'people'>) => ({
+  clientId,
+  agreedOn: '2026-03-14',
+  priced: { how: 'ratePerSqft', ratePerSqftPaisa: '2,400' } as const,
+  agreedAreaSqft: '5,000',
+})
+
+describe('what a client agreed to pay', () => {
+  it('is worked out on every read and written down nowhere', async () => {
+    // The whole point. A stored total is the figure that stays behind when the house is measured again, which is what the workbooks did.
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+
+    const stored = await t.run((ctx) => ctx.db.query('contracts').collect())
+    // No total, no value, no anything that could be added up: a rate contract stores the rate and the area and nothing worked out from them.
+    expect(
+      Object.keys(stored[0] ?? {})
+        .filter((key) => !key.startsWith('_'))
+        .sort()
+    ).toEqual(['agreedAreaSqft', 'agreedOn', 'clientId', 'hidden', 'priced', 'siteId'])
+
+    const read = await signedIn.query(api.contracts.queries.forSite, { siteId })
+    expect(read?.valuePaisa).toBe(2_400_00 * 5_000)
+  })
+
+  it('moves when the house is measured, without the agreed area moving', async () => {
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    const contractId = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+    await signedIn.mutation(api.contracts.mutations.measure, { siteId, contractId, actualAreaSqft: '5,250' })
+
+    const read = await signedIn.query(api.contracts.queries.forSite, { siteId })
+
+    expect(read?.valuePaisa).toBe(2_400_00 * 5_250)
+    // What was agreed is what a disagreement is settled against, so it stays exactly as it was.
+    expect(read?.agreedAreaSqft).toBe(5_000)
+    expect(read?.actualAreaSqft).toBe(5_250)
+  })
+
+  it('refuses a second contract on the same house', async () => {
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+
+    await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+
+    const refusal = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) }).then(
+      () => 'nothing was refused',
+      (thrown: unknown) =>
+        thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
+    )
+
+    expect(refusal).toContain('already has a contract')
+    expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
+  })
+
+  it('is not reachable on a house the caller is not a partner on', async () => {
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+
+    const other = await t.run(async (ctx) => {
+      const stranger = await ctx.db.insert('people', { name: 'A stranger', hidden: false })
+      await ctx.db.insert('accounts', {
+        externalId: 'user_stranger',
+        name: 'A stranger',
+        primaryEmail: 'stranger@example.com',
+        otherEmails: [],
+        personId: stranger,
+      })
+      return 'user_stranger'
+    })
+
+    const refusal = await t
+      .withIdentity({ subject: other })
+      .mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+      .then(
+        () => 'nothing was refused',
+        (thrown: unknown) => (thrown instanceof ConvexError ? String(thrown.data) : 'not a ConvexError')
+      )
+
+    expect(refusal).toContain('not one of yours')
+    expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toEqual([])
+    // The control: the same call from the partner does land, so this refusal is the access check and not a broken mutation.
+    await t
+      .withIdentity({ subject: SIGNED_IN_AS })
+      .mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+    expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
+  })
+
+  it('will not measure a contract belonging to another house', async () => {
+    const t = convexWithContracts()
+    const { siteId, clientId } = await t.run(aHouseBuiltForAClient)
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    const contractId = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+
+    const elsewhere = await t.run(async (ctx) => {
+      const person = await ctx.db.query('people').first()
+      const other = await ctx.db.insert('sites', {
+        name: '2-B, Phase 0',
+        builtForAClient: true,
+        stage: 'building',
+        hidden: false,
+      })
+      if (person) await ctx.db.insert('siteRoles', { personId: person._id, siteId: other, capacity: 'partner' })
+      return other
+    })
+
+    const refusal = await signedIn
+      .mutation(api.contracts.mutations.measure, { siteId: elsewhere, contractId, actualAreaSqft: '5,250' })
+      .then(
+        () => 'nothing was refused',
+        (thrown: unknown) => (thrown instanceof ConvexError ? String(thrown.data) : 'not a ConvexError')
+      )
+
+    expect(refusal).toContain('not on this house')
+  })
+})
