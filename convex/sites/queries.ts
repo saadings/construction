@@ -27,7 +27,22 @@ export const mine = authenticatedQuery({
       }
     }
 
-    return open
+    // One number a row, worked out here from the rows behind it. A site with a few thousand payments is one index read.
+    const withSpending = []
+    for (const site of open) {
+      const payments = await ctx.db
+        .query('payments')
+        .withIndex('bySiteAndDay', (q) => q.eq('siteId', site._id))
+        .collect()
+
+      withSpending.push({
+        ...site,
+        spentPaisa: payments.reduce((total, payment) => (payment.removed ? total : total + payment.amountPaisa), 0),
+      })
+    }
+
+    // Newest first: the house being worked on today is the one he opens.
+    return withSpending.sort((one, other) => other._creationTime - one._creationTime)
   },
 })
 
