@@ -113,20 +113,43 @@ export function globalAndUnaccountedFor(declared: Array<DeclaredFunction>): Arra
     .filter((key) => DELIBERATELY_GLOBAL[key] === undefined && NOT_YET_AUDITED[key] === undefined)
 }
 
-const WRITES = ['mutation', 'authenticatedMutation', 'siteMutation']
+// `internalMutation` is not reachable from a phone, which is why it was left out. This one is fed by the Clerk webhook: a boundary to a system we do not control, wearing a name that says the opposite.
+const WRITES = ['mutation', 'authenticatedMutation', 'siteMutation', 'internalMutation']
+
+/** Takes a value Convex cannot constrain, and stores none of it: the reason has to be that, not the wrapper it was written with. */
+const STORES_NOTHING_IT_WAS_GIVEN: Record<string, string> = {
+  'accounts/actions.ts remove':
+    'looks an account up by the id it was handed and deletes it, writing none of that string anywhere',
+}
 
 /** Convex constrains an id or a literal by shape; it cannot say a name is not blank, so those values need parsing. */
-const A_VALUE_CONVEX_CANNOT_CONSTRAIN = /v\.(string|number)\s*\(/
+const A_VALUE_CONVEX_CANNOT_CONSTRAIN = /v\.(string|number|any)\s*\(/
 
 /** `args: typedIn` and `{ personId, ...typedIn }` both hide their list, and unreadable must not read as harmless. */
 const A_LIST_DECLARED_ELSEWHERE = /declared elsewhere as|\.\.\.\w+/
 
 const UNCONSTRAINED = new RegExp(`${A_VALUE_CONVEX_CANNOT_CONSTRAIN.source}|${A_LIST_DECLARED_ELSEWHERE.source}`)
 
+/** Written down as unparsed rather than left invisible. This list may shrink and must never grow. */
+const NOT_YET_PARSED: Record<string, string> = {
+  'accounts/actions.ts upsert':
+    'stores the name, emails and image Clerk sends, none of which Convex can constrain and none of which Zod sees; the person row it writes bypasses `personName` entirely',
+}
+
+/** How many are unparsed today. Lower it when one is fixed; a higher one is the defect this exists to stop. */
+const STILL_UNPARSED = 1
+
+/** Zod having seen the value, however it was reached for. `checked` is the usual way and not the only one. */
+const PARSED = /\bchecked\s*\(|\.safeParse\s*\(|\.parse\s*\(/
+
 /** A write that takes a value Convex cannot constrain and stores it without Zod ever seeing it. */
 export function storingWhatWasNeverParsed(declared: Array<DeclaredFunction>): Array<DeclaredFunction> {
   return declared.filter(
-    (fn) => WRITES.includes(fn.wrapper) && UNCONSTRAINED.test(fn.args) && !/\bchecked\s*\(/.test(fn.body)
+    (fn) =>
+      WRITES.includes(fn.wrapper) &&
+      UNCONSTRAINED.test(fn.args) &&
+      !PARSED.test(fn.body) &&
+      STORES_NOTHING_IT_WAS_GIVEN[named(fn)] === undefined
   )
 }
 
@@ -231,6 +254,28 @@ describe('deciding who may open a site', () => {
 
     expect(real.length).toBeGreaterThan(0)
     expect(skippingTheCheck(real)).toEqual([])
+  })
+
+  it('is asked of every write this repository has, and not only of probes', () => {
+    // Six tests held this rule to hand-written strings and none of them ever pointed it at `convex/`. A rule that has not looked has not found nothing.
+    const unparsed = storingWhatWasNeverParsed(declared)
+      .map(named)
+      .filter((key) => NOT_YET_PARSED[key] === undefined)
+
+    expect(unparsed).toEqual([])
+  })
+
+  it('has this many writes nobody has parsed yet, and the number only goes down', () => {
+    expect(Object.keys(NOT_YET_PARSED).length).toBeLessThanOrEqual(STILL_UNPARSED)
+  })
+
+  it('is still flagging every write written down as unparsed, or the note has outlived the fault', () => {
+    // The same shape as the global floor: a justification for something no longer true fails by name, and that is a line to delete.
+    const flagged = storingWhatWasNeverParsed(declared).map(named)
+
+    for (const key of Object.keys(NOT_YET_PARSED)) {
+      expect(flagged, `${key} is written down as unparsed and no longer is`).toContain(key)
+    }
   })
 
   it('is not the only thing a wrapper leaves to discipline', () => {
