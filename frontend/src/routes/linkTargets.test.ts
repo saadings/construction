@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
 import { DESTINATIONS } from '../components/shell/destinations'
+import { everyScreen } from '../testing/screens'
 
 // Read relative to this file rather than through git, because the commit gate runs the checks in a throwaway checkout where the repository root is somewhere else entirely.
 const SOURCE = join(dirname(new URL(import.meta.url).pathname), '..')
@@ -17,18 +18,9 @@ function routesDeclared(): Array<string> {
   return [...ROUTE_TREE.matchAll(/'(\/[^']*)': typeof \w+/g)].map((found) => found[1])
 }
 
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') ? [path] : []
-  })
-}
-
+// Tests of screens are left out, where they were swept before. A `to="/nowhere"` written into a fixture is a fixture, not a link anybody can tap.
 function everyLinkTarget(): Array<string> {
-  const found = screenFiles(SOURCE).flatMap((path) =>
-    [...readFileSync(path, 'utf8').matchAll(/\bto="([^"]+)"/g)].map((hit) => hit[1])
-  )
+  const found = everyScreen().flatMap(({ source }) => [...source.matchAll(/\bto="([^"]+)"/g)].map((hit) => hit[1]))
 
   return [...new Set(found)]
 }
