@@ -67,7 +67,6 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'engagements.agree': 'what was agreed with a contractor has no screen, so the spread reads agreed as nothing',
   'engagements.hide': 'nor a way to take it back',
   'moneyIn.remove': 'money coming in can be put in and never taken back out',
-  'payments.remove': 'a payment can be put in and never taken out, and the removal is signed for nobody',
   'people.edit': 'a person can be added and hidden, and never corrected',
   'profitPayouts.record': 'nothing is due until a house sells, so nobody can be paid out on one that has not',
   'profitPayouts.remove': 'and nothing takes a payout back',
