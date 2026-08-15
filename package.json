@@ -10,6 +10,8 @@
     "dev": "bash scripts/dev.sh",
     "build": "tsx scripts/generatedTypes.ts && cd frontend && vite build && cp dist/client/_shell.html dist/client/index.html",
     "preview": "cd frontend && vite preview",
+    "gallery": "cd frontend && vite --config vite.gallery.config.ts",
+    "gallery:build": "cd frontend && vite build --config vite.gallery.config.ts",
     "lint:check": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsx scripts/generatedTypes.ts && tsc -b && tsc --project convex",
