@@ -45,7 +45,8 @@ describe('the people in the ledger', () => {
   it('says it is still looking before the answer arrives', async () => {
     renderWith(undefined)
 
-    expect(await screen.findByText('Looking…')).toBeTruthy()
+    // The shape of the list that is coming, rather than a word telling somebody to wait for it.
+    expect(await screen.findByRole('status', { name: 'Getting the people' })).toBeTruthy()
     expect(screen.queryByText(/Nobody yet/)).toBeNull()
   })
 
@@ -54,7 +55,7 @@ describe('the people in the ledger', () => {
     renderWith(null)
 
     expect(await screen.findByText('Setting your sign-in up.')).toBeTruthy()
-    expect(screen.queryByText('Looking…')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
     // And nothing to fill in, because every one of these would be refused by the same ledger.
     expect(screen.queryByLabelText('Name')).toBeNull()
   })

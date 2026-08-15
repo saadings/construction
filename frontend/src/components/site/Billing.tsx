@@ -4,14 +4,28 @@ import { formatPaisa } from '~shared/money'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { Figure } from '../shell/Page'
+import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 // What a client is being charged: the contract, the stages it is billed in, and the work that was outside it. Only a house built for a client has any of this.
 export function Billing({ siteId }: { siteId: Id<'sites'> }) {
   const stages = useQuery(api.milestones.queries.forSite, { siteId })
   const extra = useQuery(api.extraWork.queries.forSite, { siteId })
 
+  // Nothing at all here would be a section that appears out of the page once it arrives, pushing everything under it down.
   if (stages === undefined || extra === undefined) {
-    return null
+    return (
+      <WhileWaiting what="Getting the billing">
+        <Skeleton className="h-3 w-24" />
+        <div className="divide-hairline flex flex-col divide-y">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-4 py-2.5">
+              <Skeleton className="h-4 w-40 max-w-full" />
+              <Skeleton className="h-4 w-24 shrink-0" />
+            </div>
+          ))}
+        </div>
+      </WhileWaiting>
+    )
   }
 
   // Both answer null to a caller who may not open the house. Nothing to show is the same thing to look at either way, so they are read together.

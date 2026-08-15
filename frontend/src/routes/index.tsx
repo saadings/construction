@@ -4,7 +4,7 @@ import { useQuery } from 'convex/react'
 
 import { api } from '../../../convex/_generated/api'
 import { NotKnownHere } from '../components/shell/NotKnownHere'
-import { SitesList } from '../components/sites/SitesList'
+import { SitesList, SitesListWaiting } from '../components/sites/SitesList'
 
 export const Route = createFileRoute('/')({ component: Home })
 
@@ -24,13 +24,9 @@ function Home() {
 function HisSites() {
   const sites = useQuery(api.sites.queries.all, {})
 
-  // Waiting. Nothing has come back yet.
+  // Waiting. Nothing has come back yet, so the screen holds the shape of the list rather than a word in the middle of an empty page.
   if (sites === undefined) {
-    return (
-      <main className="bg-background text-muted flex min-h-dvh items-center justify-center p-6">
-        <p>Getting your sites…</p>
-      </main>
-    )
+    return <SitesListWaiting />
   }
 
   // An answer, and a definite one: the ledger does not know this sign-in. Shown as waiting it becomes a spinner nobody can get past, which is what it was.
