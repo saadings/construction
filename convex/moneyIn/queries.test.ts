@@ -88,6 +88,49 @@ describe('what came in on a house', () => {
     ])
   })
 
+  // A cheque run puts several receipts on one day, which is exactly when he is reading this against a cheque book. Two lists differing only in the order the rows went in must read the same, or the same screen says two different things on two days.
+  it('reads the same however the rows went in', async () => {
+    const twoOnOneDay = [
+      { amountPaisa: 40000000, why: 'clientPayment' as const },
+      { amountPaisa: 90000000, why: 'partnerMoney' as const },
+    ]
+
+    const asRead = []
+    for (const order of [twoOnOneDay, [...twoOnOneDay].reverse()]) {
+      const t = convexWithMoneyIn()
+      const house = await t.run(async (ctx) => {
+        const built = await aHouseWithMoneyIn(ctx)
+        for (const receipt of order) {
+          await ctx.db.insert('moneyIn', {
+            siteId: built.siteId,
+            day: '2025-10-20',
+            amountPaisa: receipt.amountPaisa,
+            fromId: built.client,
+            why: receipt.why,
+            method: 'cheque',
+            reference: '0001',
+            removed: false,
+            addedByExternalId: SIGNED_IN_AS,
+          })
+        }
+        return built
+      })
+
+      const arrived = letIn(
+        await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.moneyIn.queries.forSite, { siteId: house.siteId })
+      )
+      asRead.push(arrived.map((one) => `${one.day} ${one.amountPaisa} ${one.fromName}`))
+    }
+
+    expect(asRead[0]).toEqual(asRead[1])
+    // And the order itself, so this cannot pass by both readings being wrong in the same way.
+    expect(asRead[0].slice(0, 3)).toEqual([
+      '2025-10-20 250000000 The one it is built for',
+      '2025-10-20 90000000 The one it is built for',
+      '2025-10-20 40000000 The one it is built for',
+    ])
+  })
+
   it('splits the total by what the money is, and every part adds up to it', async () => {
     const t = convexWithMoneyIn()
     const house = await t.run(aHouseWithMoneyIn)

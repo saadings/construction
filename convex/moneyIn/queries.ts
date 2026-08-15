@@ -29,7 +29,16 @@ export const forSite = siteQuery({
       })
     }
 
-    return withNames.sort((one, other) => other.day.localeCompare(one.day))
+    // The day carries no time, and a cheque run puts several receipts on one day. What separates them is written down rather than left to whichever order the rows came back in, so the list reads the same twice.
+
+    // Largest first, because that is the one being looked for; then the name, so two of the same size read alphabetically. The id settles the rest: two receipts alike in day, amount and sender are the same thing to anyone reading them, so the last step only has to be steady.
+    return withNames.sort(
+      (one, other) =>
+        other.day.localeCompare(one.day) ||
+        other.amountPaisa - one.amountPaisa ||
+        one.fromName.localeCompare(other.fromName) ||
+        one._id.localeCompare(other._id)
+    )
   },
 })
 

@@ -19,7 +19,13 @@ export const forSite = siteQuery({
   handler: async (ctx) => {
     const standing = await standingOn(ctx)
 
-    return standing.sort((one, other) => other.day.localeCompare(one.day))
+    // The day carries no time, and a cheque run puts eight payments on one day. What separates them is written down rather than left to whichever order the rows came back in, so the list reads the same twice.
+
+    // Largest first, because that is the one being looked for. The id settles the rest: two payments alike in day and amount are the same thing to anyone reading them, so the last step only has to be steady.
+    return standing.sort(
+      (one, other) =>
+        other.day.localeCompare(one.day) || other.amountPaisa - one.amountPaisa || one._id.localeCompare(other._id)
+    )
   },
 })
 
@@ -54,7 +60,8 @@ export const totals = siteQuery({
       byTrade.push({ tradeId, name: trade.name, paisa })
     }
 
-    byTrade.sort((one, other) => other.paisa - one.paisa)
+    // Biggest spend first, and two trades that come to the same figure read alphabetically rather than in whichever order their first payment happened to be written.
+    byTrade.sort((one, other) => other.paisa - one.paisa || one.name.localeCompare(other.name))
 
     return {
       byTrade,
