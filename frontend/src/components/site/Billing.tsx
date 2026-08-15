@@ -49,12 +49,12 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
     return (
       <section className="flex flex-col gap-3">
         <Heading>The contract</Heading>
-        <p className="text-muted max-w-prose">
+        <p className="text-muted-foreground max-w-prose">
           Nothing agreed on this house yet. Put in what the client is paying, and the stages and the bills follow it.
         </p>
         {people === null ? (
           // Nobody to pick from is not an empty list: the read was refused, and offering a picker with nothing in it would look like a house with no client to choose.
-          <p className="text-muted">The list of people did not come back. Open the house again.</p>
+          <p className="text-muted-foreground">The list of people did not come back. Open the house again.</p>
         ) : (
           <AgreeAContract
             people={people}
@@ -120,7 +120,7 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
       {extra === null ? (
         // A refusal rather than an absence. Every other read on this house came back, so saying "none billed" here would be inventing an answer nobody gave.
         <section className="flex flex-col gap-3">
-          <p className="text-muted">Work outside the contract did not come back. Open the house again.</p>
+          <p className="text-muted-foreground">Work outside the contract did not come back. Open the house again.</p>
         </section>
       ) : (
         <ExtraWork

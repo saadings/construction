@@ -39,7 +39,7 @@ function OneHouse() {
   if (site === null || totals === null) {
     return (
       <Page title="Nothing to open here">
-        <p className="text-muted max-w-prose">This house may have been put away.</p>
+        <p className="text-muted-foreground max-w-prose">This house may have been put away.</p>
         <Link to="/" className="text-brass font-medium">
           Back to the houses
         </Link>

@@ -51,7 +51,7 @@ export function ExtraWork({
       <Heading>Work outside the contract</Heading>
 
       {bills.length === 0 ? (
-        <p className="text-muted">None billed.</p>
+        <p className="text-muted-foreground">None billed.</p>
       ) : (
         <ol aria-label="Bills already raised" className="flex flex-col gap-5">
           {bills.map((bill) => (
@@ -81,13 +81,13 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
           <tbody className="divide-hairline divide-y">
             {bill.lines.map((line) => (
               <tr key={line._id}>
-                <td className="text-muted py-2 pr-4 text-sm">{line.description}</td>
+                <td className="text-muted-foreground py-2 pr-4 text-sm">{line.description}</td>
                 {/* The working exactly as it was measured on site. It is what makes the bill defensible. */}
                 <td className="py-2 pr-4">
                   <Figure className="text-faint text-sm">{line.working ?? ''}</Figure>
                 </td>
                 <td className="py-2 pr-4 text-right">
-                  <Figure className="text-muted text-sm">
+                  <Figure className="text-muted-foreground text-sm">
                     {line.quantity} {line.unit}
                   </Figure>
                 </td>

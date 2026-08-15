@@ -42,7 +42,7 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
     return (
       <section className="flex flex-col gap-2">
         <Heading>Come in</Heading>
-        <p className="text-muted">What has come in did not come back. Open the house again.</p>
+        <p className="text-muted-foreground">What has come in did not come back. Open the house again.</p>
       </section>
     )
   }
@@ -72,7 +72,7 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
               <tr key={part.why}>
                 <td className="text-foreground py-2.5 pr-4">{part.label}</td>
                 {/* What kind of money it is, said on the row. Three figures under one heading read as three parts of one thing, and one of these is not. */}
-                <td className="text-muted py-2.5 pr-4 text-sm">{part.is}</td>
+                <td className="text-muted-foreground py-2.5 pr-4 text-sm">{part.is}</td>
                 <td className="py-2.5 text-right">
                   <Figure className="text-foreground">{formatPaisa(totals.byWhy[part.why])}</Figure>
                 </td>
@@ -82,7 +82,7 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
         </table>
       </div>
 
-      <p className="text-muted max-w-prose text-sm">
+      <p className="text-muted-foreground max-w-prose text-sm">
         What the partners put in is funding, not income. It is here because it came in, and it is kept apart because a
         house is not profitable the moment somebody funds it.
       </p>

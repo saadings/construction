@@ -209,7 +209,7 @@ function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
 
   return (
     <div className="border-hairline flex flex-col gap-2 border-t pt-5">
-      <p className="text-muted text-sm">
+      <p className="text-muted-foreground text-sm">
         A cancelled contract stays on the house, so what was agreed can still be read. The house can then be agreed
         again.
       </p>

@@ -80,7 +80,7 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
 
   return (
     <div className="border-hairline flex flex-col gap-2 border-t pt-5">
-      <p className="text-muted text-sm">
+      <p className="text-muted-foreground text-sm">
         A house put away comes off the list. What was spent on it is still there, and every payment still points at it.
       </p>
 

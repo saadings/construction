@@ -5,7 +5,7 @@ export function NotKnownHere() {
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
       <p className="text-foreground font-display text-2xl">Setting your sign-in up.</p>
-      <p className="text-muted max-w-xs">
+      <p className="text-muted-foreground max-w-xs">
         This takes a moment the first time. If it is still here after that, sign out and in again.
       </p>
     </div>

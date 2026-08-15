@@ -47,7 +47,7 @@ export function Trades({
           </div>
         </WhileWaiting>
       ) : trades === null ? (
-        <p className="text-muted text-sm">The list did not come back. Sign out and in again.</p>
+        <p className="text-muted-foreground text-sm">The list did not come back. Sign out and in again.</p>
       ) : (
         <ul aria-label="What money is spent on" className="divide-hairline flex flex-col divide-y">
           {trades.map((trade) => (
