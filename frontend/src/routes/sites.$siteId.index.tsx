@@ -296,6 +296,14 @@ function WhatThePartnersAreOwed({ siteId }: { siteId: Id<'sites'> }) {
           Change
         </Link>
       }
+      // The row that reaches the screen is part of the feature rather than part of the nav. `Paid` is a column on the table above and there was no way to put anything in it; `Change`, beside a sentence about shares, is not one -- nobody holding a cheque stub reads it as the way to write the cheque down. Named for the thing rather than the act, because the app moves no money: somebody has already paid him.
+      beneath={
+        <p className="text-sm">
+          <Link to="/sites/$siteId/shares" params={{ siteId }} className="text-brass font-medium">
+            What has gone back to them
+          </Link>
+        </p>
+      }
     />
   )
 }

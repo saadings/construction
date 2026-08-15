@@ -66,6 +66,21 @@ describe('what each partner is owed', () => {
     expect(within(rows[0]).getByText('6,250')).toBeTruthy()
   })
 
+  it('shows a partner who has drawn more than his share came to, rather than a dash', async () => {
+    // Once the house is sold the figures are real, and one of them can be the wrong way round: he took 30,000 against a share that came to 26,250. The dash before the sale is about there being nothing to compare against, not about hiding a negative.
+    render(
+      <Positions
+        what={{
+          ...TWO_PARTNERS,
+          positions: [{ ...TWO_PARTNERS.positions[0], paidPaisa: 3_000_000, balancePaisa: -375_000 }],
+        }}
+      />
+    )
+
+    const rows = await screen.findAllByRole('listitem')
+    expect(within(rows[0]).getByText('-3,750')).toBeTruthy()
+  })
+
   it('says what each of them put in, and the share it comes to', async () => {
     render(<Positions what={TWO_PARTNERS} />)
 
@@ -161,11 +176,47 @@ describe('what each partner is owed', () => {
 })
 
 describe('a house that has not been sold', () => {
-  it('shows nothing due, rather than a zero somebody could read as worked out', async () => {
+  it('shows nothing due and nothing left, rather than figures somebody could read as worked out', async () => {
     render(<Positions what={STILL_BEING_BUILT} />)
 
     const rows = await screen.findAllByRole('listitem')
-    expect(within(rows[0]).getByText('—')).toBeTruthy()
+
+    // Two dashes and not one. `Left` is due minus paid, so on a house that has not sold it is the negative of whatever he has drawn -- a figure under a heading that reads as the partnership owing him, when he is the one who has had money early.
+    expect(within(rows[0]).getAllByText('—').length).toBe(2)
+
+    // Said the other way round as well, because the count above would still be two if the dash landed in the wrong column and the figure moved.
+    expect(within(rows[0]).queryByText(/^-/)).toBeNull()
+    expect(within(rows[0]).queryByText('-20,000')).toBeNull()
+  })
+
+  it('still shows what has gone back to him, which is the one figure on that row that is real', async () => {
+    // The control for the dashes above: a screen that answered `—` to everything would pass that test and tell him nothing.
+    render(<Positions what={STILL_BEING_BUILT} />)
+
+    const rows = await screen.findAllByRole('listitem')
+    expect(within(rows[0]).getByText('20,000')).toBeTruthy()
+    expect(within(rows[0]).getByText('60,000')).toBeTruthy()
+  })
+
+  it('says out loud that what has gone out went ahead of the sale', () => {
+    // Two dashes and a figure is not an explanation. Without this the row reads as a partner who has been paid something against nothing, and the reason is only in the head of whoever wrote the query.
+    render(<Positions what={STILL_BEING_BUILT} />)
+
+    expect(screen.getByText(/gone back to them ahead of it/)).toBeTruthy()
+  })
+
+  it('says nothing of the kind where nobody has been paid anything', () => {
+    // The other end of it: a sentence that appears whether or not it is true is a sentence nobody reads.
+    render(
+      <Positions
+        what={{
+          ...STILL_BEING_BUILT,
+          positions: STILL_BEING_BUILT.positions.map((position) => ({ ...position, paidPaisa: 0, balancePaisa: 0 })),
+        }}
+      />
+    )
+
+    expect(screen.queryByText(/gone back to them ahead of it/)).toBeNull()
   })
 
   it('says what a share would come to, and says it is an estimate', () => {

@@ -34,10 +34,25 @@ function asPercent(basisPoints: number): string {
   return `${String(Math.round(basisPoints) / 100)}%`
 }
 
+// Green while it is money still owed to him. Brass where it has gone the other way -- he has drawn more than his share came to -- because that is not a debt of the partnership's. Neither before the house sells, where the cell holds a dash and a colour on it would be saying something about a figure that is not there.
+function howTheBalanceReads(sold: boolean, balancePaisa: number): string | undefined {
+  if (!sold) return undefined
+
+  return balancePaisa < 0 ? 'text-brass' : 'text-green'
+}
+
 // Handed the read as it came. `undefined` is still on its way; `null` is the house not being there, which the page around this has already said. Answering either on its behalf is how a screen ends up watching for something that is not coming.
 
-// The way to the screen that sets these is handed in rather than built here, so this stays a thing that reads and the page around it keeps knowing where its own links go.
-export function Positions({ what, beside }: { what: WhatThePartnersHave | null | undefined; beside?: ReactNode }) {
+// The ways to the screens that change these are handed in rather than built here, so this stays a thing that reads and the page around it keeps knowing where its own links go.
+export function Positions({
+  what,
+  beside,
+  beneath,
+}: {
+  what: WhatThePartnersHave | null | undefined
+  beside?: ReactNode
+  beneath?: ReactNode
+}) {
   if (what === undefined) {
     return <PositionsWaiting />
   }
@@ -84,19 +99,29 @@ export function Positions({ what, beside }: { what: WhatThePartnersHave | null |
                 <Cell label="Share">{asPercent(position.basisPoints)}</Cell>
                 {/* Nothing is due until the house is sold, and a dash says that better than a zero, which reads as a figure somebody worked out. */}
                 <Cell label="Due">{what.sold ? formatPaisa(position.duePaisa) : '—'}</Cell>
-                {/* Brass, because it is money that has gone out to him. */}
+                {/* Brass, because it is money that has gone out to him. The one figure on this row that is real before the house sells. */}
                 <Cell label="Paid" tone="text-brass">
                   {formatPaisa(position.paidPaisa)}
                 </Cell>
-                {/* Green, because what is left is money the partnership still owes him. */}
-                <Cell label="Left" tone="text-green">
-                  {formatPaisa(position.balancePaisa)}
+                {/* A dash for the same reason `Due` has one, and it took a payout going in to find out why it matters: nothing is due until the house sells, so a partner paid ahead of the sale reads as owed minus paid, which is a negative figure in a column headed Left. That reads as the partnership owing him, when he is the one who has had money early. */}
+                <Cell label="Left" tone={howTheBalanceReads(what.sold, position.balancePaisa)}>
+                  {what.sold ? formatPaisa(position.balancePaisa) : '—'}
                 </Cell>
               </li>
             ))}
           </ul>
         </div>
       )}
+
+      {/* Said out loud rather than left to be worked out from two dashes and a figure. Only where it is true: somebody has been paid on a house that has not sold. */}
+      {!what.sold && what.positions.some((position) => position.paidPaisa > 0) ? (
+        <p className="text-muted-foreground max-w-prose text-sm">
+          Nothing is due until this house sells. What is under <span className="text-foreground">Paid</span> has gone
+          back to them ahead of it.
+        </p>
+      ) : null}
+
+      {beneath}
 
       {what.ifItSoldToday === null ? null : <IfItSoldToday what={what.ifItSoldToday} />}
     </section>

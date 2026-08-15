@@ -51,6 +51,14 @@ export function saySharesDoNotAddUp(siteName: string, short: number): string {
   return `Those shares are ${off}% ${way} the whole on ${siteName}. They have to come to 100%.`
 }
 
+// The words themselves, once, so the screen asking the question and the server refusing the answer cannot say two different things about one rule.
+export const SAY_PAYOUT = {
+  who: 'Say which partner this went to.',
+  amount: 'Put in how much went back to him.',
+  reference: 'Add the cheque number.',
+  bank: 'Say which account this left.',
+} as const
+
 // A partner taking his share out, which moves the same four ways money always moves and asks the same questions.
 export const payoutInput = z
   .object({
@@ -64,9 +72,9 @@ export const payoutInput = z
   })
   .refine((payout) => !asksForChequeNumber(payout.method) || !!payout.reference, {
     path: ['reference'],
-    message: 'Add the cheque number.',
+    message: SAY_PAYOUT.reference,
   })
   .refine((payout) => !asksForBank(payout.method) || !!payout.bankAccountId, {
     path: ['bankAccountId'],
-    message: 'Say which account this left.',
+    message: SAY_PAYOUT.bank,
   })

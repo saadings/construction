@@ -123,21 +123,30 @@ describe('every way of writing something down', () => {
     }
   })
 
-  it('has nothing left marked as not yet that is a gap rather than a decision', () => {
-    // The markers started as an apology for half the ledger and are down to the one thing deliberately not built: nothing is due to a partner until a house sells, so there is nobody to pay out on one that has not.
+  it('has nothing left marked as not yet at all', () => {
+    // The markers started as an apology for half the ledger, came down to the two ways of paying a partner his share, and are now none. What is left in the tree is `not-from-a-screen`, which is a different claim: those are written by the app itself and no screen should reach them.
     expect(
       declared
         .filter((way) => way.excuse === 'not-yet')
         .map(named)
         .sort()
-    ).toEqual(['profitPayouts.record', 'profitPayouts.remove'])
+    ).toEqual([])
   })
 
   it('has the gaps it was written about closed from both sides, not only unmarked', () => {
-    // A marker deleted and a screen that reaches the function are two different facts, and only one of them is what the app can do.
+    // A marker deleted and a screen that reaches the function are two different facts, and only one of them is what the app can do. Asserted separately, because deleting a marker is the easy half and it is the half that makes the guard go quiet.
+
+    // `profitPayouts.record` and `.remove` are the case that proves why both halves are needed. They were marked, so nothing here complained, and they had seven call-sites -- every one of them a test. In production `paidPaisa` was structurally zero for good, so the partners' table said every one of them was owed the whole of his share, on the single screen that matters on the day a house sells.
     const marked = new Set(declared.filter((way) => way.excuse !== undefined).map(named))
 
-    for (const key of ['moneyIn.record', 'bills.raise', 'bills.remove', 'engagements.agree']) {
+    for (const key of [
+      'moneyIn.record',
+      'bills.raise',
+      'bills.remove',
+      'engagements.agree',
+      'profitPayouts.record',
+      'profitPayouts.remove',
+    ]) {
       expect(marked.has(key), `${key} is still marked as a gap`).toBe(false)
       expect(reachable.has(key), `${key} is unmarked and no screen reaches it`).toBe(true)
     }
@@ -170,8 +179,14 @@ describe('every way of reading something back', () => {
   })
 
   it('knows the readings it was added for are reachable now, from both sides', () => {
-    // Both halves of what the workbooks were kept open for -- one man's account and what is owed altogether -- the spread this half of the guard found on its first run, and what has come in on a house.
-    for (const key of ['owed.statement', 'owed.position', 'engagements.spread', 'moneyIn.totals']) {
+    // Both halves of what the workbooks were kept open for -- one man's account and what is owed altogether -- the spread this half of the guard found on its first run, what has come in on a house, and what has gone back out of it to the partners.
+    for (const key of [
+      'owed.statement',
+      'owed.position',
+      'engagements.spread',
+      'moneyIn.totals',
+      'profitPayouts.forSite',
+    ]) {
       const reading = readings.find((way) => named(way) === key)
 
       expect(reading, `${key} is not a way of reading anything`).toBeDefined()
@@ -200,7 +215,9 @@ describe('the markers themselves', () => {
     const attached = everything.filter((way) => way.excuse !== undefined)
 
     expect(written).toBe(attached.length)
-    // And the count is of something, so this cannot pass by both ends being zero.
+    // And the count is of something, so this cannot pass by both ends being zero. Both of them are counted with `MARKED`, so a regex that stopped matching would zero the pair and the equality above would agree with itself.
+
+    // Four are left, all `not-from-a-screen`, so this floor is one below what the tree holds. Closing another one legitimately fails here, and the answer then is to lower it by hand rather than to go looking for a broken sweep -- what it is guarding is the counter, not the number.
     expect(written).toBeGreaterThan(3)
   })
 

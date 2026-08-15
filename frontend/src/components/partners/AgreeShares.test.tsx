@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { pick } from '../../testing/pick'
@@ -231,6 +232,31 @@ describe('agreeing what each partner takes', () => {
     renderWith({ what: null })
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('draws what belongs under it, and hands over the reading it is drawn from', () => {
+    // What goes underneath is the payout form, and nothing else on this screen would notice it missing: it is reached by the route, its own tests render it directly, and the guard that checks a mutation is reachable reads the source rather than the screen. So this is where a deleted line would be caught.
+    const beneath = vi.fn<(what: WhatThePartnersHave) => ReactNode>(() => <p>What has gone back to them</p>)
+
+    renderWith({ beneath })
+
+    expect(screen.getByText('What has gone back to them')).toBeTruthy()
+    // Handed the reading itself, rather than the screen flattening it into a list first. That is the difference between a house with no partners and one whose partners have not arrived.
+    expect(beneath.mock.calls[0]?.[0].positions).toEqual(TWO)
+  })
+
+  it('draws nothing underneath while the reading is still coming, or where there is no house', () => {
+    // The control. Drawn regardless, the payout form would offer to pay partners nobody has read yet.
+    const beneath = vi.fn<(what: WhatThePartnersHave) => ReactNode>(() => <p>What has gone back to them</p>)
+
+    renderWith({ what: undefined, beneath })
+    expect(screen.queryByText('What has gone back to them')).toBeNull()
+
+    cleanup()
+    renderWith({ what: null, beneath })
+    expect(screen.queryByText('What has gone back to them')).toBeNull()
+
+    expect(beneath).not.toHaveBeenCalled()
   })
 
   it('says what to do about a house nobody has put money into yet', () => {
