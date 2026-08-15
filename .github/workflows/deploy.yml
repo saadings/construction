@@ -277,17 +277,19 @@ jobs:
             printf '%s\n' "$changed" | grep -qE "$1"
           }
 
-          shared='^(package\.json|yarn\.lock|tsconfig\.json|tsconfig\.node\.json)$'
+          # Named for the files it lists, not for what both sides happen to need: called `shared` it read as covering shared/, and so that directory went undeployed for a day.
+          rootFiles='^(package\.json|yarn\.lock|tsconfig\.json|tsconfig\.node\.json)$'
 
+          # shared/ is compiled into both sides rather than deployed on its own, so a rule about money changing there has to ship twice or it ships nowhere.
           backend=false
-          if changed_matches '^convex/' || changed_matches "$shared"; then
+          if changed_matches '^convex/' || changed_matches '^shared/' || changed_matches "$rootFiles"; then
             backend=true
           fi
 
           # scripts/ counts as frontend because convexUrl.sh produces the address compiled into the bundle; `convex deploy` reads nothing there.
           frontend=false
-          if changed_matches '^frontend/' || changed_matches '^scripts/' || changed_matches "$shared" ||
-            changed_matches '^(tsconfig\.app\.json|components\.json)$'; then
+          if changed_matches '^frontend/' || changed_matches '^shared/' || changed_matches '^scripts/' ||
+            changed_matches "$rootFiles" || changed_matches '^(tsconfig\.app\.json|components\.json)$'; then
             frontend=true
           fi
 
