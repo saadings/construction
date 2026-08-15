@@ -41,7 +41,8 @@ export const extraWorkLineInput = z.object({
     .optional(),
   quantity,
   unit,
-  ratePaisa: money,
+  // A rate cannot be less than nothing. `money` allows a minus because a payment can come back out; a line at a negative rate would reduce what the client owes, on a bill raised to charge him more.
+  ratePaisa: money.refine((paisa) => paisa > 0, { message: 'Put in an amount greater than nothing.' }),
 })
 
 export type BillLine = { quantity: number; ratePaisa: number }

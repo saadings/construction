@@ -153,6 +153,24 @@ describe('work that was outside the contract', () => {
     expect(await t.run((ctx) => ctx.db.query('extraWorkBillLines').collect())).toEqual([])
   })
 
+  it.each([
+    // A rate below nothing would put a line on the bill that reduces what the client owes, on a bill raised to charge him more.
+    ['a rate below nothing', { ratePaisa: '-420' }, 'Put in an amount greater than nothing.'],
+    // Zero is refused a step earlier, by the rule every amount goes through. Its sentence is written for a payment and reads oddly on a rate, which is a wording matter and not a hole.
+    ['a rate of nothing', { ratePaisa: '0' }, 'Put in how much was paid.'],
+  ])('refuses a line at %s', async (_case, wrong, said) => {
+    const t = convexWithExtraWork()
+    const siteId = await t.run(aHouseBuiltForAClient)
+
+    const refusal = await t
+      .withIdentity({ subject: SIGNED_IN_AS })
+      .mutation(api.extraWork.mutations.raise, { siteId, ...aBill, lines: [{ ...aBill.lines[0], ...wrong }] })
+      .then(() => 'nothing was refused', theWordsIn)
+
+    expect(refusal).toBe(said)
+    expect(await t.run((ctx) => ctx.db.query('extraWorkBills').collect())).toEqual([])
+  })
+
   it('leaves a bill taken back out of the reading, without erasing it', async () => {
     const t = convexWithExtraWork()
     const siteId = await t.run(aHouseBuiltForAClient)
