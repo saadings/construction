@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 // A table with a mutation and no screen is a table nobody can put anything in. It passes every test it has, deploys, and does nothing -- which is what `moneyIn` did for a day: money coming in could be recorded by nobody.
 
 // So every way of writing is either reachable from a screen or marked in the file it lives in, with the reason. A reading nobody opens is the same defect from the other side, and is held to the same rule.
+
+// Every check here is asked from both ends and the two answers are required to agree, which is the one shape a broken instrument cannot satisfy: breaking it moves one count and not the other. Asked from a single end, each of these went quiet at least once -- a floor that counted the way the broken sweep counted, a list that could be satisfied by deleting a line, a marker that matched a definition rather than a use, an exemption that outlived its reason. None of them failed. They agreed with themselves.
 const repoRoot = process.cwd()
 
 // The reason lives above the function it is about rather than in a list here. Two things follow, and both were paid for before the move: closing a gap edits only the module somebody was already editing, so no two changes meet in this file; and the reason is where anybody reading the function will see it, which is the only place it was ever useful -- nobody opens a scenario test to find out why a mutation has no screen.
