@@ -49,7 +49,6 @@ async function aHouseBuiltForAClient(ctx: MutationCtx): Promise<Id<'sites'>> {
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
-    personId: partner,
   })
 
   return siteId

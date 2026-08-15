@@ -45,7 +45,6 @@ async function aSiteWithSpending(ctx: MutationCtx) {
     name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
-    personId: nauman,
   })
 
   const paymentIds: Array<Id<'payments'>> = []

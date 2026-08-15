@@ -57,21 +57,26 @@ describe('a sign-in the ledger has never seen', () => {
   it('leaves alone an account the webhook already made, rather than overwriting what it knows', async () => {
     const t = convexWithAccounts()
     await t.run(async (ctx) => {
-      const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
       await ctx.db.insert('accounts', {
         externalId: SIGNED_IN_AS,
         name: 'The partner',
         primaryEmail: 'partner@example.com',
-        otherEmails: [],
-        personId,
+        otherEmails: ['partner@work.example.com'],
+        imageUrl: 'https://img.example.com/partner.png',
       })
     })
 
     await t.withIdentity(asHim).mutation(api.accounts.mutations.rememberThisSignIn, {})
 
-    const [account] = await t.run((ctx) => ctx.db.query('accounts').collect())
-    // The link to a person is the thing that would be lost, and it is what every balance hangs off.
-    expect(account?.personId).toBeDefined()
+    const accounts = await t.run((ctx) => ctx.db.query('accounts').collect())
+    // What the webhook knows and this mutation does not: a signing-in that overwrote the row would leave a partner with a blank name and no address on a screen that shows them.
+    expect(accounts).toHaveLength(1)
+    expect(accounts[0]).toMatchObject({
+      name: 'The partner',
+      primaryEmail: 'partner@example.com',
+      otherEmails: ['partner@work.example.com'],
+      imageUrl: 'https://img.example.com/partner.png',
+    })
   })
 
   it('is refused to somebody not signed in at all', async () => {

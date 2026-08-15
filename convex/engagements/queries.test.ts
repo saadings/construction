@@ -42,7 +42,6 @@ async function aSiteWithAMasonOnIt(ctx: MutationCtx) {
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
-    personId: partner,
   })
 
   const tradeId = await ctx.db.insert('trades', {
