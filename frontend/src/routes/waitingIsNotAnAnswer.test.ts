@@ -17,13 +17,19 @@ function screenFiles(dir: string): Array<string> {
   })
 }
 
+/** The code, without the prose about it. A comment saying why `people ?? []` would be wrong is not a screen doing it, and reading one as the other means the way to keep this guard quiet is to stop explaining anything. */
+export function withoutComments(source: string): string {
+  return source.replaceAll(/\/\*[\s\S]*?\*\//g, ' ').replaceAll(/\/\/[^\n]*/g, ' ')
+}
+
 /** The readings a screen takes off Convex, which are the only ones that answer `undefined` and `null` for different reasons. */
 function readingsIn(source: string): Array<string> {
   return [...source.matchAll(/\b(?:const|let)\s+(\w+)\s*=\s*useQuery\s*\(/g)].map((found) => found[1])
 }
 
 /** Every place a screen answers a reading for it: `people ?? null` says "no" on behalf of a read that has not spoken. */
-export function collapsesWaitingIntoAValue(source: string): Array<string> {
+export function collapsesWaitingIntoAValue(written: string): Array<string> {
+  const source = withoutComments(written)
   const readings = readingsIn(source)
   if (readings.length === 0) return []
 
@@ -37,7 +43,8 @@ export function collapsesWaitingIntoAValue(source: string): Array<string> {
 }
 
 /** Every place a screen treats "still waiting" and "the answer is no" as one condition. */
-export function collapsesWaitingIntoRefused(source: string): Array<string> {
+export function collapsesWaitingIntoRefused(written: string): Array<string> {
+  const source = withoutComments(written)
   const both = /if\s*\(([^)]*===\s*undefined[^)]*===\s*null[^)]*|[^)]*===\s*null[^)]*===\s*undefined[^)]*)\)/g
 
   return (
@@ -95,10 +102,27 @@ describe('what a screen does with an answer it has not got', () => {
     const shipped = 'const people = useQuery(api.people.queries.list, {})\npeople={people ?? null}'
     expect(collapsesWaitingIntoAValue(shipped)).toEqual(['people ?? null'])
 
-    // Emptiness is the worse half: it says the ledger holds nothing rather than that nobody has answered.
-    const asEmpty = 'const sites = useQuery(api.sites.queries.all, {})\nsites.map(...) // sites ?? []'
+    // Emptiness is the worse half: it says the ledger holds nothing rather than that nobody has answered. Written as code rather than in a comment, because this control used to pass by matching prose, which is the same defect it was written to catch.
+    const asEmpty = 'const sites = useQuery(api.sites.queries.all, {})\nconst rows = (sites ?? []).map(one)'
     expect(collapsesWaitingIntoAValue(asEmpty)).toEqual(['sites ?? []'])
     expect(collapsesWaitingIntoAValue('const t = useQuery(a, {})\nt || 0')).toEqual(['t || 0'])
+  })
+
+  it('reads the code and not what is written about it', () => {
+    // Both of these were found in screens that had gone to the trouble of saying why they were not doing it. A guard that reads prose as code teaches people to stop writing the prose.
+    const explained =
+      'const people = useQuery(api.people.queries.list, {})\n// `people ?? []` here would say somebody is gone when the read had not come back.\nconst who = people.find(one)'
+    expect(collapsesWaitingIntoAValue(explained)).toEqual([])
+    expect(
+      collapsesWaitingIntoRefused(
+        '// if (sites === undefined || sites === null) was the bug\nif (sites === undefined) {'
+      )
+    ).toEqual([])
+
+    // And the code underneath a comment about it is still read.
+    const both =
+      'const people = useQuery(a, {})\n// `people ?? []` would be wrong here.\nconst who = (people ?? []).find(one)'
+    expect(collapsesWaitingIntoAValue(both)).toEqual(['people ?? []'])
   })
 
   it('leaves alone everything that is not a reading', () => {
