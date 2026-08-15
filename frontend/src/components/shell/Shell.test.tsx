@@ -2,13 +2,13 @@
 import { readFileSync } from 'node:fs'
 
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Shell } from './Shell'
-import { DESTINATIONS, ON_THE_PHONE } from './destinations'
+import { DESTINATIONS } from './destinations'
 
-// Clerk's own button refuses to render outside its provider, and what is being tested here is the three shapes of the nav rather than anything Clerk does. Stood in for by a button, so the shell still renders and the tests below are about the shell.
+// Clerk's own button refuses to render outside its provider, and what is being tested here is the nav rather than anything Clerk does. Stood in for by a button, so the shell still renders and the tests below are about the shell.
 
 // Where it sits is held by `chrome.test.ts`, reading the source rather than the render, because that is a question about which container it is in and jsdom applies no CSS to answer it with.
 vi.mock('@clerk/tanstack-react-start', () => ({
@@ -16,6 +16,12 @@ vi.mock('@clerk/tanstack-react-start', () => ({
 }))
 
 afterEach(cleanup)
+
+// Put back however the test left it. Set inside a test and restored at the end, a width outlives any test that fails before its last line -- and every test after it then runs on a phone without saying so.
+const AT_A_DESK = window.innerWidth
+afterEach(() => {
+  window.innerWidth = AT_A_DESK
+})
 
 function renderAt(path: string) {
   const root = createRootRoute({ component: () => <Shell>The screen itself</Shell> })
@@ -30,37 +36,40 @@ function renderAt(path: string) {
   render(<RouterProvider router={router} />)
 }
 
-// All three shapes are in the page at once and the width decides which one is seen, so a test can only read them apart by their class.
-function navsBy(rule: string) {
-  return screen.getAllByRole('navigation').filter((nav) => nav.className.includes(rule))
-}
-
-describe('the nav, in three shapes', () => {
-  it('gives a desk a sidebar, a tablet a top bar and a phone a bar along the bottom', async () => {
+// One list, rendered once. jsdom reports the desktop shape because `useIsMobile` reads a width it has no window to measure -- so what is read here is the nav's contents, and where each shape puts it is `chrome.test.ts`'s question, read out of the source.
+describe('the nav', () => {
+  it('offers every place there is to go', async () => {
     renderAt('/')
     await screen.findByText('The screen itself')
 
-    // Below 640 the sidebar and the top bar are both hidden, and only the bottom bar is left.
-    expect(navsBy('lg:flex')).toHaveLength(1)
-    expect(navsBy('sm:flex')).toHaveLength(1)
-    expect(navsBy('sm:hidden')).toHaveLength(1)
-  })
-
-  it('offers the same places to go in every one of them', async () => {
-    renderAt('/')
-    await screen.findByText('The screen itself')
-
-    for (const nav of navsBy('lg:flex').concat(navsBy('sm:flex'))) {
-      for (const destination of DESTINATIONS) {
-        expect(within(nav).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
-      }
+    const nav = screen.getByRole('list', { name: 'Sections' })
+    for (const destination of DESTINATIONS) {
+      expect(within(nav).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
     }
   })
 
-  it('keeps the bar along the bottom to four, because a thumb has no room for five', () => {
-    expect(ON_THE_PHONE.length).toBeLessThanOrEqual(4)
-    // More is how everything past the fourth is reached, so it has to be one of them.
-    expect(ON_THE_PHONE.map((destination) => destination.label)).toContain('More')
+  it('offers a way to open it where there is no column to see', async () => {
+    // Below 768 the column is not rendered at all and this is the only way to the nav. It used to be a bar along the bottom under a thumb; Nauman chose the corner knowing that, and the sheet is what he opens standing on a site.
+    renderAt('/')
+    await screen.findByText('The screen itself')
+
+    expect(screen.getByRole('button', { name: 'Toggle Sidebar' })).toBeTruthy()
+  })
+
+  it('closes the sheet behind whatever was picked, because a phone has only the sheet', async () => {
+    // The one thing jsdom can answer about a phone: the sidebar branches on width in JavaScript, so setting the width picks the branch even though no CSS applies. A sheet you have to dismiss after picking something is two actions where there was one, and the second is the one you forget while holding a cheque book.
+    window.innerWidth = 390
+    renderAt('/')
+    await screen.findByText('The screen itself')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Sidebar' }))
+    const sheet = await screen.findByRole('dialog')
+
+    fireEvent.click(within(sheet).getByRole('link', { name: /People/ }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
   })
 
   it('marks where you are, and only there', async () => {
@@ -69,10 +78,36 @@ describe('the nav, in three shapes', () => {
 
     const marked = screen
       .getAllByRole('link')
-      .filter((link) => link.dataset.status === 'active')
+      .filter((link) => link.dataset.active === 'true')
       .map((link) => link.textContent)
 
     expect(new Set(marked)).toEqual(new Set(['More']))
+  })
+
+  it('marks More from inside one of its screens, rather than only from the menu', async () => {
+    // Every settings screen lives under `/more`, and the mark says which of the four you are inside.
+    renderAt('/more/what-for')
+    await screen.findByText('The screen itself')
+
+    const marked = screen
+      .getAllByRole('link')
+      .filter((link) => link.dataset.active === 'true')
+      .map((link) => link.textContent)
+
+    expect(new Set(marked)).toEqual(new Set(['More']))
+  })
+
+  it('marks Sites only on Sites itself, not on everything under it', async () => {
+    // The control for the rule above: `/` is a prefix of every path there is, so it is the one that has to match exactly.
+    renderAt('/people')
+    await screen.findByText('The screen itself')
+
+    const marked = screen
+      .getAllByRole('link')
+      .filter((link) => link.dataset.active === 'true')
+      .map((link) => link.textContent)
+
+    expect(new Set(marked)).toEqual(new Set(['People']))
   })
 })
 
