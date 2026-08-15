@@ -47,9 +47,14 @@ function WhatCameIn() {
             bankAccountId: receipt.bankAccountId as Id<'bankAccounts'> | undefined,
             note: receipt.note,
           })
+
+          return true
         } catch (thrown) {
           // The sentence the server refused with, which is written for him. Anything else is the app failing rather than him being wrong.
           setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
+
+          // Said rather than swallowed: the screen empties its boxes on a yes, and a refusal that came back as one takes the amount he is being asked about with it.
+          return false
         } finally {
           setSaving(false)
         }

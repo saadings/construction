@@ -5,8 +5,10 @@ import { asksForBank, asksForChequeNumber } from '~shared/validation/howMoneyMov
 import type { WhyItCame } from '~shared/validation/moneyIn'
 import { SAY_IN } from '~shared/validation/moneyIn'
 
+import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines, Picker } from '../form/Field'
 import { Figure, Form, Page } from '../shell/Page'
+import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
 export type Received = {
   _id: string
@@ -62,7 +64,8 @@ export function ComingIn({
   accounts: Array<Account> | null | undefined
   saving: boolean
   refusal: string | null
-  onPutIn: (receipt: NewReceipt) => Promise<void>
+  // Answers whether it went in, because the boxes may only be emptied when it did. A refusal that wipes what was typed makes him type the lot again to read what he got wrong.
+  onPutIn: (receipt: NewReceipt) => Promise<boolean>
 }) {
   return (
     <Page title="Money coming in" beside={<span className="text-muted-foreground text-sm">{siteName}</span>}>
@@ -84,7 +87,7 @@ function Taking({
   accounts: Array<Account>
   saving: boolean
   refusal: string | null
-  onPutIn: (receipt: NewReceipt) => Promise<void>
+  onPutIn: (receipt: NewReceipt) => Promise<boolean>
 }) {
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10))
   const [amount, setAmount] = useState('')
@@ -94,6 +97,8 @@ function Taking({
   const [reference, setReference] = useState('')
   const [bankAccountId, setBankAccountId] = useState('')
   const [note, setNote] = useState('')
+  // Counted rather than a flag, because the second receipt has to empty the form as thoroughly as the first.
+  const [gonein, setGoneIn] = useState(0)
 
   // Asked from the same rules the server refuses by, so the screen and the schema cannot drift into disagreeing.
   const wrongFrom = fromId === '' ? SAY_IN.from : null
@@ -102,7 +107,7 @@ function Taking({
   const wrongAmount = amount.trim() === '' ? 'Put in how much came in.' : null
 
   async function put() {
-    await onPutIn({
+    const wentIn = await onPutIn({
       day,
       amount,
       fromId,
@@ -113,13 +118,17 @@ function Taking({
       note: note.trim() === '' ? undefined : note,
     })
 
+    // Only when it went in. The refusal above the button is about the amount still in the box, and emptying the box leaves him reading it against nothing.
+    if (!wentIn) return
+
     setAmount('')
     setReference('')
     setNote('')
+    setGoneIn((times) => times + 1)
   }
 
   return (
-    <Form>
+    <Form freshAfter={gonein}>
       <div className="grid gap-6 sm:grid-cols-2">
         <Field label="Which day">
           <Line value={day} onChange={(event) => setDay(event.target.value)} type="date" aria-label="Which day" />
@@ -206,14 +215,9 @@ function Taking({
       )}
 
       <div>
-        <button
-          type="button"
-          onClick={put}
-          disabled={saving}
-          className="bg-primary text-primary-foreground rounded-md px-5 py-3 font-medium disabled:opacity-50"
-        >
-          {saving ? 'Putting it in…' : 'Put it in'}
-        </button>
+        <Button onClick={put} busy={saving}>
+          Put it in
+        </Button>
       </div>
     </Form>
   )
@@ -250,7 +254,7 @@ const SAID: Record<WhyItCame, string> = {
 
 function AlreadyIn({ received }: { received: Array<Received> | null | undefined }) {
   if (received === undefined) {
-    return <p className="text-muted-foreground text-sm">Looking…</p>
+    return <AlreadyInWaiting />
   }
 
   if (received === null) {
@@ -275,5 +279,25 @@ function AlreadyIn({ received }: { received: Array<Received> | null | undefined 
         </li>
       ))}
     </ul>
+  )
+}
+
+// What is coming, drawn in its own shape: a name, a figure to the right of it, and the line underneath saying where it came from.
+function AlreadyInWaiting() {
+  return (
+    <WhileWaiting what="Getting what has come in">
+      <div className="divide-hairline flex flex-col divide-y">
+        {/* Three, because money arriving on one house is a short list and a screenful of grey bars promises more than is coming. */}
+        {[0, 1, 2].map((row) => (
+          <div key={row} className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 py-3.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="ml-auto h-4 w-24" />
+            <div className="col-span-2 flex">
+              <SkeletonLines widths={['w-52']} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </WhileWaiting>
   )
 }

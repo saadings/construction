@@ -21,7 +21,7 @@ const ALREADY: Array<Received> = [
 ]
 
 function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
-  const onPutIn = vi.fn<(receipt: NewReceipt) => Promise<void>>(() => Promise.resolve())
+  const onPutIn = vi.fn<(receipt: NewReceipt) => Promise<boolean>>(() => Promise.resolve(true))
 
   const root = createRootRoute({
     component: () => (
@@ -124,15 +124,55 @@ describe('money coming in', () => {
     expect(screen.getByRole('alert').textContent).toBe('Add the cheque number.')
   })
 
-  it('says it is still looking while the answer is on its way, and nothing for a house that is not there', async () => {
+  it('puts up the shape of what is coming while the answer is on its way, and nothing for a house that is not there', async () => {
     renderWith({ received: undefined })
-    expect(await screen.findByText('Looking…')).toBeTruthy()
+    // Said once when it appears rather than drawn and left silent, because a pulse is nothing to a screen reader.
+    expect(await screen.findByRole('status', { name: 'Getting what has come in' })).toBeTruthy()
+    expect(screen.queryByText('Looking…')).toBeNull()
 
     cleanup()
     renderWith({ received: null })
     await screen.findByLabelText('How much')
-    expect(screen.queryByText('Looking…')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
+  it('turns the button off while it is sending and says so without changing what it says', async () => {
+    renderWith({ received: [], saving: true })
+
+    const button = await screen.findByRole('button', { name: 'Put it in' })
+    expect(button.hasAttribute('disabled')).toBe(true)
+    expect(button.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('empties the boxes once it has gone in', async () => {
+    renderWith({ received: [] })
+    await screen.findByLabelText('How much')
+
+    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
+    fireEvent.change(screen.getByLabelText('Who it came from'), { target: { value: 'p1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
+    })
+  })
+
+  it('keeps what was typed when the server refused it', async () => {
+    // The refusal is about the amount in the box. Emptying the box on a no leaves him reading a sentence about a figure that is no longer on the screen, and typing the whole receipt again to see it.
+    const { onPutIn } = renderWith({ received: [] })
+    onPutIn.mockResolvedValue(false)
+    await screen.findByLabelText('How much')
+
+    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
+    fireEvent.change(screen.getByLabelText('Who it came from'), { target: { value: 'p1' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+
+    await waitFor(() => {
+      expect(onPutIn).toHaveBeenCalled()
+    })
+
+    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('2,500,000')
   })
 
   it('lets every choice be found by what is written on it', async () => {
