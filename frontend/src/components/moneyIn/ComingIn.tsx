@@ -212,6 +212,9 @@ function Taking({
         </p>
       )}
 
+      {/* At the foot of the form and not pinned to the screen, which is the opposite of the day sheet and is chosen rather than overlooked. */}
+
+      {/* On a phone this button is below the fold behind seven questions, and a pinned footer would put it back in reach -- at the cost of roughly a tenth of the screen, on every one of those questions, to save one scroll made once. The day sheet pays that willingly because a sitting is twenty payments and the buttons are pressed twenty times; money coming in is one receipt, and the scroll happens once at the end of a form somebody is already reading downwards. */}
       <div>
         <Button onClick={put} busy={saving}>
           Put it in

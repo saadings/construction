@@ -9,6 +9,8 @@ import { chromium } from 'playwright'
 
 // This is the second half of what the gallery was for. The first half is a person opening it; this is so a pull request carries images rather than the sentence "not observed at any width", which three of them shipped with.
 
+// Two things about running it that look like defects and are not. `playwright` arrived with this script, so a `node_modules` from before it gives fifty-odd typecheck and lint errors in this file that read as code problems -- `yarn install` first. And a headless Chromium outlives the run: `yarn test` straight afterwards times out four day-sheet and whole-ledger tests at two to five seconds, which looks exactly like a real failure and is how a good test gets deleted. CI never meets the second, because `Run tests` precedes the screenshot steps there.
+
 const GALLERY = resolve(import.meta.dirname, '..', 'frontend', 'dist-gallery')
 const SHOTS = resolve(import.meta.dirname, '..', 'shots')
 
