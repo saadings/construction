@@ -12,6 +12,8 @@ dist
 dist-ssr
 # The gallery's own build, which is the app's screens drawn from fixtures and never part of the app.
 dist-gallery
+# The pictures taken of it. They travel as a CI artifact rather than in history: a binary that changes on every layout change is a repository nobody can clone quickly.
+shots
 *.local
 
 # Convex

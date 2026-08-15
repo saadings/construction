@@ -444,6 +444,53 @@ describe('the shape of the deploy workflow', () => {
     expect(codegen).toBeGreaterThan(-1)
     expect(codegen).toBeLessThan(build)
   })
+
+  it('takes a picture of every screen, and keeps it', () => {
+    // The step that produces the evidence needs a guard, not only the evidence. A screenshot step quietly deleted takes the images with it, every test stays green, and the pull requests go back to saying "not observed at any width" with nothing objecting.
+    const steps = stepsIn(job('checks').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
+
+    const gallery = at('yarn gallery:build')
+    const browser = at('playwright install')
+    const shots = at('yarn shots')
+    const kept = at('actions/upload-artifact')
+
+    // Absence before order, because `findIndex` answers -1 for a step that is gone and -1 comes before everything.
+    for (const [what, index] of [
+      ['the gallery build', gallery],
+      ['the browser install', browser],
+      ['the screenshots', shots],
+      ['the upload', kept],
+    ] as const) {
+      expect(index, `${what} is not in the checks job at all`).toBeGreaterThan(-1)
+    }
+
+    expect(gallery, 'the pictures are taken before the gallery is built').toBeLessThan(shots)
+    expect(browser, 'the pictures are taken before the browser exists').toBeLessThan(shots)
+    expect(shots, 'the pictures are uploaded before they are taken').toBeLessThan(kept)
+
+    // Chromium alone: three browsers is three downloads for one set of pictures, and `--with-deps` is what makes it launch on a bare runner.
+    expect(steps[browser].body).toContain('chromium')
+    expect(steps[browser].body).toContain('--with-deps')
+
+    // A run that photographed nothing would otherwise upload an empty artifact and report success.
+    expect(steps[kept].body).toContain('if-no-files-found: error')
+  })
+
+  it('refuses to ship the gallery inside the app, and checks the build rather than the config', () => {
+    // The gallery is a second HTML entry in the same directory as the app's. It stays out today because TanStack Start names its own rollup input -- a property of a plugin nobody chose for this reason, which is exactly the kind of thing that stops being true without anybody deciding it should.
+    const steps = stepsIn(job('checks').body)
+    const at = (needle: string): number => steps.findIndex((step) => step.body.includes(needle))
+
+    const build = at('yarn build')
+    const guard = at("find frontend/dist -iname '*gallery*'")
+
+    expect(guard, 'nothing checks what the app ships').toBeGreaterThan(-1)
+    expect(build).toBeLessThan(guard)
+
+    // Its own floor: a `find` over a directory that is not there reports the same clean nothing as a build with no gallery in it.
+    expect(steps[guard].body).toContain('test -f frontend/dist/client/index.html')
+  })
 })
 
 /** The indented lines under a top-level trigger key, or null when the key is absent. */

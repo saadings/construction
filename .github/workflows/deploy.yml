@@ -102,12 +102,49 @@ jobs:
           echo "Building with VITE_CONVEX_URL: $VITE_CONVEX_URL"
           yarn build
 
+      # The gallery is a second HTML entry sitting in the same directory as the app's, and today it stays out of the app's build only because TanStack Start names its own rollup input. Nothing chose that for this reason, and if it ever changes the fixture screens ship to the same origin as the ledger — as a 200 that looks exactly like the app's own 200, which is the worst shape a defect can take.
+      - name: The app's build is the app, and has no gallery in it
+        run: |
+          set -euo pipefail
+
+          found=$(find frontend/dist -iname '*gallery*' -print -quit)
+          if [ -n "$found" ]; then
+            echo "✗ The app's build contains $found"
+            echo "  The gallery draws invented figures. It must never be served from the ledger's own origin."
+            exit 1
+          fi
+
+          # The control: a find over a directory that is not there reports the same clean nothing as a build with no gallery in it.
+          test -f frontend/dist/client/index.html
+
+          echo "✓ The app's build is the app"
+
       - name: Run tests
         run: yarn test
 
       # Credentials in history, inherited identifiers, unresolvable actions — none of it protects anything unless CI runs it.
       - name: Run scenario tests
         run: yarn test:scenario
+
+      # Last, and deliberately: this is the only step that downloads a browser, so every cheaper failure above reports before anything pays for one.
+      - name: Build the gallery
+        run: yarn gallery:build
+
+      # Chromium alone — three browsers is three downloads for one set of pictures. `--with-deps` is what makes it launch on a bare runner. Measured at 44s for 94.7 MiB; no cache until there is a run to cite, per 376e3ff.
+      - name: Install the browser the pictures are taken with
+        run: npx playwright install --with-deps chromium
+
+      - name: Take a picture of every screen
+        run: yarn shots
+
+      # Three UI changes merged carrying "not observed at any width" and nothing else. This is what replaces that sentence.
+      - name: Keep the pictures
+        uses: actions/upload-artifact@v4
+        with:
+          name: every-screen
+          path: shots/
+          # Without it, a run that photographed nothing uploads an empty artifact and reports success.
+          if-no-files-found: error
 
   # One runner for the whole of a push, for the same reason the checks are one: four jobs of well under a minute were four billed minutes, and three of them paid the same checkout and install. The two deploys were deliberately beside each other rather than in sequence, which accepted new UI going live before the backend caught up; in one job the backend goes first, which is the safer order and costs nothing.
   deploy:
