@@ -3,9 +3,11 @@ import { dark } from '@clerk/themes'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { useMutation } from 'convex/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import { useEffect } from 'react'
 
+import { api } from '../../../convex/_generated/api'
 import { Shell } from '../components/shell/Shell'
 import { env } from '../lib/env'
 import { THEME_INIT_SCRIPT, applyHowItLooks, useHowItLooks, usePrefersDark } from '../lib/theme'
@@ -56,6 +58,7 @@ function RootComponent() {
           <Outlet />
         </Show>
         <Show when="signed-in">
+          <RememberThisSignIn />
           <Shell>
             <Outlet />
           </Shell>
@@ -63,6 +66,19 @@ function RootComponent() {
       </ConvexProviderWithClerk>
     </ClerkProvider>
   )
+}
+
+// Every read refuses a sign-in the ledger has never seen, and a query cannot write itself in. This is the one call that can, made once when somebody signs in.
+
+// It exists because the Clerk webhook only ever fires for a new Clerk user: anybody whose account predates this table would otherwise be refused forever, with nothing on any screen able to say why.
+function RememberThisSignIn() {
+  const remember = useMutation(api.accounts.mutations.rememberThisSignIn)
+
+  useEffect(() => {
+    void remember({})
+  }, [remember])
+
+  return null
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
