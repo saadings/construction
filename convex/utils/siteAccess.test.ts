@@ -129,7 +129,7 @@ describe('opening a site', () => {
       await ctx.db.insert('accounts', {
         externalId: SIGNED_IN_AS,
         name: 'Dr A client',
-        primaryEmail: 'khalid@example.com',
+        primaryEmail: 'aclient@example.com',
         otherEmails: [],
         personId,
       })

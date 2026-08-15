@@ -210,8 +210,8 @@ with a running balance, derived on read and spanning every site.
 Positive means money is owed to them. Negative means they hold an advance, which
 is normal and appears throughout the workbooks as `ADV` and `BL PMT`.
 
-**Market payables become a calculation.** The register kept by hand in the Khalid
-Mirza file — Dura Tiles 763,701, Kabinet King 770,000, totalling 1,591,701 — is
+**Market payables become a calculation.** The register kept by hand in one client's
+file — Dura Tiles 763,701, Kabinet King 770,000, totalling 1,591,701 — is
 simply the sum of everyone's outstanding balance. It stops being a list someone
 has to remember to update.
 

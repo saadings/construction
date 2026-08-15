@@ -192,7 +192,7 @@ describe('the shape the money lives in', () => {
       const paidById = await ctx.db.insert('people', { name: 'The partner', hidden: false })
       const bankAccountId = await ctx.db.insert('bankAccounts', {
         label: 'Bank 0000',
-        lastFourDigits: '2192',
+        lastFourDigits: '0000',
         hidden: false,
       })
 
@@ -233,7 +233,7 @@ describe('the shape the money lives in', () => {
     const account = await t.run(async (ctx) => {
       const id = await ctx.db.insert('bankAccounts', {
         label: 'Bank 0000',
-        lastFourDigits: '2192',
+        lastFourDigits: '0000',
         hidden: false,
       })
       return await ctx.db.get('bankAccounts', id)

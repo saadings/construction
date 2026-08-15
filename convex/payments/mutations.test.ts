@@ -49,7 +49,7 @@ async function aSiteThePartnerIsOn(ctx: MutationCtx): Promise<Site> {
 
   const bankAccountId = await ctx.db.insert('bankAccounts', {
     label: 'Bank 0000',
-    lastFourDigits: '2192',
+    lastFourDigits: '0000',
     hidden: false,
   })
 

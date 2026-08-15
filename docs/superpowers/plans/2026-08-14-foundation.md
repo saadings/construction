@@ -408,7 +408,7 @@ describe('clerk webhook', () => {
       data: {
         id: 'user_1',
         first_name: 'Nauman',
-        last_name: 'Saeed',
+        last_name: 'Partner',
         email_addresses: [{ id: 'e1', email_address: 'n@example.com' }],
         primary_email_address_id: 'e1',
       },
