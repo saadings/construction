@@ -15,6 +15,20 @@ export function useWhatIsAsked(): Asked {
   return useContext(InAField)
 }
 
+// When a problem may be said: never while the answer is still being typed, always once focus has left, and from then on it follows every keystroke so it goes as soon as the answer is right.
+
+// A hook rather than a rule inside `Field`, because the amount is not a `Field` -- it is set in the display face at the size of a headline -- and one rule in two shapes is how they stay the same rule.
+export function useSaidOnceLeft(problem?: string | null): { showing: boolean; onBlur: () => void } {
+  const [hasBeenLeft, setHasBeenLeft] = useState(false)
+
+  return {
+    showing: hasBeenLeft && problem !== undefined && problem !== null && problem !== '',
+    onBlur: () => {
+      setHasBeenLeft(true)
+    },
+  }
+}
+
 export function Field({
   label,
   hint,
@@ -29,19 +43,12 @@ export function Field({
   children: ReactNode
   className?: string
 }) {
-  const [hasBeenLeft, setHasBeenLeft] = useState(false)
   const said = useId()
-
-  const showing = hasBeenLeft && problem !== undefined && problem !== null && problem !== ''
+  // Focus leaving anything inside, which is what a blur is here.
+  const { showing, onBlur } = useSaidOnceLeft(problem)
 
   return (
-    <label
-      className={cn('flex flex-col gap-1.5', className)}
-      // Focus leaving anything inside, which is what a blur is here. Once left, it stays left: what is wrong then follows every keystroke until it is right.
-      onBlur={() => {
-        setHasBeenLeft(true)
-      }}
-    >
+    <label className={cn('flex flex-col gap-1.5', className)} onBlur={onBlur}>
       <span className="text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase">{label}</span>
 
       <InAField.Provider value={{ invalid: showing, describedBy: showing || hint ? said : undefined }}>

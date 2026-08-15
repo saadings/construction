@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
+import { whatIsWrongWith } from '~shared/validation/payment'
 
 import { cn } from '../../lib/utils'
 import { Field, Line, Lines, Picker } from '../form/Field'
@@ -168,7 +169,7 @@ export function DaySheet({
         </section>
 
         <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
-          <Field label="What for">
+          <Field label="What for" problem={whatIsWrongWith('trade', draft)}>
             <Picker
               value={draft.tradeId}
               onChange={(event) => change({ tradeId: pickedFrom(trades, event.target.value) })}
@@ -183,7 +184,11 @@ export function DaySheet({
             </Picker>
           </Field>
 
-          <Field label="Who was paid" hint={draft.paidToId ? undefined : 'Or type a name nobody will be paid again.'}>
+          <Field
+            label="Who was paid"
+            hint={draft.paidToId ? undefined : 'Or type a name nobody will be paid again.'}
+            problem={whatIsWrongWith('paidTo', draft)}
+          >
             <Picker
               value={draft.paidToId}
               onChange={(event) => change({ paidToId: pickedFrom(people, event.target.value) })}
@@ -210,9 +215,13 @@ export function DaySheet({
             </Field>
           ) : null}
 
-          <MoneyLine value={draft.amount} onChange={(amount) => change({ amount })} />
+          <MoneyLine
+            value={draft.amount}
+            onChange={(amount) => change({ amount })}
+            problem={whatIsWrongWith('amount', draft)}
+          />
 
-          <Field label="Whose money">
+          <Field label="Whose money" problem={whatIsWrongWith('paidBy', draft)}>
             <Picker
               value={draft.paidById}
               onChange={(event) => change({ paidById: pickedFrom(people, event.target.value) })}
@@ -250,7 +259,7 @@ export function DaySheet({
           </Field>
 
           {asksForChequeNumber(draft.method) ? (
-            <Field label="Cheque number">
+            <Field label="Cheque number" problem={whatIsWrongWith('reference', draft)}>
               <Line
                 value={draft.reference}
                 onChange={(event) => change({ reference: event.target.value })}
@@ -262,7 +271,7 @@ export function DaySheet({
           ) : null}
 
           {asksForBank(draft.method) ? (
-            <Field label="Which account">
+            <Field label="Which account" problem={whatIsWrongWith('bank', draft)}>
               <Picker
                 value={draft.bankAccountId}
                 onChange={(event) => change({ bankAccountId: pickedFrom(accounts, event.target.value) })}
