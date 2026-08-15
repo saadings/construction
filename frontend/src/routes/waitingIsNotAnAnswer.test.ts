@@ -1,28 +1,20 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
+import { everyScreen } from '../testing/screens'
 import { withoutComments } from '../testing/source'
 
 // A Convex read answers `undefined` while it is in flight and `null` when it refuses. Collapsing them shows a refusal as a spinner, and the person waits for something that has already happened.
 
 // Nauman waited on "Getting your sites…" forever for exactly this. Waiting could never have worked: the answer had arrived and said no.
-const SOURCE = join(dirname(new URL(import.meta.url).pathname), '..')
-
-function screenFiles(dir: string): Array<string> {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return screenFiles(path)
-    return path.endsWith('.tsx') ? [path] : []
-  })
-}
 
 /** The readings a screen takes off Convex, which are the only ones that answer `undefined` and `null` for different reasons. */
 function readingsIn(source: string): Array<string> {
   return [...source.matchAll(/\b(?:const|let)\s+(\w+)\s*=\s*useQuery\s*\(/g)].map((found) => found[1])
 }
+
+// What is reached off a reading before it is answered for. `what?.positions ?? []` is the same defect as `what ?? []` and this could not see it: it looked for the name and then immediately for the `??`, so anything between the two hid it. const found that one by hand, two lines above one this did catch -- and a guard with a hole in it is worse than no guard, because it is believed.
+const REACHED_INTO = String.raw`((?:\s*\??\.\s*\w+)*)`
 
 /** Every place a screen answers a reading for it: `people ?? null` says "no" on behalf of a read that has not spoken. */
 export function collapsesWaitingIntoAValue(written: string): Array<string> {
@@ -32,11 +24,16 @@ export function collapsesWaitingIntoAValue(written: string): Array<string> {
 
   // `null` is the refusal itself, and `[]`, `{}` and `0` are worse: they say the ledger is empty when nobody has been asked yet.
   const answered = new RegExp(
-    `\\b(${readings.join('|')})\\s*(\\?\\?|\\|\\|)\\s*(null|\\[\\s*\\]|\\{\\s*\\}|0)(?![\\w$])`,
+    `\\b(${readings.join('|')})${REACHED_INTO}\\s*(\\?\\?|\\|\\|)\\s*(null|\\[\\s*\\]|\\{\\s*\\}|0)(?![\\w$])`,
     'g'
   )
 
-  return [...source.matchAll(answered)].map((found) => `${found[1]} ${found[2]} ${found[3]}`)
+  return (
+    [...source.matchAll(answered)]
+      // A plain `.` off a reading is not this: the compiler refuses `what.positions` while `what` may still be undefined, so a screen that writes it has already answered the waiting somewhere above. `?.` is the tell -- it is written by somebody who knows the thing may not be there, which is the case this is about.
+      .filter((found) => found[2] === '' || found[2].includes('?.'))
+      .map((found) => `${found[1]}${found[2].replace(/\s+/g, '')} ${found[3]} ${found[4]}`)
+  )
 }
 
 /** Every place a screen treats "still waiting" and "the answer is no" as one condition. */
@@ -56,11 +53,12 @@ export function collapsesWaitingIntoRefused(written: string): Array<string> {
 }
 
 describe('what a screen does with an answer it has not got', () => {
-  const screens = screenFiles(SOURCE).map((path) => ({ path, source: readFileSync(path, 'utf8') }))
+  // Tests of screens are left out, where they were swept before. A fixture demonstrating the bug is not a screen shipping it -- this file is full of them, and every plant below would read as a violation of the rule it proves.
+  const screens = everyScreen()
 
   it('never shows a refusal as though it were still coming', () => {
     const collapsed = screens.flatMap(({ path, source }) =>
-      collapsesWaitingIntoRefused(source).map((condition) => `${path.split('/src/')[1]}: ${condition}`)
+      collapsesWaitingIntoRefused(source).map((condition) => `${path}: ${condition}`)
     )
 
     expect(collapsed).toEqual([])
@@ -88,7 +86,7 @@ describe('what a screen does with an answer it has not got', () => {
 
   it('never answers a reading on its behalf', () => {
     const answered = screens.flatMap(({ path, source }) =>
-      collapsesWaitingIntoAValue(source).map((where) => `${path.split('/src/')[1]}: ${where}`)
+      collapsesWaitingIntoAValue(source).map((where) => `${path}: ${where}`)
     )
 
     expect(answered).toEqual([])
@@ -103,6 +101,30 @@ describe('what a screen does with an answer it has not got', () => {
     const asEmpty = 'const sites = useQuery(api.sites.queries.all, {})\nconst rows = (sites ?? []).map(one)'
     expect(collapsesWaitingIntoAValue(asEmpty)).toEqual(['sites ?? []'])
     expect(collapsesWaitingIntoAValue('const t = useQuery(a, {})\nt || 0')).toEqual(['t || 0'])
+  })
+
+  it('catches it reached into as well as bare, which is the hole it had', () => {
+    // Both spellings, in the shape they were really in: const found `what?.positions ?? []` by hand, two lines above an `accounts ?? []` this did catch. The first is a screen saying "nobody is on this house" while the read is still in flight.
+    const reachedInto =
+      'const what = useQuery(api.partners.queries.onThisHouse, {})\nconst positions = what?.positions ?? []'
+    expect(collapsesWaitingIntoAValue(reachedInto)).toEqual(['what?.positions ?? []'])
+
+    const bare = 'const accounts = useQuery(api.bankAccounts.queries.list, {})\nconst rows = accounts ?? []'
+    expect(collapsesWaitingIntoAValue(bare)).toEqual(['accounts ?? []'])
+
+    // Both at once, because they really were two lines apart and the one it could see is what made the other look absent.
+    expect(collapsesWaitingIntoAValue(`${reachedInto}\n${bare}`)).toEqual(['what?.positions ?? []', 'accounts ?? []'])
+
+    // Further down the chain, and answered with the emptiness rather than the refusal.
+    expect(collapsesWaitingIntoAValue('const it = useQuery(a, {})\nconst n = it?.owed?.total ?? 0')).toEqual([
+      'it?.owed?.total ?? 0',
+    ])
+  })
+
+  it('leaves alone a field read off an answer that has already arrived', () => {
+    // A plain `.` is not this. The compiler refuses `what.positions` while `what` may still be undefined, so a screen that writes it has answered the waiting somewhere above -- and `?.` is what somebody writes who knows the thing may not be there.
+    expect(collapsesWaitingIntoAValue('const site = useQuery(a, {})\nconst note = site.note ?? null')).toEqual([])
+    expect(collapsesWaitingIntoAValue('const site = useQuery(a, {})\nconst n = site.owed.total ?? 0')).toEqual([])
   })
 
   it('reads the code and not what is written about it', () => {
