@@ -34,7 +34,9 @@ export function Stages({
       <Heading>Billed in stages</Heading>
 
       {stages.length === 0 ? (
-        <p className="text-muted">No stages set out yet. Put in the first, and the figure against it follows.</p>
+        <p className="text-muted-foreground">
+          No stages set out yet. Put in the first, and the figure against it follows.
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[30rem] border-collapse text-left">
@@ -43,7 +45,7 @@ export function Stages({
                 <tr key={stage._id}>
                   <td className="text-foreground py-2.5 pr-4">{stage.description}</td>
                   <td className="py-2.5 pr-4">
-                    <Figure className="text-muted">{stage.percent}%</Figure>
+                    <Figure className="text-muted-foreground">{stage.percent}%</Figure>
                   </td>
                   {/* Green is money owed to him. */}
                   <td className="py-2.5 pr-4 text-right">
@@ -53,7 +55,7 @@ export function Stages({
                     {stage.billedOn === undefined ? (
                       <BillIt stage={stage} onBill={onBill} />
                     ) : (
-                      <span className="text-muted text-sm">Billed {stage.billedOn}</span>
+                      <span className="text-muted-foreground text-sm">Billed {stage.billedOn}</span>
                     )}
                   </td>
                 </tr>
@@ -74,11 +76,11 @@ function WhatIsLeft({ percentAgreed }: { percentAgreed: number }) {
   const left = Math.round((100 - percentAgreed) * 100) / 100
 
   if (left === 0) {
-    return <p className="text-muted text-sm">The stages come to the whole contract.</p>
+    return <p className="text-muted-foreground text-sm">The stages come to the whole contract.</p>
   }
 
   return (
-    <p className="text-muted text-sm">
+    <p className="text-muted-foreground text-sm">
       {left > 0
         ? `The stages come to ${percentAgreed}%. ${left}% of the contract is not set out in any of them.`
         : `The stages come to ${percentAgreed}%, which is ${Math.abs(left)}% more than the contract.`}
@@ -117,7 +119,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
           }}
           type="date"
           aria-label={`When ${stage.description} was billed`}
-          className="border-border text-muted rounded-md border px-2 py-1 text-sm"
+          className="border-border text-muted-foreground rounded-md border px-2 py-1 text-sm"
         />
         <Button look="beside" busy={saving} className="px-3 py-1 text-sm" onClick={bill}>
           Bill it

@@ -60,7 +60,7 @@ export function Trades({
           </div>
         </WhileWaiting>
       ) : trades === null ? (
-        <p className="text-muted text-sm">The list did not come back. Sign out and in again.</p>
+        <p className="text-muted-foreground text-sm">The list did not come back. Sign out and in again.</p>
       ) : (
         <TwoSides trades={trades} onEdit={onEdit} onTakeOff={onTakeOff} />
       )}

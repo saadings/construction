@@ -44,7 +44,7 @@ export function SpentByTrade({
   refusal: string | null
 }) {
   if (byTrade.length === 0) {
-    return <p className="text-muted">Nothing spent on this house yet.</p>
+    return <p className="text-muted-foreground">Nothing spent on this house yet.</p>
   }
 
   return (

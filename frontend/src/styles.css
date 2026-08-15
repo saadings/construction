@@ -29,8 +29,8 @@
   --row-alt: #f6f2e9;
   --hairline: #f0ebe0;
   --ink: #1c1a17;
-  --muted-ink: #8a8274;
-  --faint: #a09786;
+  --muted-ink: #625d53;
+  --faint: #6f685d;
   --brass: #8a5a1e;
   --green: #4a6b52;
   /* A refusal is not a figure, so it is not held to the two colours. A refusal the same colour as everything else is a refusal nobody sees. */
@@ -78,7 +78,7 @@
     --hairline: #241f18;
     --ink: #f0ebe0;
     --muted-ink: #a8a08e;
-    --faint: #7d7566;
+    --faint: #908776;
     --brass: #d19a4a;
     --green: #7da888;
     --refusal: #e0876a;
@@ -96,7 +96,7 @@
   --hairline: #241f18;
   --ink: #f0ebe0;
   --muted-ink: #a8a08e;
-  --faint: #7d7566;
+  --faint: #908776;
   --brass: #d19a4a;
   --green: #7da888;
   --refusal: #e0876a;

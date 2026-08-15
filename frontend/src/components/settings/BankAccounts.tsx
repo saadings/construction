@@ -39,7 +39,7 @@ export function BankAccounts({
           </div>
         </WhileWaiting>
       ) : accounts === null ? (
-        <p className="text-muted text-sm">The accounts did not come back. Sign out and in again.</p>
+        <p className="text-muted-foreground text-sm">The accounts did not come back. Sign out and in again.</p>
       ) : accounts.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           None yet. Put one in and a cheque can say which account it left.
