@@ -36,12 +36,12 @@ describe('adding a bank account', () => {
 
     const bankAccountId = await t
       .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.bankAccounts.mutations.add, { label: '  Bank   0000 ', lastFourDigits: '2192' })
+      .mutation(api.bankAccounts.mutations.add, { label: '  Bank   0000 ', lastFourDigits: '0000' })
 
     const stored = await t.run((ctx) => ctx.db.get('bankAccounts', bankAccountId))
 
     expect(stored?.label).toBe('Bank 0000')
-    expect(stored?.lastFourDigits).toBe('2192')
+    expect(stored?.lastFourDigits).toBe('0000')
     // The property is that there is nowhere to put a full number, not that something remembers to mask one.
     expect(
       Object.keys(stored ?? {})
@@ -57,7 +57,7 @@ describe('adding a bank account', () => {
 
     const refusal = await t
       .withIdentity({ subject: SIGNED_IN_AS })
-      .mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '01234567892192' })
+      .mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '55555555550000' })
       .then(
         () => 'nothing was refused',
         (thrown: unknown) =>
@@ -72,7 +72,7 @@ describe('adding a bank account', () => {
     const t = convexWithBankAccounts()
 
     await expect(
-      t.mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '2192' })
+      t.mutation(api.bankAccounts.mutations.add, { label: 'Bank 0000', lastFourDigits: '0000' })
     ).rejects.toThrow()
     expect(await t.run((ctx) => ctx.db.query('bankAccounts').collect())).toEqual([])
   })
@@ -84,7 +84,7 @@ describe('adding a bank account', () => {
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
     const bankAccountId = await signedIn.mutation(api.bankAccounts.mutations.add, {
       label: 'Bank 0000',
-      lastFourDigits: '2192',
+      lastFourDigits: '0000',
     })
     await signedIn.mutation(api.bankAccounts.mutations.hide, { bankAccountId })
 

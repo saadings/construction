@@ -16,7 +16,7 @@ function anEntry(over: Record<string, unknown> = {}) {
     paidToId: A_PERSON,
     paidById: A_PERSON,
     method: 'cheque',
-    reference: '3894',
+    reference: '0001',
     bankAccountId: AN_ACCOUNT,
     ...over,
   }
@@ -30,7 +30,7 @@ function beingTyped(over: Partial<BeingTyped> = {}): BeingTyped {
     amount: '49,150',
     paidById: A_PERSON,
     method: 'cheque',
-    reference: '3894',
+    reference: '0001',
     bankAccountId: AN_ACCOUNT,
     note: '',
     ...over,
