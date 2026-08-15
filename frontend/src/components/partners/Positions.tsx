@@ -1,6 +1,7 @@
 import { formatPaisa } from '~shared/money'
 
 import { Figure } from '../shell/Page'
+import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Position = {
   personId: string
@@ -35,7 +36,7 @@ function asPercent(basisPoints: number): string {
 // Handed the read as it came. `undefined` is still on its way; `null` is the house not being there, which the page around this has already said. Answering either on its behalf is how a screen ends up watching for something that is not coming.
 export function Positions({ what }: { what: WhatThePartnersHave | null | undefined }) {
   if (what === undefined) {
-    return <p className="text-muted-foreground text-sm">Looking…</p>
+    return <PositionsWaiting />
   }
 
   if (what === null) {
@@ -94,6 +95,39 @@ export function Positions({ what }: { what: WhatThePartnersHave | null | undefin
       )}
 
       {what.ifItSoldToday === null ? null : <IfItSoldToday what={what.ifItSoldToday} />}
+    </section>
+  )
+}
+
+// The shape of what is coming: the three figures above, then the table under them. The heading is real from the first frame, because it is known before the reading arrives and a grey bar where a known word goes promises something it does not have to.
+function PositionsWaiting() {
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="text-foreground text-base font-medium">What each partner is owed</h2>
+
+      <WhileWaiting what="Working out what each partner is owed">
+        <div className="border-border bg-panel grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border px-4 py-3 sm:grid-cols-3">
+          {[0, 1, 2].map((sum) => (
+            <div key={sum} className="flex flex-col gap-1.5">
+              <Skeleton className="h-2.5 w-16" />
+              <Skeleton className="h-5 w-28" />
+            </div>
+          ))}
+        </div>
+
+        <div className="divide-hairline flex flex-col divide-y">
+          {/* Two, because a house is built by a handful of partners and a screenful of grey bars promises a longer table than is coming. */}
+          {[0, 1].map((row) => (
+            <div key={row} className={`${ROW} py-3.5`}>
+              <Skeleton className="h-4 w-32" />
+              {[0, 1, 2, 3, 4].map((cell) => (
+                <Skeleton key={cell} className="ml-auto hidden h-4 w-16 sm:block" />
+              ))}
+              <Skeleton className="ml-auto h-4 w-20 sm:hidden" />
+            </div>
+          ))}
+        </div>
+      </WhileWaiting>
     </section>
   )
 }

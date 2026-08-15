@@ -124,10 +124,12 @@ describe('what each partner is owed', () => {
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
-  it('says it is still looking while the answer is on its way', () => {
+  it('puts up the shape of what is coming while the answer is on its way', () => {
     render(<Positions what={undefined} />)
 
-    expect(screen.getByText('Looking…')).toBeTruthy()
+    // Said once when it appears, because a pulsing grey bar is nothing to a screen reader.
+    expect(screen.getByRole('status', { name: 'Working out what each partner is owed' })).toBeTruthy()
+    expect(screen.queryByText('Looking…')).toBeNull()
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
@@ -135,6 +137,7 @@ describe('what each partner is owed', () => {
     // The two unknowns are different: one is a read in flight, the other is an answer. Flattening them is the permanent spinner.
     render(<Positions what={null} />)
 
+    expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByText('Looking…')).toBeNull()
     expect(screen.queryByRole('listitem')).toBeNull()
   })
