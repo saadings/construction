@@ -248,41 +248,8 @@ describe('the shape the money lives in', () => {
     ).toEqual(['hidden', 'label', 'lastFourDigits'])
   })
 
-  it('joins a sign-in to the person it belongs to', async () => {
-    // Signing in resolves to an account; reach resolves to a person holding a role. Without this field the two never meet.
-    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
-
-    const reached = await t.run(async (ctx) => {
-      const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
-      const siteId = await aSite(ctx, '1-A, Phase 0')
-      await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
-
-      await ctx.db.insert('accounts', {
-        externalId: 'user_nauman',
-        name: 'The partner',
-        primaryEmail: 'nauman@example.com',
-        otherEmails: [],
-        personId,
-      })
-
-      const account = await ctx.db
-        .query('accounts')
-        .withIndex('byExternalId', (q) => q.eq('externalId', 'user_nauman'))
-        .unique()
-      const whoIsSigningIn = account?.personId
-      if (!whoIsSigningIn) return []
-
-      return await ctx.db
-        .query('siteRoles')
-        .withIndex('bySiteAndPerson', (q) => q.eq('siteId', siteId).eq('personId', whoIsSigningIn))
-        .collect()
-    })
-
-    expect(reached.map((role) => role.capacity)).toEqual(['partner'])
-  })
-
-  it('leaves a fresh sign-in attached to nobody', async () => {
-    // The control. Signing in proves who someone is; it must not be what says which sites they may open.
+  it('keeps a sign-in to what Clerk knows, and nothing about who somebody is in the books', async () => {
+    // It carried a `personId` for a while. Nothing ever wrote it and nothing ever read it, so every row that existed and every row that would be written had it absent -- a link that lived only in the type.
     const t = convexTest(schema, import.meta.glob('./**/*.*s'))
 
     const account = await t.run(async (ctx) => {
@@ -295,6 +262,45 @@ describe('the shape the money lives in', () => {
       return await ctx.db.get('accounts', id)
     })
 
-    expect(account?.personId).toBeUndefined()
+    expect(
+      Object.keys(account ?? {})
+        .filter((key) => !key.startsWith('_'))
+        .sort()
+    ).toEqual(['externalId', 'name', 'otherEmails', 'primaryEmail'])
+  })
+
+  it('refuses a sign-in that names a person, rather than storing it where nothing reads it', async () => {
+    // The one that fails if the field comes back. Written as a refusal rather than as a missing key, because a key can be missing from a row for the ordinary reason that nobody filled it in.
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+
+    await expect(
+      t.run(async (ctx) => {
+        const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
+
+        await ctx.db.insert('accounts', {
+          externalId: 'user_nauman',
+          name: 'The partner',
+          primaryEmail: 'nauman@example.com',
+          otherEmails: [],
+          personId,
+        } as never)
+      })
+    ).rejects.toThrow()
+  })
+
+  it('takes a sign-in that names nobody, so the refusal above is about the field and not about the table', async () => {
+    // The control. Without it, a table that refused every insert would read exactly like a table that refuses this one.
+    const t = convexTest(schema, import.meta.glob('./**/*.*s'))
+
+    await expect(
+      t.run(async (ctx) => {
+        await ctx.db.insert('accounts', {
+          externalId: 'user_nauman',
+          name: 'The partner',
+          primaryEmail: 'nauman@example.com',
+          otherEmails: [],
+        })
+      })
+    ).resolves.not.toThrow()
   })
 })

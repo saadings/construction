@@ -35,7 +35,6 @@ async function anAccount(ctx: MutationCtx) {
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
-    personId,
   })
 }
 

@@ -24,7 +24,6 @@ type TwoHouses = {
 
 // Two houses on purpose: a supplier delivering to both has one balance, and a per-site reading would show two halves nobody adds up.
 async function twoHousesAndTwoTrades(ctx: MutationCtx): Promise<TwoHouses> {
-  const partner = await ctx.db.insert('people', { name: 'The partner', hidden: false })
   const steel = await ctx.db.insert('people', { name: 'A steel supplier', hidden: false })
   const mason = await ctx.db.insert('people', { name: 'A mason', hidden: false })
 
@@ -40,7 +39,6 @@ async function twoHousesAndTwoTrades(ctx: MutationCtx): Promise<TwoHouses> {
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
-    personId: partner,
   })
 
   return { first, second, steel, mason, trade }

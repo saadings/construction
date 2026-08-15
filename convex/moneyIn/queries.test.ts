@@ -46,7 +46,6 @@ async function aHouseWithMoneyIn(ctx: MutationCtx): Promise<House> {
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
-    personId: partner,
   })
 
   const arriving = [

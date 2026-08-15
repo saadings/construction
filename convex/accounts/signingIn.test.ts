@@ -60,7 +60,12 @@ describe('signing in', () => {
     expect(accounts.map((account) => account.primaryEmail)).toEqual(['partner@example.com'])
     // No person is invented from a sign-in. Guessing at one is how a partner's money would end up under a name nobody chose.
     expect(await t.run((ctx) => ctx.db.query('people').collect())).toEqual([])
-    expect(accounts[0]?.personId).toBeUndefined()
+    // And nothing on the row says who they are in the books, because the row is what Clerk knows and no more.
+    expect(
+      Object.keys(accounts[0] ?? {})
+        .filter((key) => !key.startsWith('_'))
+        .sort()
+    ).toEqual(['externalId', 'name', 'otherEmails', 'primaryEmail'])
   })
 
   it('gives the first person in full use of an empty ledger', async () => {
@@ -98,24 +103,18 @@ describe('signing in', () => {
     expect(await first.query(api.sites.queries.all, {})).toHaveLength(2)
   })
 
-  it('leaves an account it has already written alone but for what Clerk knows', async () => {
+  it('changes the account it has already written rather than starting another', async () => {
     const t = anEmptyDeployment()
 
     expect((await t.fetch('/webhooks/clerk', aSignIn('user_first', 'The', 'partner'))).status).toBe(200)
-    // A person joined to this account by hand later, which is how a partner's own row gets attached.
-    await t.run(async (ctx) => {
-      const account = await ctx.db.query('accounts').first()
-      if (account === null) throw new Error('the sign-in wrote no account')
-
-      const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
-      await ctx.db.patch('accounts', account._id, { personId })
-    })
+    const before = await t.run((ctx) => ctx.db.query('accounts').first())
 
     expect((await t.fetch('/webhooks/clerk', aSignIn('user_first', 'The', 'newname'))).status).toBe(200)
 
-    const account = await t.run((ctx) => ctx.db.query('accounts').first())
-    expect(account?.name).toBe('The newname')
-    // Patched field by field: `personId` belongs to the app and Clerk knows nothing about it.
-    expect(account?.personId).toBeDefined()
+    const accounts = await t.run((ctx) => ctx.db.query('accounts').collect())
+    expect(accounts).toHaveLength(1)
+    expect(accounts[0]?.name).toBe('The newname')
+    // The same row, not a second one wearing the same sign-in: two rows for one person is two people to everything that reads this table.
+    expect(accounts[0]?._id).toBe(before?._id)
   })
 })
