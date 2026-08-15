@@ -3,10 +3,17 @@ import { readFileSync } from 'node:fs'
 
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { cleanup, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Shell } from './Shell'
 import { DESTINATIONS, ON_THE_PHONE } from './destinations'
+
+// Clerk's own button refuses to render outside its provider, and what is being tested here is the three shapes of the nav rather than anything Clerk does. Stood in for by a button, so the shell still renders and the tests below are about the shell.
+
+// Where it sits is held by `chrome.test.ts`, reading the source rather than the render, because that is a question about which container it is in and jsdom applies no CSS to answer it with.
+vi.mock('@clerk/tanstack-react-start', () => ({
+  UserButton: () => <button type="button">Your sign-in</button>,
+}))
 
 afterEach(cleanup)
 

@@ -1,3 +1,4 @@
+import { UserButton } from '@clerk/tanstack-react-start'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
@@ -7,6 +8,8 @@ import { DESTINATIONS, ON_THE_PHONE } from './destinations'
 // One nav in three shapes, chosen by the width of the screen and nothing else: no measuring, no state, so it is the same before and after the page comes alive.
 
 // A sidebar down the side at a desk, a bar across the top on a tablet, and a bar along the bottom on a phone, where a thumb reaches the bottom and not the top.
+
+// Chrome lives here and nowhere else. The sign-in was fixed to the top right corner of one route, which put it over that page's own header at every width where the header has anything in it -- Nauman opened the app on a desk and it was sitting on the button. A page cannot know what the chrome is doing and the chrome cannot know what a page has put in its corner, so the only arrangement that holds is the one where they never share a corner.
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="bg-background text-foreground min-h-dvh lg:flex">
@@ -39,6 +42,11 @@ function SideBar() {
           {destination.label}
         </Link>
       ))}
+
+      {/* At the foot of the column rather than the top of the page: it is the thing reached least often here, and nothing else is down there to be sat on. */}
+      <div className="mt-auto px-2 pt-4">
+        <UserButton />
+      </div>
     </nav>
   )
 }
@@ -61,6 +69,11 @@ function TopBar() {
           {destination.label}
         </Link>
       ))}
+
+      {/* Pushed to the end of the bar, which is the corner a page's own header also uses -- but this is the chrome's row and no page draws in it. */}
+      <div className="ml-auto flex items-center">
+        <UserButton />
+      </div>
     </nav>
   )
 }

@@ -8,6 +8,7 @@ import type { Invited } from '../components/invites/WhoCanSignIn'
 import { WhoCanSignIn } from '../components/invites/WhoCanSignIn'
 import { BankAccounts } from '../components/settings/BankAccounts'
 import { Trades } from '../components/settings/Trades'
+import { YourSignIn } from '../components/settings/YourSignIn'
 import { Form, Page } from '../components/shell/Page'
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group'
 import type { HowItLooks } from '../lib/theme'
@@ -27,6 +28,8 @@ function More() {
   return (
     <Page title="More">
       <Form>
+        <YourSignIn />
+
         <Invites />
 
         <WhatItIsSpentOn />
