@@ -132,6 +132,25 @@ describe('the deployment this checkout is pointed at', () => {
     expect(workflow).toContain('refusing to write a partial set of variables')
   })
 
+  it('is a rule that has been run end to end, not only over answers written by hand', async () => {
+    // Every other check here feeds `whatIsWrongWith` a fixture. Until a production key exists the real path -- key to host to fetch to parse to decision -- runs nowhere, and a path that has never run is not known to work.
+    if (process.env.CI === undefined) {
+      // Left to CI, because a commit gate that needs Clerk to be up is a gate that fails for reasons nobody committed.
+      expect(keyKind(key)).not.toBe('live')
+      return
+    }
+
+    // A production-shaped key pointing at the development host, which really is open. Nothing is changed there; it is only asked.
+    const asIfProduction = `pk_live_${Buffer.from('secure-goose-32.clerk.accounts.dev$').toString('base64')}`
+    const answered = await askClerk(hostFrom(asIfProduction))
+
+    expect(answered, 'the development instance could not be asked').not.toBeNull()
+    expect(keyKind(asIfProduction)).toBe('live')
+
+    // It refuses, through the same code a production key would take, because that host really does let anyone sign up.
+    expect(whatIsWrongWith(keyKind(asIfProduction), answered ?? {})).toContain('/v1/allowlist_identifiers')
+  }, 30_000)
+
   it('answers for itself when it is the production one', async () => {
     if (keyKind(key) !== 'live') {
       // Development, or a job that was given no key. The rule above is what will run when a production key is in front of it.
