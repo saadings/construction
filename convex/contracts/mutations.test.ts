@@ -11,6 +11,21 @@ import schema from '../schema'
 
 const SIGNED_IN_AS = 'user_partner'
 
+// A refusal crosses the wire as JSON, so `data` arrives with its quotes still on. Compared whole rather than by `toContain`, which passes just as happily on a sentence that was wrapped, cut short or stuck to something else.
+function theWordsIn(thrown: unknown): string {
+  if (!(thrown instanceof ConvexError)) {
+    return 'thrown as something a phone never sees'
+  }
+
+  const carried = String(thrown.data)
+  try {
+    const decoded: unknown = JSON.parse(carried)
+    return typeof decoded === 'string' ? decoded : carried
+  } catch {
+    return carried
+  }
+}
+
 function convexWithContracts() {
   return convexTest(schema, {
     ...import.meta.glob('../**/*.*s'),
@@ -95,13 +110,11 @@ describe('what a client agreed to pay', () => {
 
     await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
 
-    const refusal = await signedIn.mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) }).then(
-      () => 'nothing was refused',
-      (thrown: unknown) =>
-        thrown instanceof ConvexError ? String(thrown.data) : 'thrown as something a phone never sees'
-    )
+    const refusal = await signedIn
+      .mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
+      .then(() => 'nothing was refused', theWordsIn)
 
-    expect(refusal).toContain('already has a contract')
+    expect(refusal).toBe('This house already has a contract. Change that one rather than agreeing a second.')
     expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toHaveLength(1)
   })
 
@@ -124,12 +137,9 @@ describe('what a client agreed to pay', () => {
     const refusal = await t
       .withIdentity({ subject: other })
       .mutation(api.contracts.mutations.agree, { siteId, ...aRateContract(clientId) })
-      .then(
-        () => 'nothing was refused',
-        (thrown: unknown) => (thrown instanceof ConvexError ? String(thrown.data) : 'not a ConvexError')
-      )
+      .then(() => 'nothing was refused', theWordsIn)
 
-    expect(refusal).toContain('not one of yours')
+    expect(refusal).toBe('This site is not one of yours.')
     expect(await t.run((ctx) => ctx.db.query('contracts').collect())).toEqual([])
     // The control: the same call from the partner does land, so this refusal is the access check and not a broken mutation.
     await t
@@ -158,11 +168,8 @@ describe('what a client agreed to pay', () => {
 
     const refusal = await signedIn
       .mutation(api.contracts.mutations.measure, { siteId: elsewhere, contractId, actualAreaSqft: '5,250' })
-      .then(
-        () => 'nothing was refused',
-        (thrown: unknown) => (thrown instanceof ConvexError ? String(thrown.data) : 'not a ConvexError')
-      )
+      .then(() => 'nothing was refused', theWordsIn)
 
-    expect(refusal).toContain('not on this house')
+    expect(refusal).toBe('That contract is not on this house.')
   })
 })

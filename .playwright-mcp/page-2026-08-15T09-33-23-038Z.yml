@@ -1,0 +1,328 @@
+- generic [ref=e4]:
+    - generic [ref=e5]:
+        - link "1" [ref=e6] [cursor=pointer]:
+            - /url: '#t1'
+        - generic [ref=e7]: Three directions — the day sheet, desktop and phone
+    - paragraph [ref=e8]:
+        - text: 'What I am assuming. The app is a ledger for a Lahore house-building partnership. Nauman is the only user who matters and he uses it in two places: standing on a site with a phone, and at a desk doing a cheque run. The day sheet is the product — one sitting, one date, several trades — so I am designing that first and letting it set the system. What was actually wrong. Not the palette. The app has'
+        - code [ref=e9]: '0'
+        - text: responsive breakpoints and every screen is hard-capped at
+        - code [ref=e10]: max-w-lg
+        - text: ', so a desktop viewport gets a 512px phone column in a void.'
+        - code [ref=e11]: components.json
+        - text: 'configures shadcn and no component was ever installed. So: desktop is undesigned rather than badly designed, and these three directions are about what the width is for. What I kept. Tabular figures everywhere, money grouped the way the workbooks write it ('
+        - code [ref=e12]: 4,974,980
+        - text: "), and a single accent that means money and nothing else. All three are Tailwind + shadcn-shaped: shadcn's Input, Select, ToggleGroup, Card, Table, Separator, Button."
+    - generic [ref=e13]:
+        - generic [ref=e14]:
+            - generic [ref=e15]:
+                - link "1a" [ref=e16] [cursor=pointer]:
+                    - /url: '#1a'
+                - text: Ledger paper — the current direction built properly. Warm ground, ink, brass only on money. Ruled rows, not cards.
+            - generic [ref=e17]:
+                - generic [ref=e18]:
+                    - generic [ref=e19]:
+                        - generic [ref=e20]: 1-A, Phase 0
+                        - generic [ref=e21]: Tuesday, 15 August · 3 put down
+                    - generic [ref=e22]:
+                        - generic [ref=e23]: This sitting
+                        - generic [ref=e24]: 3,470,481
+                - generic [ref=e25]:
+                    - generic [ref=e26]:
+                        - generic [ref=e27]:
+                            - generic [ref=e28]: Trade & who
+                            - generic [ref=e29]: How paid
+                            - generic [ref=e30]: Amount
+                        - generic [ref=e31]:
+                            - generic [ref=e32]:
+                                - generic [ref=e33]: Cement
+                                - generic [ref=e34]: Rashid, the supplier
+                            - generic [ref=e35]: Cheque 40218
+                            - generic [ref=e36]: 2,570,481
+                        - generic [ref=e37]:
+                            - generic [ref=e38]:
+                                - generic [ref=e39]: Steel
+                                - generic [ref=e40]: Iqbal Steels
+                            - generic [ref=e41]: Transfer
+                            - generic [ref=e42]: 900,000
+                        - generic [ref=e43]:
+                            - generic [ref=e44]:
+                                - generic [ref=e45]: Supervision charges
+                                - generic [ref=e46]: Nauman
+                            - generic [ref=e47]: Cash
+                            - generic [ref=e48]: — being typed
+                    - generic [ref=e49]:
+                        - generic [ref=e50]:
+                            - generic [ref=e51]: Trade
+                            - generic [ref=e52]: Supervision charges
+                        - generic [ref=e53]:
+                            - generic [ref=e54]: Who was paid
+                            - generic [ref=e55]: Nauman
+                        - generic [ref=e56]:
+                            - generic [ref=e57]: How much
+                            - generic [ref=e58]: 900,000
+                        - generic [ref=e59]:
+                            - generic [ref=e60]: How paid
+                            - generic [ref=e61]:
+                                - generic [ref=e62]: Cheque
+                                - generic [ref=e63]: Cash
+                                - generic [ref=e64]: Transfer
+                                - generic [ref=e65]: Pay order
+                            - generic [ref=e66]: Cash asks for nothing else.
+                        - generic [ref=e67]:
+                            - generic [ref=e68]: Add another
+                            - generic [ref=e69]: Put the day in
+        - generic [ref=e70]:
+            - generic [ref=e71]:
+                - link "1b" [ref=e72] [cursor=pointer]:
+                    - /url: '#1b'
+                - text: Site console — dark, dense, operational. Persistent nav, the width used for rows. Closest to a tool he lives in.
+            - generic [ref=e74]:
+                - generic [ref=e75]:
+                    - generic [ref=e76]: Construction
+                    - generic [ref=e77]: Sites
+                    - generic [ref=e79]: People
+                    - generic [ref=e81]: Owed
+                    - generic [ref=e83]: Coming in
+                    - generic [ref=e85]: More
+                - generic [ref=e87]:
+                    - generic [ref=e88]:
+                        - generic [ref=e89]:
+                            - text: 1-A, Phase 0
+                            - generic [ref=e90]: Building
+                        - generic [ref=e91]:
+                            - generic [ref=e92]: This sitting
+                            - generic [ref=e93]: 3,470,481
+                    - generic [ref=e94]:
+                        - generic [ref=e95]:
+                            - generic [ref=e96]:
+                                - generic [ref=e97]: Trade & who
+                                - generic [ref=e98]: How paid
+                                - generic [ref=e99]: Amount
+                            - generic [ref=e100]:
+                                - generic [ref=e101]:
+                                    - generic [ref=e102]: Cement
+                                    - generic [ref=e103]: Rashid, the supplier
+                                - generic [ref=e104]: Cheque 40218
+                                - generic [ref=e105]: 2,570,481
+                            - generic [ref=e106]:
+                                - generic [ref=e107]:
+                                    - generic [ref=e108]: Steel
+                                    - generic [ref=e109]: Iqbal Steels
+                                - generic [ref=e110]: Transfer
+                                - generic [ref=e111]: 900,000
+                            - generic [ref=e112]:
+                                - generic [ref=e113]:
+                                    - generic [ref=e114]: Supervision charges
+                                    - generic [ref=e115]: Nauman
+                                - generic [ref=e116]: Cash
+                                - generic [ref=e117]: being typed
+                        - generic [ref=e118]:
+                            - generic [ref=e119]:
+                                - generic [ref=e120]: Trade
+                                - generic [ref=e121]: Supervision charges
+                            - generic [ref=e122]:
+                                - generic [ref=e123]: Who was paid
+                                - generic [ref=e124]: Nauman
+                            - generic [ref=e125]:
+                                - generic [ref=e126]: How much
+                                - generic [ref=e127]: 900,000
+                            - generic [ref=e128]:
+                                - generic [ref=e129]: How paid
+                                - generic [ref=e130]:
+                                    - generic [ref=e131]: Cheque
+                                    - generic [ref=e132]: Cash
+                                    - generic [ref=e133]: Transfer
+                                    - generic [ref=e134]: Pay order
+                            - generic [ref=e135]:
+                                - generic [ref=e136]: Add another
+                                - generic [ref=e137]: Put the day in
+        - generic [ref=e138]:
+            - generic [ref=e139]:
+                - link "1c" [ref=e140] [cursor=pointer]:
+                    - /url: '#1c'
+                - text: Quiet cards — light, shadcn defaults done well. Safest and most familiar; least opinionated about the trade.
+            - generic [ref=e141]:
+                - generic [ref=e142]:
+                    - generic [ref=e143]:
+                        - generic [ref=e144]: Sites · 1-A, Phase 0
+                        - generic [ref=e145]: A day on site
+                    - generic [ref=e146]:
+                        - generic [ref=e147]: This sitting
+                        - generic [ref=e148]: 3,470,481
+                - generic [ref=e149]:
+                    - generic [ref=e150]:
+                        - generic [ref=e151]:
+                            - generic [ref=e152]: Put down so far
+                            - generic [ref=e153]: Tuesday, 15 August
+                        - generic [ref=e154]:
+                            - generic [ref=e155]: CE
+                            - generic [ref=e156]:
+                                - generic [ref=e157]: Cement
+                                - generic [ref=e158]: Rashid, the supplier
+                            - generic [ref=e159]:
+                                - text: 2,570,481
+                                - generic [ref=e160]: Cheque 40218
+                        - generic [ref=e161]:
+                            - generic [ref=e162]: ST
+                            - generic [ref=e163]:
+                                - generic [ref=e164]: Steel
+                                - generic [ref=e165]: Iqbal Steels
+                            - generic [ref=e166]:
+                                - text: 900,000
+                                - generic [ref=e167]: Transfer
+                        - generic [ref=e168]:
+                            - generic [ref=e169]: SU
+                            - generic [ref=e170]:
+                                - generic [ref=e171]: Supervision charges
+                                - generic [ref=e172]: Nauman
+                            - generic [ref=e173]:
+                                - text: being typed
+                                - generic [ref=e174]: Cash
+                    - generic [ref=e175]:
+                        - generic [ref=e176]:
+                            - generic [ref=e177]: Trade
+                            - generic [ref=e178]: Supervision charges
+                        - generic [ref=e179]:
+                            - generic [ref=e180]: Who was paid
+                            - generic [ref=e181]: Nauman
+                        - generic [ref=e182]:
+                            - generic [ref=e183]: How much
+                            - generic [ref=e184]: 900,000
+                        - generic [ref=e185]:
+                            - generic [ref=e186]: How paid
+                            - generic [ref=e187]:
+                                - generic [ref=e188]: Cheque
+                                - generic [ref=e189]: Cash
+                                - generic [ref=e190]: Transfer
+                                - generic [ref=e191]: Pay order
+                        - generic [ref=e192]:
+                            - generic [ref=e193]: Add another
+                            - generic [ref=e194]: Put the day in
+        - generic [ref=e195]:
+            - generic [ref=e196]:
+                - link "1d" [ref=e197] [cursor=pointer]:
+                    - /url: '#1d'
+                - text: The same three on a phone — 390px. The sitting total pins to the top, the form is the page, the two buttons pin to the bottom.
+            - generic [ref=e198]:
+                - generic [ref=e199]:
+                    - generic [ref=e200]: 1a · LEDGER
+                    - generic [ref=e201]:
+                        - generic [ref=e202]:
+                            - generic [ref=e203]: 1-A, Phase 0
+                            - generic [ref=e204]: 15 Aug · 2 put down
+                        - generic [ref=e205]: 3,470,481
+                    - generic [ref=e206]:
+                        - generic [ref=e207]:
+                            - generic [ref=e208]: Trade
+                            - generic [ref=e209]: Supervision charges
+                        - generic [ref=e210]:
+                            - generic [ref=e211]: Who was paid
+                            - generic [ref=e212]: Nauman
+                        - generic [ref=e213]:
+                            - generic [ref=e214]: How much
+                            - generic [ref=e215]: 900,000
+                        - generic [ref=e216]:
+                            - generic [ref=e217]: How paid
+                            - generic [ref=e218]:
+                                - generic [ref=e219]: Cheque
+                                - generic [ref=e220]: Cash
+                                - generic [ref=e221]: Transfer
+                    - generic [ref=e222]:
+                        - generic [ref=e223]: Add another
+                        - generic [ref=e224]: Put it in
+                - generic [ref=e225]:
+                    - generic [ref=e226]: 1b · CONSOLE
+                    - generic [ref=e227]:
+                        - generic [ref=e228]:
+                            - generic [ref=e229]: 1-A, Phase 0
+                            - generic [ref=e230]: 15 Aug · 2 put down
+                        - generic [ref=e231]: 3,470,481
+                    - generic [ref=e232]:
+                        - generic [ref=e233]:
+                            - generic [ref=e234]: Trade
+                            - generic [ref=e235]: Supervision charges
+                        - generic [ref=e236]:
+                            - generic [ref=e237]: Who was paid
+                            - generic [ref=e238]: Nauman
+                        - generic [ref=e239]:
+                            - generic [ref=e240]: How much
+                            - generic [ref=e241]: 900,000
+                        - generic [ref=e242]:
+                            - generic [ref=e243]: How paid
+                            - generic [ref=e244]:
+                                - generic [ref=e245]: Cheque
+                                - generic [ref=e246]: Cash
+                                - generic [ref=e247]: Transfer
+                    - generic [ref=e248]:
+                        - generic [ref=e249]: Add another
+                        - generic [ref=e250]: Put it in
+                - generic [ref=e251]:
+                    - generic [ref=e252]: 1c · CARDS
+                    - generic [ref=e253]:
+                        - generic [ref=e254]:
+                            - generic [ref=e255]: 1-A, Phase 0
+                            - generic [ref=e256]: A day on site
+                        - generic [ref=e257]: 3,470,481
+                    - generic [ref=e259]:
+                        - generic [ref=e260]:
+                            - generic [ref=e261]: Trade
+                            - generic [ref=e262]: Supervision charges
+                        - generic [ref=e263]:
+                            - generic [ref=e264]: Who was paid
+                            - generic [ref=e265]: Nauman
+                        - generic [ref=e266]:
+                            - generic [ref=e267]: How much
+                            - generic [ref=e268]: 900,000
+                        - generic [ref=e269]:
+                            - generic [ref=e270]: How paid
+                            - generic [ref=e271]:
+                                - generic [ref=e272]: Cheque
+                                - generic [ref=e273]: Cash
+                                - generic [ref=e274]: Transfer
+                    - generic [ref=e275]:
+                        - generic [ref=e276]: Add another
+                        - generic [ref=e277]: Put it in
+        - generic [ref=e278]:
+            - generic [ref=e279]:
+                - link "1e" [ref=e280] [cursor=pointer]:
+                    - /url: '#1e'
+                - text: Start a site, fixed — the screen you sent. Two columns at width, the covered-area field refuses letters as typed, and each problem is said beside the field rather than after the button.
+            - generic [ref=e281]:
+                - generic [ref=e283]:
+                    - generic [ref=e284]: Start a house
+                    - generic [ref=e285]: It becomes yours the moment you start it
+                - generic [ref=e286]:
+                    - generic [ref=e287]:
+                        - generic [ref=e288]:
+                            - generic [ref=e289]: Name
+                            - generic [ref=e290]: 1-A, Phase 0
+                            - generic [ref=e291]: The way you say it out loud.
+                        - generic [ref=e292]:
+                            - generic [ref=e293]: Covered area
+                            - generic [ref=e294]: Alasdfas
+                            - generic [ref=e295]: That is not a number. Square feet, like 4,250.
+                    - generic [ref=e296]:
+                        - generic [ref=e297]:
+                            - generic [ref=e298]: Where it has got to
+                            - generic [ref=e299]:
+                                - generic [ref=e300]: Planning
+                                - generic [ref=e301]: Building
+                                - generic [ref=e302]: Finishing
+                        - generic [ref=e303]:
+                            - generic [ref=e304]: Whose house
+                            - generic [ref=e305]:
+                                - generic [ref=e306]: Ours to sell
+                                - generic [ref=e307]: For a client
+                - generic [ref=e308]: Start it
+    - paragraph [ref=e310]:
+        - text: 'Try next: "go with'
+        - link "1b" [ref=e311] [cursor=pointer]:
+            - /url: '#1b'
+        - text: but on
+        - link "1a" [ref=e312] [cursor=pointer]:
+            - /url: '#1a'
+        - text: '''s warm paper" · "show me the sites list and a person''s account in'
+        - link "1b" [ref=e313] [cursor=pointer]:
+            - /url: '#1b'
+        - text: '" · "more directions, bolder"'
