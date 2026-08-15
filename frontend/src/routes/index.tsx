@@ -23,10 +23,23 @@ function Home() {
 function HisSites() {
   const sites = useQuery(api.sites.queries.all, {})
 
-  if (sites === undefined || sites === null) {
+  // Waiting. Nothing has come back yet.
+  if (sites === undefined) {
     return (
-      <main className="bg-background text-muted-foreground flex min-h-dvh items-center justify-center p-6">
+      <main className="bg-background text-muted flex min-h-dvh items-center justify-center p-6">
         <p>Getting your sites…</p>
+      </main>
+    )
+  }
+
+  // An answer, and a definite one: the ledger does not know this sign-in. Shown as waiting it becomes a spinner nobody can get past, which is what it was.
+  if (sites === null) {
+    return (
+      <main className="bg-background flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center">
+        <p className="text-foreground font-display text-2xl">Setting your sign-in up.</p>
+        <p className="text-muted max-w-xs">
+          This takes a moment the first time. If it is still here after that, sign out and in again.
+        </p>
       </main>
     )
   }

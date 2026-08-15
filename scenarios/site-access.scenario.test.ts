@@ -77,6 +77,8 @@ const GLOBAL = ['query', 'mutation', 'authenticatedQuery', 'authenticatedMutatio
 
 /** Global on purpose, each for a reason someone can disagree with. */
 const DELIBERATELY_GLOBAL: Record<string, string> = {
+  'accounts/mutations.ts rememberThisSignIn':
+    'writes the row that makes the ledger know this sign-in, taken from ctx.identity.subject and nothing a caller could pass; every other write refuses a sign-in the ledger does not know, so this cannot be one of them',
   'accounts/actions.ts current':
     "the caller's own row, looked up by the identity making the call, and it has to answer while signed out because the app asks it whether anyone is signed in",
 }
@@ -361,6 +363,10 @@ describe('deciding who may open a site', () => {
     // An excuse silences the rule for good. What each one claims is read out of the file it excuses, so a reason that stops being true fails here rather than going quiet.
     const claims: Record<string, { file: Array<string>; says?: string; neverSays?: Array<string> }> = {
       'accounts/actions.ts current': { file: ['convex', 'accounts', 'actions.ts'], says: 'identity.subject' },
+      'accounts/mutations.ts rememberThisSignIn': {
+        file: ['convex', 'accounts', 'mutations.ts'],
+        says: 'ctx.identity.subject',
+      },
     }
 
     // Every excuse is checked, so adding one without a way to check it fails rather than passing quietly.
