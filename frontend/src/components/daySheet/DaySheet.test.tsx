@@ -23,6 +23,7 @@ afterEach(cleanup)
 
 function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
   const onPutIn = vi.fn()
+  const onAddAccount = vi.fn(async () => 'b2' as Account['_id'])
 
   render(
     <DaySheet
@@ -35,11 +36,12 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
       saving={false}
       refusal={null}
       onPutIn={onPutIn}
+      onAddAccount={onAddAccount}
       {...over}
     />
   )
 
-  return { onPutIn }
+  return { onPutIn, onAddAccount }
 }
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
@@ -125,6 +127,35 @@ describe('a day of payments', () => {
     // A pay order can be bought over the counter with cash, so there may be no account behind it.
     await user.click(screen.getByRole('radio', { name: 'Pay order' }))
     expect(screen.queryByLabelText('Which account')).toBeNull()
+  })
+
+  it('lets an account be added without leaving the sitting', async () => {
+    // Cheque is the default and a cheque asks which account it left. With no accounts and no way to add one here, the first day sheet anyone opens is a dead end.
+    const user = userEvent.setup()
+    const { onAddAccount } = aSheet({ accounts: [] })
+
+    await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
+    await user.type(screen.getByLabelText('How much'), '25000')
+
+    await user.click(screen.getByRole('button', { name: 'Add an account' }))
+    await user.type(screen.getByLabelText('What you call it'), 'Bank 0000')
+    await user.type(screen.getByLabelText('Account number'), '55555555550000')
+    await user.click(screen.getByRole('button', { name: 'Save it' }))
+
+    // The whole number was typed; only its last four digits were handed on, so the rest never crosses the wire.
+    expect(onAddAccount).toHaveBeenCalledWith('Bank 0000', '0000')
+    expect(JSON.stringify(onAddAccount.mock.calls)).not.toContain('5555555555')
+    // Back in the sitting with the account chosen, and nothing typed so far thrown away.
+    expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('t1')
+    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('25,000')
+  })
+
+  it('names no screen that does not exist', () => {
+    aSheet({ accounts: [] })
+
+    // The hint used to send him to a More tab that was never built, which is copy promising something the app does not have.
+    expect(document.body.textContent).not.toContain('More')
+    expect(screen.getByRole('button', { name: 'Add an account' })).toBeTruthy()
   })
 
   it('sends the whole sitting in one go', async () => {
