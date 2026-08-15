@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -9,7 +9,10 @@ const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encodin
 
 // The workbooks are gitignored because they hold real names, mobile numbers and account digits. Copying a row into a fixture puts them back, permanently, in history.
 
-const SOURCE = /\.(ts|tsx|md)$/
+const SOURCE = /\.(ts|tsx|md|json|ya?ml|sh|css)$/
+
+// A lockfile is machine-written hexadecimal, and a short run of digits inside a checksum is not somebody's account number.
+const MACHINE_WRITTEN = /(^|\/)(yarn\.lock|package-lock\.json|pnpm-lock\.yaml)$|-lock\.json$/
 
 /** A Pakistani mobile in any form a person writes one. Shape is enough: nobody needs a real number to test a parser. */
 const A_MOBILE = /(?:\+?92[- ]?|0)3\d{2}[- ]?\d{7}\b/g
@@ -45,6 +48,7 @@ function trackedSource(): Array<string> {
     .trim()
     .split('\n')
     .filter((path) => SOURCE.test(path))
+    .filter((path) => !MACHINE_WRITTEN.test(path))
     .filter((path) => path !== 'scenarios/no-real-people.scenario.test.ts')
 }
 
@@ -106,6 +110,51 @@ describe('what a fixture is allowed to be made of', () => {
     expect(paths.length).toBeGreaterThan(20)
     expect(paths).toContain('convex/people/mutations.test.ts')
     expect(paths).toContain('shared/validation/primitives.test.ts')
+  })
+
+  it('reads the kinds of file a value actually lands in', () => {
+    // Real data has turned up in a scenario file and in a spec already, so "nobody would paste it into a workflow" is not an argument that has survived.
+    const paths = files.map((file) => file.path)
+
+    expect(paths).toContain('.github/workflows/deploy.yml')
+    expect(paths).toContain('scripts/reclaimPort.sh')
+    expect(paths).toContain('package.json')
+    expect(paths).toContain('frontend/src/styles.css')
+  })
+
+  it('cannot reach an ignored file, which is what the workbooks are', () => {
+    // They hold account numbers, mobile numbers and named clients' records, and they are ignored rather than absent. `git ls-files` lists the index alone; asking it for ignored or untracked files takes a flag, and this asserts that flag is not there.
+    const guard = readFileSync(join(repoRoot, 'scenarios', 'no-real-people.scenario.test.ts'), 'utf8')
+    const everyGitCall = [...guard.matchAll(/execFileSync\('git', \[([^\]]*)\]/g)].map((call) => call[1])
+    const asksGitFor = everyGitCall.find((call) => call.includes("'ls-files'")) ?? ''
+
+    expect(asksGitFor, 'the guard no longer lists files with git').toContain("'ls-files'")
+    expect(asksGitFor).not.toContain('--others')
+    expect(asksGitFor).not.toContain('--ignored')
+
+    expect(files.map((file) => file.path).filter((path) => path.endsWith('.xlsx'))).toEqual([])
+  })
+
+  it('has the workbooks beside it and reads none of them, where they are present', () => {
+    // Only where they are. CI checks out none of them, so the mechanism above is what holds everywhere and this is what confirms it on the machine that has them.
+    const onDisk = readdirSync(repoRoot).filter((name) => name.endsWith('.xlsx'))
+    if (onDisk.length === 0) {
+      expect(files.map((file) => file.path).filter((path) => path.endsWith('.xlsx'))).toEqual([])
+      return
+    }
+
+    expect(onDisk.length).toBeGreaterThan(0)
+    expect(files.map((file) => file.path).some((path) => onDisk.includes(path))).toBe(false)
+  })
+
+  it('says which file, never what it found', () => {
+    // A guard that prints what it matched reproduces it in every terminal and CI log that captures the run.
+    const said = fromTheWorkbooksIn("const copied = 'A canary proving the digest path works'").map(
+      () => 'somefile.ts carries one'
+    )
+
+    expect(said).toEqual(['somefile.ts carries one'])
+    expect(said.join(' ')).not.toContain('canary proving')
   })
 
   it('catches a real-looking mobile in every form a person writes one', () => {
