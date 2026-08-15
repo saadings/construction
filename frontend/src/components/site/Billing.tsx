@@ -1,18 +1,34 @@
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
+import { ConvexError } from 'convex/values'
 import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
+import { AgreeAContract } from './AgreeAContract'
+import { ChangeTheContract } from './ChangeTheContract'
+import { ExtraWork } from './ExtraWork'
+import { Stages } from './Stages'
 
 // What a client is being charged: the contract, the stages it is billed in, and the work that was outside it. Only a house built for a client has any of this.
 export function Billing({ siteId }: { siteId: Id<'sites'> }) {
+  const contract = useQuery(api.contracts.queries.forSite, { siteId })
   const stages = useQuery(api.milestones.queries.forSite, { siteId })
   const extra = useQuery(api.extraWork.queries.forSite, { siteId })
+  const people = useQuery(api.people.queries.list, {})
+
+  const agree = useMutation(api.contracts.mutations.agree)
+  const measure = useMutation(api.contracts.mutations.measure)
+  const revise = useMutation(api.contracts.mutations.revise)
+  const cancel = useMutation(api.contracts.mutations.cancel)
+  const addStage = useMutation(api.milestones.mutations.add)
+  const billStage = useMutation(api.milestones.mutations.bill)
+  const raiseExtra = useMutation(api.extraWork.mutations.raise)
+  const takeBackExtra = useMutation(api.extraWork.mutations.takeBack)
 
   // Nothing at all here would be a section that appears out of the page once it arrives, pushing everything under it down.
-  if (stages === undefined || extra === undefined) {
+  if (contract === undefined || stages === undefined || extra === undefined || people === undefined) {
     return (
       <WhileWaiting what="Getting the billing">
         <Skeleton className="h-3 w-24" />
@@ -28,12 +44,31 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
     )
   }
 
-  // Both answer null to a caller who may not open the house. Nothing to show is the same thing to look at either way, so they are read together.
-  if (stages === null || extra === null) {
+  // No contract yet, which is where every house built for somebody starts. It used to say so and stop, and there was nowhere in the app to say what was agreed.
+  if (contract === null || stages === null) {
     return (
-      <section className="flex flex-col gap-2">
-        <Heading>Billing</Heading>
-        <p className="text-muted">No contract agreed on this house yet.</p>
+      <section className="flex flex-col gap-3">
+        <Heading>The contract</Heading>
+        <p className="text-muted max-w-prose">
+          Nothing agreed on this house yet. Put in what the client is paying, and the stages and the bills follow it.
+        </p>
+        {people === null ? (
+          // Nobody to pick from is not an empty list: the read was refused, and offering a picker with nothing in it would look like a house with no client to choose.
+          <p className="text-muted">The list of people did not come back. Open the house again.</p>
+        ) : (
+          <AgreeAContract
+            people={people}
+            onAgree={async ({ clientId, ...agreed }) => {
+              // Looked up rather than cast: the picker holds a plain string, and the one place that string becomes a person is here, where the list it came from is in hand.
+              const client = people.find((person) => person._id === clientId)
+              if (client === undefined) {
+                throw new ConvexError('Say who the house is being built for.')
+              }
+
+              await agree({ siteId, clientId: client._id, ...agreed })
+            }}
+          />
+        )}
       </section>
     )
   }
@@ -50,77 +85,60 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
             <Figure className="text-foreground text-xl">{stages.percentAgreed}%</Figure>
           </div>
         </div>
+
+        <ChangeTheContract
+          contract={contract}
+          onMeasure={async (actualAreaSqft) => {
+            await measure({ siteId, contractId: contract._id, actualAreaSqft })
+          }}
+          onRevise={async (revision) => {
+            await revise({ siteId, contractId: contract._id, ...revision })
+          }}
+          onCancel={async () => {
+            await cancel({ siteId, contractId: contract._id })
+          }}
+        />
       </section>
 
-      <section className="flex flex-col gap-3">
-        <Heading>Billed in stages</Heading>
-        {stages.stages.length === 0 ? (
-          <p className="text-muted">No stages set out yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[30rem] border-collapse text-left">
-              <tbody className="divide-hairline divide-y">
-                {stages.stages.map((stage) => (
-                  <tr key={stage._id}>
-                    <td className="text-foreground py-2.5 pr-4">{stage.description}</td>
-                    <td className="py-2.5 pr-4">
-                      <Figure className="text-muted">{stage.percent}%</Figure>
-                    </td>
-                    {/* Green is money owed to him. */}
-                    <td className="py-2.5 pr-4 text-right">
-                      <Figure className="text-green">{formatPaisa(stage.amountPaisa)}</Figure>
-                    </td>
-                    <td className="text-muted py-2.5 text-right text-sm">
-                      {stage.billedOn === undefined ? 'Not billed' : stage.billedOn}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <Stages
+        stages={stages.stages}
+        percentAgreed={stages.percentAgreed}
+        onAdd={async (stage) => {
+          await addStage({ siteId, contractId: contract._id, ...stage })
+        }}
+        onBill={async (milestoneId, billedOn) => {
+          // Looked up in the list it came from rather than cast, the same way the client is: the row is in hand here, and a cast would be a promise about a string.
+          const stage = stages.stages.find((one) => one._id === milestoneId)
+          if (stage === undefined) {
+            throw new ConvexError('That stage is not on this house.')
+          }
 
-      <section className="flex flex-col gap-3">
-        <Heading>Work outside the contract</Heading>
-        {extra.length === 0 ? (
-          <p className="text-muted">None billed.</p>
-        ) : (
-          <ol className="flex flex-col gap-5">
-            {extra.map((bill) => (
-              <li key={bill._id} className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-                  <span className="text-foreground">{bill.description}</span>
-                  <Figure className="text-green text-lg">{formatPaisa(bill.totalPaisa)}</Figure>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[30rem] border-collapse text-left">
-                    <tbody className="divide-hairline divide-y">
-                      {bill.lines.map((line) => (
-                        <tr key={line._id}>
-                          <td className="text-muted py-2 pr-4 text-sm">{line.description}</td>
-                          {/* The working exactly as it was measured on site. It is what makes the bill defensible. */}
-                          <td className="py-2 pr-4">
-                            <Figure className="text-faint text-sm">{line.working ?? ''}</Figure>
-                          </td>
-                          <td className="py-2 pr-4 text-right">
-                            <Figure className="text-muted text-sm">
-                              {line.quantity} {line.unit}
-                            </Figure>
-                          </td>
-                          <td className="py-2 text-right">
-                            <Figure className="text-foreground text-sm">{formatPaisa(line.amountPaisa)}</Figure>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+          await billStage({ siteId, milestoneId: stage._id, billedOn })
+        }}
+      />
+
+      {extra === null ? (
+        // A refusal rather than an absence. Every other read on this house came back, so saying "none billed" here would be inventing an answer nobody gave.
+        <section className="flex flex-col gap-3">
+          <p className="text-muted">Work outside the contract did not come back. Open the house again.</p>
+        </section>
+      ) : (
+        <ExtraWork
+          bills={extra}
+          onRaise={async (bill) => {
+            await raiseExtra({ siteId, ...bill })
+          }}
+          onTakeBack={async (billId) => {
+            // Looked up in the list it came from rather than cast, the same as the client and the stage.
+            const bill = extra.find((one) => one._id === billId)
+            if (bill === undefined) {
+              throw new ConvexError('That bill is not on this house.')
+            }
+
+            await takeBackExtra({ siteId, billId: bill._id })
+          }}
+        />
+      )}
     </div>
   )
 }
