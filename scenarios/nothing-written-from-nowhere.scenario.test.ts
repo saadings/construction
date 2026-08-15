@@ -22,11 +22,18 @@ function everyFileUnder(from: string, matching: RegExp): Array<string> {
   })
 }
 
+// Every file, not only the ones called `mutations.ts`. `accounts/actions.ts` holds two of them, and a sweep that looks only where they are usually kept reports a clean tree about a file it never opened.
 function waysOfWriting(): Array<AWayOfWriting> {
   const found: Array<AWayOfWriting> = []
 
-  for (const path of everyFileUnder(join(repoRoot, 'convex'), /^mutations\.ts$/)) {
-    const module = path.split('/convex/')[1].replace('/mutations.ts', '')
+  for (const path of everyFileUnder(join(repoRoot, 'convex'), /\.ts$/)) {
+    const inside = path.split('/convex/')[1]
+    if (inside.startsWith('_generated/') || inside.endsWith('.test.ts')) {
+      continue
+    }
+
+    // Named by the table it writes rather than by the file it sits in, which is how the lists below name them.
+    const module = inside.split('/').slice(0, -1).join('/')
     const source = readFileSync(path, 'utf8')
 
     for (const [, name] of source.matchAll(/^export const (\w+) = \w*[Mm]utation\(/gm)) {
@@ -64,8 +71,8 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'bankAccounts.hide': 'an account can be added from the day sheet and taken off nowhere',
   'bills.raise': 'a bill is what somebody says they are owed, and nothing asks for one',
   'bills.remove': 'and nothing takes one back',
-  'engagements.agree': 'what was agreed with a contractor has no screen, so the spread reads agreed as nothing',
-  'engagements.hide': 'nor a way to take it back',
+  'engagements.agree':
+    'what was agreed with a contractor has no screen, so the spread reads agreed as nothing, and there is no way to take one back because none was written',
   'moneyIn.remove': 'money coming in can be put in and never taken back out',
   'payments.remove': 'a payment can be put in and never taken out, and the removal is signed for nobody',
   'people.edit': 'a person can be added and hidden, and never corrected',
@@ -74,8 +81,8 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'sites.edit': 'a house is named once and never renamed',
   'sites.hide': 'and never put away',
   'trades.add': 'the list of trades is what a deployment starts with and nothing more',
+  'trades.edit': 'and nothing is corrected, including whether it is building cost',
   'trades.hide': 'and nothing is taken off it',
-  'trades.rename': 'and nothing is renamed',
 }
 
 const declared = waysOfWriting()
@@ -96,6 +103,8 @@ describe('every way of writing something down', () => {
     // The floor. If the matcher stopped matching, an empty list would read exactly like a clean tree.
     expect(declared.length).toBeGreaterThan(20)
     expect(declared.map((way) => `${way.module}.${way.name}`)).toContain('payments.record')
+    // And one that is not in a file called `mutations.ts`. Looking only where they are usually kept is how two of them went unswept.
+    expect(declared.map((way) => `${way.module}.${way.name}`)).toContain('accounts.upsert')
   })
 
   it('is reading the screens too, rather than counting everything as unreachable', () => {
@@ -103,6 +112,15 @@ describe('every way of writing something down', () => {
     expect(reachable.has('payments.record')).toBe(true)
     expect(reachable.has('sites.start')).toBe(true)
     expect(reachable.size).toBeGreaterThan(3)
+  })
+
+  it('has nothing named on either list that this repository does not have', () => {
+    // `trades.rename` sat here as a known gap and was never a function at all. A name for something that does not exist reads as work outstanding forever, and the same line would silently excuse a real function that later took the name.
+    const written = new Set(declared.map((way) => `${way.module}.${way.name}`))
+
+    for (const key of [...Object.keys(NOBODY_CAN_REACH_YET), ...Object.keys(NOT_FROM_A_SCREEN)]) {
+      expect(written.has(key), `${key} is named on a list and is not a way of writing anything`).toBe(true)
+    }
   })
 
   it('has nothing on both lists, and nothing on a list that is now reachable', () => {
