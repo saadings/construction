@@ -3,6 +3,38 @@ import { z } from 'zod'
 
 import { calendarDay, chequeNumber, money, note, personName } from './primitives'
 
+export const HOW_PAID = ['cheque', 'cash', 'transfer', 'payOrder'] as const
+export type HowPaid = (typeof HOW_PAID)[number]
+
+// Which questions a way of paying actually asks, stated once: the screen asks from this, the schema refuses from this, and a test holds them to each other.
+
+// A pay order can be bought over the counter with cash, so it may have no account behind it and no cheque book number either.
+const ASKS: Record<HowPaid, { chequeNumber: boolean; bank: boolean }> = {
+  cheque: { chequeNumber: true, bank: true },
+  transfer: { chequeNumber: false, bank: true },
+  cash: { chequeNumber: false, bank: false },
+  payOrder: { chequeNumber: false, bank: false },
+}
+
+export function asksForChequeNumber(method: HowPaid): boolean {
+  return ASKS[method].chequeNumber
+}
+
+export function asksForBank(method: HowPaid): boolean {
+  return ASKS[method].bank
+}
+
+// The words themselves, once, so a refusal reads the same whether it was caught as it was typed or when it reached the server.
+export const SAY = {
+  trade: 'Pick what this was for.',
+  paidTo: 'Say who was paid.',
+  amount: 'Put in how much was paid.',
+  paidBy: 'Say whose money this was.',
+  reference: 'Add the cheque number.',
+  bank: 'Say which account this left.',
+  nothing: 'Put in at least one payment.',
+} as const
+
 // One filled amount cell in the workbooks is one of these. The site is not here: it comes from the wrapper that already checked the caller may reach it.
 export const paymentEntry = z
   .object({
@@ -14,26 +46,55 @@ export const paymentEntry = z
     newPerson: personName.optional(),
     // Whose money it was. This is the partner split, and it is why two parallel ledgers on one house cannot happen again.
     paidById: zid('people'),
-    method: z.enum(['cheque', 'cash', 'transfer', 'payOrder']),
-    // Asked for on cheques only. A pay order carries a number too, but requiring it would block a real payment and costs nothing to leave open.
+    method: z.enum(HOW_PAID),
     reference: chequeNumber.optional(),
     bankAccountId: zid('bankAccounts').optional(),
     note: note.optional(),
     isExtraWork: z.boolean().default(false),
   })
-  .refine((entry) => entry.method !== 'cheque' || !!entry.reference, {
+  .refine((entry) => !asksForChequeNumber(entry.method) || !!entry.reference, {
     path: ['reference'],
-    message: 'Add the cheque number.',
+    message: SAY.reference,
   })
-  // Cheque and transfer only. A pay order can be bought over the counter with cash, so it may have no account behind it and asking for one would refuse a payment that really happened.
-  .refine((entry) => (entry.method !== 'cheque' && entry.method !== 'transfer') || !!entry.bankAccountId, {
+  .refine((entry) => !asksForBank(entry.method) || !!entry.bankAccountId, {
     path: ['bankAccountId'],
-    message: 'Say which account this left.',
+    message: SAY.bank,
   })
   .refine((entry) => !!entry.paidToId || !!entry.newPerson, {
     path: ['paidToId'],
-    message: 'Say who was paid.',
+    message: SAY.paidTo,
   })
 
 // A sitting: one cheque run on a Tuesday touching eight trades. All of them or none, so there are no half-saved days.
-export const daySheet = z.array(paymentEntry).min(1, { message: 'Put in at least one payment.' })
+export const daySheet = z.array(paymentEntry).min(1, { message: SAY.nothing })
+
+// What a payment looks like while it is being typed: every answer a string, because that is what a half-filled form holds.
+export type BeingTyped = {
+  tradeId: string
+  paidToId: string
+  newPerson: string
+  amount: string
+  paidById: string
+  method: HowPaid
+  reference: string
+  bankAccountId: string
+  note: string
+}
+
+// Asked by the screen as it is typed, answered from the same rules the schema refuses by, so the two cannot drift into disagreeing.
+
+// Never more than the first thing wrong, because eight problems at once reads as the app being broken rather than as a question unanswered.
+export function whatIsMissing(typed: BeingTyped): string | null {
+  if (!typed.tradeId) return SAY.trade
+  if (!typed.paidToId && !typed.newPerson.trim()) return SAY.paidTo
+  if (!isAnAmount(typed.amount)) return SAY.amount
+  if (!typed.paidById) return SAY.paidBy
+  if (asksForChequeNumber(typed.method) && !typed.reference.trim()) return SAY.reference
+  if (asksForBank(typed.method) && !typed.bankAccountId) return SAY.bank
+
+  return null
+}
+
+function isAnAmount(typed: string): boolean {
+  return money.safeParse(typed).success
+}
