@@ -49,12 +49,30 @@ describe('what one client site already adds up to', () => {
     expect(receipts).toBe(CLIENT_POSITION.totalReceipts)
     // Total expenditure is the construction figure plus what is still owed to the market.
     expect(receipts - (CONSTRUCTION_EXPENDITURE.asTheSheetStatesIt + MARKET_PAYABLES.stated)).toBe(
-      CLIENT_POSITION.stillReceivable
+      CLIENT_POSITION.asTheSheetClosesIt
     )
   })
 
-  it('carries a closing position that is negative rather than clamped', () => {
-    expect(CLIENT_POSITION.stillReceivable).toBeLessThan(0)
+  it('reaches a different closing position from the payments, which is the one the app will produce', () => {
+    // The sheet closes through its stated construction figure, and that figure carries the plug. Asserting the app against it would condemn correct code.
+    const receipts = CLIENT_POSITION.totalReceipts
+
+    expect(receipts - (CONSTRUCTION_EXPENDITURE.asItsOwnPaymentsAddUp + MARKET_PAYABLES.stated)).toBe(
+      CLIENT_POSITION.asItsOwnPaymentsAddUp
+    )
+  })
+
+  it('is apart by the plug less what was never counted, and by nothing else', () => {
+    // The two closing figures differ for one reason, and naming it is what stops either being adjusted to match the other.
+    const apart = CLIENT_POSITION.asTheSheetClosesIt - CLIENT_POSITION.asItsOwnPaymentsAddUp
+
+    expect(apart).toBe(PAID_BUT_NEVER_COUNTED.rupees - COUNTED_WITH_NOTHING_BEHIND_IT.rupees)
+    expect(apart).toBe(-100_000)
+  })
+
+  it('carries a closing position that is negative rather than clamped, whichever way it is reached', () => {
+    expect(CLIENT_POSITION.asTheSheetClosesIt).toBeLessThan(0)
+    expect(CLIENT_POSITION.asItsOwnPaymentsAddUp).toBeLessThan(0)
   })
 
   it('converts every figure it holds to whole paisa', () => {

@@ -4,7 +4,7 @@ import { rupeesToPaisa } from '../money'
 /** What a trade cost on this site, as the sheet records it, in rupees. */
 export type TradeSpend = { trade: string; rupees: number; countsAsBuildingCost: boolean }
 
-// Two of the sheet's trade columns disagree with the payments beneath them, so this carries both numbers rather than the stated one.
+// Four of the sheet's trade columns, chosen because their payments do add up to what is written above them. They are a sample, not the construction total.
 export const CLIENT_SITE_SPEND: Array<TradeSpend> = [
   { trade: 'Civil labour', rupees: 1_062_800, countsAsBuildingCost: true },
   { trade: 'Bricks', rupees: 786_000, countsAsBuildingCost: true },
@@ -39,13 +39,15 @@ export const MARKET_PAYABLES = {
   strayUnlabelledAmount: 455,
 }
 
-/** Receipts and the closing position, which the sheet computes and the app must reach the same way. */
+/** Receipts, and the closing position twice over, because the sheet reaches it through a figure the app cannot reach. */
 export const CLIENT_POSITION = {
   receivedInCash: 9_152_000,
   spentByAPartnerOnTheClientsBehalf: 2_382_570,
   totalReceipts: 11_534_570,
-  /** Negative because more has been spent than received. An advance is not an error and must not clamp at zero. */
-  stillReceivable: -1_955_583,
+  /** What the sheet closes at. Never assert this against the app: it is receipts less the stated construction figure, and that figure carries the plug. */
+  asTheSheetClosesIt: -1_955_583,
+  /** What the app closes at, from the payments it holds. Exactly 100,000 apart, which is the plug less what was never counted. */
+  asItsOwnPaymentsAddUp: -1_855_583,
 }
 
 export function totalPaisa(spend: Array<TradeSpend>): number {
