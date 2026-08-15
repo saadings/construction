@@ -68,7 +68,6 @@ const NOT_FROM_A_SCREEN: Record<string, string> = {
 
 /** No screen yet, and that is a gap rather than a decision. Lower this list; never add to it without saying why in a review. */
 const NOBODY_CAN_REACH_YET: Record<string, string> = {
-  'bankAccounts.hide': 'an account can be added from the day sheet and taken off nowhere',
   'bills.raise': 'a bill is what somebody says they are owed, and nothing asks for one',
   'bills.remove': 'and nothing takes one back',
   'engagements.agree':
@@ -80,9 +79,6 @@ const NOBODY_CAN_REACH_YET: Record<string, string> = {
   'profitPayouts.remove': 'and nothing takes a payout back',
   'sites.edit': 'a house is named once and never renamed',
   'sites.hide': 'and never put away',
-  'trades.add': 'the list of trades is what a deployment starts with and nothing more',
-  'trades.edit': 'and nothing is corrected, including whether it is building cost',
-  'trades.hide': 'and nothing is taken off it',
 }
 
 const declared = waysOfWriting()
