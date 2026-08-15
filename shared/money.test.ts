@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_PAISA, formatPaisa, paisaToRupees, rupeesToPaisa } from './money'
+import { MAX_PAISA, formatPaisa, groupWhileTyping, paisaToRupees, rupeesToPaisa } from './money'
 
 describe('turning what someone typed into money', () => {
   it('keeps the half rupee a real contract is written in', () => {
@@ -71,5 +71,32 @@ describe('turning money back into something readable', () => {
 
   it('refuses an amount past the largest it keeps track of', () => {
     expect(() => rupeesToPaisa(String(MAX_PAISA / 100 + 1))).toThrow()
+  })
+})
+
+describe('commas while an amount is typed', () => {
+  it('groups as the digits arrive', () => {
+    expect(groupWhileTyping('4974980')).toBe('4,974,980')
+    expect(groupWhileTyping('49')).toBe('49')
+  })
+
+  it('lets a half-typed amount stay half-typed', () => {
+    // A lone dot is on the way to 0.5, and refusing it mid-keystroke is how a form fights the person filling it in.
+    expect(groupWhileTyping('1000.')).toBe('1,000.')
+    expect(groupWhileTyping('.')).toBe('.')
+    expect(groupWhileTyping('')).toBe('')
+  })
+
+  it('leaves what is already grouped alone', () => {
+    expect(groupWhileTyping('4,974,980')).toBe('4,974,980')
+    expect(groupWhileTyping('6,057,704.50')).toBe('6,057,704.50')
+  })
+
+  it('never keeps more than two figures after the dot, because that is what a paisa is', () => {
+    expect(groupWhileTyping('10.999')).toBe('10.99')
+  })
+
+  it('drops anything that is not part of an amount', () => {
+    expect(groupWhileTyping('Rs 49,150/-')).toBe('49,150')
   })
 })

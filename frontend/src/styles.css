@@ -3,28 +3,34 @@
 
 @import 'tw-animate-css';
 
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource-variable/ibm-plex-sans/index.css';
+
 @custom-variant dark (&:is(.dark *));
 
+/* Ink on ledger paper: the ground is warmed rather than pure white and the ink is blue-black rather than grey, because a page of figures read in daylight is what this replaces. */
+
+/* Brass is the only colour carrying meaning. It marks money and the one action that writes it, and appears nowhere else. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.871 0.006 286.286);
+  --background: oklch(0.985 0.007 85);
+  --foreground: oklch(0.235 0.021 252);
+  --card: oklch(0.997 0.004 85);
+  --card-foreground: oklch(0.235 0.021 252);
+  --popover: oklch(0.997 0.004 85);
+  --popover-foreground: oklch(0.235 0.021 252);
+  --primary: oklch(0.585 0.126 62);
+  --primary-foreground: oklch(0.995 0.004 85);
+  --secondary: oklch(0.955 0.011 85);
+  --secondary-foreground: oklch(0.235 0.021 252);
+  --muted: oklch(0.955 0.011 85);
+  --muted-foreground: oklch(0.515 0.019 252);
+  --accent: oklch(0.945 0.019 78);
+  --accent-foreground: oklch(0.34 0.078 58);
+  --destructive: oklch(0.512 0.163 27);
+  --destructive-foreground: oklch(0.995 0.004 85);
+  --border: oklch(0.895 0.013 82);
+  --input: oklch(0.895 0.013 82);
+  --ring: oklch(0.585 0.126 62);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -41,26 +47,27 @@
   --sidebar-ring: oklch(0.871 0.006 286.286);
 }
 
+/* The same page after dark: ink becomes the ground and the paper becomes the writing. Brass lifts so it still reads as the one thing worth looking at. */
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.274 0.006 286.033);
-  --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.442 0.017 285.786);
+  --background: oklch(0.201 0.019 252);
+  --foreground: oklch(0.945 0.009 85);
+  --card: oklch(0.243 0.021 252);
+  --card-foreground: oklch(0.945 0.009 85);
+  --popover: oklch(0.243 0.021 252);
+  --popover-foreground: oklch(0.945 0.009 85);
+  --primary: oklch(0.755 0.117 68);
+  --primary-foreground: oklch(0.201 0.019 252);
+  --secondary: oklch(0.275 0.021 252);
+  --secondary-foreground: oklch(0.945 0.009 85);
+  --muted: oklch(0.275 0.021 252);
+  --muted-foreground: oklch(0.715 0.017 252);
+  --accent: oklch(0.312 0.032 62);
+  --accent-foreground: oklch(0.875 0.068 72);
+  --destructive: oklch(0.601 0.164 27);
+  --destructive-foreground: oklch(0.201 0.019 252);
+  --border: oklch(0.312 0.019 252);
+  --input: oklch(0.312 0.019 252);
+  --ring: oklch(0.755 0.117 68);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -77,7 +84,8 @@
 }
 
 @theme inline {
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -137,6 +145,22 @@ body {
   body {
     background-color: var(--background);
     color: var(--foreground);
+  }
+
+  /* Every figure in the app lines up in a column at some point, so the digits are the same width everywhere rather than only where someone remembered. */
+  body,
+  input,
+  select,
+  textarea,
+  button {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* iOS zooms the whole page when a control's text is under 16px, which on a form is indistinguishable from the app breaking. */
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
   }
 
   /* Once here, never per element: shadcn emits no cursor utility, and anything disabled is left out on purpose. */
