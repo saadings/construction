@@ -3,6 +3,8 @@ import { authenticatedMutation } from '../utils/auth'
 // The one write that cannot go through `ledgerMutation`, because it is what makes the ledger know this sign-in at all. Everything else refuses an unknown one; this is how a sign-in stops being unknown.
 
 // It exists because the only other writer of `accounts` is the Clerk webhook, and `user.created` never fires again for somebody who already had a Clerk account. Anyone who signed up before this table did would otherwise wait forever.
+
+// not-from-a-screen: the app itself, on the way in, so a sign-in is known before anything is asked of it
 export const rememberThisSignIn = authenticatedMutation({
   handler: async (ctx) => {
     const already = await ctx.db

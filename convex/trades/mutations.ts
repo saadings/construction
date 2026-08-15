@@ -69,6 +69,8 @@ export const hide = ledgerMutation({
 })
 
 // Matches on name, so running it twice never doubles the list: "first run" happens on three deployments and more than once on each, and an existing row is brought into line rather than left behind.
+
+// not-from-a-screen: the list of trades every house starts with, written once when a deployment is empty
 export const seed = internalMutation({
   // Declaring no arguments is declaring an empty set of them.
   args: {},
