@@ -17,6 +17,25 @@ function screenFiles(dir: string): Array<string> {
   })
 }
 
+/** The readings a screen takes off Convex, which are the only ones that answer `undefined` and `null` for different reasons. */
+function readingsIn(source: string): Array<string> {
+  return [...source.matchAll(/\b(?:const|let)\s+(\w+)\s*=\s*useQuery\s*\(/g)].map((found) => found[1])
+}
+
+/** Every place a screen answers a reading for it: `people ?? null` says "no" on behalf of a read that has not spoken. */
+export function collapsesWaitingIntoAValue(source: string): Array<string> {
+  const readings = readingsIn(source)
+  if (readings.length === 0) return []
+
+  // `null` is the refusal itself, and `[]`, `{}` and `0` are worse: they say the ledger is empty when nobody has been asked yet.
+  const answered = new RegExp(
+    `\\b(${readings.join('|')})\\s*(\\?\\?|\\|\\|)\\s*(null|\\[\\s*\\]|\\{\\s*\\}|0)(?![\\w$])`,
+    'g'
+  )
+
+  return [...source.matchAll(answered)].map((found) => `${found[1]} ${found[2]} ${found[3]}`)
+}
+
 /** Every place a screen treats "still waiting" and "the answer is no" as one condition. */
 export function collapsesWaitingIntoRefused(source: string): Array<string> {
   const both = /if\s*\(([^)]*===\s*undefined[^)]*===\s*null[^)]*|[^)]*===\s*null[^)]*===\s*undefined[^)]*)\)/g
@@ -61,5 +80,32 @@ describe('what a screen does with an answer it has not got', () => {
     expect(collapsesWaitingIntoRefused('if (site === undefined || totals === null) {')).toEqual([])
     expect(collapsesWaitingIntoRefused('if (stages === undefined || extra === undefined) {')).toEqual([])
     expect(collapsesWaitingIntoRefused('if (stages === null || extra === null) {')).toEqual([])
+  })
+
+  it('never answers a reading on its behalf', () => {
+    const answered = screens.flatMap(({ path, source }) =>
+      collapsesWaitingIntoAValue(source).map((where) => `${path.split('/src/')[1]}: ${where}`)
+    )
+
+    expect(answered).toEqual([])
+  })
+
+  it('catches the second spelling of it, which the condition above cannot see', () => {
+    // Verbatim from the People screen, which shipped the same permanent spinner a day after the first one was found. A condition matcher looks for `if`, and this one never wrote an `if`.
+    const shipped = 'const people = useQuery(api.people.queries.list, {})\npeople={people ?? null}'
+    expect(collapsesWaitingIntoAValue(shipped)).toEqual(['people ?? null'])
+
+    // Emptiness is the worse half: it says the ledger holds nothing rather than that nobody has answered.
+    const asEmpty = 'const sites = useQuery(api.sites.queries.all, {})\nsites.map(...) // sites ?? []'
+    expect(collapsesWaitingIntoAValue(asEmpty)).toEqual(['sites ?? []'])
+    expect(collapsesWaitingIntoAValue('const t = useQuery(a, {})\nt || 0')).toEqual(['t || 0'])
+  })
+
+  it('leaves alone everything that is not a reading', () => {
+    // A field that may be absent is not a read in flight, and coalescing one is how a table shows a dash instead of a gap.
+    const fields = 'const people = useQuery(api.people.queries.list, {})\n{person.phone ?? null}\n{site.note ?? []}'
+    expect(collapsesWaitingIntoAValue(fields)).toEqual([])
+    // And a screen that reads nothing has nothing to answer for.
+    expect(collapsesWaitingIntoAValue('const total = paid ?? 0')).toEqual([])
   })
 })

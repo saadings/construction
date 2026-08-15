@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 
 import { api } from '../../../convex/_generated/api'
+import { NotKnownHere } from '../components/shell/NotKnownHere'
 import { SitesList } from '../components/sites/SitesList'
 
 export const Route = createFileRoute('/')({ component: Home })
@@ -35,11 +36,8 @@ function HisSites() {
   // An answer, and a definite one: the ledger does not know this sign-in. Shown as waiting it becomes a spinner nobody can get past, which is what it was.
   if (sites === null) {
     return (
-      <main className="bg-background flex min-h-dvh flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-foreground font-display text-2xl">Setting your sign-in up.</p>
-        <p className="text-muted max-w-xs">
-          This takes a moment the first time. If it is still here after that, sign out and in again.
-        </p>
+      <main className="bg-background flex min-h-dvh flex-col justify-center p-6">
+        <NotKnownHere />
       </main>
     )
   }

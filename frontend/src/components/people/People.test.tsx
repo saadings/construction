@@ -14,7 +14,7 @@ const EVERYONE: Array<PersonRow> = [
 ]
 
 // The screen carries no links, but it is rendered where it really lives so a router-only failure cannot hide here.
-function renderWith(people: Array<PersonRow> | null, onAdd = vi.fn(), onHide = vi.fn()) {
+function renderWith(people: Array<PersonRow> | null | undefined, onAdd = vi.fn(), onHide = vi.fn()) {
   const root = createRootRoute({ component: () => <People people={people} onAdd={onAdd} onHide={onHide} /> })
   const router = createRouter({ routeTree: root, history: createMemoryHistory({ initialEntries: ['/'] }) })
 
@@ -43,10 +43,20 @@ describe('the people in the ledger', () => {
   })
 
   it('says it is still looking before the answer arrives', async () => {
-    renderWith(null)
+    renderWith(undefined)
 
     expect(await screen.findByText('Looking…')).toBeTruthy()
     expect(screen.queryByText(/Nobody yet/)).toBeNull()
+  })
+
+  it('does not say it is looking once the answer has come back and said no', async () => {
+    // The permanent spinner. A refused read is not a slow one, and telling somebody to wait is telling them to wait for something that has already happened.
+    renderWith(null)
+
+    expect(await screen.findByText('Setting your sign-in up.')).toBeTruthy()
+    expect(screen.queryByText('Looking…')).toBeNull()
+    // And nothing to fill in, because every one of these would be refused by the same ledger.
+    expect(screen.queryByLabelText('Name')).toBeNull()
   })
 
   it('adds somebody with only a name, because a number is often not known', async () => {
