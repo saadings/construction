@@ -40,18 +40,7 @@ done
 # Refreshes convex/_generated when a deployment is linked; not having one is no reason to refuse a commit, since CI generates its own.
 
 # It must say so loudly when it cannot, because stale generated types make `ctx.db` an `any` and the typecheck below then passes while checking nothing.
-npx convex codegen --typecheck disable || {
-  echo ""
-  echo "  !!  COULD NOT REGENERATE convex/_generated  !!"
-  echo ""
-  echo "  The generated Convex types are whatever they were before this commit."
-  echo "  If a table or function changed since they were written, everything below"
-  echo "  this line is checking the wrong types: db reads come back as 'any', so a"
-  echo "  green typecheck here proves nothing and a red one may not be your fault."
-  echo ""
-  echo "  Trust CI over this run until 'npx convex codegen' succeeds locally."
-  echo ""
-}
+npx convex codegen --typecheck disable || npx tsx scripts/generatedTypes.ts stale
 
 (cd "$gate" && yarn typecheck && yarn build && yarn test)
 
