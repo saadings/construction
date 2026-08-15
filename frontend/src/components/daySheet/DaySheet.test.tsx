@@ -13,11 +13,11 @@ const trades = [
 ] as unknown as Array<Named>
 
 const people = [
-  { _id: 'p1', name: 'Nauman Saeed' },
-  { _id: 'p2', name: 'Ashfaq' },
+  { _id: 'p1', name: 'The partner' },
+  { _id: 'p2', name: 'A mason' },
 ] as unknown as Array<Person>
 
-const accounts = [{ _id: 'b1', label: 'Askari 2192' }] as unknown as Array<Account>
+const accounts = [{ _id: 'b1', label: 'Bank 0000' }] as unknown as Array<Account>
 
 afterEach(cleanup)
 
@@ -26,7 +26,7 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 
   render(
     <DaySheet
-      siteName="359-R, Phase 7"
+      siteName="1-A, Phase 0"
       day="2025-10-07"
       onChangeDay={() => {}}
       trades={trades}
@@ -44,11 +44,11 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
   await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
-  await user.selectOptions(screen.getByLabelText('Who was paid'), 'Ashfaq')
+  await user.selectOptions(screen.getByLabelText('Who was paid'), 'A mason')
   await user.type(screen.getByLabelText('How much'), amount)
-  await user.selectOptions(screen.getByLabelText('Whose money'), 'Nauman Saeed')
-  await user.type(screen.getByLabelText('Cheque number'), '3894')
-  await user.selectOptions(screen.getByLabelText('Which account'), 'Askari 2192')
+  await user.selectOptions(screen.getByLabelText('Whose money'), 'The partner')
+  await user.type(screen.getByLabelText('Cheque number'), '0001')
+  await user.selectOptions(screen.getByLabelText('Which account'), 'Bank 0000')
 }
 
 describe('a day of payments', () => {
@@ -85,7 +85,7 @@ describe('a day of payments', () => {
     // What does change: it is a different trade, a different person and a different amount every time.
     expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('')
     expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
-    expect(screen.getByText('359-R, Phase 7')).toBeTruthy()
+    expect(screen.getByText('1-A, Phase 0')).toBeTruthy()
   })
 
   it('shows what is already down while the next one is typed', async () => {
@@ -97,7 +97,7 @@ describe('a day of payments', () => {
 
     const alreadyDown = screen.getByRole('list')
     expect(within(alreadyDown).getByText('Cement')).toBeTruthy()
-    expect(within(alreadyDown).getByText('Ashfaq')).toBeTruthy()
+    expect(within(alreadyDown).getByText('A mason')).toBeTruthy()
     expect(within(alreadyDown).getByText('25,000')).toBeTruthy()
   })
 
@@ -134,9 +134,9 @@ describe('a day of payments', () => {
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
     await user.selectOptions(screen.getByLabelText('What for'), 'Bricks')
-    await user.selectOptions(screen.getByLabelText('Who was paid'), 'Ashfaq')
+    await user.selectOptions(screen.getByLabelText('Who was paid'), 'A mason')
     await user.type(screen.getByLabelText('How much'), '10000')
-    await user.type(screen.getByLabelText('Cheque number'), '3895')
+    await user.type(screen.getByLabelText('Cheque number'), '0002')
     await user.click(screen.getByRole('button', { name: 'Put them in' }))
 
     expect(onPutIn).toHaveBeenCalledTimes(1)
@@ -181,6 +181,6 @@ describe('a day of payments', () => {
       expect(onScreen.toLowerCase()).not.toContain(technical)
     }
     // The control: the assertion above passes against a blank screen, so something must actually be on it.
-    expect(onScreen).toContain('359-R, Phase 7')
+    expect(onScreen).toContain('1-A, Phase 0')
   })
 })
