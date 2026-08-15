@@ -1,28 +1,9 @@
 import { zid } from 'convex-helpers/server/zod4'
 import { z } from 'zod'
 
+import type { HowPaid } from './howMoneyMoved'
+import { HOW_PAID, asksForBank, asksForChequeNumber } from './howMoneyMoved'
 import { calendarDay, chequeNumber, money, note, personName } from './primitives'
-
-export const HOW_PAID = ['cheque', 'cash', 'transfer', 'payOrder'] as const
-export type HowPaid = (typeof HOW_PAID)[number]
-
-// Which questions a way of paying actually asks, stated once: the screen asks from this, the schema refuses from this, and a test holds them to each other.
-
-// A pay order can be bought over the counter with cash, so it may have no account behind it and no cheque book number either.
-const ASKS: Record<HowPaid, { chequeNumber: boolean; bank: boolean }> = {
-  cheque: { chequeNumber: true, bank: true },
-  transfer: { chequeNumber: false, bank: true },
-  cash: { chequeNumber: false, bank: false },
-  payOrder: { chequeNumber: false, bank: false },
-}
-
-export function asksForChequeNumber(method: HowPaid): boolean {
-  return ASKS[method].chequeNumber
-}
-
-export function asksForBank(method: HowPaid): boolean {
-  return ASKS[method].bank
-}
 
 // The words themselves, once, so a refusal reads the same whether it was caught as it was typed or when it reached the server.
 export const SAY = {

@@ -97,6 +97,44 @@ describe('what a site has cost', () => {
     expect(fromTheRows).toBe(totals?.spentPaisa)
   })
 
+  // One cheque run is eight payments on one day, which is exactly when he is reading this against a cheque book. Two sites differing only in the order the rows went in must read the same, or the same screen says two different things on two days.
+  it('lists a day of payments the same however the rows went in', async () => {
+    const aRun = [1500, 87000, 12250]
+
+    const asRead = []
+    for (const order of [aRun, [...aRun].reverse()]) {
+      const t = convexWithPayments()
+      const siteId = await t.run(async (ctx) => {
+        const { siteId, nauman } = await aSiteWithSpending(ctx)
+        const trade = await ctx.db.query('trades').first()
+        if (trade === null) throw new Error('the fixture wrote no trades')
+
+        for (const rupees of order) {
+          await ctx.db.insert('payments', {
+            siteId,
+            tradeId: trade._id,
+            paidToId: nauman,
+            paidById: nauman,
+            day: '2025-11-03',
+            amountPaisa: rupees * 100,
+            method: 'cash',
+            isExtraWork: false,
+            removed: false,
+            addedByExternalId: SIGNED_IN_AS,
+          })
+        }
+        return siteId
+      })
+
+      const listed = await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.payments.queries.forSite, { siteId })
+      asRead.push((listed ?? []).slice(0, 3).map((payment) => payment.amountPaisa))
+    }
+
+    expect(asRead[0]).toEqual(asRead[1])
+    // And the order itself, so this cannot pass by both readings being wrong in the same way.
+    expect(asRead[0]).toEqual([8700000, 1225000, 150000])
+  })
+
   it('drops a payment that was taken out, from both sides at once', async () => {
     const t = convexWithPayments()
     const { siteId, paymentIds } = await t.run(aSiteWithSpending)

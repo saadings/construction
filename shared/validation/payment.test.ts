@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BeingTyped, HowPaid } from './payment'
-import { HOW_PAID, SAY, asksForBank, asksForChequeNumber, paymentEntry, whatIsMissing } from './payment'
+import type { HowPaid } from './howMoneyMoved'
+import { HOW_PAID, asksForBank, asksForChequeNumber } from './howMoneyMoved'
+import type { BeingTyped } from './payment'
+import { SAY, paymentEntry, whatIsMissing } from './payment'
 
 // Ids are only ever read back, never resolved, so any non-empty string stands in for one here.
 const A_TRADE = 'js7fjtxt780ycz4cnvcah6et4n8ce272'
