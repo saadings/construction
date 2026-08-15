@@ -50,18 +50,16 @@ const aHouse = {
   stage: 'building',
 } as const
 
+// A sign-in, and separately a person in the books, because the account says nothing about which person it belongs to. `withAPerson` is about whether the tests below need somebody to hold a role, not about anything on the account.
 async function anAccountFor(ctx: MutationCtx, { withAPerson }: { withAPerson: boolean }) {
-  const personId = withAPerson ? await ctx.db.insert('people', { name: 'The partner', hidden: false }) : undefined
-
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
     name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
-    personId,
   })
 
-  return personId
+  return withAPerson ? await ctx.db.insert('people', { name: 'The partner', hidden: false }) : undefined
 }
 
 describe('starting a site', () => {

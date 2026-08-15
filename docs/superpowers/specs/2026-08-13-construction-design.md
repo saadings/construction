@@ -196,13 +196,14 @@ share and a client's account are worked out from, and nothing else.
 The people who sign in, written by the Clerk webhook and keyed by the identity
 Clerk proves.
 
-The table can point at a person in the ledger, and **as things stand nothing
-writes that field and nothing reads it**. Signing in is the whole of the rule:
-an account with no person attached reaches everything, which is every account
-there is. The field is kept for the day a screen wants to say *"you"* about a
-figure — if that day does not come, it should go, because a field that is always
-absent is a promise the schema cannot keep. Clients and vendors exist as people
-and never sign in.
+**It says nothing about who somebody is in the books.** It carried a `personId`
+for a while, which nothing ever wrote and nothing ever read — a link that lived
+only in the type, absent on every row that existed and on every row that would
+be written. It is gone. Signing in is the whole of the rule, so an account
+reaches everything without it, and the day a screen wants to say *"you"* about a
+figure it comes back with a writer and a reader in the same change.
+
+Clients and vendors exist as people and never sign in.
 
 ### sites
 

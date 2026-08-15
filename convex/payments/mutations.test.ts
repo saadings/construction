@@ -44,7 +44,6 @@ async function aSiteThePartnerIsOn(ctx: MutationCtx): Promise<Site> {
     name: 'The partner',
     primaryEmail: 'nauman@example.com',
     otherEmails: [],
-    personId: nauman,
   })
 
   const bankAccountId = await ctx.db.insert('bankAccounts', {
@@ -227,7 +226,6 @@ describe('taking a payment back out', () => {
         name: 'A Partner',
         primaryEmail: 'partner@example.com',
         otherEmails: [],
-        personId: site.nauman,
       })
     })
     await t.withIdentity({ subject: 'user_partner' }).mutation(api.payments.mutations.remove, {

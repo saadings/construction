@@ -45,7 +45,6 @@ async function aSiteThePartnerIsOn(ctx: MutationCtx): Promise<Site> {
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
-    personId: partner,
   })
 
   return {
