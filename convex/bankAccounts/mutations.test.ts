@@ -19,12 +19,23 @@ function convexWithBankAccounts() {
   })
 }
 
+// A partner on a site. Bank accounts are global, so what the wrapper asks is whether this is a partner at all.
 async function anAccount(ctx: MutationCtx) {
+  const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
+  const siteId = await ctx.db.insert('sites', {
+    name: '1-A, Phase 0',
+    builtForAClient: false,
+    stage: 'building',
+    hidden: false,
+  })
+  await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
+
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
     name: 'The partner',
     primaryEmail: 'partner@example.com',
     otherEmails: [],
+    personId,
   })
 }
 

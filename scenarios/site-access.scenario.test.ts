@@ -82,24 +82,15 @@ const DELIBERATELY_GLOBAL: Record<string, string> = {
   'sites/mutations.ts start':
     'a person holding no site has to be able to start one, and starting it is what makes them its partner',
   'sites/queries.ts mine': 'reads capacity itself and returns only the sites this person is a partner on',
-  'trades/queries.ts list': 'trade names, which name no person and carry no money',
 }
 
 /** Global by nobody's decision. This list may shrink and must never grow: what each one hands a signed-in non-partner is written beside it. */
 
-// The three bankAccounts entries name functions arriving with the open day-sheet work; they are listed from having read them, so landing them does not turn the gate red on the day they merge.
-const NOT_YET_AUDITED: Record<string, string> = {
-  'people/queries.ts list': 'every person in the ledger, with phone and notes',
-  'people/mutations.ts add': 'inserts a person',
-  'people/mutations.ts edit': "rewrites any person's name, phone and notes",
-  'people/mutations.ts hide': 'removes any person from every list',
-  'bankAccounts/queries.ts list': 'every account label and its last four digits',
-  'bankAccounts/mutations.ts add': 'inserts an account',
-  'bankAccounts/mutations.ts hide': 'hides the account a payment points at',
-}
+// Empty, and that is the whole point of it. Every function asking nothing beyond being signed in is now global because somebody decided so, with the reason written above.
+const NOT_YET_AUDITED: Record<string, string> = {}
 
 /** How many are unaudited today. Lower it when one is fixed; a higher one is the defect this exists to stop. */
-const STILL_UNAUDITED = 7
+const STILL_UNAUDITED = 0
 
 function named(fn: DeclaredFunction): string {
   return `${fn.file.replace(/^convex\//, '')} ${fn.name}`
@@ -374,8 +365,6 @@ describe('deciding who may open a site', () => {
       'accounts/actions.ts current': { file: ['convex', 'accounts', 'actions.ts'], says: 'identity.subject' },
       'sites/mutations.ts start': { file: ['convex', 'sites', 'mutations.ts'], says: "capacity: 'partner'" },
       'sites/queries.ts mine': { file: ['convex', 'sites', 'queries.ts'], says: "capacity === 'partner'" },
-      // Excused for naming no person and carrying no money, which is a claim about what it reads.
-      'trades/queries.ts list': { file: ['convex', 'trades', 'queries.ts'], neverSays: ["'people'", "'payments'"] },
     }
 
     // Every excuse is checked, so adding one without a way to check it fails rather than passing quietly.
