@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { lastFourOf } from '~shared/validation/bankAccount'
 
 import { Button } from '../form/Button'
-import { Line } from '../form/Field'
+import { Field, Line } from '../form/Field'
 
 // Offered where it is needed, not on another screen. Sending him elsewhere mid-sitting means retyping the payment when he comes back, which is the friction that ends with Excel reopened.
 export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string) => Promise<void> }) {
@@ -46,33 +46,25 @@ export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits:
 
   return (
     <div className="border-border mt-2 flex flex-col gap-4 border-l-2 pl-4">
-      <label className="flex flex-col gap-1">
-        <span className="text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase">
-          What you call it
-        </span>
+      {/* Both of these were a `<label>` and an upper-case span written out by hand, which is `Field` copied rather than used -- and the copy is what drifts. */}
+      <Field label="What you call it">
         <Line
           value={label}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Bank 0000"
-          aria-label="What you call it"
           autoComplete="off"
         />
-      </label>
+      </Field>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase">
-          Account number
-        </span>
+      {/* True end to end: the rest is dropped here, before anything is sent. */}
+      <Field label="Account number" hint="Only the last four figures leave this phone.">
         <Line
           value={number}
           onChange={(event) => setNumber(event.target.value)}
           inputMode="numeric"
-          aria-label="Account number"
           autoComplete="off"
         />
-        {/* True end to end: the rest is dropped here, before anything is sent. */}
-        <span className="text-muted-foreground text-sm">Only the last four figures leave this phone.</span>
-      </label>
+      </Field>
 
       {problem ? <span className="text-destructive text-sm">{problem}</span> : null}
 

@@ -123,16 +123,15 @@ export function DaySheet({
         <div className="flex flex-col gap-3 px-5 pt-4 pb-4 sm:px-7 lg:px-9">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
-            <label className="text-muted-foreground shrink-0 text-sm">
-              <span className="sr-only">Which day</span>
-              <input
-                type="date"
-                value={day}
-                onChange={(event) => onChangeDay(event.target.value)}
-                className="bg-transparent text-right outline-none"
-                aria-label="Which day"
-              />
-            </label>
+            {/* Named on the box rather than beside it: this sits in the header of a sitting, where an upper-case question over it would be a second heading. */}
+            <Line
+              look="beside"
+              type="date"
+              value={day}
+              onChange={(event) => onChangeDay(event.target.value)}
+              aria-label="Which day"
+              className="text-muted-foreground w-auto shrink-0 text-right text-sm"
+            />
           </div>
 
           <div className="flex items-end justify-between gap-4">

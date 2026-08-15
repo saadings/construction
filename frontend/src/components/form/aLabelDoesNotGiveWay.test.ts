@@ -13,7 +13,8 @@ const ASKS_FOR_EVERYTHING = /className="[^"]*(?<![-\w])w-full\b[^"]*"/g
 /** Whatever tag was opened last. Found by walking back to the nearest one rather than forward from the tag, because `[^>]*` between a tag and its `className` stops dead at the `>` in an arrow function -- which is why the first version of this matched nothing in any file written the way this app writes them. */
 const A_TAG = /<([A-Za-z][\w.]*)/g
 
-const CONTROLS = ['input', 'textarea', 'select', 'Line', 'Lines', 'Picker', 'MoneyLine']
+// `Picker` was in this list too, and it has not existed since #89. A dead name in one list had company in another, which is why both were checked rather than the one const measured.
+const CONTROLS = ['input', 'textarea', 'select', 'Line', 'Lines', 'Pick', 'MoneyLine']
 
 function whatOpenedLastBefore(source: string, at: number): string {
   const tags = [...source.slice(0, at).matchAll(A_TAG)]

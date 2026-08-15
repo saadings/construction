@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { everyScreen } from '../../testing/screens'
-import { withoutComments } from '../../testing/source'
+import { tagsWrittenIn } from '../../testing/tags'
 
 // Nauman twice: a `<select>` rendering in the OS blue, and a `<datalist>` popup in Chrome's mauve sitting over the error text. "Not acceptable."
 
@@ -16,10 +16,7 @@ const THEIRS = 'components/ui/'
 
 /** Every place a screen opens a control the browser will draw. */
 export function drawnByTheBrowserIn(written: string): Array<string> {
-  // The code, not the prose about it. Both files that replaced a `<select>` explain in a comment what a `<select>` did wrong, and reading that as a `<select>` is the same defect a second guard already had.
-  const source = withoutComments(written)
-
-  return DRAWN_BY_THE_BROWSER.filter((tag) => new RegExp(`<${tag}[\\s>]`).test(source))
+  return tagsWrittenIn(written, DRAWN_BY_THE_BROWSER)
 }
 
 describe('a control the browser draws', () => {
