@@ -361,6 +361,32 @@ describe('deciding who may open a site', () => {
     }
   })
 
+  it('holds each function excused as global to the thing its reason claims', () => {
+    // An excuse silences the rule for good. What each one claims is read out of the file it excuses, so a reason that stops being true fails here rather than going quiet.
+    const claims: Record<string, { file: Array<string>; says?: string; neverSays?: Array<string> }> = {
+      'accounts/actions.ts current': { file: ['convex', 'accounts', 'actions.ts'], says: 'identity.subject' },
+      'sites/mutations.ts start': { file: ['convex', 'sites', 'mutations.ts'], says: "capacity: 'partner'" },
+      'sites/queries.ts mine': { file: ['convex', 'sites', 'queries.ts'], says: "capacity === 'partner'" },
+      // Excused for naming no person and carrying no money, which is a claim about what it reads.
+      'trades/queries.ts list': { file: ['convex', 'trades', 'queries.ts'], neverSays: ["'people'", "'payments'"] },
+    }
+
+    // Every excuse is checked, so adding one without a way to check it fails rather than passing quietly.
+    expect(Object.keys(claims).sort()).toEqual(Object.keys(DELIBERATELY_GLOBAL).sort())
+
+    for (const [key, claim] of Object.entries(claims)) {
+      const source = readFileSync(join(repoRoot, ...claim.file), 'utf8')
+
+      if (claim.says !== undefined) {
+        expect(source, `${key} is excused for ${claim.says} and no longer does it`).toContain(claim.says)
+      }
+
+      for (const never of claim.neverSays ?? []) {
+        expect(source, `${key} is excused for reading no ${never} and now reads one`).not.toContain(never)
+      }
+    }
+  })
+
   it('has this many nobody has decided about, and the number only goes down', () => {
     // A new global function can be waved through by adding it to the unaudited list. This is what stops that.
     expect(Object.keys(NOT_YET_AUDITED).length).toBeLessThanOrEqual(STILL_UNAUDITED)
