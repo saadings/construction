@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# The gallery's own build, which is the app's screens drawn from fixtures and never part of the app.
+dist-gallery
 *.local
 
 # Convex
