@@ -1,6 +1,7 @@
 import type { UserJSON } from '@clerk/backend'
 import { type Validator, v } from 'convex/values'
 
+import { personName } from '../../shared/validation/primitives'
 import { type QueryCtx, internalMutation, query } from '../_generated/server'
 
 export const current = query({
@@ -43,10 +44,7 @@ export const upsert = internalMutation({
     // Everyone after arrives unlinked and waits to be joined to a person already in the ledger, because guessing which one would put one partner's money under another's name.
     const personId = (await anyoneLinkedYet(ctx))
       ? undefined
-      : await ctx.db.insert('people', {
-          name: accountAttributes.name === '' ? accountAttributes.primaryEmail : accountAttributes.name,
-          hidden: false,
-        })
+      : await ctx.db.insert('people', { name: whatToCallThem(accountAttributes), hidden: false })
 
     await ctx.db.insert('accounts', { ...accountAttributes, personId })
   },
@@ -77,6 +75,17 @@ export async function currentAccount(ctx: QueryCtx) {
     return null
   }
   return await accountByExternalId(ctx, identity.subject)
+}
+
+// Clerk's name for someone is not a name this ledger would accept: a one-letter first name with no surname is "A", and a phone-only sign-up is nothing at all.
+
+// So it is parsed by the same rule every other write to `people` is parsed by, and refused rather than stored, because this row is the first partner's own and every role, payment and balance hangs off it.
+function whatToCallThem(account: { name: string; primaryEmail: string }): string {
+  const proposed = account.name === '' ? account.primaryEmail : account.name
+  const parsed = personName.safeParse(proposed)
+
+  // Reads as something to replace, which is the right nudge for a name nobody chose.
+  return parsed.success ? parsed.data : 'Whoever set this up'
 }
 
 // Asked of the deployment rather than of this webhook, so a half-set-up one can still be rescued without anybody editing the database by hand.

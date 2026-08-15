@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test'
 import { Webhook } from 'svix'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { personName } from '../../shared/validation/primitives'
 import { api } from '../_generated/api'
 import schema from '../schema'
 
@@ -15,14 +16,14 @@ beforeEach(() => {
 })
 
 // Signed the way Clerk signs it, so this goes in through the door a real sign-in comes through rather than round the side.
-function aSignIn(externalId: string, first: string, last: string): RequestInit {
+function aSignIn(externalId: string, first: string, last: string, withEmail = true): RequestInit {
   const body = JSON.stringify({
     type: 'user.created',
     data: {
       id: externalId,
       first_name: first,
       last_name: last,
-      email_addresses: [{ id: 'e1', email_address: `${last.toLowerCase()}@example.com` }],
+      email_addresses: withEmail ? [{ id: 'e1', email_address: `${last.toLowerCase()}@example.com` }] : [],
       primary_email_address_id: 'e1',
     },
   })
@@ -63,6 +64,34 @@ describe('the first person ever to sign in', () => {
 
     expect(people.map((person) => person.name)).toEqual(['The partner'])
     expect(accounts[0]?.personId).toBe(people[0]?._id)
+  })
+
+  it.each([
+    ['a one-letter first name and no surname', 'A', '', false],
+    ['no name and no email, which a phone-only sign-up gives', '', '', false],
+  ] as Array<[string, string, string, boolean?]>)(
+    'is called something the ledger would accept, given %s',
+    async (_case, first, last, withEmail = true) => {
+      // This row is the first partner's own, and every site role, payment and balance hangs off it. It is written once per deployment and never looked at by hand again.
+      const t = anEmptyDeployment()
+
+      expect((await t.fetch('/webhooks/clerk', aSignIn('user_first', first, last, withEmail))).status).toBe(200)
+
+      const [person] = await t.run((ctx) => ctx.db.query('people').collect())
+      expect(person?.name).toBe('Whoever set this up')
+      // What every other write to this table would have insisted on.
+      expect(personName.safeParse(person?.name).success).toBe(true)
+    }
+  )
+
+  it('keeps a name the ledger would accept, rather than replacing every one', async () => {
+    // The control: without this, returning the placeholder unconditionally passes the two above.
+    const t = anEmptyDeployment()
+
+    expect((await t.fetch('/webhooks/clerk', aSignIn('user_first', 'The', 'partner'))).status).toBe(200)
+
+    const [person] = await t.run((ctx) => ctx.db.query('people').collect())
+    expect(person?.name).toBe('The partner')
   })
 
   it('can start a site straight away, which is the whole point', async () => {
