@@ -120,5 +120,14 @@ function WhatThePartnersAreOwed({ siteId }: { siteId: Id<'sites'> }) {
   const what = useQuery(api.partners.queries.positions, { siteId })
 
   // Handed over as it came: two different unknowns, and flattening them is what left a screen watching "Looking…" with nothing on the way.
-  return <Positions what={what} />
+  return (
+    <Positions
+      what={what}
+      beside={
+        <Link to="/sites/$siteId/shares" params={{ siteId }} className="text-brass font-medium">
+          Change
+        </Link>
+      }
+    />
+  )
 }
