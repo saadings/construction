@@ -7,6 +7,7 @@ import { percent as percentRule, whatIsWrong } from '~shared/validation/primitiv
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { Figure, Form } from '../shell/Page'
+import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
 // The stages a contract is billed in. Each is a percentage of the contract, so every figure here follows the contract and the measured area, and none of them is stored.
 
@@ -38,31 +39,31 @@ export function Stages({
           No stages set out yet. Put in the first, and the figure against it follows.
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[30rem] border-collapse text-left">
-            <tbody className="divide-hairline divide-y">
-              {stages.map((stage) => (
-                <tr key={stage._id}>
-                  <td className="text-foreground py-2.5 pr-4">{stage.description}</td>
-                  <td className="py-2.5 pr-4">
-                    <Figure className="text-muted-foreground">{stage.percent}%</Figure>
-                  </td>
-                  {/* Green is money owed to him. */}
-                  <td className="py-2.5 pr-4 text-right">
-                    <Figure className="text-green">{formatPaisa(stage.amountPaisa)}</Figure>
-                  </td>
-                  <td className="py-2.5 text-right">
-                    {stage.billedOn === undefined ? (
-                      <BillIt stage={stage} onBill={onBill} />
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Billed {stage.billedOn}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        // The size is set back because shadcn's table is `text-sm`, and a stage and the figure against it are what this screen is for.
+        <Table className="min-w-[30rem] text-base">
+          <TableBody>
+            {stages.map((stage) => (
+              <TableRow key={stage._id}>
+                {/* A stage reads as it does on the contract and can run long, so it wraps rather than pushing the figure off the side. */}
+                <TableCell className="text-foreground py-2.5 pr-4 whitespace-normal">{stage.description}</TableCell>
+                <TableCell className="py-2.5 pr-4">
+                  <Figure className="text-muted-foreground">{stage.percent}%</Figure>
+                </TableCell>
+                {/* Green is money owed to him. */}
+                <TableCell className="py-2.5 pr-4 text-right">
+                  <Figure className="text-green">{formatPaisa(stage.amountPaisa)}</Figure>
+                </TableCell>
+                <TableCell className="py-2.5 text-right">
+                  {stage.billedOn === undefined ? (
+                    <BillIt stage={stage} onBill={onBill} />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Billed {stage.billedOn}</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <WhatIsLeft percentAgreed={percentAgreed} />

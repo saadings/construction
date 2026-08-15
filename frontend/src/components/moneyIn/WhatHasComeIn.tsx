@@ -3,6 +3,7 @@ import { formatPaisa } from '~shared/money'
 
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
+import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
 // What has come in on a house, beside what it has cost. Three figures rather than one, because they are not the same kind of money: a partner putting his share in is funding the house, and what a client pays and what a sale brings are what the house brought in.
 
@@ -65,22 +66,21 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
         </Link>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[22rem] border-collapse text-left">
-          <tbody className="divide-hairline divide-y">
-            {SPLIT.map((part) => (
-              <tr key={part.why}>
-                <td className="text-foreground py-2.5 pr-4">{part.label}</td>
-                {/* What kind of money it is, said on the row. Three figures under one heading read as three parts of one thing, and one of these is not. */}
-                <td className="text-muted-foreground py-2.5 pr-4 text-sm">{part.is}</td>
-                <td className="py-2.5 text-right">
-                  <Figure className="text-foreground">{formatPaisa(totals.byWhy[part.why])}</Figure>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* The size is set back because shadcn's table is `text-sm`, and these three lines are the reading, not a footnote under it. */}
+      <Table className="min-w-[22rem] text-base">
+        <TableBody>
+          {SPLIT.map((part) => (
+            <TableRow key={part.why}>
+              <TableCell className="text-foreground py-2.5 pr-4">{part.label}</TableCell>
+              {/* What kind of money it is, said on the row. Three figures under one heading read as three parts of one thing, and one of these is not. */}
+              <TableCell className="text-muted-foreground py-2.5 pr-4 text-sm">{part.is}</TableCell>
+              <TableCell className="py-2.5 text-right">
+                <Figure className="text-foreground">{formatPaisa(totals.byWhy[part.why])}</Figure>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       <p className="text-muted-foreground max-w-prose text-sm">
         What the partners put in is funding, not income. It is here because it came in, and it is kept apart because a

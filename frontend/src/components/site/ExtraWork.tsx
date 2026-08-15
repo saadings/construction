@@ -7,6 +7,7 @@ import { calendarDay, positiveMoney, whatIsWrong } from '~shared/validation/prim
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { Figure, Form } from '../shell/Page'
+import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
 // Work outside what was contracted, with the working exactly as it was measured on site. `LESS EXTRA WORK` in the workbooks was one figure with nothing behind it; this is the same figure with every line of it still there.
 
@@ -76,29 +77,29 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
         <Figure className="text-green text-lg">{formatPaisa(bill.totalPaisa)}</Figure>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[30rem] border-collapse text-left">
-          <tbody className="divide-hairline divide-y">
-            {bill.lines.map((line) => (
-              <tr key={line._id}>
-                <td className="text-muted-foreground py-2 pr-4 text-sm">{line.description}</td>
-                {/* The working exactly as it was measured on site. It is what makes the bill defensible. */}
-                <td className="py-2 pr-4">
-                  <Figure className="text-faint text-sm">{line.working ?? ''}</Figure>
-                </td>
-                <td className="py-2 pr-4 text-right">
-                  <Figure className="text-muted-foreground text-sm">
-                    {line.quantity} {line.unit}
-                  </Figure>
-                </td>
-                <td className="py-2 text-right">
-                  <Figure className="text-foreground text-sm">{formatPaisa(line.amountPaisa)}</Figure>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* The lines under a bill, and the one table here that keeps shadcn's own `text-sm`: these are the working behind the figure above them rather than the reading itself. */}
+      <Table className="min-w-[30rem]">
+        <TableBody>
+          {bill.lines.map((line) => (
+            <TableRow key={line._id}>
+              {/* What the work was, in his words, so it wraps. */}
+              <TableCell className="text-muted-foreground py-2 pr-4 whitespace-normal">{line.description}</TableCell>
+              {/* The working exactly as it was measured on site. It is what makes the bill defensible, and `39.75' x 0.375' x 11'` broken across two lines is no longer a measurement -- so this is the one cell that must keep shadcn's own no-wrap. */}
+              <TableCell className="py-2 pr-4">
+                <Figure className="text-faint">{line.working ?? ''}</Figure>
+              </TableCell>
+              <TableCell className="py-2 pr-4 text-right">
+                <Figure className="text-muted-foreground">
+                  {line.quantity} {line.unit}
+                </Figure>
+              </TableCell>
+              <TableCell className="py-2 text-right">
+                <Figure className="text-foreground">{formatPaisa(line.amountPaisa)}</Figure>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       <div className="flex items-baseline gap-4">
         <span className="text-faint text-sm">Raised {bill.raisedOn}</span>

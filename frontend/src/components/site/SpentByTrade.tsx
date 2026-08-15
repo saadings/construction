@@ -3,6 +3,7 @@ import { formatPaisa } from '~shared/money'
 
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
+import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
 export type TradeSpend = { tradeId: string; name: string; paisa: number }
 
@@ -51,29 +52,27 @@ export function SpentByTrade({
     <section className="flex flex-col gap-3">
       <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">What it went on</h2>
 
-      {/* Scrolls inside itself rather than pushing the page sideways, which is what a narrow phone does to a table. */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[22rem] border-collapse text-left">
-          <tbody className="divide-hairline divide-y">
-            {byTrade.map((trade) => {
-              const open = opened?.tradeId === trade.tradeId
+      {/* `Table` scrolls inside itself rather than pushing the page sideways, which is what a narrow phone does to a table. The size is set back because shadcn's table is `text-sm` and a trade and its figure are the thing on this screen, not an aside from it. */}
+      <Table className="min-w-[22rem] text-base">
+        <TableBody>
+          {byTrade.map((trade) => {
+            const open = opened?.tradeId === trade.tradeId
 
-              return (
-                <Trade
-                  key={trade.tradeId}
-                  trade={trade}
-                  open={open}
-                  went={open ? opened.went : undefined}
-                  onOpen={() => onOpen(open ? null : trade.tradeId)}
-                  onTakeOut={onTakeOut}
-                  takingOut={takingOut}
-                  refusal={open ? refusal : null}
-                />
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+            return (
+              <Trade
+                key={trade.tradeId}
+                trade={trade}
+                open={open}
+                went={open ? opened.went : undefined}
+                onOpen={() => onOpen(open ? null : trade.tradeId)}
+                onTakeOut={onTakeOut}
+                takingOut={takingOut}
+                refusal={open ? refusal : null}
+              />
+            )
+          })}
+        </TableBody>
+      </Table>
     </section>
   )
 }
@@ -97,8 +96,9 @@ function Trade({
 }) {
   return (
     <>
-      <tr>
-        <td className="py-2.5 pr-4">
+      <TableRow>
+        {/* A trade is somebody's words and can be long, so it wraps rather than pushing its own figure off the side. `Table` cells do not wrap by default, which is right for a figure and wrong for a name. */}
+        <TableCell className="py-2.5 pr-4 whitespace-normal">
           <button
             type="button"
             onClick={onOpen}
@@ -107,24 +107,24 @@ function Trade({
           >
             {trade.name}
           </button>
-        </td>
+        </TableCell>
         {/* Brass is money going out. */}
-        <td className="py-2.5 text-right">
+        <TableCell className="py-2.5 text-right">
           <Figure className="text-brass">{formatPaisa(trade.paisa)}</Figure>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
 
       {open ? (
-        <tr>
-          <td colSpan={2} className="pb-3">
+        <TableRow>
+          <TableCell colSpan={2} className="pb-3 whitespace-normal">
             {refusal === null ? null : (
               <p className="text-destructive pb-2 text-sm" role="alert">
                 {refusal}
               </p>
             )}
             <WhatWentOnIt went={went} onTakeOut={onTakeOut} takingOut={takingOut} />
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       ) : null}
     </>
   )
