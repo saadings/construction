@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
+import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Invited = { id: string; email: string; askedOn: number }
 
@@ -56,14 +58,9 @@ export function WhoCanSignIn({
           />
         </Field>
 
-        <button
-          type="button"
-          onClick={send}
-          disabled={sending}
-          className="bg-primary text-primary-foreground rounded-md px-5 py-3 font-medium disabled:opacity-50"
-        >
-          {sending ? 'Sending…' : 'Invite someone'}
-        </button>
+        <Button onClick={send} busy={sending}>
+          Invite someone
+        </Button>
       </div>
 
       {problem === null ? null : (
@@ -79,7 +76,18 @@ export function WhoCanSignIn({
 
 function Waiting({ waiting, onTakeOff }: { waiting: Array<Invited> | null; onTakeOff: (id: string) => Promise<void> }) {
   if (waiting === null) {
-    return <p className="text-muted-foreground text-sm">Looking…</p>
+    return (
+      <WhileWaiting what="Getting who is waiting">
+        <div className="border-border divide-hairline flex flex-col divide-y rounded-md border">
+          {[0, 1].map((row) => (
+            <div key={row} className="flex items-center justify-between gap-3 px-4 py-3">
+              <Skeleton className="h-4 w-48 max-w-full" />
+              <Skeleton className="h-4 w-24 shrink-0" />
+            </div>
+          ))}
+        </div>
+      </WhileWaiting>
+    )
   }
 
   // Said out loud rather than left blank, because an empty space reads as something that has not loaded.

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { lastFourOf } from '~shared/validation/bankAccount'
 
+import { Button } from '../form/Button'
 import { Line } from '../form/Field'
 
 // Offered where it is needed, not on another screen. Sending him elsewhere mid-sitting means retyping the payment when he comes back, which is the friction that ends with Excel reopened.
@@ -76,21 +77,12 @@ export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits:
       {problem ? <span className="text-destructive text-sm">{problem}</span> : null}
 
       <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="border-border text-muted-foreground flex-1 rounded-md border py-2 text-sm"
-        >
+        <Button look="beside" onClick={() => setOpen(false)} className="text-muted-foreground flex-1 py-2 text-sm">
           Never mind
-        </button>
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="bg-primary text-primary-foreground flex-1 rounded-md py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save it'}
-        </button>
+        </Button>
+        <Button onClick={save} busy={saving} className="flex-1 py-2 text-sm">
+          Save it
+        </Button>
       </div>
     </div>
   )

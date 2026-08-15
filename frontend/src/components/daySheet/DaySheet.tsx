@@ -3,6 +3,7 @@ import { formatPaisa } from '~shared/money'
 import { whatIsWrongWith } from '~shared/validation/payment'
 
 import { cn } from '../../lib/utils'
+import { Button } from '../form/Button'
 import { Field, Line, Lines, Picker } from '../form/Field'
 import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
@@ -313,22 +314,12 @@ export function DaySheet({
             </p>
           ) : null}
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={keepAndStartAnother}
-              disabled={saving}
-              className="border-border text-foreground flex-1 rounded-md border py-3 font-medium disabled:opacity-50"
-            >
+            <Button look="beside" onClick={keepAndStartAnother} disabled={saving} className="flex-1">
               Add another
-            </button>
-            <button
-              type="button"
-              onClick={putThemIn}
-              disabled={saving}
-              className="bg-primary text-primary-foreground flex-1 rounded-md py-3 font-medium disabled:opacity-50"
-            >
-              {saving ? 'Putting in…' : 'Put them in'}
-            </button>
+            </Button>
+            <Button onClick={putThemIn} busy={saving} className="flex-1">
+              Put them in
+            </Button>
           </div>
         </div>
       </footer>
