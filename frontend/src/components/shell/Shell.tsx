@@ -28,7 +28,8 @@ function SideBar() {
   return (
     <nav
       aria-label="Sections"
-      className="bg-panel border-border hidden w-[186px] shrink-0 flex-col gap-1 border-r px-3 py-6 lg:flex"
+      // Sticky and its own height, and `self-start` with them: a flex child stretches to the row by default, so a nav as tall as the page has nowhere to stick to and scrolls away with the content. Nauman asked why it scrolls, which is the third thing he has found by looking at it.
+      className="bg-panel border-border hidden w-[186px] shrink-0 flex-col gap-1 border-r px-3 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:self-start"
     >
       <TheName className="px-2 pb-4" />
       {DESTINATIONS.map((destination) => (
@@ -56,7 +57,8 @@ function TopBar() {
   return (
     <nav
       aria-label="Sections"
-      className="bg-panel border-border hidden items-center gap-1 border-b px-4 py-3 sm:flex lg:hidden"
+      // The same fault one shape over: a bar across the top that scrolls away is a bar you have to go back up for. It is not in the flex row the sidebar is in, so it needs no `self-start`.
+      className="bg-panel border-border sticky top-0 z-20 hidden items-center gap-1 border-b px-4 py-3 sm:flex lg:hidden"
     >
       <TheName className="pr-4" />
       {DESTINATIONS.map((destination) => (
