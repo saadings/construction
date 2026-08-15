@@ -1,9 +1,9 @@
 import { v } from 'convex/values'
 
 import type { Line } from '../../shared/validation/owed'
-import { advancedPaisa, outstandingPaisa, payablePaisa, runningBalance } from '../../shared/validation/owed'
-import type { Id } from '../_generated/dataModel'
+import { advancedPaisa, payablePaisa, runningBalance } from '../../shared/validation/owed'
 import { ledgerQuery } from '../utils/ledgerAccess'
+import { whatEveryoneIsOwed } from './thePosition'
 
 // One person's account, in the order the money happened: everything they have billed, everything they have been paid, and the balance after each line. This is what the `MR FARAN ACCOUNT` sheet is, and it is the question the workbooks were kept open to answer.
 
@@ -81,70 +81,11 @@ export const position = ledgerQuery({
       ctx.db.query('sites').collect(),
     ])
 
-    const named = new Map(people.map((person) => [person._id, person.name]))
-    const houseNamed = new Map(sites.map((site) => [site._id, site.name]))
-
-    type Running = { billedPaisa: number; paidPaisa: number; onHouses: Map<Id<'sites'>, Running> }
-    const empty = (): Running => ({ billedPaisa: 0, paidPaisa: 0, onHouses: new Map() })
-
-    const running = new Map<Id<'people'>, Running>()
-    const forPerson = (personId: Id<'people'>) => {
-      const already = running.get(personId) ?? empty()
-      running.set(personId, already)
-      return already
-    }
-    const onHouse = (person: Running, siteId: Id<'sites'>) => {
-      const already = person.onHouses.get(siteId) ?? empty()
-      person.onHouses.set(siteId, already)
-      return already
-    }
-
-    for (const bill of bills) {
-      if (bill.removed) continue
-      const person = forPerson(bill.personId)
-      person.billedPaisa += bill.amountPaisa
-      onHouse(person, bill.siteId).billedPaisa += bill.amountPaisa
-    }
-
-    // A payment with nobody named on it was money handed over at a shop and is nobody's account. It still left the site, which the site's own totals already say.
-    for (const payment of payments) {
-      if (payment.removed || payment.paidToId === undefined) continue
-      const person = forPerson(payment.paidToId)
-      person.paidPaisa += payment.amountPaisa
-      onHouse(person, payment.siteId).paidPaisa += payment.amountPaisa
-    }
-
-    const everyone = [...running].map(([personId, sums]) => ({
-      personId,
-      name: named.get(personId) ?? 'Somebody no longer in the list',
-      billedPaisa: sums.billedPaisa,
-      paidPaisa: sums.paidPaisa,
-      outstandingPaisa: outstandingPaisa(sums),
-      onHouses: [...sums.onHouses]
-        .map(([siteId, house]) => ({
-          siteId,
-          name: houseNamed.get(siteId) ?? 'A house no longer in the list',
-          billedPaisa: house.billedPaisa,
-          paidPaisa: house.paidPaisa,
-          outstandingPaisa: outstandingPaisa(house),
-        }))
-        // Largest owed first, then by name, then by id: two houses alike in every figure read the same way twice.
-        .sort(
-          (one, other) =>
-            other.outstandingPaisa - one.outstandingPaisa ||
-            one.name.localeCompare(other.name) ||
-            one.siteId.localeCompare(other.siteId)
-        ),
-    }))
+    // Worked out where the dashboard works it out, rather than beside it. Two copies of this arithmetic is how a tile and a screen come to disagree about a figure he is looking at twice.
+    const everyone = whatEveryoneIsOwed(bills, payments, people, sites)
 
     return {
-      // Owed the most first, because that is who is asked about. Ties settled by name and then id so the list reads the same twice.
-      everyone: everyone.sort(
-        (one, other) =>
-          other.outstandingPaisa - one.outstandingPaisa ||
-          one.name.localeCompare(other.name) ||
-          one.personId.localeCompare(other.personId)
-      ),
+      everyone,
       // Two figures, never one. An advance held by one man is not money available to pay another.
       payablePaisa: payablePaisa(everyone),
       advancedPaisa: advancedPaisa(everyone),

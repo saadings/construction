@@ -44,6 +44,8 @@ export default defineConfig([
   ...tanstackConfig.map((config) => ({
     ...config,
     files: ['frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}'],
+    // shadcn's own components, copied in by their CLI and updated the same way. Held to our rules they report their style as this repository's problems, and editing them to agree is how you end up maintaining a fork of somebody else's component. What we write about them lives in the screens that use them.
+    ignores: ['frontend/src/components/ui/**'],
     languageOptions: {
       ...config.languageOptions,
       parserOptions: {
@@ -56,6 +58,7 @@ export default defineConfig([
   })),
   {
     files: ['frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}'],
+    ignores: ['frontend/src/components/ui/**'],
     languageOptions: {
       parserOptions: {
         projectService: true,
