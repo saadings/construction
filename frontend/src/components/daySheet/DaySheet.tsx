@@ -281,8 +281,8 @@ export function DaySheet({
         </section>
       </main>
 
-      {/* Above the bar along the bottom of a phone rather than under it, and at the foot of the page everywhere else. */}
-      <footer className="border-border bg-background/95 sticky bottom-[var(--phone-bar)] z-10 border-t backdrop-blur-sm sm:bottom-0">
+      {/* At the foot of the screen at every width. It used to sit a bar's height up on a phone; the bar went with the shell, and there is nothing under it now to clear. */}
+      <footer className="border-border bg-background/95 sticky bottom-0 z-10 border-t backdrop-blur-sm">
         <div className="flex flex-col gap-2 px-5 pt-3 pb-5 sm:px-7 lg:px-9">
           {(problem ?? refusal) ? (
             <p className="text-destructive text-sm" role="alert">

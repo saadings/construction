@@ -36,9 +36,6 @@
   /* A refusal is not a figure, so it is not held to the two colours. A refusal the same colour as everything else is a refusal nobody sees. */
   --refusal: #8f3521;
 
-  /* All that is left of the bar along the bottom of a phone, which is gone. The day sheet's footer is its last reader, and that file is const-2's until their combobox lands -- so this outlives the bar by one change rather than being deleted under a `var()` that would make `bottom` invalid and unstick the footer. Both go together, next. */
-  --phone-bar: calc(3.9rem + env(safe-area-inset-bottom));
-
   --background: var(--ground);
   --foreground: var(--ink);
   --card: var(--panel);
