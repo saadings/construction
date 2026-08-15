@@ -130,7 +130,7 @@ export function DaySheet({
               value={day}
               onChange={(event) => onChangeDay(event.target.value)}
               aria-label="Which day"
-              className="text-muted-foreground w-auto shrink-0 text-right text-sm"
+              className="text-muted-foreground w-auto shrink-0 text-right"
             />
           </div>
 

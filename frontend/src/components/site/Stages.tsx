@@ -122,7 +122,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
           }}
           type="date"
           aria-label={`When ${stage.description} was billed`}
-          className="border-border text-muted-foreground w-auto rounded-md border px-2 py-1 text-sm"
+          className="border-border text-muted-foreground w-auto rounded-md border px-2 py-1"
         />
         <Button look="beside" busy={saving} className="px-3 py-1 text-sm" onClick={bill}>
           Bill it
