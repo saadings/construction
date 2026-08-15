@@ -28,12 +28,12 @@ function ADayOnSite() {
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
 
-  // Undefined means the answer has not arrived; null means it arrived and this site is not one of his.
+  // Undefined means the answer has not arrived. Null means it arrived and was refused, which is the same screen whichever of them says it.
   if (site === undefined || trades === undefined || people === undefined || accounts === undefined) {
     return <Waiting />
   }
 
-  if (site === null) {
+  if (site === null || trades === null || people === null || accounts === null) {
     return <NotYours />
   }
 

@@ -19,12 +19,23 @@ function convexWithPeople() {
   })
 }
 
+// A partner on a site. People, trades and bank accounts are global, so what they ask is whether this is a partner at all rather than which site.
 async function anAccount(ctx: MutationCtx) {
+  const personId = await ctx.db.insert('people', { name: 'The partner', hidden: false })
+  const siteId = await ctx.db.insert('sites', {
+    name: '1-A, Phase 0',
+    builtForAClient: false,
+    stage: 'building',
+    hidden: false,
+  })
+  await ctx.db.insert('siteRoles', { personId, siteId, capacity: 'partner' })
+
   await ctx.db.insert('accounts', {
     externalId: SIGNED_IN_AS,
     name: 'The partner',
-    primaryEmail: 'nauman@example.com',
+    primaryEmail: 'partner@example.com',
     otherEmails: [],
+    personId,
   })
 }
 
@@ -59,7 +70,10 @@ describe('adding someone the business deals with', () => {
       )
 
     expect(refusal).toContain('name of the person or shop')
-    expect(await t.run((ctx) => ctx.db.query('people').collect())).toEqual([])
+    // Only the partner set up above is there. Nothing was written for the name that was refused.
+    expect((await t.run((ctx) => ctx.db.query('people').collect())).map((person) => person.name)).toEqual([
+      'Nauman Saeed',
+    ])
   })
 
   it('turns away a caller who is not signed in', async () => {
@@ -83,10 +97,12 @@ describe('the list of people', () => {
     const gone = await signedIn.mutation(api.people.mutations.add, { name: 'Someone Else' })
     await signedIn.mutation(api.people.mutations.hide, { personId: gone })
 
-    expect((await signedIn.query(api.people.queries.list, {})).map((person) => person.name)).toEqual([
+    expect((await signedIn.query(api.people.queries.list, {}))?.map((person) => person.name)).toEqual([
       'A client',
       'A mason',
       'A supplier',
+      // The partner the fixture signs in as, who is a person like any other.
+      'The partner',
     ])
     // Hidden, not deleted: payments point at them forever, and a name that vanishes turns settled money into a mystery.
     expect(await t.run((ctx) => ctx.db.get('people', gone))).toMatchObject({ hidden: true })
