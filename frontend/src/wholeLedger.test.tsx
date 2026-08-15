@@ -277,7 +277,8 @@ describe('the same money, read off two screens', () => {
     )
 
     await user.selectOptions(screen.getByLabelText('What for'), 'Steel')
-    await user.selectOptions(screen.getByLabelText('Who was paid'), 'A steel supplier')
+    // One box now, typed into rather than picked from: answering "who" used to mean deciding which of two boxes you meant.
+    await user.type(screen.getByLabelText('Who was paid'), 'A steel supplier')
     await user.type(screen.getByLabelText('How much'), '500000')
     // A row of choices since it stopped being a picker, which is the fix that came out of the label defect.
     await user.click(screen.getByRole('radio', { name: 'Cash' }))

@@ -37,9 +37,15 @@ export function waitsWithoutASkeleton(source: string, written: Map<string, Array
   // A reading is always a bare local -- `stages === undefined`. `contract.actualAreaSqft === undefined` is a field that may be absent, which is a fact about a contract and not a screen waiting on anything.
 
   // And one answered by throwing is not a screen waiting either: it is a click handler refusing, where there is nothing on the screen to hold a shape. A screen that waits returns something to look at.
-  const waits = [...source.matchAll(/(?<![.\w])\w+\s*===\s*undefined/g)].some(
-    (found) => !/^\s*\)?\s*\{?\s*throw\b/.test(source.slice(found.index + found[0].length))
+
+  // Nor is a row picked out of a list somebody already has. `const already = people.find(...)` asks whether a name is among them, which is a fact about the list rather than a read in flight.
+  const searched = new Set(
+    [...source.matchAll(/\b(?:const|let)\s+(\w+)\s*=[^\n]*\.find\s*\(/g)].map((found) => found[1])
   )
+
+  const waits = [...source.matchAll(/(?<![.\w])(\w+)\s*===\s*undefined/g)]
+    .filter((found) => !searched.has(found[1]))
+    .some((found) => !/^\s*\)?\s*\{?\s*throw\b/.test(source.slice(found.index + found[0].length)))
 
   if (!waits) return false
 
