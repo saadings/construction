@@ -215,3 +215,63 @@ describe('a day of payments', () => {
     expect(onScreen).toContain('1-A, Phase 0')
   })
 })
+
+describe('a question that answers for itself', () => {
+  it('says nothing at all on a sitting nobody has touched', async () => {
+    // Opening a day sheet is not a mistake. Six red questions before a single answer is the app shouting at somebody who has done nothing.
+    aSheet()
+
+    expect(await screen.findByLabelText('What for')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('says what is missing beside the question that asked it, once the eye has moved on', async () => {
+    const user = userEvent.setup()
+    aSheet()
+
+    // Straight past "what for" without answering it.
+    await user.click(screen.getByLabelText('What for'))
+    await user.click(screen.getByLabelText('How much'))
+
+    expect(screen.getByRole('alert').textContent).toBe('Pick what this was for.')
+  })
+
+  it('takes it back the moment the question is answered', async () => {
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.click(screen.getByLabelText('What for'))
+    await user.click(screen.getByLabelText('How much'))
+    expect(screen.getByText('Pick what this was for.')).toBeTruthy()
+
+    await user.selectOptions(screen.getByLabelText('What for'), 'Cement')
+
+    // Only that one goes. The amount, which the eye also left, is still unanswered and still says so.
+    expect(screen.queryByText('Pick what this was for.')).toBeNull()
+    expect(screen.getByText('Put in how much was paid.')).toBeTruthy()
+  })
+
+  it('says nothing about a question this way of paying does not ask', async () => {
+    // Cash asks for neither a cheque number nor an account, so neither is missing.
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.click(screen.getByRole('radio', { name: 'Cash' }))
+    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Note'))
+
+    expect(screen.queryByText('Add the cheque number.')).toBeNull()
+    expect(screen.queryByText('Say which account this left.')).toBeNull()
+  })
+
+  it('says an amount is missing beside the amount, not under the button', async () => {
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Note'))
+
+    expect(screen.getByRole('alert').textContent).toBe('Put in how much was paid.')
+    expect(screen.getByLabelText('How much').getAttribute('aria-invalid')).toBe('true')
+  })
+})
