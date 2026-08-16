@@ -292,8 +292,12 @@ describe('the same money, read off two screens', () => {
 
     // Read back through the rule both sides share, so this is the paisa the server is being sent.
     const [sent] = onPutIn.mock.calls[0]
-    const wentOut = sittingTotalPaisa(sent)
-    expect(wentOut).toBe(PAID_TO_THE_SUPPLIER)
+    const sitting = sittingTotalPaisa(sent)
+
+    // Both halves of what it answers: the figure, and that nothing in the sitting was unreadable. A total that quietly left a line out would otherwise agree with a screen that was never sent it.
+    expect(sitting).toEqual({ paisa: PAID_TO_THE_SUPPLIER, unreadable: 0 })
+
+    const wentOut = sitting.paisa
 
     cleanup()
     render(spentOn(wentOut))

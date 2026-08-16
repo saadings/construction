@@ -216,6 +216,34 @@ describe('a day of payments', () => {
     expect(screen.queryByRole('button', { name: /^Use/ })).toBeNull()
   })
 
+  it('never counts a figure it cannot read as nothing, and says so at the total', async () => {
+    // What Nauman saw: `111,111,111,111` typed, his figure still in the box, and `This sitting` reading `0` with nothing anywhere saying why. `readRupees` had already decided it was larger than this keeps track of; the day sheet threw that away and put a number in its place.
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.type(screen.getByLabelText('How much'), '111111111111')
+
+    expect(screen.getByRole('status').textContent).toContain('not one this can add')
+
+    // And the refusal beside the box says which mistake it was, once the eye has left it. Telling somebody who typed a figure that it is not a number is the lie `money.ts` was written to avoid.
+    await user.click(screen.getByLabelText('Note'))
+
+    const said = screen.getByText(/keeps track of/)
+    expect(said.textContent).toContain('more than this keeps track of')
+  })
+
+  it('says a figure is missing rather than wrong when nothing has been typed', async () => {
+    // The other half of the same question. An empty box is unanswered, and the schema's words for an unreadable figure would be an odd thing to say about no figure at all.
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Note'))
+
+    expect(screen.getByText('Put in how much was paid.')).toBeTruthy()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   it('names no screen that does not exist', () => {
     aSheet({ accounts: [] })
 
