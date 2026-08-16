@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { WayOut } from '../form/WayOut'
+import { Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Invited = { id: string; email: string; askedOn: number }
@@ -36,9 +37,9 @@ export function WhoCanSignIn({
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    // In a `Page` like every other screen a route draws. Without it this sat flush against the left edge of a phone -- the padding is written once there so six screens cannot each invent their own, and a screen that never renders one invents nothing and gets none.
+    <Page title="Who can sign in">
       <div className="flex flex-col gap-1">
-        <h2 className="text-foreground text-base font-medium">Who can sign in</h2>
         <p className="text-muted-foreground max-w-prose text-sm">
           They will get an email and can sign themselves in. Nothing else needs doing afterwards.
         </p>
@@ -71,7 +72,7 @@ export function WhoCanSignIn({
       )}
 
       <Waiting waiting={waiting} onTakeOff={onTakeOff} />
-    </section>
+    </Page>
   )
 }
 

@@ -54,10 +54,15 @@ const PIECES = new Set([
   'WhoIsOnThisHouse',
   'ChangeTheHouse',
   'HouseDetails',
+  // Reached through `AgreeShares`'s `beneath`, so the `Page` around it is that screen's. Found by the rule below rather than by anybody noticing: it was the third component a route imports and renders without one, and the only one of the three that was right.
+  'PayOut',
 ])
 
 /** Drawn by a route, but not from the gallery: `WayIn` and the shell are the sign-in itself, and Clerk will not render outside its own provider. */
 const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell', 'WayIn'])
+
+/** The one screen that draws its own layout rather than sitting in a `Page`, and is right to: a day sheet is a sticky header over a form, so its padding is inside the header and inside the form rather than around both. */
+const ITS_OWN_LAYOUT = new Set(['DaySheet'])
 
 describe('the gallery', () => {
   it('shows every screen a route draws whole', () => {
@@ -75,6 +80,31 @@ describe('the gallery', () => {
     expect(drawn.length).toBeGreaterThan(8)
     expect(drawn).toContain('DaySheet')
     expect(drawn).toContain('AgreeShares')
+  })
+
+  it('draws every one of them inside a `Page`, which is where the margins are', () => {
+    // `Page` carries the padding, and its own comment says why: so six screens cannot each invent their own. A screen that never renders one invents nothing and gets none — `WhoCanSignIn` and `BankAccounts` each wrote an `<h2>` and a bare `<section>`, and sat flush against the left edge of a phone at x=0 while every other screen began at 20.
+
+    // Asked of the screens rather than of the routes, because a `Page` put in the route would leave the gallery drawing the same component without one — and then the thing measured would not be the thing shipped.
+    const files = new Map(everyScreen().map((screen) => [screen.path, screen.source]))
+
+    const bare = whatTheRoutesDraw()
+      .filter((name) => !NOT_WITHOUT_A_SIGN_IN.has(name) && !ITS_OWN_LAYOUT.has(name))
+      .map((name) => [...files].find(([path]) => path.endsWith(`/${name}.tsx`)))
+      .filter((found) => found !== undefined)
+      .filter(([, source]) => !source.includes('<Page'))
+      .map(([path]) => path)
+
+    expect(bare).toEqual([])
+  })
+
+  it('has nothing named as drawing its own layout that is not a screen any more', () => {
+    // An exemption outlives what it was written for, and a stale one silently excuses whatever takes that path next.
+    const drawn = new Set(whatTheRoutesDraw())
+
+    for (const name of ITS_OWN_LAYOUT) {
+      expect(drawn, `${name} is named as drawing its own layout and no route draws it`).toContain(name)
+    }
   })
 
   it('shows nothing that is not a screen this app has', () => {

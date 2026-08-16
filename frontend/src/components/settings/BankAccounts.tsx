@@ -4,7 +4,7 @@ import { whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
-import { Form } from '../shell/Page'
+import { Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 // The accounts a cheque or transfer left. One could be added from the day sheet and taken off nowhere, so a mistyped account stayed in the picker for good.
@@ -21,8 +21,8 @@ export function BankAccounts({
   onTakeOff: (bankAccountId: string) => Promise<void>
 }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-foreground text-base font-medium">Accounts money leaves</h2>
+    // In a `Page` like every other screen a route draws. Without it this sat flush against the left edge of a phone, and the title is what the menu row that reaches it says rather than a second name for the same place.
+    <Page title="Which account">
       <p className="text-muted-foreground max-w-prose text-sm">
         Only the last four figures are ever kept. The whole number never leaves this device.
       </p>
@@ -56,7 +56,7 @@ export function BankAccounts({
       )}
 
       <AddAnAccount onAdd={onAdd} />
-    </section>
+    </Page>
   )
 }
 
