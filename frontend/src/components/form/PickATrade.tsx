@@ -5,6 +5,7 @@ import { WhatItIsFor } from '../settings/Trades'
 import { Button } from './Button'
 import type { Choice } from './Pick'
 import { Pick } from './Pick'
+import { StillSending } from './StillSending'
 import { whatWentWrong } from './whatWentWrong'
 
 // What a payment was for, and a way to add one without leaving the sitting. Nauman, mid-entry on his phone: "in whats for I should be able to add something if that doesn't exist in our system".
@@ -86,6 +87,7 @@ export function PickATrade({
             label={`Whether ${naming} is part of what the house cost`}
           />
 
+          <StillSending busy={saving} />
           {refusal === null ? null : (
             <p className="text-destructive text-sm" role="alert">
               {refusal}

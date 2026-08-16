@@ -5,6 +5,7 @@ import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 import { Button } from '../form/Button'
 import { Choices, Field, Line } from '../form/Field'
 import { Pick } from '../form/Pick'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 
@@ -149,6 +150,7 @@ export function HouseDetails({
         </div>
       </Choices>
 
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
           {refusal}

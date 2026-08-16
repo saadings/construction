@@ -7,6 +7,7 @@ import { Day } from '../form/Day'
 import { Field, Line } from '../form/Field'
 import { NOBODY, PickAPerson, asAsked } from '../form/PickAPerson'
 import { PickATrade } from '../form/PickATrade'
+import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { Figure } from '../shell/Page'
@@ -359,6 +360,7 @@ function TheForm({
         </div>
       )}
 
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
           {refusal}

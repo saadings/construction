@@ -8,6 +8,7 @@ import { Button } from '../form/Button'
 import { Day } from '../form/Day'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { NOBODY, PickAPerson, asAsked } from '../form/PickAPerson'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 
@@ -156,6 +157,7 @@ export function AgreeAContract({
         />
       </Field>
 
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
           {refusal}

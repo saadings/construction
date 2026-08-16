@@ -8,6 +8,7 @@ import { Day } from '../form/Day'
 import { Line, useSaidOnceLeft } from '../form/Field'
 import type { WhoIsNamed } from '../form/PickAPerson'
 import { NOBODY, PickAPerson } from '../form/PickAPerson'
+import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -189,6 +190,7 @@ function Setting({
 
       <Day label="Agreed on" value={agreedOn} onPick={setAgreedOn} />
 
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
           {refusal}

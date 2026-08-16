@@ -5,6 +5,7 @@ import { Button } from './Button'
 import { Field, Line } from './Field'
 import type { Choice } from './Pick'
 import { Pick, asChoices } from './Pick'
+import { StillSending } from './StillSending'
 import { whatWentWrong } from './whatWentWrong'
 
 // Which account money left or landed in, and a way to add one without leaving the sitting.
@@ -107,6 +108,7 @@ export function PickAnAccount({
             />
           </Field>
 
+          <StillSending busy={saving} />
           {refusal === null ? null : (
             <p className="text-destructive text-sm" role="alert">
               {refusal}

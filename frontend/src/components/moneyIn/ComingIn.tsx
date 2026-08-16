@@ -12,6 +12,7 @@ import { Choices, Field, Line, Lines } from '../form/Field'
 import type { Part } from '../form/HowItWasPaid'
 import { HowItWasPaid, onePart, whatEachPartIsWorth } from '../form/HowItWasPaid'
 import { Pick } from '../form/Pick'
+import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
@@ -207,6 +208,7 @@ function Taking({
         <Lines value={note} onChange={(event) => setNote(event.target.value)} aria-label="Note" />
       </Field>
 
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
           {refusal}

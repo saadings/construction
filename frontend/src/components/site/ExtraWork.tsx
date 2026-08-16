@@ -7,6 +7,7 @@ import { calendarDay, positiveMoney, whatIsWrong } from '~shared/validation/prim
 import { Button } from '../form/Button'
 import { Day } from '../form/Day'
 import { Field, Line } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
@@ -135,6 +136,7 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
         >
           {saving ? 'Taking it back…' : 'Take it back'}
         </WayOut>
+        <StillSending busy={saving} />
         {refusal === null ? null : (
           <span role="alert" className="text-destructive text-sm">
             {refusal}
