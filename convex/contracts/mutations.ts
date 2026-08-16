@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
-import { contractInput, contractRevision } from '../../shared/validation/contract'
+import { SAY_CONTRACT, contractInput, contractMeasured, contractRevision } from '../../shared/validation/contract'
+import { whoIsMeant } from '../people/theSamePerson'
 import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
@@ -10,7 +11,9 @@ const priced = v.union(
 )
 
 const typedIn = {
-  clientId: v.id('people'),
+  // Either: the client picked from the list, or a name typed into it as the contract is agreed.
+  personId: v.optional(v.id('people')),
+  newPerson: v.optional(v.string()),
   agreedOn: v.string(),
   priced,
   agreedAreaSqft: v.union(v.string(), v.number()),
@@ -33,9 +36,12 @@ export const agree = siteMutation({
       throw new ConvexError('This house already has a contract. Change that one rather than agreeing a second.')
     }
 
+    // Taken apart rather than spread, because what is typed and what is stored are not the same shape any more: `newPerson` is an answer about who, not a column on a contract.
+    const { personId, newPerson, ...agreed } = contract
+
     return await ctx.db.insert('contracts', {
-      ...contract,
-      clientId: args.clientId,
+      ...agreed,
+      clientId: await whoIsMeant(ctx, { personId, newPerson }, SAY_CONTRACT.client),
       siteId: ctx.siteId,
       hidden: false,
     })
@@ -51,7 +57,7 @@ export const measure = siteMutation({
     }
 
     // Only the measured area moves. What was agreed stays as it was, because that is what a disagreement is settled against.
-    const { actualAreaSqft } = checked(contractInput.pick({ actualAreaSqft: true }), {
+    const { actualAreaSqft } = checked(contractMeasured, {
       actualAreaSqft: args.actualAreaSqft,
     })
 

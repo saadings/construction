@@ -6,7 +6,8 @@ import { percentAsBasisPoints, saySharesDoNotAddUp, shortOfTheWhole } from '~sha
 import { Button } from '../form/Button'
 import { Day } from '../form/Day'
 import { Line, useSaidOnceLeft } from '../form/Field'
-import { Pick } from '../form/Pick'
+import type { WhoIsNamed } from '../form/PickAPerson'
+import { NOBODY, PickAPerson } from '../form/PickAPerson'
 import { WayOut } from '../form/WayOut'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -14,7 +15,8 @@ import type { Position, WhatThePartnersHave } from './Positions'
 
 export type Somebody = { _id: string; name: string }
 
-export type AgreedShare = { personId: string; share: string }
+// Who and how much. Picked or typed, the same as everywhere else somebody is named -- an id when he was picked, a name when he was typed, never both.
+export type AgreedShare = { personId?: string; newPerson?: string; share: string }
 
 // Basis points read back as the percentage somebody said out loud: 3333 is 33.33, and 7500 is 75 rather than 75.00.
 function asTyped(basisPoints: number): string {
@@ -81,7 +83,12 @@ export function AgreeShares({
   )
 }
 
+// `personId` is empty for somebody typed in who is not on the list yet, so rows are told apart by `who` -- his id if he has one, his name if he has not. Keyed on `personId` alone, two typed rows would be one row.
 type Row = { personId: string; name: string; capitalPaisa: number; typed: string }
+
+function who(row: { personId: string; name: string }): string {
+  return row.personId === '' ? `typed:${row.name}` : row.personId
+}
 
 function Setting({
   siteName,
@@ -116,21 +123,26 @@ function Setting({
   const short = shortOfTheWhole(rows.map((row) => ({ share: inBasisPoints(row.typed) ?? 0 })))
   const notYetIn = everybody.filter((person) => !rows.some((row) => row.personId === person._id))
 
-  function change(personId: string, typed: string) {
-    setRows((was) => was.map((row) => (row.personId === personId ? { ...row, typed } : row)))
+  function change(whose: string, typed: string) {
+    setRows((was) => was.map((row) => (who(row) === whose ? { ...row, typed } : row)))
   }
 
-  function takeOut(personId: string) {
-    setRows((was) => was.filter((row) => row.personId !== personId))
+  function takeOut(whose: string) {
+    setRows((was) => was.filter((row) => who(row) !== whose))
   }
 
-  // Somebody taking a share who has put nothing into this house. Nauman's own case: who funded a house and who agreed to take the profit are not always the same people.
-  function put(personId: string) {
-    const person = everybody.find((one) => one._id === personId)
+  // Somebody taking a share who has put nothing into this house. Nauman's own case: who funded a house and who agreed to take the profit are not always the same people -- and if they are not, the man taking the share may be nobody the ledger has met.
+  function put(named: WhoIsNamed) {
+    // A name already on the list is that person, whatever was typed, so this can never make a second row of somebody the ledger already has.
+    const person = everybody.find((one) => one._id === named.personId)
+    const row =
+      person === undefined
+        ? { personId: '', name: named.newPerson.trim(), capitalPaisa: 0, typed: '' }
+        : { personId: person._id, name: person.name, capitalPaisa: 0, typed: '' }
 
-    if (person === undefined || rows.some((row) => row.personId === personId)) return
+    if (row.name === '' || rows.some((already) => who(already) === who(row))) return
 
-    setRows((was) => [...was, { personId, name: person.name, capitalPaisa: 0, typed: '' }])
+    setRows((was) => [...was, row])
   }
 
   return (
@@ -158,7 +170,7 @@ function Setting({
 
           <ul className="divide-hairline flex flex-col divide-y">
             {rows.map((row) => (
-              <Share key={row.personId} row={row} onChange={change} onTakeOut={takeOut} />
+              <Share key={who(row)} row={row} onChange={change} onTakeOut={takeOut} />
             ))}
           </ul>
         </div>
@@ -166,18 +178,14 @@ function Setting({
 
       <AddsUp short={short} siteName={siteName} />
 
-      {notYetIn.length === 0 ? null : (
-        <Pick
-          label="Somebody else takes a share"
-          hint="Anybody taking a share without having put money in."
-          placeholder="Pick one"
-          chosen={null}
-          choices={notYetIn}
-          onPick={(picked) => {
-            if (picked !== null) put(picked._id)
-          }}
-        />
-      )}
+      {/* Drawn even when everybody on the list is already down: the point of it now is that the person taking a share may not be on the list at all. */}
+      <PickAPerson
+        label="Somebody else takes a share"
+        hint="Anybody taking a share without having put money in."
+        who={NOBODY}
+        people={notYetIn}
+        onChange={put}
+      />
 
       <Day label="Agreed on" value={agreedOn} onPick={setAgreedOn} />
 
@@ -192,7 +200,10 @@ function Setting({
           onClick={() => {
             void onAgree(
               agreedOn,
-              rows.map((row) => ({ personId: row.personId, share: row.typed }))
+              rows.map((row) => ({
+                ...(row.personId === '' ? { newPerson: row.name } : { personId: row.personId }),
+                share: row.typed,
+              }))
             )
           }}
           busy={saving}
@@ -223,13 +234,13 @@ function Share({
   onTakeOut,
 }: {
   row: Row
-  onChange: (personId: string, typed: string) => void
-  onTakeOut: (personId: string) => void
+  onChange: (whose: string, typed: string) => void
+  onTakeOut: (whose: string) => void
 }) {
   const wrong = whatIsWrongWithAShare(row.typed)
   // The same rule the rest of the app holds to: nothing is said about a box while somebody is still typing in it.
   const { showing, onBlur } = useSaidOnceLeft(wrong)
-  const said = `${row.personId}-wrong`
+  const said = `${who(row)}-wrong`
 
   return (
     <li className={`${ROW} py-3`}>
@@ -246,7 +257,7 @@ function Share({
       <span className="order-2 flex items-baseline gap-1 sm:order-none">
         <Line
           value={row.typed}
-          onChange={(event) => onChange(row.personId, event.target.value)}
+          onChange={(event) => onChange(who(row), event.target.value)}
           onBlur={onBlur}
           inputMode="decimal"
           aria-label={`${row.name}’s share`}

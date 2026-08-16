@@ -37,7 +37,7 @@ describe('what a contract is worth', () => {
 })
 
 describe('how a contract may be priced', () => {
-  const agreed = { clientId: 'p1', agreedOn: '2026-03-14', agreedAreaSqft: '5,000' }
+  const agreed = { personId: 'p1', agreedOn: '2026-03-14', agreedAreaSqft: '5,000' }
 
   it('takes a lump sum, in the rupees a person types', () => {
     const contract = contractInput.parse({ ...agreed, priced: { how: 'lumpSum', totalPaisa: '1,200,000' } })

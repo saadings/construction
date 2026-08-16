@@ -54,13 +54,28 @@ describe('every way a person gets written down', () => {
     expect(unasked).toEqual([])
   })
 
-  it('is asked of every door there is, rather than of none of them', () => {
-    // The floor, counted the way the sweep counts. Three files write a person today; a reader that stopped finding inserts would report the same clean tree as one where every door is closed.
+  it('is two doors and no more, now that six screens can name somebody', () => {
+    // It was three files inserting a person, each asking first. Six screens can name one now -- a payment, money coming in, an engagement, a bill, a contract, a share -- and six copies of the rule is five chances to forget it.
+
+    // So they all go through `whoIsMeant`, and this is the shape of that: the people screen, which is where somebody is written down on purpose, and the one place every other door resolves through. A third name in this list is a door that went round the rule.
     const doors = backend.filter(({ source }) => /ctx\.db\.insert\(\s*'people'/.test(source)).map(({ path }) => path)
 
-    expect(doors).toContain('people/mutations.ts')
-    expect(doors).toContain('payments/mutations.ts')
-    expect(doors).toContain('moneyIn/mutations.ts')
+    expect(doors.toSorted()).toEqual(['people/mutations.ts', 'people/theSamePerson.ts'])
+  })
+
+  it('is what every door that can name somebody actually calls', () => {
+    // The other end, and the one that matters more: the list above shrinking to nothing would pass the check above perfectly. So this counts the doors from the other side -- who resolves a typed name -- and holds it to the six screens that can.
+    const resolving = backend.filter(({ source }) => /whoIsMeant\(/.test(source)).map(({ path }) => path)
+
+    expect(resolving.toSorted()).toEqual([
+      'bills/mutations.ts',
+      'contracts/mutations.ts',
+      'engagements/mutations.ts',
+      'moneyIn/mutations.ts',
+      'payments/mutations.ts',
+      'people/theSamePerson.ts',
+      'profitShares/mutations.ts',
+    ])
   })
 
   it('would notice a fourth door opened without it', () => {

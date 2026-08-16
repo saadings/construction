@@ -43,7 +43,8 @@ async function aHouseBuiltForAClient(ctx: MutationCtx): Promise<AHouse> {
 }
 
 const aRateContract = (clientId: Id<'people'>) => ({
-  clientId,
+  // `personId` on the way in, `clientId` in the row.
+  personId: clientId,
   agreedOn: '2026-03-14',
   priced: { how: 'ratePerSqft', ratePerSqftPaisa: '2,400' } as const,
   agreedAreaSqft: '5,000',

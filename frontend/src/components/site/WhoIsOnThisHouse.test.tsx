@@ -148,6 +148,26 @@ describe('who is on a house', () => {
     })
   })
 
+  it('takes a name for somebody the ledger has never met, on a house where that is the ordinary case', async () => {
+    // A mason turning up on a site nobody has written down is not the exception here. Before this the picker offered only what was on the list, and the way round it was another screen and a form typed twice.
+    const user = userEvent.setup()
+    const { onAgree } = renderWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    await useTheName(user, 'Who', 'A new mason')
+    await pick(user, 'What for', 'Civil labour')
+    fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+
+    await waitFor(() => {
+      expect(onAgree).toHaveBeenCalled()
+    })
+
+    // The name goes as a name. Only the server can say whether it is somebody the ledger already has, because only the server can see everybody.
+    expect(onAgree).toHaveBeenCalledWith(expect.objectContaining({ newPerson: 'A new mason' }))
+    expect(onAgree.mock.calls[0][0]).not.toHaveProperty('personId')
+  })
+
   it('lets a trade be added while somebody is being put on one, and asks what kind of cost it is', async () => {
     // The same picker as the day sheet's `What for`, reading the same list. A trade missing from it stops this form too, and the answer must be his rather than a default: the true ones added together are what the house cost.
     const user = userEvent.setup()

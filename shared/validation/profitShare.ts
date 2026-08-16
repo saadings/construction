@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { THE_WHOLE } from '../profitSplit'
 import { HOW_PAID, asksForBank, asksForChequeNumber } from './howMoneyMoved'
+import { namesSomebody, whoWasNamed } from './person'
 import { calendarDay, chequeNumber, money, note } from './primitives'
 
 // The words themselves, once, so a refusal reads the same whether it was caught as it was typed or when it reached the server.
@@ -10,6 +11,7 @@ export const SAY_SHARE = {
   aShare: 'Put in a share, like 33.33.',
   tooMuch: 'A share cannot be more than the whole.',
   nothing: 'Say who takes what before agreeing it.',
+  who: 'Say whose share this is.',
 } as const
 
 // Typed as a percentage, because that is what people say, and kept as basis points, because that is what divides exactly.
@@ -30,7 +32,10 @@ export const percentAsBasisPoints = z.union([z.string(), z.number()]).transform(
   return Math.round(typed * 100)
 })
 
-const oneShare = z.object({ personId: zid('people'), share: percentAsBasisPoints })
+// Picked or typed, the same as every other place somebody is named. Nauman's own case is the reason this one matters: who funded a house and who agreed to take the profit are not always the same people, so the person taking a share may be nobody the ledger has met.
+const oneShare = z
+  .object({ ...whoWasNamed, share: percentAsBasisPoints })
+  .refine(namesSomebody, { path: ['personId'], message: SAY_SHARE.who })
 
 // Agreed as a set rather than one at a time. A share is a part of a whole, and a whole that only adds up while somebody is halfway through changing it is a whole nobody can read.
 export const sharesAgreed = z.object({

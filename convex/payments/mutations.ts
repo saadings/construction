@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
 import { SAY, daySheet } from '../../shared/validation/payment'
-import { personAlreadyCalled } from '../people/theSamePerson'
+import { whoIsMeant } from '../people/theSamePerson'
 import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
@@ -28,20 +28,8 @@ export const record = siteMutation({
 
     const written = []
     for (const entry of entries) {
-      // A name typed for a shop nobody will pay again still becomes a person, because the payment has to point at somebody.
-      let paidToId = entry.paidToId
-      if (paidToId === undefined) {
-        // The schema has already refused an entry paid to nobody. This is how the type sees that, and it says the same sentence, so one mistake can never come back worded two ways.
-        if (entry.newPerson === undefined) {
-          throw new ConvexError(SAY.paidTo)
-        }
-
-        // Somebody already on the list, typed rather than picked, is that person. Inserting regardless put a second row under one name through a door the people screen refuses -- and two rows for one man split his money across both, so every figure about him is wrong and quietly so.
-        const already = await personAlreadyCalled(ctx, entry.newPerson)
-
-        // Left hidden if he is hidden: taking somebody off the list is a decision about the list, not about who was paid.
-        paidToId = already?._id ?? (await ctx.db.insert('people', { name: entry.newPerson, hidden: false }))
-      }
+      // A name typed for a shop nobody will pay again still becomes a person, because the payment has to point at somebody. Resolved by the one place that knows what makes two names the same man.
+      const paidToId = await whoIsMeant(ctx, { personId: entry.paidToId, newPerson: entry.newPerson }, SAY.paidTo)
 
       written.push(
         await ctx.db.insert('payments', {

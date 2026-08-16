@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { NOT_ON_THE_LIST } from '../form/Pick'
-import { WhoWasPaid, whoIsShown, whoWasMeant } from './WhoWasPaid'
+import { WhoWasPaid, whoIsShownAsPaid as whoIsShown, whoWasPaidMeant as whoWasMeant } from './WhoWasPaid'
 
 afterEach(cleanup)
 

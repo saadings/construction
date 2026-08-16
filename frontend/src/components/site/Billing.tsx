@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from 'convex/react'
 import { ConvexError } from 'convex/values'
 import { formatPaisa } from '~shared/money'
+import { SAY_CONTRACT } from '~shared/validation/contract'
 
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
@@ -58,14 +59,14 @@ export function Billing({ siteId }: { siteId: Id<'sites'> }) {
         ) : (
           <AgreeAContract
             people={people}
-            onAgree={async ({ clientId, ...agreed }) => {
-              // Looked up rather than cast: the picker holds a plain string, and the one place that string becomes a person is here, where the list it came from is in hand.
-              const client = people.find((person) => person._id === clientId)
-              if (client === undefined) {
-                throw new ConvexError('Say who the house is being built for.')
+            onAgree={async ({ personId, ...agreed }) => {
+              // Looked up rather than cast, when there is an id to look up: the picker holds a plain string, and the one place that string becomes a person is here, where the list it came from is in hand. A name typed instead goes as a name -- the server resolves it against everybody, which is the only place that can be done safely.
+              const client = people.find((person) => person._id === personId)
+              if (personId !== undefined && client === undefined) {
+                throw new ConvexError(SAY_CONTRACT.client)
               }
 
-              await agree({ siteId, clientId: client._id, ...agreed })
+              await agree({ siteId, personId: client?._id, ...agreed })
             }}
           />
         )}
