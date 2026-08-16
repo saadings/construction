@@ -35,7 +35,9 @@ export function useSaidOnceLeft(problem?: string | null): { showing: boolean; on
 }
 
 // How a question is written on this app: small, spaced and upper-case. shadcn's label is body text, and this is the one thing about the form that Nauman has already looked at and kept.
-const ASKED = 'text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase'
+
+// Read by `Choices` too, which asks a question the same way and answers it with a row of boxes rather than a control.
+export const ASKED = 'text-muted-foreground text-[0.8125rem] font-medium tracking-[0.06em] uppercase'
 
 /** Which shape a box wears. Named the way `Button` names its own, because they are the same idea. */
 export type Look = 'asked' | 'beside' | 'amount'
@@ -78,34 +80,7 @@ export function Field({
   )
 }
 
-// A row of choices, asked the way `Field` asks a question. It is the same group with the same label; what differs is that the choices name themselves and the group is named as a whole.
-export function Choices({
-  label,
-  hint,
-  children,
-  className,
-}: {
-  label: string
-  hint?: string
-  children: ReactNode
-  className?: string
-}) {
-  const said = useId()
-
-  return (
-    <OnShadcn className={cn('gap-1.5', className)}>
-      <FieldLabel id={said} className={ASKED}>
-        {label}
-      </FieldLabel>
-
-      <div role="radiogroup" aria-labelledby={said}>
-        {children}
-      </div>
-
-      {hint ? <FieldDescription>{hint}</FieldDescription> : null}
-    </OnShadcn>
-  )
-}
+// A row of choices is asked the way `Field` asks a question and is not a `Field`: it lives in `Choices.tsx`, because what answers it is a group of boxes rather than one control, and every part of this file's machinery -- the id, the invalid flag, the problem said once focus has left -- is about naming a single control.
 
 const LOOKS = {
   // The answer to a question: a line under it rather than a box round it, in the display size, because the figure is the thing being read.

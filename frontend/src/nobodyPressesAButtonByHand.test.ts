@@ -13,66 +13,34 @@ import { withoutComments } from './testing/source'
 // This is the rule. It is deliberately about what a control *is to a person* rather than about a tag: `<div role="button">` is a button to everybody except a grep for `<button`, and sweeping by tag is the mistake three instruments made tonight -- each one true, each subject narrower than its rule.
 
 /** And every way of being one without saying so. A role is what a screen reader is told and what a person sees; the tag underneath is an implementation detail that changes nothing about either. */
-const A_BUTTON_BY_ROLE = ['button', 'link', 'menuitem', 'tab', 'switch']
+const A_BUTTON_BY_ROLE = ['button', 'link', 'menuitem', 'tab', 'switch', 'radio']
 
 // shadcn's own, copied in by their CLI, and left out of this the way every guard here leaves them out.
 
 // Which turns out to be a formality rather than a real exception, and it makes this rule cleaner than intended: **not one file in this repository writes `<button>` in code.** shadcn's own reaches the tag as the string `'button'` handed to a `Slot`, and `Button` and `WayOut` have written nothing since they were rebuilt on it. So once the screens are converted the rule has no exceptions at all -- there is no file whose job is to write this tag. The two lines excusing ours were written before that was checked, and deleted after.
 const THEIRS = 'components/ui/'
 
-// A row of choices is a different control and a different fix -- it becomes shadcn's `RadioGroup`, which is its own change -- so `<button role="radio">` is not counted here.
-
-// Excused by **shape rather than by file**, and that distinction is the whole of it. The first version of this excused whole files, and `Trades.tsx` holds five buttons of which one is a choice: exempting the file would have hidden four real ones behind it, permanently, in a list that reads as deliberate.
-const A_CHOICE_INSTEAD = 'radio'
+// A row of choices used to be excused here, by shape rather than by file: `Trades.tsx` holds five buttons of which one was a choice, so exempting the file would have hidden four real ones behind it. Six rows were written that way and all six are `Choices` now, on shadcn's `ToggleGroup`, so the exception is gone rather than sitting at zero -- **a count of a defect that has been fixed reads the same as a sweep that has stopped looking**, and the rule below now refuses `role="radio"` on anything this app drew itself, which is the stronger thing to have.
 
 // The gallery is not the app. It is the harness that draws the app's screens, nobody using the ledger ever sees it, and holding it to a rule about his controls would be holding a camera to the rules of what it photographs.
 const NOT_THIS_RULE: Record<string, string> = {
   'gallery/Gallery.tsx': 'the harness that draws the screens, which nobody using the ledger sees',
 }
 
-/** Everything between `<button` and the `>` that closes the opening tag. Braces are counted, because a `>` inside an arrow function in an `onClick` is not the end of the tag -- the trap that has made three sweeps of this shape report a smaller, tidier number than the truth. */
-function attributesAt(source: string, at: number): string {
-  let depth = 0
-
-  for (let index = at; index < source.length; index += 1) {
-    const letter = source[index]
-    if (letter === '{') depth += 1
-    else if (letter === '}') depth -= 1
-    else if (letter === '>' && depth === 0) return source.slice(at, index)
-  }
-
-  return source.slice(at)
-}
-
 /** Every place a file makes a button itself, said the way somebody would say it. */
 export function aButtonWrittenByHand(written: string): Array<string> {
   const source = withoutComments(written)
-  const found: Array<string> = []
-
-  // Counted one at a time rather than asked as "does this file contain one", because the answer per file is what decides whether a whole file gets excused -- and a file is the wrong unit for an excuse.
-  for (const opened of source.matchAll(/<button[\s>/]/g)) {
-    const attributes = attributesAt(source, opened.index)
-
-    if (new RegExp(`role=["']${A_CHOICE_INSTEAD}["']`).test(attributes)) continue
-
-    found.push('<button> written by hand')
-  }
+  const found = [...source.matchAll(/<button[\s>/]/g)].map(() => '<button> written by hand')
 
   // And asked of the role rather than of the element wearing it, because that is the point: the tag is not what makes something a button to anybody. Nothing in the app wears one of these today, so this half is proved against fixtures below rather than against the tree -- it is here to catch the first one.
   for (const role of A_BUTTON_BY_ROLE) {
+    // `radio` and not `radiogroup`: the group is a container this app has to write, because Radix gives its own root `role="group"` even when the choices inside it are radios.
     if (new RegExp(`role=["']${role}["']`).test(source)) {
       found.push(`role="${role}" on something this app drew itself`)
     }
   }
 
   return found
-}
-
-/** What a row of choices is, counted the same way, so the work still owed to `RadioGroup` is a number somebody can see rather than a silence. */
-export function aChoiceWrittenByHand(written: string): number {
-  return [...withoutComments(written).matchAll(/<button[\s>/]/g)].filter((opened) =>
-    new RegExp(`role=["']${A_CHOICE_INSTEAD}["']`).test(attributesAt(withoutComments(written), opened.index))
-  ).length
 }
 
 describe('a button written by hand', () => {
@@ -99,15 +67,6 @@ describe('a button written by hand', () => {
     }
   })
 
-  it('says how many rows of choices are still waiting on RadioGroup, rather than saying nothing', () => {
-    // The other half of what this rule does not cover. `<button role="radio">` is skipped above because it is a different control with a different fix -- and skipped quietly is how a hole becomes permanent.
-
-    // Counted rather than listed by file, for the reason the exemption is by shape: `Trades.tsx` holds five buttons of which one is a choice, so a file named here would excuse four real ones.
-    const choices = ours.reduce((so, { source }) => so + aChoiceWrittenByHand(source), 0)
-
-    expect(choices, 'no row of choices is written by hand any more, so this line and the skip above can go').toBe(6)
-  })
-
   it('is asked of the screens that each wrote one', () => {
     // The floor, anchored on the fix rather than on a count. These are files the rule was written about, and a sweep that stopped opening them reports the same clean result as an app where every button is ours.
     const paths = ours.map(({ path }) => path)
@@ -118,9 +77,26 @@ describe('a button written by hand', () => {
       'components/sites/ChangeTheHouse.tsx',
       'components/people/People.tsx',
       'components/site/SpentByTrade.tsx',
+      // The six that each wrote a row of choices by hand, added when the exception covering them went. A rule with no exceptions left is a rule nobody thinks about again, and these are the files it stopped being about.
+      'components/settings/Trades.tsx',
+      'components/moneyIn/ComingIn.tsx',
+      'components/sites/HouseDetails.tsx',
+      'components/site/AgreeAContract.tsx',
     ]) {
       expect(paths, `${path} is what this rule is about and the sweep is not opening it`).toContain(path)
     }
+  })
+
+  it('would notice a row of choices written by hand again, which it used to be excused from', () => {
+    // Verbatim from `HowItWasPaid.tsx` as it stood before the conversion. It was skipped for months as a control with a different fix, and the day that fix landed the skip became a hole -- so it is asked for as a failure here rather than left to be noticed.
+    expect(
+      aButtonWrittenByHand('<button type="button" role="radio" aria-checked={part.method === how}>{SAID[how]}</button>')
+    ).toEqual(['<button> written by hand', 'role="radio" on something this app drew itself'])
+  })
+
+  it('does not read a row of choices as one of them', () => {
+    // `Choices` writes `role="radiogroup"` and has to: Radix gives its own root `role="group"` even in single mode, so a radio inside it would be owned by nothing. The rule above is a prefix match away from refusing the fix as though it were the defect.
+    expect(aButtonWrittenByHand('<ToggleGroup role="radiogroup" aria-labelledby={said}>')).toEqual([])
   })
 
   it('has each of them pressing one of ours instead', () => {

@@ -30,6 +30,15 @@ const A_DAY = '2026-07-23'
 /** How far down the app's screen may begin before the picture stops being a picture of a phone. Not zero, because a browser rounds a fractional layout; anything above this is furniture. */
 const TOP_OF_THE_SCREEN = 2
 
+/** How far down the page is, as the page itself says. Asked as text so this file stays a Node script with no DOM types in it, and checked rather than believed for the same reason the column measurements are: a string evaluated in a page can return anything at all, and an answer that is not a number would otherwise arrive as `NaN` and pass every comparison below. */
+function howFarDown(said: unknown): number {
+  if (typeof said !== 'number' || !Number.isFinite(said)) {
+    throw new Error(`The page answered ${JSON.stringify(said)} when it was asked how far down it had been scrolled.`)
+  }
+
+  return said
+}
+
 // A screen taller than the viewport gets a second picture, scrolled to the bottom. The Dashboard is the first screen in this app that one viewport cannot hold, and its picture ends on the `What came in` heading with the chart entirely below the fold -- looking finished, because a viewport shot always does.
 
 // Two viewport shots rather than one `fullPage`: full page distorts anything sticky, and it photographs the Dashboard's chart blank, because resizing the viewport makes recharts re-measure and the shot lands mid-remeasure. Each capture here stays a true viewport; only the scroll differs.
@@ -140,6 +149,16 @@ async function main(): Promise<void> {
         // The slug is in the query as well as the hash, so this is a real load rather than a jump within one document. Going to a new hash alone leaves everything as it was -- including how far down the page was scrolled for the lower half of the screen before it, which put `extra-work` 348px above the top of its own picture and opened it on the form instead of the bill list.
         await on.goto(`${server.at}/?camera&screen=${screen.slug}#${screen.slug}`)
 
+        // Scroll left over from the screen before, asked here rather than inferred from a negative top further down. Nothing on this screen has been tapped yet, so at this moment the two are the same measurement -- and after the taps they are not, because a screen two taps in may scroll itself and a picture of it should say so.
+        const leaked = howFarDown(await on.evaluate('window.scrollY'))
+
+        if (leaked > TOP_OF_THE_SCREEN) {
+          throw new Error(
+            `${screen.slug} at ${String(size.width)} opened ${String(Math.round(leaked))}px down the page, before anything on it was touched. ` +
+              `Going to a new hash on the same document is not a reload, so that is where the screen before this one was left.`
+          )
+        }
+
         // Waited for by what the screen says rather than by a timer. A screenshot on a timeout is a picture of whatever had loaded, and it looks exactly like a screenshot.
 
         // Asked of the screen and not of the page: the words are on the gallery's own button for that screen too, so unscoped this waits for the picker and is satisfied before the screen has drawn a thing.
@@ -184,13 +203,16 @@ async function main(): Promise<void> {
           throw new Error(`Nothing drew on ${screen.slug} at ${String(size.width)}: there is no screen to measure.`)
         }
 
-        const startsAt = box.y
+        // Where the screen begins on the page, rather than where it begins in the frame. Those were one number until a screen scrolled itself: the are-you-sure on a house replaces a line of text with a taller row of controls, and it brings itself into view because at 390 it otherwise opens five pixels under the fold and nothing appears to happen.
 
-        // Both directions. This was `> TOP_OF_THE_SCREEN` alone, which is only half an assertion: it catches furniture pushing the screen down and says nothing about the screen being pushed *up*, which is what a page left scrolled does. Going to a new hash on the same document is not a reload, so the scroll from the lower half of the screen before this one is still there -- and a negative top passed this happily.
+        // Read after the taps and added back, so what is asserted is the property that was always meant -- the app's screen starts at the top of the page -- and the two ways it can be false are asked about separately: furniture pushing it down is caught here, and a page left scrolled by the screen before is caught above, before anything on this one has moved.
+        const startsAt = box.y + howFarDown(await on.evaluate('window.scrollY'))
+
+        // Both directions. This was `> TOP_OF_THE_SCREEN` alone, which is only half an assertion: it catches furniture pushing the screen down and says nothing about the screen being pushed *up*.
         if (Math.abs(startsAt) > TOP_OF_THE_SCREEN) {
           throw new Error(
-            `The app's screen starts ${String(Math.round(startsAt))}px from the top on ${screen.slug} at ${String(size.width)}. ` +
-              `Positive is the gallery's own furniture in the picture; negative is a page still scrolled from the screen before it.`
+            `The app's screen starts ${String(Math.round(startsAt))}px from the top of the page on ${screen.slug} at ${String(size.width)}. ` +
+              `Positive is the gallery's own furniture in the picture; negative is the screen drawn above where the page begins.`
           )
         }
 

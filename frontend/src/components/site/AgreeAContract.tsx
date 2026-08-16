@@ -5,8 +5,9 @@ import { SAY_CONTRACT, areaSqft } from '~shared/validation/contract'
 import { calendarDay, note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
+import { Choices } from '../form/Choices'
 import { Day } from '../form/Day'
-import { Choices, Field, Line, Lines } from '../form/Field'
+import { Field, Line, Lines } from '../form/Field'
 import { NOBODY, PickAPerson, asAsked } from '../form/PickAPerson'
 import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
@@ -30,8 +31,8 @@ export type AgreedContract = {
 export type ClientRow = { _id: string; name: string }
 
 const HOW = [
-  { how: 'lumpSum' as const, label: 'One agreed price' },
-  { how: 'ratePerSqft' as const, label: 'A rate per square foot' },
+  { is: 'lumpSum' as const, said: 'One agreed price' },
+  { is: 'ratePerSqft' as const, said: 'A rate per square foot' },
 ]
 
 export function AgreeAContract({
@@ -89,28 +90,7 @@ export function AgreeAContract({
       </div>
 
       {/* Not a `Field`: the first choice inside a label takes the label's words as its own name, so "One agreed price" announced itself as "How it is priced". */}
-      <Choices label="How it is priced">
-        <div className="grid grid-cols-2 gap-2">
-          {HOW.map((choice) => (
-            <button
-              key={choice.how}
-              type="button"
-              role="radio"
-              aria-checked={how === choice.how}
-              onClick={() => {
-                setHow(choice.how)
-              }}
-              className={
-                how === choice.how
-                  ? 'border-primary bg-accent text-accent-foreground rounded-md border py-2.5 text-sm font-medium'
-                  : 'border-border text-muted-foreground rounded-md border py-2.5 text-sm'
-              }
-            >
-              {choice.label}
-            </button>
-          ))}
-        </div>
-      </Choices>
+      <Choices label="How it is priced" chosen={how} choices={HOW} onChoose={setHow} />
 
       <div className="grid gap-5 sm:grid-cols-2">
         {/* One box, asked two ways. A rate and a total in the same form is how one of them gets left behind holding an old figure. */}

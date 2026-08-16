@@ -17,7 +17,7 @@ const DRAWN_BY_THE_BROWSER = ['select', 'datalist']
 
 // The same property, asked of `<input>` by its type. Not a longer list of things he has complained about: every one of these makes a browser draw a picker, a spinner or a file chooser of its own, in its own colours, that no CSS here reaches.
 
-// `checkbox` and `radio` are in it although nothing uses them today, because the point is to catch the next one rather than to describe this afternoon. What the app does use is `<button role="radio">`, which is ours and drawn by us.
+// `checkbox` and `radio` are in it although nothing uses them today, because the point is to catch the next one rather than to describe this afternoon. What the app uses for a choice is `Choices`, whose boxes are drawn by us and wear `role="radio"` rather than being one.
 const DRAWN_BY_THE_BROWSER_TOO = [
   'date',
   'datetime-local',

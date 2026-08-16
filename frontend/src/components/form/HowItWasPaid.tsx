@@ -5,7 +5,8 @@ import { HOW_PAID, asksForBank, asksForChequeNumber } from '~shared/validation/h
 import { cn } from '../../lib/utils'
 import { Figure } from '../shell/Page'
 import { Button } from './Button'
-import { Choices, Field, Line } from './Field'
+import { Choices } from './Choices'
+import { Field, Line } from './Field'
 import { asChoices } from './Pick'
 import type { Account } from './PickAnAccount'
 import { PickAnAccount } from './PickAnAccount'
@@ -131,27 +132,12 @@ export function HowItWasPaid({
           data-part={String(at)}
         >
           {/* `Choices` rather than `Field`: a label points at one control, and the first button inside one takes the label's words as its own name -- so "Cheque" announced itself as "How paid How paid" and could be found by nothing, screen reader included. */}
-          <Choices label={split ? `${label}, part ${String(at + 1)}` : label}>
-            <div className="grid grid-cols-4 gap-2">
-              {HOW_PAID.map((how) => (
-                <button
-                  key={how}
-                  type="button"
-                  role="radio"
-                  aria-checked={part.method === how}
-                  onClick={() => changePart(at, { method: how })}
-                  className={cn(
-                    'rounded-md border py-2.5 text-sm transition-colors',
-                    part.method === how
-                      ? 'border-primary bg-accent text-accent-foreground font-medium'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  {SAID[how]}
-                </button>
-              ))}
-            </div>
-          </Choices>
+          <Choices
+            label={split ? `${label}, part ${String(at + 1)}` : label}
+            chosen={part.method}
+            choices={HOW_PAID.map((how) => ({ is: how, said: SAID[how] }))}
+            onChoose={(how) => changePart(at, { method: how })}
+          />
 
           {/* Only once it is split. One way of paying takes the whole amount, and a box asking for a figure already on the screen is a box he has to agree with himself in. */}
           {split ? (

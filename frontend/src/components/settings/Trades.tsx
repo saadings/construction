@@ -3,6 +3,7 @@ import { whatIsWrong } from '~shared/validation/primitives'
 import { tradeName } from '~shared/validation/trade'
 
 import { Button } from '../form/Button'
+import { Choices } from '../form/Choices'
 import { Field, Line } from '../form/Field'
 import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
@@ -285,28 +286,16 @@ export function WhatItIsFor({
   label: string
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={label}>
-      {[
+    // The question is not written above these two: they are whole sentences that ask it themselves, and the label is a sentence written to be heard -- "Whether Scaffolding is part of what the house cost" over a row of boxes would be a caption longer than the choices under it.
+    <Choices
+      label={label}
+      onlySpoken
+      chosen={building}
+      choices={[
         { is: true, said: BUILDING },
         { is: false, said: NOT_BUILDING },
-      ].map((choice) => (
-        <button
-          key={choice.said}
-          type="button"
-          role="radio"
-          aria-checked={building === choice.is}
-          onClick={() => {
-            onChange(choice.is)
-          }}
-          className={
-            building === choice.is
-              ? 'border-primary bg-accent text-accent-foreground rounded-md border py-2 text-sm font-medium'
-              : 'border-border text-muted-foreground rounded-md border py-2 text-sm'
-          }
-        >
-          {choice.said}
-        </button>
-      ))}
-    </div>
+      ]}
+      onChoose={onChange}
+    />
   )
 }

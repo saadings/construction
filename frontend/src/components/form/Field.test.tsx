@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { Day } from './Day'
 import type { Look } from './Field'
-import { Choices, Field, Line, Lines, NEVER_SMALLER_THAN } from './Field'
+import { Field, Line, Lines, NEVER_SMALLER_THAN } from './Field'
 import { Pick } from './Pick'
 import { whatDecidesTheSizeOf, whatSizeItComesTo } from './theSizeOnAPhone'
 
@@ -231,19 +231,7 @@ describe('a question asked as a group rather than wrapped in a label', () => {
     )
   })
 
-  it('names a row of choices as a whole, since no one of them is the answer', () => {
-    // A radio group cannot be named by `htmlFor`: it is not one control. It is named by pointing the other way, which is why `Choices` is still a separate thing from `Field`.
-    render(
-      <Choices label="How paid">
-        <button role="radio" aria-checked="false" type="button">
-          Cheque
-        </button>
-      </Choices>
-    )
-
-    expect(screen.getByRole('radiogroup', { name: 'How paid' })).toBeTruthy()
-    expect(screen.getByRole('radio', { name: 'Cheque' })).toBeTruthy()
-  })
+  // A row of choices is named the other way round -- a group pointing at its label rather than a label pointing at one control -- which is why it is a separate thing from `Field` and is asked about in `aRowOfChoices.test.tsx`.
 })
 
 describe('what shadcn brings that this app has to undo', () => {

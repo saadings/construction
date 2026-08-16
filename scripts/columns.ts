@@ -43,13 +43,20 @@ const AT_LEAST_THIS_MANY_TRAILS = 20
 
 // Handed to the browser as text rather than as a function, so this file stays a Node script with no DOM types in it -- the same reason the pictures are taken through the locator API. What comes back is checked below rather than trusted, because a string evaluated in a page can return anything at all.
 
-// Two things it is careful about. A class worn by one element is not a column of anything, so only a row written once and drawn many times is compared. And a cell that is not drawn has no position while a browser still answers 0 for it: counted as a column at x=0, every row with an optional cell reads as broken -- `their-account` shows `Billed` or `Paid` and never both, and reading that absence as a position is the instrument inventing the defect it went looking for.
+// Three things it is careful about. A class worn by one element is not a column of anything, so only a row written once and drawn many times is compared. And a cell that is not drawn has no position while a browser still answers 0 for it: counted as a column at x=0, every row with an optional cell reads as broken -- `their-account` shows `Billed` or `Paid` and never both, and reading that absence as a position is the instrument inventing the defect it went looking for.
+
+// The third is how many columns the grid actually has, and it is what makes "the same class twice" mean anything. Two rows of one list declare the same tracks and have to line up. Two separate questions can now wear the same class and declare a different number of columns, because a row of choices takes its count from a variable: `coming-in` asks `What this money is` down one column and `How it came` across four, and grouped by class alone that reported six defects that nothing anywhere should line up.
+
+// Grouping by the parent was the first answer and it was wrong in the way that matters: it silently stopped comparing three real lists -- `sites`, `more` and `who-is-on-this-house` -- whose rows each sit in a wrapper of their own, and the count fell from 108 to 81 while reading as a clean sweep. A defective list still declares one shape and resolves it differently per row, so a count of tracks separates the two questions and keeps every row of every list.
+
+// What it does cost, said rather than left in the count: 108 rows to 102. Six of those are the two questions on `coming-in` at three widths, which is the point. The other six are one pair on `who-is-on-this-house` -- a subgrid row of seven columns beside one that spans the list as a single track -- and all that pair ever compared was their first cell, which under subgrid is the list's own left edge and agrees whatever happens.
 const WHERE_THE_COLUMNS_ARE = `(() => {
   const grids = [...document.querySelectorAll('*')].filter((el) => getComputedStyle(el).display === 'grid')
 
   const byClass = new Map()
   for (const el of grids) {
-    const key = el.className.toString()
+    const tracks = getComputedStyle(el).gridTemplateColumns
+    const key = el.className.toString() + ' | ' + tracks.split(' ').length + ' across'
     byClass.set(key, [...(byClass.get(key) ?? []), el])
   }
 

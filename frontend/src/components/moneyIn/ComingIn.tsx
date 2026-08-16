@@ -7,8 +7,9 @@ import type { WhyItCame } from '~shared/validation/moneyIn'
 import { SAY_IN } from '~shared/validation/moneyIn'
 
 import { Button } from '../form/Button'
+import { Choices } from '../form/Choices'
 import { Day } from '../form/Day'
-import { Choices, Field, Line, Lines } from '../form/Field'
+import { Field, Line, Lines } from '../form/Field'
 import type { Part } from '../form/HowItWasPaid'
 import { HowItWasPaid, onePart, whatEachPartIsWorth } from '../form/HowItWasPaid'
 import { Pick } from '../form/Pick'
@@ -45,10 +46,10 @@ export type NewReceipt = {
 }
 
 // What the money is, in the words somebody would say. The value is the schema's, so a reason cannot appear here without existing there.
-const WHY: Array<{ value: WhyItCame; label: string }> = [
-  { value: 'partnerMoney', label: 'A partner put it in' },
-  { value: 'clientPayment', label: 'The client paid' },
-  { value: 'sale', label: 'The house sold' },
+const WHY: Array<{ is: WhyItCame; said: string }> = [
+  { is: 'partnerMoney', said: 'A partner put it in' },
+  { is: 'clientPayment', said: 'The client paid' },
+  { is: 'sale', said: 'The house sold' },
 ]
 
 // The other half of the day sheet. Money going out has had a screen since the first day; this is what came in against it.
@@ -180,13 +181,8 @@ function Taking({
         }}
       />
 
-      <Choices label="What this money is">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {WHY.map((one) => (
-            <Choice key={one.value} label={one.label} chosen={why === one.value} onChoose={() => setWhy(one.value)} />
-          ))}
-        </div>
-      </Choices>
+      {/* One under the other on a phone: `A partner put it in` in a third of 390px is three lines in a box meant for one. */}
+      <Choices label="What this money is" across={1} chosen={why} choices={WHY} onChoose={setWhy} />
 
       {/* Every way this one arrival came in. What is typed once -- the day, who it came from, what it is, the amount -- is shared, and each way carries its own cheque number or account. */}
       <HowItWasPaid
@@ -230,24 +226,6 @@ function Taking({
 // A picker hands back plain text, so the answer is looked up in the list it was drawn from rather than trusted to be an id.
 function pickedFrom<TRow extends { _id: string }>(rows: Array<TRow>, chosen: string): string {
   return rows.find((row) => row._id === chosen)?._id ?? ''
-}
-
-function Choice({ label, chosen, onChoose }: { label: string; chosen: boolean; onChoose: () => void }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={chosen}
-      onClick={onChoose}
-      className={
-        chosen
-          ? 'border-primary bg-accent text-accent-foreground rounded-md border py-2.5 text-sm font-medium'
-          : 'border-border text-muted-foreground rounded-md border py-2.5 text-sm'
-      }
-    >
-      {label}
-    </button>
-  )
 }
 
 const SAID: Record<WhyItCame, string> = {
