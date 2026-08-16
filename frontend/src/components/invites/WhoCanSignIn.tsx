@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SAY_CLERK } from '~shared/validation/invite'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
@@ -32,7 +33,9 @@ export function WhoCanSignIn({
       setEmail('')
     } catch (thrown) {
       // Its own words, because an invitation goes out through Clerk rather than into the ledger: it is a message that did not send, not a row that did not go in.
-      setProblem(whatWentWrong(thrown, 'That did not go through. Try once more in a moment.'))
+
+      // Read from where the server reads them, since this is the case where nothing arrived as words at all and the two would otherwise be one sentence spelled twice.
+      setProblem(whatWentWrong(thrown, SAY_CLERK.unknown))
     } finally {
       setSending(false)
     }

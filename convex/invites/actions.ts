@@ -3,6 +3,7 @@ import { ConvexError, v } from 'convex/values'
 import { emailToInvite } from '../../shared/validation/invite'
 import { authenticatedAction } from '../utils/auth'
 import { checked } from '../utils/checked'
+import { whatClerkSaid } from './whatClerkSaid'
 
 // Somebody is let in by being invited, and by nothing else. Clerk sends the email, takes the sign-up and tells the webhook; there is no invitation of our own to keep in step with theirs.
 
@@ -25,6 +26,15 @@ function theKey(): string {
   return key
 }
 
+// A refusal body that is not JSON -- a proxy's HTML, an empty 502 -- must not throw on top of the refusal it is describing. Unreadable is just unrecognised, and unrecognised keeps the generic sentence.
+function asJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
 async function askClerk(path: string, how: { method: string; body?: unknown }): Promise<unknown> {
   const answer = await fetch(`${CLERK}${path}`, {
     method: how.method,
@@ -36,9 +46,14 @@ async function askClerk(path: string, how: { method: string; body?: unknown }): 
   })
 
   if (!answer.ok) {
-    // Clerk's own words are for us, not for him: they name fields and identifiers. What comes back is one sentence about what did not happen.
+    // Read before it is thrown away. The status and the body are the whole diagnosis, and they used to go to a log nobody watching the screen can see -- so a duplicate address, a rate limit and a missing permission all arrived as "try once more in a moment", which is the one thing that would never work for any of them.
+    const body: unknown = await answer.text().then(asJson)
+
+    // Still logged, because the named cases are a few of many and the rest are only findable here.
     console.error(`Clerk said ${answer.status} to ${how.method} ${path}`)
-    throw new ConvexError('That did not go through. Try once more in a moment.')
+
+    // A string, always. `whatWentWrong` on the screen refuses a `data` that is not words and falls back to its own sentence, so a ConvexError carrying an object would arrive as the generic line this exists to replace.
+    throw new ConvexError(whatClerkSaid(answer.status, body))
   }
 
   return await answer.json()
