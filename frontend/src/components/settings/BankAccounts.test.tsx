@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AccountRow } from './BankAccounts'
@@ -69,7 +70,9 @@ describe('the accounts money leaves', () => {
   })
 
   it('says what the server said when one will not come off', async () => {
-    renderIt(TWO, { onTakeOff: vi.fn().mockRejectedValue({ data: 'That account is not on the list any more.' }) })
+    renderIt(TWO, {
+      onTakeOff: vi.fn().mockRejectedValue(new ConvexError('That account is not on the list any more.')),
+    })
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Take it off' })[0])
 

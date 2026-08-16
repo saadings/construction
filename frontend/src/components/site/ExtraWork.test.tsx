@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { BillRow } from './ExtraWork'
@@ -142,7 +143,7 @@ describe('billing work that was outside the contract', () => {
   })
 
   it('says what the server said when a bill will not go in', async () => {
-    renderIt([], { onRaise: vi.fn().mockRejectedValue({ data: 'Put in at least one line of what was done.' }) })
+    renderIt([], { onRaise: vi.fn().mockRejectedValue(new ConvexError('Put in at least one line of what was done.')) })
 
     fireEvent.change(screen.getByLabelText('What the work was'), { target: { value: 'Extra work' } })
     fireEvent.click(screen.getByRole('button', { name: 'Raise the bill' }))
@@ -151,7 +152,7 @@ describe('billing work that was outside the contract', () => {
   })
 
   it('says what the server said when one will not come back out', async () => {
-    renderIt(ONE_BILL, { onTakeBack: vi.fn().mockRejectedValue({ data: 'That bill is not on this house.' }) })
+    renderIt(ONE_BILL, { onTakeBack: vi.fn().mockRejectedValue(new ConvexError('That bill is not on this house.')) })
 
     fireEvent.click(screen.getByRole('button', { name: 'Take it back' }))
 

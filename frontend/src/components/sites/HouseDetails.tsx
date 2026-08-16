@@ -5,6 +5,7 @@ import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 import { Button } from '../form/Button'
 import { Choices, Field, Line } from '../form/Field'
 import { Pick } from '../form/Pick'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 
 // What a house is, asked once. Starting one and correcting one ask exactly the same questions, and two forms would drift until correcting a house lost the answer starting it had taken.
@@ -74,8 +75,7 @@ export function HouseDetails({
         builtForAClient,
       })
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

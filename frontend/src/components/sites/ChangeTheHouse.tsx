@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { Button } from '../form/Button'
+import { whatWentWrong } from '../form/whatWentWrong'
 import type { HouseAsSent, HouseAsTyped } from './HouseDetails'
 import { HouseDetails } from './HouseDetails'
 
@@ -71,8 +72,7 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
     try {
       await onPutAway()
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ChangeTheContract } from './ChangeTheContract'
@@ -113,7 +114,9 @@ describe('correcting a contract already agreed', () => {
   })
 
   it('says what the server said, on whichever of the three was pressed', async () => {
-    renderIt(AT_A_RATE, { onMeasure: vi.fn().mockRejectedValue({ data: 'That contract is not on this house.' }) })
+    renderIt(AT_A_RATE, {
+      onMeasure: vi.fn().mockRejectedValue(new ConvexError('That contract is not on this house.')),
+    })
     open()
 
     fireEvent.change(screen.getByLabelText('Area measured'), { target: { value: '2310' } })

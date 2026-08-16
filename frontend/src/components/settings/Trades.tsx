@@ -4,6 +4,7 @@ import { tradeName } from '~shared/validation/trade'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -136,8 +137,7 @@ function OneTrade({
       await what()
       setChanging(false)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }
@@ -237,8 +237,7 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
       await onAdd({ name, countsAsBuildingCost: building })
       onDone()
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

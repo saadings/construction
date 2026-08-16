@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ChangeTheHouse } from './ChangeTheHouse'
@@ -114,7 +115,7 @@ describe('correcting a house already started', () => {
   })
 
   it('says what the server said and stays open, so the correction is not lost', async () => {
-    renderIt(AS_MADE, { onSave: vi.fn().mockRejectedValue({ data: 'Give this site a name.' }) })
+    renderIt(AS_MADE, { onSave: vi.fn().mockRejectedValue(new ConvexError('Give this site a name.')) })
     open()
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'x' } })

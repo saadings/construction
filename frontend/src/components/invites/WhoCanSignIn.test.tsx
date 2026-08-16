@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Invited } from './WhoCanSignIn'
@@ -59,7 +60,7 @@ describe('who can sign in', () => {
 
   it('keeps what was typed when it did not go through, and says why', async () => {
     // Losing the address on a refusal means typing it again, which is the same dead end as a form that empties itself.
-    const onInvite = vi.fn().mockRejectedValue({ data: 'That does not look like an email address.' })
+    const onInvite = vi.fn().mockRejectedValue(new ConvexError('That does not look like an email address.'))
     render(<WhoCanSignIn waiting={[]} onInvite={onInvite} onTakeOff={vi.fn()} />)
 
     fireEvent.change(theEmailBox(), { target: { value: 'the mason' } })

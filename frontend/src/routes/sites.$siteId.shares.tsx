@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { whatWentWrong } from '../components/form/whatWentWrong'
 import { AgreeShares } from '../components/partners/AgreeShares'
 import { PayOut } from '../components/shares/PayOut'
 
@@ -39,7 +40,7 @@ function WhoTakesWhat() {
 
       return true
     } catch (thrown) {
-      setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
 
       return false
     } finally {

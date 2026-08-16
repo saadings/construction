@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { pick } from '../../testing/pick'
@@ -85,7 +86,7 @@ describe('agreeing what a client is paying', () => {
   })
 
   it('keeps what was typed when it did not go in, and says why', async () => {
-    renderIt(vi.fn().mockRejectedValue({ data: 'This house already has a contract.' }))
+    renderIt(vi.fn().mockRejectedValue(new ConvexError('This house already has a contract.')))
 
     await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
     fillIn({ 'The whole price': '12,500,000', 'Area agreed': '2,250' })

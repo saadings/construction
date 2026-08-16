@@ -7,6 +7,7 @@ import { calendarDay, note as noteRule, positiveMoney, whatIsWrong } from '~shar
 import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick } from '../form/Pick'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 
 // What a client agreed to pay for a house. Nothing else about billing works without it: a stage is a percentage of this, and until it is here the whole billing half of the screen has figures with nothing behind them.
@@ -63,8 +64,7 @@ export function AgreeAContract({
       setNote('')
       setAgreed((before) => before + 1)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

@@ -2,6 +2,7 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { pick } from '../../testing/pick'
@@ -215,7 +216,7 @@ describe('taking money coming in back out', () => {
 
   it('says what the server said rather than turning the word back and doing nothing', async () => {
     const onTakeBack = vi.fn<(moneyInId: string) => Promise<void>>(() =>
-      Promise.reject({ data: 'That money is not on this site.' })
+      Promise.reject(new ConvexError('That money is not on this site.'))
     )
     renderWith({ onTakeBack })
     const takingBack = await screen.findAllByRole('button', { name: 'Take it back' })

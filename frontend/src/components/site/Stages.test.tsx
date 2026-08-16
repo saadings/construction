@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { StageRow } from './Stages'
@@ -81,7 +82,7 @@ describe('the stages a contract is billed in', () => {
   it('says what the server said when a stage will not bill', async () => {
     // Without this the button turns off, turns back on, and nothing on the screen has changed.
     const { onBill } = renderIt(THREE, 85, {
-      onBill: vi.fn().mockRejectedValue({ data: 'That stage has already been billed.' }),
+      onBill: vi.fn().mockRejectedValue(new ConvexError('That stage has already been billed.')),
     })
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Bill it' })[0])

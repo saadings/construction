@@ -7,6 +7,7 @@ import { calendarDay, positiveMoney, whatIsWrong } from '~shared/validation/prim
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { WayOut } from '../form/WayOut'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
@@ -124,8 +125,7 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
             setRefusal(null)
             void onTakeBack(bill._id)
               .catch((thrown: unknown) => {
-                const said: unknown = (thrown as { data?: unknown }).data
-                setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+                setRefusal(whatWentWrong(thrown))
               })
               .finally(() => {
                 setSaving(false)
@@ -171,8 +171,7 @@ function RaiseOne({ onRaise }: { onRaise: (bill: RaisedBill) => Promise<void> })
       setLines([anEmptyLine()])
       setRaised((before) => before + 1)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

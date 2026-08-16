@@ -6,6 +6,7 @@ import { percent as percentRule, whatIsWrong } from '~shared/validation/primitiv
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
@@ -103,8 +104,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
       await onBill(stage._id, day)
     } catch (thrown) {
       // A stage already billed is refused, and a refusal nobody shows is a button that does nothing twice.
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }
@@ -154,8 +154,7 @@ function AddAStage({ onAdd }: { onAdd: (stage: { description: string; percent: s
       setPercent('')
       setAdded((before) => before + 1)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

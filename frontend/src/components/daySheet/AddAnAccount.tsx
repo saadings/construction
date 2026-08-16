@@ -3,6 +3,7 @@ import { lastFourOf } from '~shared/validation/bankAccount'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { whatWentWrong } from '../form/whatWentWrong'
 
 // Offered where it is needed, not on another screen. Sending him elsewhere mid-sitting means retyping the payment when he comes back, which is the friction that ends with Excel reopened.
 export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string) => Promise<void> }) {
@@ -38,7 +39,7 @@ export function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits:
       setLabel('')
       setNumber('')
     } catch (thrown) {
-      setProblem(thrown instanceof Error ? thrown.message : 'That did not go in. Try once more.')
+      setProblem(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

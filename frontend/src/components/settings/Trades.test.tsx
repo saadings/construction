@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { TradeRow } from './Trades'
@@ -134,7 +135,7 @@ describe('what for', () => {
   })
 
   it('says what the server said, and keeps what was being corrected', async () => {
-    renderIt(THREE, { onEdit: vi.fn().mockRejectedValue({ data: 'Civil labour is already on the list.' }) })
+    renderIt(THREE, { onEdit: vi.fn().mockRejectedValue(new ConvexError('Civil labour is already on the list.')) })
 
     fireEvent.click(within(theRowFor('Cement')).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What Cement is'), { target: { value: 'Civil labour' } })
@@ -158,7 +159,7 @@ describe('what for', () => {
     expect(screen.queryByRole('alert')).toBeNull()
 
     cleanup()
-    renderIt(THREE, { onAdd: vi.fn().mockRejectedValue({ data: 'Scaffolding is already on the list.' }) })
+    renderIt(THREE, { onAdd: vi.fn().mockRejectedValue(new ConvexError('Scaffolding is already on the list.')) })
     openTheForm()
 
     fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
