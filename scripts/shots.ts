@@ -1,17 +1,17 @@
-import { createReadStream, existsSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { mkdir, readdir, rm } from 'node:fs/promises'
-import { createServer } from 'node:http'
-import { extname, join, normalize, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 import { chromium } from 'playwright'
+
+import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnServer'
 
 // A picture of every screen, at the three widths the app is read at, from the gallery's own build.
 
 // This is the second half of what the gallery was for. The first half is a person opening it; this is so a pull request carries images rather than the sentence "not observed at any width", which three of them shipped with.
 
-// Two things about running it that look like defects and are not. `playwright` arrived with this script, so a `node_modules` from before it gives fifty-odd typecheck and lint errors in this file that read as code problems -- `yarn install` first. And a headless Chromium outlives the run: `yarn test` straight afterwards times out four day-sheet and whole-ledger tests at two to five seconds, which looks exactly like a real failure and is how a good test gets deleted. CI never meets the second, because `Run tests` precedes the screenshot steps there.
+// Two things about running this and `yarn columns`, which both drive a browser, that look like defects and are not. `playwright` arrived with these scripts, so a `node_modules` from before it gives fifty-odd typecheck and lint errors that read as code problems -- `yarn install` first. And a headless Chromium outlives the run: `yarn test` straight afterwards times out four day-sheet and whole-ledger tests at two to five seconds, which looks exactly like a real failure and is how a good test gets deleted. CI never meets the second, because `Run tests` precedes the screenshot steps there.
 
-const GALLERY = resolve(import.meta.dirname, '..', 'frontend', 'dist-gallery')
 const SHOTS = resolve(import.meta.dirname, '..', 'shots')
 
 // Real screens rather than widths with a made-up height. The middle one is not a guess either: shadcn's sidebar splits at 768, so it is the width where one answer becomes the other.
@@ -29,56 +29,6 @@ const A_DAY = '2026-07-04'
 /** How far down the app's screen may begin before the picture stops being a picture of a phone. Not zero, because a browser rounds a fractional layout; anything above this is furniture. */
 const TOP_OF_THE_SCREEN = 2
 
-const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.json': 'application/json',
-}
-
-// Port zero, so a second run of this on the same machine is not fighting the first. Two sessions share this one.
-async function serveTheGallery(): Promise<{ at: string; stop: () => Promise<void> }> {
-  const server = createServer((request, response) => {
-    const asked = new URL(request.url ?? '/', 'http://localhost').pathname
-    const wanted = asked === '/' ? '/gallery.html' : asked
-
-    // Kept inside the built gallery whatever was asked for: this serves a directory to a browser, and `../` in a path is how that becomes serving the disk.
-    const path = join(GALLERY, normalize(wanted).replace(/^(\.\.[/\\])+/, ''))
-
-    if (!path.startsWith(GALLERY) || !existsSync(path)) {
-      response.writeHead(404).end('not here')
-
-      return
-    }
-
-    response.writeHead(200, { 'content-type': MIME[extname(path)] ?? 'application/octet-stream' })
-    createReadStream(path).pipe(response)
-  })
-
-  await new Promise<void>((ready) => {
-    server.listen(0, '127.0.0.1', ready)
-  })
-
-  const bound = server.address()
-  if (bound === null || typeof bound === 'string') {
-    throw new Error('The gallery server did not bind to a port this can read.')
-  }
-
-  return {
-    at: `http://127.0.0.1:${String(bound.port)}`,
-    stop: () =>
-      new Promise<void>((stopped) => {
-        server.close(() => {
-          stopped()
-        })
-      }),
-  }
-}
-
 async function main(): Promise<void> {
   if (!existsSync(join(GALLERY, 'gallery.html'))) {
     throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
@@ -95,19 +45,7 @@ async function main(): Promise<void> {
     await page.goto(server.at)
 
     // Read off the page rather than kept here. A list in this file is a list that drifts from the gallery, and the drift is silent: it photographs eleven screens and says nothing about the twelfth.
-
-    // Asked through the locator API rather than evaluated in the page, so this stays a Node script with no DOM types in it.
-    const buttons = page.locator('[data-slug]')
-    const screens: Array<{ slug: string; proves: string }> = []
-
-    for (let at = 0; at < (await buttons.count()); at += 1) {
-      const button = buttons.nth(at)
-
-      screens.push({
-        slug: (await button.getAttribute('data-slug')) ?? '',
-        proves: (await button.getAttribute('data-proves')) ?? '',
-      })
-    }
+    const screens = await everyScreenItShows(page)
 
     if (screens.length === 0) {
       throw new Error('The gallery offered no screens. A picture of nothing is worse than no picture.')

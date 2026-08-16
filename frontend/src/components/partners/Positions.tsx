@@ -26,8 +26,15 @@ export type WhatThePartnersHave = {
 }
 
 // The same markup at every width. A phone gets the name and what is left; a desk gets what he put in, his share, what he is owed and what he has had as well.
-const ROW =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))]'
+
+// One grid for the whole list, and every row takes its columns from it. Written per row, each row sized its own `auto` track to its own content -- not seen to move today, and not defended against it either: every last cell happens to be a figure of much the same width.
+const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))]'
+
+/** A row: it takes the columns above rather than declaring any. */
+const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
+
+/** Everything between the grid and a row -- a list, a list item -- which has to pass the columns down rather than stop them. */
+const PASSES_THEM_DOWN = 'col-span-full grid grid-cols-subgrid'
 
 // Basis points read back as the percentage somebody said out loud: 3333 is 33.33%, and 7500 is 75% rather than 75.00%.
 function asPercent(basisPoints: number): string {
@@ -78,7 +85,7 @@ export function Positions({
           Nobody has put money into this house yet. Put a partner’s money in and the shares work themselves out.
         </p>
       ) : (
-        <div className="flex flex-col">
+        <div className={GRID}>
           <div
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
@@ -90,7 +97,7 @@ export function Positions({
             <span className="text-right">Left</span>
           </div>
 
-          <ul className="divide-hairline flex flex-col divide-y">
+          <ul className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
             {what.positions.map((position) => (
               <li key={position.personId} className={`${ROW} py-3.5`}>
                 <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{position.name}</span>

@@ -23,7 +23,8 @@
     "test:scenario": "vitest run --config vitest.scenario.config.ts",
     "postinstall": "husky",
     "shadcn:add": "npx shadcn@latest add",
-    "setup:cloudflare": "tsx scripts/setupCloudflareProject.ts"
+    "setup:cloudflare": "tsx scripts/setupCloudflareProject.ts",
+    "columns": "tsx scripts/columns.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

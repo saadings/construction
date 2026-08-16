@@ -23,8 +23,15 @@ export type Account = {
 }
 
 // The same markup at every width. A phone gets what happened and the balance after it; a desk gets the house and the two columns between them as well.
-const ROW =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 sm:grid-cols-[7rem_minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]'
+
+// One grid for the whole list, and every row takes its columns from it. Written per row, each row sized its own `auto` track to its own content -- three rows put `Balance` at 364 and one at 377, two figures of the same digit count -- the track was sizing to the *other* cell in the row.
+const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[7rem_minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]'
+
+/** A row: it takes the columns above rather than declaring any. */
+const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
+
+/** Everything between the grid and a row -- a list, a list item -- which has to pass the columns down rather than stop them. */
+const PASSES_THEM_DOWN = 'col-span-full grid grid-cols-subgrid'
 
 // Somebody's account, the way the `MR FARAN ACCOUNT` sheet reads: everything they have billed, everything they have been paid, and the balance after each line.
 
@@ -77,7 +84,7 @@ export function TheirAccount({ answer }: { answer: { account: Account | null } |
           Nothing on this account yet. Bills raised against them and payments made to them both land here.
         </p>
       ) : (
-        <div className="flex flex-col">
+        <div className={GRID}>
           <div
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
@@ -88,7 +95,7 @@ export function TheirAccount({ answer }: { answer: { account: Account | null } |
             <span className="text-right">Balance</span>
           </div>
 
-          <ul className="divide-hairline flex flex-col divide-y">
+          <ul className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
             {account.lines.map((line) => (
               <AccountRow key={line.id} line={line} />
             ))}

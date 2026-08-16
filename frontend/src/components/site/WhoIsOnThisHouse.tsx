@@ -34,8 +34,15 @@ export type NewEngagement = { personId: string; tradeId: string; agreed?: string
 export type NewBill = { personId: string; tradeId: string; day: string; amount: string; reference?: string }
 
 // The same markup at every width. A phone gets who and what is left; a desk gets the three figures between them as well.
-const ROW =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]'
+
+// One grid for the whole list, and every row takes its columns from it. Written per row, each row sized its own `auto` track to its own content -- not seen to move today, and not defended against it either: every last cell happens to be a figure of much the same width.
+const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_repeat(4,minmax(0,1fr))]'
+
+/** A row: it takes the columns above rather than declaring any. */
+const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
+
+/** Everything between the grid and a row -- a list, a list item -- which has to pass the columns down rather than stop them. */
+const PASSES_THEM_DOWN = 'col-span-full grid grid-cols-subgrid'
 
 // Who is on this house, what was agreed with them, what they say they are owed, and what has gone out to them.
 
@@ -103,7 +110,7 @@ function TheSpread({ engaged }: { engaged: Array<Engaged> | null | undefined }) 
   }
 
   return (
-    <div className="flex flex-col">
+    <div className={GRID}>
       <div
         className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
       >
@@ -114,7 +121,7 @@ function TheSpread({ engaged }: { engaged: Array<Engaged> | null | undefined }) 
         <span className="text-right">Left</span>
       </div>
 
-      <ul className="divide-hairline flex flex-col divide-y">
+      <ul className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
         {engaged.map((one) => (
           <li key={one.engagementId} className={`${ROW} py-3.5`}>
             <span className="min-w-0">
@@ -381,7 +388,7 @@ function WhatIsClaimed({
     <div className="flex flex-col gap-2">
       <h3 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">What has been billed to us</h3>
 
-      <ul className="divide-hairline flex flex-col divide-y">
+      <ul className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
         {claimed.map((one) => (
           <Bill key={one._id} bill={one} takingOut={takingOut === one._id} onTakeOut={onTakeOut} />
         ))}

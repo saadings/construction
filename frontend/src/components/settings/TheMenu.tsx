@@ -27,12 +27,13 @@ export function TheCountWaiting() {
 export function TheMenu({ places }: { places: Array<WhereToGo> }) {
   return (
     <Page title="More">
-      <ul className="border-hairline flex flex-col border-t">
+      {/* One grid for the whole list rather than one per row. Each row used to size its own `auto` track, so three rows put their count at 379 and `Auto` put its at 421 -- a column that moves because of what happens to be in it. The tracks are declared once here and every row takes them through `subgrid`, so the widest count in the list decides the column and each row keeps its own box for the hover and the link. */}
+      <ul className="border-hairline grid grid-cols-[minmax(0,1fr)_auto] border-t">
         {places.map((place) => (
-          <li key={place.to} className="border-hairline border-b">
+          <li key={place.to} className="border-hairline col-span-2 grid grid-cols-subgrid border-b">
             <Link
               to={place.to}
-              className="hover:bg-panel grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-1 py-4 transition-colors"
+              className="hover:bg-panel col-span-2 grid grid-cols-subgrid items-center gap-4 px-1 py-4 transition-colors"
             >
               <span className="min-w-0">
                 <span className="text-foreground block text-[0.9375rem] font-medium">{place.name}</span>
@@ -40,7 +41,8 @@ export function TheMenu({ places }: { places: Array<WhereToGo> }) {
                 <span className="text-muted-foreground mt-0.5 hidden max-w-prose text-sm sm:block">{place.what}</span>
               </span>
 
-              <span className="text-faint flex shrink-0 items-center gap-3 font-mono text-sm">
+              {/* Pushed to the right of the shared track. Sharing the track fixes where the column starts; without this the short counts sit at its left and the chevron -- the mark that says the row opens -- is the thing left ragged, which is the half of the defect that survives the first fix. */}
+              <span className="text-faint flex shrink-0 items-center justify-end gap-3 font-mono text-sm">
                 {place.now}
                 <span aria-hidden className="text-base">
                   ›

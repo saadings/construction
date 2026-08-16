@@ -25,7 +25,15 @@ const STAGE: Record<SiteRow['stage'], string> = {
 // One row a house, and the columns line up because a house and its spending are read down the page rather than one at a time.
 
 // The same markup at every width: a phone gets the name and the figure, a desk gets the two columns between them as well. Two renderings of one list is how they drift.
-const ROW = 'grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]'
+
+// One grid for the whole list, and every row takes its columns from it. Written per row, each row sized its own `auto` track to its own figure, so a house with nothing spent on it put `Spent` at 469 while the others were at 372 and 383 -- the only list here whose *desk* grid ended in `auto`, which is why this one moved at 1280 as well as on a phone.
+const GRID = 'grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]'
+
+/** A row: it takes the columns above rather than declaring any. */
+const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
+
+/** Everything between the grid and a row -- a list, a list item -- which has to pass the columns down rather than stop them. */
+const PASSES_THEM_DOWN = 'col-span-full grid grid-cols-subgrid'
 
 export function SitesList({ sites }: { sites: Array<SiteRow> }) {
   return (
@@ -33,7 +41,7 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
       {sites.length === 0 ? (
         <p className="text-muted-foreground py-10">No houses yet. Start one and the spending goes under it.</p>
       ) : (
-        <div className="flex flex-col">
+        <div className={GRID}>
           <div
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
@@ -43,9 +51,9 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
             <span className="text-right">Spent</span>
           </div>
 
-          <ol className="divide-hairline flex flex-col divide-y">
+          <ol className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
             {sites.map((site) => (
-              <li key={site._id}>
+              <li key={site._id} className={PASSES_THEM_DOWN}>
                 <Link
                   to="/sites/$siteId"
                   params={{ siteId: site._id }}
@@ -79,7 +87,7 @@ export function SitesListWaiting() {
   return (
     <Page title="Sites" beside={<StartOne className="hidden sm:inline-flex" />}>
       <WhileWaiting what="Getting your houses">
-        <div className="flex flex-col">
+        <div className={GRID}>
           <div className={`${ROW} border-border hidden border-b pb-2 sm:grid`}>
             <Skeleton className="h-3 w-16" />
             <Skeleton className="h-3 w-28" />
@@ -87,7 +95,7 @@ export function SitesListWaiting() {
             <Skeleton className="ml-auto h-3 w-12" />
           </div>
 
-          <div className="divide-hairline flex flex-col divide-y">
+          <div className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
             {/* Three, because a house being built for somebody is a short list and a screenful of grey bars is a worse promise than a short one. */}
             {[0, 1, 2].map((row) => (
               <div key={row} className={`${ROW} py-3.5`}>

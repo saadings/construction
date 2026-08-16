@@ -14,7 +14,15 @@ export type NewPerson = { name: string; phone?: string; notes?: string }
 // Everyone the business deals with, with no role on them: the same man invests in one house and sells steel to another. What he is on a house is written where the money needs it.
 
 // The same markup at every width. A phone gets the name and the number; a desk gets what was written down about them as well.
-const ROW = 'grid grid-cols-[1fr_auto] items-baseline gap-x-4 sm:grid-cols-[minmax(0,1fr)_12rem_minmax(0,1fr)]'
+
+// One grid for the whole list, and every row takes its columns from it. Written per row, each row sized its own `auto` track to its own content -- the control for this whole change, and it holds only because every last cell is the word `Change`; one differently-worded row is all it would take.
+const GRID = 'grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1fr)_12rem_minmax(0,1fr)]'
+
+/** A row: it takes the columns above rather than declaring any. */
+const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4'
+
+/** Everything between the grid and a row -- a list, a list item -- which has to pass the columns down rather than stop them. */
+const PASSES_THEM_DOWN = 'col-span-full grid grid-cols-subgrid'
 
 export function People({
   people,
@@ -59,7 +67,7 @@ export function People({
           Nobody yet. Add the partners and the contractors, and the money goes against their names.
         </p>
       ) : (
-        <div className="flex flex-col">
+        <div className={GRID}>
           <div
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
@@ -68,7 +76,7 @@ export function People({
             <span>What was written down</span>
           </div>
 
-          <ul aria-label="Everyone in the ledger" className="divide-hairline flex flex-col divide-y">
+          <ul aria-label="Everyone in the ledger" className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
             {people.map((person) => (
               <OnePerson key={person._id} person={person} onEdit={onEdit} onHide={onHide} />
             ))}
