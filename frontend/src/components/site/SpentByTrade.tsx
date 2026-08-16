@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 
+import { WayOut } from '../form/WayOut'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
@@ -204,14 +205,13 @@ function Payment({
           </button>
         </span>
       ) : (
-        <button
-          type="button"
+        <WayOut
           onClick={() => setAsking(true)}
           aria-label={`Take out ${formatPaisa(went.amountPaisa)} paid to ${went.paidToName}`}
-          className="text-muted-foreground shrink-0 text-sm"
+          className="shrink-0"
         >
           Take out
-        </button>
+        </WayOut>
       )}
     </li>
   )

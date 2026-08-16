@@ -108,7 +108,27 @@ export const ON_SHOW: Array<OnShow> = [
             { tradeId: 't5', name: 'Supervision charges', paisa: paisa(415_000) },
           ]}
           onOpen={() => undefined}
-          opened={null}
+          // One trade open, because the payments behind a figure are where the way out of one lives -- and a picture of this screen with nothing opened is a picture that cannot show it.
+          opened={{
+            tradeId: 't1',
+            went: [
+              {
+                _id: 'w1',
+                day: A_DAY,
+                amountPaisa: paisa(2_650_000),
+                paidToName: NOBODY[2].name,
+                method: 'cheque',
+                reference: '774312',
+              },
+              {
+                _id: 'w2',
+                day: '2026-06-27',
+                amountPaisa: paisa(1_668_000),
+                paidToName: NOBODY[2].name,
+                method: 'cash',
+              },
+            ],
+          }}
           onTakeOut={nothingTrue}
           takingOut={null}
           refusal={null}

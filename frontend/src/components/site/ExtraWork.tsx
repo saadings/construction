@@ -6,6 +6,7 @@ import { calendarDay, positiveMoney, whatIsWrong } from '~shared/validation/prim
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { WayOut } from '../form/WayOut'
 import { Figure, Form } from '../shell/Page'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
@@ -116,8 +117,8 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
 
       <div className="flex items-baseline gap-4">
         <span className="text-faint text-sm">Raised {bill.raisedOn}</span>
-        <button
-          type="button"
+        <WayOut
+          busy={saving}
           onClick={() => {
             setSaving(true)
             setRefusal(null)
@@ -130,10 +131,9 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
                 setSaving(false)
               })
           }}
-          className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4"
         >
           {saving ? 'Taking it back…' : 'Take it back'}
-        </button>
+        </WayOut>
         {refusal === null ? null : (
           <span role="alert" className="text-destructive text-sm">
             {refusal}
@@ -337,13 +337,9 @@ function TypeALine({
       </div>
 
       {onTakeOff === undefined ? null : (
-        <button
-          type="button"
-          onClick={onTakeOff}
-          className="text-muted-foreground hover:text-foreground self-start text-sm underline underline-offset-4"
-        >
+        <WayOut onClick={onTakeOff} className="self-start">
           Take this line off
-        </button>
+        </WayOut>
       )}
     </li>
   )

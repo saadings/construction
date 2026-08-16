@@ -6,6 +6,7 @@ import { cn } from '../../lib/utils'
 import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick, asChoices } from '../form/Pick'
+import { WayOut } from '../form/WayOut'
 import { Figure } from '../shell/Page'
 import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
@@ -169,14 +170,13 @@ export function DaySheet({
                   <Figure className="text-brass shrink-0 text-lg">{formatPaisa(paisaIn(each))}</Figure>
 
                   {/* Nothing here has gone in yet, so this takes a row back out of the sitting rather than out of the ledger. Without it a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards. */}
-                  <button
-                    type="button"
+                  <WayOut
                     onClick={() => takeOut(index)}
                     aria-label={`Take out ${formatPaisa(paisaIn(each))} to ${nameOf(people, each.paidToId) ?? each.newPerson}`}
-                    className="text-muted-foreground shrink-0 text-sm"
+                    className="shrink-0"
                   >
                     Take out
-                  </button>
+                  </WayOut>
                 </li>
               ))}
             </ol>

@@ -158,23 +158,28 @@ describe('what a screen shows while it is waiting', () => {
   })
 })
 
-// The button that knows how is written out of plain elements, which is the point of it existing.
-const WHERE_IT_IS_WRITTEN = 'components/form/Button.tsx'
+// The two controls that know how are written out of plain elements, which is the point of them existing. `Button` is what sends a form; `WayOut` is what removes a row it sits beside, and it turns itself off for a sharper reason -- a second press on a way out lands on whatever row took the first one's place.
+const WHERE_THEY_ARE_WRITTEN = ['components/form/Button.tsx', 'components/form/WayOut.tsx']
 
 describe('what a button does while it is sending', () => {
   const screens = everyScreen()
 
-  it('is written somewhere, so the one exception below is an exception to something', () => {
-    // Without this, deleting Button.tsx leaves a sweep that passes because there is nothing left to sweep.
-    const itself = screens.find(({ path }) => path === WHERE_IT_IS_WRITTEN)
+  it('is written somewhere, so the exceptions below are exceptions to something', () => {
+    // Without this, deleting either of them leaves a sweep that passes because there is nothing left to sweep.
+    for (const [path, written] of [
+      ['components/form/Button.tsx', 'export function Button'],
+      ['components/form/WayOut.tsx', 'export function WayOut'],
+    ]) {
+      const itself = screens.find((screen) => screen.path === path)
 
-    expect(itself?.source).toContain('export function Button')
+      expect(itself?.source, `${path} is named as one of the two and is not there`).toContain(written)
+    }
   })
 
   it('is the one button that knows how, everywhere', () => {
     // `disabled` on a plain button is a button that sends: it is off while something is in flight, and it is off without a spinner and usually with a label that changes width as it is pressed.
     const raw = screens
-      .filter(({ path }) => path !== WHERE_IT_IS_WRITTEN)
+      .filter(({ path }) => !WHERE_THEY_ARE_WRITTEN.includes(path))
       .flatMap(({ path, source }) =>
         sendsWithoutTheSpinner(source).map((attributes) => `${path}: <button ${attributes}`)
       )
@@ -187,7 +192,8 @@ describe('what a button does while it is sending', () => {
     expect(sendsWithoutTheSpinner('<button type="button" onClick={add} disabled={saving}>')).toHaveLength(1)
     // A plain button that sends nothing is left alone: "Take off the list" and "Never mind" are not in flight and never turn off.
     expect(sendsWithoutTheSpinner('<button type="button" onClick={() => setOpen(true)}>')).toEqual([])
-    // And the central one is the point, not an exception to be spelled out.
+    // And the two central ones are the point, not exceptions to be spelled out.
     expect(sendsWithoutTheSpinner('<Button onClick={add} busy={saving} disabled={saving}>')).toEqual([])
+    expect(sendsWithoutTheSpinner('<WayOut onClick={takeBack} busy={saving}>')).toEqual([])
   })
 })
