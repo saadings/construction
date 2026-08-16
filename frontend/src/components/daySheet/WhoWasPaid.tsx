@@ -1,34 +1,30 @@
-import { sameName } from '~shared/validation/person'
-
-import type { Choice } from '../form/Pick'
-import { NOT_ON_THE_LIST, Pick } from '../form/Pick'
+import type { Named, WhoIsNamed } from '../form/PickAPerson'
+import { PickAPerson, whoIsShown, whoWasMeant } from '../form/PickAPerson'
 
 // One place to answer one question. It was a picker with a name box waiting underneath it, then a `<datalist>` whose popup Chrome draws in its own colours over the error text -- Nauman on both: "this is not good UX", "not acceptable".
 
-// Now one control the app draws itself, where typing a name nobody has offers to use it rather than sending him to a second box.
-export type Named = { _id: string; name: string }
+// The control itself is `PickAPerson` now, which every screen that names somebody uses. What stays here is the one thing that is this screen's: a payment's answer is called `paidToId`, because a draft holds what the server is sent.
+
+export type { Named }
 
 export type WhoIsPaid = { paidToId: string; newPerson: string }
 
-/** What the one control is holding: the person picked, or the name typed while nobody is picked. */
-export function whoIsShown(who: WhoIsPaid, people: Array<Named>): Choice | null {
-  const picked = people.find((person) => person._id === who.paidToId)
-  if (picked !== undefined) {
-    return picked
-  }
-
-  return who.newPerson === '' ? null : { _id: NOT_ON_THE_LIST, name: who.newPerson }
+function asNamed(who: WhoIsPaid): WhoIsNamed {
+  return { personId: who.paidToId, newPerson: who.newPerson }
 }
 
-/** What one answer means. A name already on the list is that person however it was spelt, so a typed name can never make a second row of somebody the ledger already has. */
-export function whoWasMeant(chosen: Choice | null, people: Array<Named>): WhoIsPaid {
-  if (chosen === null) {
-    return { paidToId: '', newPerson: '' }
-  }
+function asPaid(who: WhoIsNamed): WhoIsPaid {
+  return { paidToId: who.personId, newPerson: who.newPerson }
+}
 
-  const already = people.find((person) => person._id === chosen._id || sameName(person.name, chosen.name))
+/** What the one control is holding, in this screen's words. */
+export function whoIsShownAsPaid(who: WhoIsPaid, people: Array<Named>) {
+  return whoIsShown(asNamed(who), people)
+}
 
-  return already === undefined ? { paidToId: '', newPerson: chosen.name } : { paidToId: already._id, newPerson: '' }
+/** What one answer means, in this screen's words. A name already on the list is that person however it was spelt. */
+export function whoWasPaidMeant(chosen: Parameters<typeof whoWasMeant>[0], people: Array<Named>): WhoIsPaid {
+  return asPaid(whoWasMeant(chosen, people))
 }
 
 export function WhoWasPaid({
@@ -42,24 +38,15 @@ export function WhoWasPaid({
   problem?: string | null
   onChange: (who: WhoIsPaid) => void
 }) {
-  const chosen = whoIsShown(who, people)
-
   return (
-    <Pick
+    <PickAPerson
       label="Who was paid"
-      hint={
-        chosen !== null && chosen._id === NOT_ON_THE_LIST
-          ? `Nobody on the list is called that. ${chosen.name} will be added.`
-          : 'Pick one, or type a name.'
-      }
-      problem={problem}
-      placeholder="A person or a shop"
-      chosen={chosen}
-      choices={people}
       // A shop nobody will be paid twice is still a person here, because a payment has to point at somebody.
-      canUseANewName
-      onPick={(picked) => {
-        onChange(whoWasMeant(picked, people))
+      problem={problem}
+      who={asNamed(who)}
+      people={people}
+      onChange={(named) => {
+        onChange(asPaid(named))
       }}
     />
   )

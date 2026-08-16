@@ -102,6 +102,14 @@ function WhoTakesWhat() {
 }
 
 // A screen holds a person as plain text, because that is what a picker hands back. The ids came from the reading above, so this is naming what they already are rather than asserting anything about them.
-function asIds(shares: Array<{ personId: string; share: string }>): Array<{ personId: Id<'people'>; share: string }> {
-  return shares.map((one) => ({ personId: one.personId as Id<'people'>, share: one.share }))
+
+// A row with no id is somebody typed in who is not on the list yet, and it goes as a name: the server is the only place that can safely decide whether that name is already somebody, because only it can see everybody.
+function asIds(
+  shares: Array<{ personId?: string; newPerson?: string; share: string }>
+): Array<{ personId?: Id<'people'>; newPerson?: string; share: string }> {
+  return shares.map((one) => ({
+    personId: one.personId === undefined ? undefined : (one.personId as Id<'people'>),
+    newPerson: one.newPerson,
+    share: one.share,
+  }))
 }

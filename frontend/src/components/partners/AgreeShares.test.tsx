@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { pick } from '../../testing/pick'
+import { pick, useTheName } from '../../testing/pick'
 import type { AgreedShare, Somebody } from './AgreeShares'
 import { AgreeShares } from './AgreeShares'
 import type { Position, WhatThePartnersHave } from './Positions'
@@ -134,6 +134,52 @@ describe('agreeing what each partner takes', () => {
 
     // Who funded a house and who takes the profit are not always the same people.
     await pick(user, 'Somebody else takes a share', 'The one who put nothing in')
+
+    const put = await screen.findByLabelText('The one who put nothing in’s share')
+    fireEvent.change(put, { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+
+    await waitFor(() => {
+      expect(onAgree).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.arrayContaining([{ personId: 'p3', share: '10' }])
+      )
+    })
+  })
+
+  it('takes a share for somebody nobody has written down, because who takes profit is not who funded it', async () => {
+    // Nauman's own case, one step further than the test above: the man taking a share may not be in the ledger at all, and before this the only way in was another screen and this form typed again from the start.
+    const user = userEvent.setup()
+    const { onAgree } = renderWith()
+
+    await useTheName(user, 'Somebody else takes a share', 'His brother')
+
+    const put = await screen.findByLabelText('His brother’s share')
+    fireEvent.change(put, { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+
+    await waitFor(() => {
+      expect(onAgree).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.arrayContaining([{ newPerson: 'His brother', share: '10' }])
+      )
+    })
+  })
+
+  it('takes a typed name for the person it already has, rather than putting him down twice', async () => {
+    // The failure the whole thing turns on: a share counted twice, or a partner's own capital split across two rows. `PickAPerson` resolves a typed name against the list before it becomes a row, so this can never leave the screen.
+    const user = userEvent.setup()
+    const { onAgree } = renderWith()
+
+    // Spaced wrong rather than merely mis-cased: the control offers nothing at all for a name it can see is on the list, so the case worth testing is the one where it does offer -- and the answer still has to be the man himself.
+
+    // Clicked by pattern rather than through `useTheName`, because an accessible name has its whitespace collapsed: the button really does read `Use “The one who  put nothing in”` and is found under one space, which would make a matcher built from what was typed miss a button that is there.
+    await user.click(screen.getByRole('combobox', { name: 'Somebody else takes a share' }))
+    await user.type(
+      screen.getByRole('combobox', { name: 'Somebody else takes a share' }),
+      'The one who  put nothing in'
+    )
+    await user.click(await screen.findByRole('button', { name: /^Use/ }, { timeout: 5_000 }))
 
     const put = await screen.findByLabelText('The one who put nothing in’s share')
     fireEvent.change(put, { target: { value: '10' } })

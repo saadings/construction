@@ -5,7 +5,7 @@ import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { chooseTheDay } from '../../testing/day'
-import { pick } from '../../testing/pick'
+import { pick, useTheName } from '../../testing/pick'
 import { AgreeAContract } from './AgreeAContract'
 
 afterEach(() => {
@@ -50,7 +50,7 @@ describe('agreeing what a client is paying', () => {
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith({
-        clientId: 'p1',
+        personId: 'p1',
         agreedOn: '2026-04-01',
         priced: { how: 'lumpSum', totalPaisa: '12,500,000' },
         agreedAreaSqft: '2,250',
@@ -74,6 +74,28 @@ describe('agreeing what a client is paying', () => {
       )
     })
     expect(screen.queryByLabelText('The whole price')).toBeNull()
+  })
+
+  it('takes a client who is not in the ledger yet, which is the ordinary case at this moment', async () => {
+    // A contract is agreed once, at the start, and the client is often the first thing anybody writes down about the house. Sending somebody to the people screen first is sending them away at exactly the wrong moment.
+    vi.setSystemTime(WHILE_THE_HOUSE_WAS_BEING_AGREED)
+    const { onAgree } = renderIt()
+    const user = userEvent.setup()
+
+    await useTheName(user, 'Who it is for', 'A new client')
+    await chooseTheDay(user, 'Agreed on', '2026-04-01')
+    fillIn({
+      'The whole price': '12,500,000',
+      'Area agreed': '2,250',
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+
+    await waitFor(() => {
+      // The name goes as a name, with no id invented for it here: only the server can say whether it is somebody the ledger already has.
+      expect(onAgree).toHaveBeenCalledWith(expect.objectContaining({ newPerson: 'A new client' }))
+    })
+
+    expect(onAgree.mock.calls[0][0]).not.toHaveProperty('personId')
   })
 
   it('says a house has to be for somebody, once the eye has left the box', () => {

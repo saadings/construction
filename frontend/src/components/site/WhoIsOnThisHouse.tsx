@@ -3,7 +3,7 @@ import { formatPaisa, groupWhileTyping } from '~shared/money'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
-import { Pick } from '../form/Pick'
+import { NOBODY, PickAPerson, asAsked } from '../form/PickAPerson'
 import { PickATrade } from '../form/PickATrade'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
@@ -33,8 +33,11 @@ export type Claimed = {
 
 export type Named = { _id: string; name: string }
 
-export type NewEngagement = { personId: string; tradeId: string; agreed?: string; rate?: string; unit?: string }
-export type NewBill = { personId: string; tradeId: string; day: string; amount: string; reference?: string }
+// Who, said the way every screen says it now: an id when he was picked, a name when he was typed, never both.
+type Who = { personId?: string; newPerson?: string }
+
+export type NewEngagement = Who & { tradeId: string; agreed?: string; rate?: string; unit?: string }
+export type NewBill = Who & { tradeId: string; day: string; amount: string; reference?: string }
 
 // The same markup at every width. A phone gets who and what is left; a desk gets the three figures between them as well.
 
@@ -244,7 +247,7 @@ function TheForm({
   // Anything added from the picker since this form opened, which the list it was picked from does not have yet.
   const everyTrade = useWhatWasAdded(trades)
 
-  const [personId, setPersonId] = useState('')
+  const [who, setWho] = useState(NOBODY)
   const [tradeId, setTradeId] = useState('')
   const [amount, setAmount] = useState('')
   const [rate, setRate] = useState('')
@@ -253,7 +256,7 @@ function TheForm({
   const [reference, setReference] = useState('')
 
   const agreeing = doing === 'agree'
-  const wrongPerson = personId === '' ? 'Say who this is.' : null
+  const wrongPerson = who.personId === '' && who.newPerson === '' ? 'Say who this is.' : null
   const wrongTrade = tradeId === '' ? 'Say what it is for.' : null
   // A rate is the other way of agreeing, so an empty figure is only wrong where neither is filled in.
   const wrongAmount =
@@ -268,14 +271,14 @@ function TheForm({
   async function send() {
     const wentIn = agreeing
       ? await onAgree({
-          personId,
+          ...asAsked(who),
           tradeId,
           agreed: amount.trim() === '' ? undefined : amount,
           rate: rate.trim() === '' ? undefined : rate,
           unit: unit.trim() === '' ? undefined : unit,
         })
       : await onRaise({
-          personId,
+          ...asAsked(who),
           tradeId,
           day,
           amount,
@@ -289,16 +292,7 @@ function TheForm({
   return (
     <div className="border-border flex w-full max-w-2xl flex-col gap-5 rounded-md border p-4">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Pick
-          label="Who"
-          problem={wrongPerson}
-          placeholder="Pick one"
-          chosen={people.find((person) => person._id === personId) ?? null}
-          choices={people}
-          onPick={(picked) => {
-            setPersonId(picked === null ? '' : pickedFrom(people, picked._id))
-          }}
-        />
+        <PickAPerson label="Who" problem={wrongPerson} who={who} people={people} onChange={setWho} />
 
         <PickATrade
           label="What for"
@@ -381,11 +375,6 @@ function TheForm({
       </div>
     </div>
   )
-}
-
-// A picker hands back plain text, so the answer is looked up in the list it was drawn from rather than trusted to be an id.
-function pickedFrom<TRow extends { _id: string }>(rows: Array<TRow>, chosen: string): string {
-  return rows.find((row) => row._id === chosen)?._id ?? ''
 }
 
 function WhatIsClaimed({

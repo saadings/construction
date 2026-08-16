@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 
 import { SAY_IN, receiptInput } from '../../shared/validation/moneyIn'
-import { personAlreadyCalled } from '../people/theSamePerson'
+import { whoIsMeant } from '../people/theSamePerson'
 import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
@@ -21,20 +21,8 @@ export const record = siteMutation({
   handler: async (ctx, args) => {
     const receipt = checked(receiptInput, args)
 
-    // A buyer named at the sale still becomes a person, because the money has to have come from somebody.
-    let fromId = receipt.fromId
-    if (fromId === undefined) {
-      // The schema has already refused a receipt from nobody. This is how the type sees that, and it says the same sentence, so one mistake can never come back worded two ways.
-      if (receipt.newPerson === undefined) {
-        throw new ConvexError(SAY_IN.from)
-      }
-
-      // A partner typed rather than picked is that partner. This mattered more here than anywhere: money coming in as `partnerMoney` is capital, and capital is what the whole profit split is worked out from, so a partner split across two rows had his share worked out from half his money.
-      const already = await personAlreadyCalled(ctx, receipt.newPerson)
-
-      // Left hidden if he is hidden: taking somebody off the list is a decision about the list, not about who the money came from.
-      fromId = already?._id ?? (await ctx.db.insert('people', { name: receipt.newPerson, hidden: false }))
-    }
+    // A buyer named at the sale still becomes a person, because the money has to have come from somebody. It mattered more here than anywhere: money in as `partnerMoney` is capital, and capital is what the whole profit split is worked out from, so a partner split across two rows had his share worked out from half his money.
+    const fromId = await whoIsMeant(ctx, { personId: receipt.fromId, newPerson: receipt.newPerson }, SAY_IN.from)
 
     return await ctx.db.insert('moneyIn', {
       siteId: ctx.siteId,

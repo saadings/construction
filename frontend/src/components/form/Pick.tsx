@@ -92,11 +92,13 @@ export function Pick({
             <button
               type="button"
               onClick={() => {
+                // Closed either way, because taking the offer is a choice made: a list left hanging over what happens next covers the question a trade opens underneath, and on a form with two pickers it covers the next question entirely -- and Radix hides the rest of the page from the accessibility tree while a popup is open, so what it covers is not only visual.
+                setOpen(false)
+
                 // Handed on rather than picked, when the screen has something left to ask. A person is finished at this point and a trade is not.
                 if (onUseANewName === undefined) {
                   onPick({ _id: NOT_ON_THE_LIST, name: wanted })
                 } else {
-                  setOpen(false)
                   onUseANewName(wanted)
                 }
               }}

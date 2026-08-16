@@ -1,6 +1,6 @@
-import { zid } from 'convex-helpers/server/zod4'
 import { z } from 'zod'
 
+import { namesSomebody, whoWasNamed } from './person'
 import { calendarDay, note, positiveMoney } from './primitives'
 
 // A house is between 100 and 20,000 square feet, the same bound a site's covered area is held to.
@@ -30,14 +30,28 @@ export const contractRevision = z.object({
   note: note.optional(),
 })
 
-export const contractInput = z.object({
-  clientId: zid('people'),
+export const SAY_CONTRACT = {
+  client: 'Say who the house is being built for.',
+} as const
+
+// The shape without the "somebody has to be named" rule on it, because two callers want a piece of it rather than the whole: `measure` picks the measured area out, and zod cannot pick through a refinement.
+const contractTyped = z.object({
+  // Picked, or typed. A client is written down once, at the moment the contract is agreed, so sending somebody to the people screen first is sending them away at exactly the wrong moment.
+  ...whoWasNamed,
   agreedOn: calendarDay,
   priced,
   agreedAreaSqft: areaSqft,
   actualAreaSqft: areaSqft.optional(),
   note: note.optional(),
 })
+
+export const contractInput = contractTyped.refine(namesSomebody, {
+  path: ['personId'],
+  message: SAY_CONTRACT.client,
+})
+
+/** Only the measured area, which is the one thing `measure` may move. Picked from the shape above so it cannot drift from what a contract is. */
+export const contractMeasured = contractTyped.pick({ actualAreaSqft: true })
 
 export type Contract = {
   priced: { how: 'lumpSum'; totalPaisa: number } | { how: 'ratePerSqft'; ratePerSqftPaisa: number }

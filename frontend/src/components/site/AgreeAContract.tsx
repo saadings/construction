@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { todayOnThisDevice } from '~shared/calendarDate'
 import { groupWhileTyping } from '~shared/money'
-import { areaSqft } from '~shared/validation/contract'
+import { SAY_CONTRACT, areaSqft } from '~shared/validation/contract'
 import { calendarDay, note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
 import { Day } from '../form/Day'
 import { Choices, Field, Line, Lines } from '../form/Field'
-import { Pick } from '../form/Pick'
+import { NOBODY, PickAPerson, asAsked } from '../form/PickAPerson'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 
@@ -17,7 +17,9 @@ import { Form } from '../shell/Page'
 export type Priced = { how: 'lumpSum'; totalPaisa: string } | { how: 'ratePerSqft'; ratePerSqftPaisa: string }
 
 export type AgreedContract = {
-  clientId: string
+  // Who it is for, said the way every other screen says it now: an id when he was picked, a name when he was typed.
+  personId?: string
+  newPerson?: string
   agreedOn: string
   priced: Priced
   agreedAreaSqft: string
@@ -38,7 +40,7 @@ export function AgreeAContract({
   people: Array<ClientRow>
   onAgree: (contract: AgreedContract) => Promise<void>
 }) {
-  const [clientId, setClientId] = useState('')
+  const [client, setClient] = useState(NOBODY)
   const [agreedOn, setAgreedOn] = useState(todayOnThisDevice)
   const [how, setHow] = useState<Priced['how']>('lumpSum')
   const [amount, setAmount] = useState('')
@@ -54,7 +56,7 @@ export function AgreeAContract({
 
     try {
       await onAgree({
-        clientId,
+        ...asAsked(client),
         agreedOn,
         priced: how === 'lumpSum' ? { how, totalPaisa: amount } : { how, ratePerSqftPaisa: amount },
         agreedAreaSqft: area,
@@ -74,15 +76,12 @@ export function AgreeAContract({
   return (
     <Form className="gap-5" freshAfter={agreed}>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Pick
+        <PickAPerson
           label="Who it is for"
-          problem={clientId === '' ? 'Say who the house is being built for.' : null}
-          placeholder="Pick one"
-          chosen={people.find((person) => person._id === clientId) ?? null}
-          choices={people}
-          onPick={(picked) => {
-            setClientId(picked === null ? '' : picked._id)
-          }}
+          problem={client.personId === '' && client.newPerson === '' ? SAY_CONTRACT.client : null}
+          who={client}
+          people={people}
+          onChange={setClient}
         />
 
         <Day label="Agreed on" problem={whatIsWrong(calendarDay, agreedOn)} value={agreedOn} onPick={setAgreedOn} />

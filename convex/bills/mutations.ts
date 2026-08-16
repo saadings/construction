@@ -1,13 +1,16 @@
 import { ConvexError, v } from 'convex/values'
 
-import { billInput } from '../../shared/validation/bill'
+import { SAY_BILL, billInput } from '../../shared/validation/bill'
+import { whoIsMeant } from '../people/theSamePerson'
 import { checked } from '../utils/checked'
 import { siteMutation } from '../utils/siteAccess'
 
 // What someone is owed, raised against a site. Nothing about this is asked of a payment: money goes out on account, and most of it never has a bill at all.
 export const raise = siteMutation({
   args: {
-    personId: v.id('people'),
+    // Either: somebody picked from the list, or a name typed into it while the bill is being raised.
+    personId: v.optional(v.id('people')),
+    newPerson: v.optional(v.string()),
     tradeId: v.id('trades'),
     day: v.string(),
     amount: v.union(v.string(), v.number()),
@@ -19,7 +22,7 @@ export const raise = siteMutation({
 
     return await ctx.db.insert('bills', {
       siteId: ctx.siteId,
-      personId: bill.personId,
+      personId: await whoIsMeant(ctx, bill, SAY_BILL.who),
       tradeId: bill.tradeId,
       day: bill.day,
       amountPaisa: bill.amount,
