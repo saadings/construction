@@ -4,7 +4,7 @@ import { formatPaisa } from '~shared/money'
 
 import { Button } from '../form/Button'
 import { WayOut } from '../form/WayOut'
-import { Figure } from '../shell/Page'
+import { Figure, SaidUnderneath } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
@@ -174,11 +174,9 @@ function Payment({
     <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5">
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-[0.9375rem]">{went.paidToName}</p>
-        <p className="text-muted-foreground truncate text-sm">
-          {asDayHeWrites(went.day)} · {SAID[went.method]}
-          {went.reference === undefined ? '' : ` · ${went.reference}`}
-          {went.note === undefined ? '' : ` · ${went.note}`}
-        </p>
+
+        {/* Truncated until a picture was taken of it: at 390 this read `23/07/2026 · Chequ…` and the cheque number was gone entirely, on the screen where somebody checks which cheque paid what. The bill list two screens away had already been fixed for this and this one was written the old way beside it, which is what a rule with no instrument does. */}
+        <SaidUnderneath pieces={[asDayHeWrites(went.day), SAID[went.method], went.reference, went.note]} />
       </div>
 
       <Figure className="text-brass shrink-0 text-[0.9375rem]">{formatPaisa(went.amountPaisa)}</Figure>

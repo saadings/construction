@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import type { ReactNode } from 'react'
 
 import { cn } from '../../lib/utils'
@@ -55,4 +56,32 @@ export function Form({
 // Every figure in the app: the mono face and lining digits are what make a column of amounts read as a column rather than as a list of different-width strings.
 export function Figure({ className, children }: { className?: string; children: ReactNode }) {
   return <span className={cn('font-mono tabular-nums', className)}>{children}</span>
+}
+
+// The quiet line under a name: a day, how it was paid, a cheque number, a note. Written once because it was written twice and only one of the two could be read.
+
+// At 390 the other one rendered `27/06/2026 · CH…` -- two characters of the cheque number, on the screen where somebody checks which cheque paid which bill, and the number appears nowhere else on it. A name cut short is still recognisable; a cheque number cut short is not a cheque number.
+
+// So it wraps rather than truncates. Reordering only chooses which of the four gets cut, and dropping one is deciding for him which he wanted.
+
+// Each piece is held on a line of its own, which took a second picture to find: wrapping alone put `CH-114` across two lines as `CH-` and `114`, because a browser breaks at a hyphen. A cheque number in two halves is no better than a cheque number in two characters.
+
+/** Said on the element rather than worked out from its classes, so what measures the columns can ask the page which text must never be cut. */
+export const MUST_BE_READ = 'data-must-be-read'
+
+export function SaidUnderneath({ pieces, className }: { pieces: Array<string | undefined>; className?: string }) {
+  const said = pieces.filter((piece) => piece !== undefined && piece !== '')
+
+  // A `span` rather than a `p`, and drawn as a block: one of the four places this goes sits inside a row that also holds a way out, and a paragraph nested in a span is markup a browser rearranges under you.
+  return (
+    <span {...{ [MUST_BE_READ]: '' }} className={cn('text-muted-foreground block text-sm', className)}>
+      {said.map((piece, at) => (
+        // The separator sits outside the span on purpose, so it is the one place the line may break -- and so each piece's own text is the piece, with nothing to strip off it before it can be read or asserted.
+        <Fragment key={piece}>
+          {at === 0 ? '' : ' · '}
+          <span className="whitespace-nowrap">{piece}</span>
+        </Fragment>
+      ))}
+    </span>
+  )
 }

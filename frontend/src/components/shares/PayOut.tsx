@@ -16,7 +16,7 @@ import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
-import { Figure, Form } from '../shell/Page'
+import { Figure, Form, SaidUnderneath } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
 // Money going back to a partner, written down after it has moved. The app pays nobody: somebody wrote a cheque or made a transfer, and this is where that gets recorded.
@@ -290,10 +290,8 @@ function OnePayout({ paidOut, onTakeBack }: { paidOut: PaidOut; onTakeBack: (pay
       {/* Brass, because it is money leaving the partnership, the same colour it is given under Paid. */}
       <Figure className="text-brass text-right text-lg">{formatPaisa(paidOut.amountPaisa)}</Figure>
       <span className="text-muted-foreground col-span-2 flex flex-wrap items-baseline gap-x-3 text-sm">
-        <span>
-          {SAID[paidOut.method]} · {asDayHeWrites(paidOut.day)}
-          {paidOut.reference === undefined ? '' : ` · ${paidOut.reference}`}
-        </span>
+        {/* The fourth place this line was written by hand, and the one nobody had photographed: a cheque number here can still break across two lines at its own hyphen, which is no better than the two characters the payment list was cutting it to. */}
+        <SaidUnderneath pieces={[SAID[paidOut.method], asDayHeWrites(paidOut.day), paidOut.reference]} />
         <WayOut onClick={takeBack} busy={saving}>
           {saving ? 'Taking it back…' : 'Take it back'}
         </WayOut>

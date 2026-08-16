@@ -59,6 +59,13 @@ const SUBJECTS: Array<Subject> = [
     onThePage: '[data-slot="breadcrumb"]',
     inTheSource: /<Trail\b/g,
   },
+  {
+    // The line under a name: a day, how it was paid, a cheque number. Four components drew it by hand and two cut the cheque number off; the one that had been fixed had nothing asserting it stayed fixed.
+    what: 'a line that must be read whole',
+    asked: 'yarn columns, the cut-off check',
+    onThePage: '[data-must-be-read]',
+    inTheSource: /<SaidUnderneath\b/g,
+  },
 ]
 
 function withoutComments(source: string): string {
