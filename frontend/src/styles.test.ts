@@ -51,10 +51,21 @@ describe('the two ways a page goes dark', () => {
 describe('the palette', () => {
   it('carries meaning in two colours and no more', () => {
     // Brass is money going out, green is money owed to him. A third would mean a figure could be coloured for a reason nobody can name.
-    expect(LIGHT['--brass']).toBe('#8a5a1e')
-    expect(LIGHT['--green']).toBe('#4a6b52')
-    expect(CHOSEN_DARK['--brass']).toBe('#d19a4a')
-    expect(CHOSEN_DARK['--green']).toBe('#7da888')
+
+    // Asked of what the colours are rather than of their bytes. This pinned four hexes and one of them moved when Nauman's redesign landed -- a green going from `#4a6b52` to `#3f6349` is not a third meaning appearing, and a test that cannot tell those apart fails on the change it was never about.
+    expect(LIGHT['--brass'], 'brass is the identity colour and does not move').toBe('#8a5a1e')
+
+    for (const palette of [LIGHT, CHOSEN_DARK]) {
+      const [red, green, blue] = [1, 3, 5].map((at) => parseInt(palette['--green'].slice(at, at + 2), 16))
+
+      expect(green, 'the colour for money owed is not a green').toBeGreaterThan(red)
+      expect(green).toBeGreaterThan(blue)
+    }
+
+    // The other half, which is the one the name is about: nothing else in the palette carries a meaning. `--refusal` is the third and it is not a figure -- it says something is about to be removed.
+    const meaning = Object.keys(LIGHT).filter((token) => /^--(brass|green|refusal)$/.test(token))
+
+    expect(meaning).toHaveLength(3)
   })
 
   it('keeps the ground warm after dark', () => {

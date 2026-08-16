@@ -23,16 +23,22 @@
 /* A warm console. The ground is paper warmed by lamplight rather than white, and it stays warm after dark: a blue-black ground makes brass look dirty, and brass is the colour of money here. */
 
 /* Two colours carry meaning and no others. Brass is money going out. Green is money owed to him, which is what an advance held or a credit balance is. Everything else is ink. */
+
+/* Redrawn from Nauman's own design. `--ground`, `--ink`, `--brass` and `--refusal` came back byte for byte, which is real evidence it was drawn against the live app rather than beside it -- so the handful of values not taken are gaps in what a design tool can see, not carelessness. Each one is marked below with its number. */
 :root {
   --ground: #faf7f0;
-  --panel: #f2ede2;
-  --row-alt: #f6f2e9;
-  --hairline: #f0ebe0;
+  /* White, as drawn: a card lifts off the page rather than sharing its tone. The warm value it replaces is not deleted -- it is `--secondary` below, where it is still doing work. */
+  --panel: #ffffff;
+  --row-alt: #f7f4ed;
+  --hairline: #efeade;
   --ink: #1c1a17;
-  --muted-ink: #625d53;
+  --muted-ink: #635e54;
+  /* NOT the design's `#8a8377`, which fails this app's own readability floor on all four surfaces it sits on: 3.51 on the ground, 3.75 on the panel, 3.42 on the row tint, 3.13 on the hairline, against 4.5. */
+
+  /* And it is the second time for this token. It was `#a09786`, Nauman asked why a section had no contrast, and it moved here -- so walking it back is walking back his own feedback, which a test already holds. It carries every uppercase caption in the app: `OUTSTANDING`, `EXPENSES`, every column header. */
   --faint: #6f685d;
   --brass: #8a5a1e;
-  --green: #4a6b52;
+  --green: #3f6349;
   /* A refusal is not a figure, so it is not held to the two colours. A refusal the same colour as everything else is a refusal nobody sees. */
 
   /* It was `#8f3521`, which is 17.9 from brass by CIEDE2000 -- the closest pair in this palette, between money and the one colour that says something is about to be removed. On the row where a payment is taken back out, `Yes, take it out` was the colour of the amount it would take out. */
@@ -48,7 +54,8 @@
   --popover-foreground: var(--ink);
   --primary: var(--brass);
   --primary-foreground: var(--ground);
-  --secondary: var(--panel);
+  /* The warm tone the panel used to be, kept because it is what a filled control and a quiet block still want against a white card. */
+  --secondary: #f2ede2;
   --secondary-foreground: var(--ink);
   --muted: var(--row-alt);
   --muted-foreground: var(--muted-ink);
@@ -56,17 +63,20 @@
   --accent-foreground: var(--ink);
   --destructive: var(--refusal);
   --destructive-foreground: var(--ground);
-  --border: #e3ddd0;
-  --input: #e3ddd0;
+  --border: #e5dfd2;
+  --input: #ddd6c7;
   --ring: var(--brass);
   --radius: 0.5rem;
-  --sidebar: var(--panel);
-  --sidebar-foreground: var(--ink);
+  /* A dark plane beside a light page, as drawn: 16.23:1 against the ground, where it used to be 1.09 and was barely a plane at all. */
+  --sidebar: #1c1a17;
+  --sidebar-foreground: #f0ebe0;
   --sidebar-primary: var(--brass);
+  /* NOT the design's `#17150f`, which is 3.10:1 on brass. This is 5.51 and it is the pairing already in the app. The active row is the one a thumb aims at. */
   --sidebar-primary-foreground: var(--ground);
-  --sidebar-accent: var(--hairline);
-  --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: #e3ddd0;
+  /* The four the design leaves undefined, derived from its own markup rather than invented: the hover is `white/[0.06]` over the plane and the resting ink is `white/60`, both flattened here because a token cannot be translucent. Left at their old light-page values they would put near-white on near-black -- and `--sidebar-accent-foreground` would have been `--ink` on `#1c1a17`, which is black on black. */
+  --sidebar-accent: #2a2825;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #33312e;
   --sidebar-ring: var(--brass);
 }
 
@@ -85,7 +95,15 @@
     --refusal: #ef7f8f;
     --border: #2e2a20;
     --input: #2e2a20;
-    --sidebar-border: #2e2a20;
+    /* The design draws no dark mode, and the light value cannot be carried over: `#1c1a17` against this ground is 1.05:1 and 2.1 apart -- not a plane, the page. */
+
+    /* So the relationship is inverted rather than the value derived. In light the rail is the darkest thing on the screen and the page sits beside it; after dark the darkest thing is the page, so the rail is what lifts off it. `#2a251d` is 5.7 from the ground and 3.5 from a card, which is an edge you can see without a line drawn round it, and it stays a different plane from a panel rather than becoming one. */
+    --sidebar: #2a251d;
+    --sidebar-foreground: var(--ink);
+    /* White at 6% and 10% over that plane, the same two strengths the design's own markup uses for hover and rule. */
+    --sidebar-accent: #37322b;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #3f3b34;
   }
 }
 
@@ -103,7 +121,12 @@
   --refusal: #ef7f8f;
   --border: #2e2a20;
   --input: #2e2a20;
-  --sidebar-border: #2e2a20;
+  /* The same rail, for the same reason: after dark the page is the darkest thing, so the rail lifts off it rather than sinking into it. */
+  --sidebar: #2a251d;
+  --sidebar-foreground: var(--ink);
+  --sidebar-accent: #37322b;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #3f3b34;
 }
 
 @theme inline {

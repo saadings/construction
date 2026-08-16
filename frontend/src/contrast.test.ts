@@ -15,6 +15,15 @@ const READABLE = 4.5
 const WORDS = ['--ink', '--muted-ink', '--faint', '--brass', '--green', '--refusal']
 const SURFACES = ['--ground', '--panel', '--row-alt', '--hairline']
 
+// The app has two planes now. The nav is a dark rail against a warm page, which is the design's strongest structural move -- and every ink on it is a different question from the same ink on the page: `--sidebar-foreground` is near-white, which is unreadable on the ground and 14.6:1 where it actually sits.
+
+// Asked as its own pairing rather than excused, because a token nobody measures is how `--faint` failed twice.
+const ON_THE_RAIL: Array<[string, string]> = [
+  ['--sidebar-foreground', '--sidebar'],
+  ['--sidebar-accent-foreground', '--sidebar-accent'],
+  ['--sidebar-primary-foreground', '--sidebar-primary'],
+]
+
 function whatCannotBeRead(palette: Record<string, string>): Array<string> {
   const failing: Array<string> = []
 
@@ -30,6 +39,17 @@ function whatCannotBeRead(palette: Record<string, string>): Array<string> {
       if (measured < READABLE) {
         failing.push(`${word} on ${surface} is ${measured.toFixed(2)}:1`)
       }
+    }
+  }
+
+  for (const [word, surface] of ON_THE_RAIL) {
+    const ink = asAColour(word, palette)
+    const behind = asAColour(surface, palette)
+    if (ink === null || behind === null) continue
+
+    const measured = contrast(ink, behind)
+    if (measured < READABLE) {
+      failing.push(`${word} on ${surface} is ${measured.toFixed(2)}:1`)
     }
   }
 
@@ -65,13 +85,32 @@ describe('words a person can actually read', () => {
     expect(contrast('#f6f2e9', '#faf7f0')).toBeCloseTo(1.04, 2)
   })
 
+  it('would notice the caption grey the design asked for', () => {
+    // Refused rather than taken, and this is the arithmetic that refused it. `#8a8377` is what the redesign draws `--faint` as; it fails on all four surfaces, and the token carries every uppercase caption in the app.
+    const asDrawn = { ...LIGHT, '--faint': '#8a8377' }
+
+    expect(whatCannotBeRead(asDrawn)).toEqual([
+      '--faint on --ground is 3.51:1',
+      '--faint on --panel is 3.75:1',
+      '--faint on --row-alt is 3.42:1',
+      '--faint on --hairline is 3.13:1',
+    ])
+  })
+
+  it('would notice the active nav row the design asked for', () => {
+    // The other refusal: `#17150f` on brass is 3.10:1, and the active row is the one a thumb aims at. The pairing kept is 5.51.
+    const asDrawn = { ...LIGHT, '--sidebar-primary-foreground': '#17150f' }
+
+    expect(whatCannotBeRead(asDrawn)).toEqual(['--sidebar-primary-foreground on --sidebar-primary is 3.10:1'])
+  })
+
   it('would notice the greys going back to what they were', () => {
     // Planted in the palette rather than in the sum, because the palette is the thing being described.
     const asShipped = { ...LIGHT, '--muted-ink': '#8a8274', '--faint': '#a09786' }
 
     // The surfaces named as the sweep names them. Written from memory the first time, against the panel, which is not the surface either of those figures came from -- the plant was right and the expectation was wrong.
-    expect(whatCannotBeRead(asShipped)).toContain('--muted-ink on --hairline is 3.20:1')
-    expect(whatCannotBeRead(asShipped)).toContain('--faint on --hairline is 2.43:1')
+    expect(whatCannotBeRead(asShipped)).toContain('--muted-ink on --hairline is 3.17:1')
+    expect(whatCannotBeRead(asShipped)).toContain('--faint on --hairline is 2.41:1')
     expect(whatCannotBeRead(asShipped)).toHaveLength(8)
   })
 })
@@ -146,6 +185,8 @@ describe('what a screen sets words in', () => {
   function tooQuietToRead(): Array<string> {
     const ground = asAColour('--ground', LIGHT)
     const unreadable = Object.keys(LIGHT)
+      // The rail is not the page. `--sidebar-foreground` is near-white, unreadable on the ground and 14.6:1 where it actually sits -- and it is measured there, by `ON_THE_RAIL` above, rather than excused here.
+      .filter((name) => !name.startsWith('--sidebar'))
       .filter((name) => {
         const colour = asAColour(name, LIGHT)
         return colour !== null && ground !== null && contrast(colour, ground) < READABLE

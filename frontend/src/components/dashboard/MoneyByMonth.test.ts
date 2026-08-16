@@ -48,9 +48,13 @@ describe('a chart about money coming in', () => {
 
   it('is reading colours rather than strings that resolve to nothing', () => {
     // The floor. A resolver that returned the same non-answer for everything would report every pair as far enough apart, and a legend swatch of nothing looks like a legend swatch.
-    expect(drawnIn('broughtIn', LIGHT)).toBe('#4a6b52')
+
+    // Held to the palette rather than to a hex: this pinned `#4a6b52` and the redesign moved green, which is not this test's subject.
+    expect(drawnIn('broughtIn', LIGHT)).toBe(asAColour('--green', LIGHT))
     expect(drawnIn('ownMoney', LIGHT)).toMatch(/^#[\da-f]{6}$/i)
     expect(drawnIn('ownMoney', LIGHT)).not.toBe(drawnIn('broughtIn', LIGHT))
-    expect(asAMixedColour('color-mix(in srgb, var(--green) 100%, var(--ground))', LIGHT)).toBe('#4a6b52')
+    expect(asAMixedColour('color-mix(in srgb, var(--green) 100%, var(--ground))', LIGHT)).toBe(
+      asAColour('--green', LIGHT)
+    )
   })
 })
