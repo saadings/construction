@@ -5,6 +5,7 @@ import { extraWorkBillInput, extraWorkLineInput, lineAmountPaisa } from '~shared
 import { calendarDay, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
+import { Day } from '../form/Day'
 import { Field, Line } from '../form/Field'
 import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
@@ -195,16 +196,7 @@ function RaiseOne({ onRaise }: { onRaise: (bill: RaisedBill) => Promise<void> })
           />
         </Field>
 
-        <Field label="Raised on" problem={whatIsWrong(calendarDay, raisedOn)}>
-          <Line
-            value={raisedOn}
-            onChange={(event) => {
-              setRaisedOn(event.target.value)
-            }}
-            type="date"
-            aria-label="Raised on"
-          />
-        </Field>
+        <Day label="Raised on" problem={whatIsWrong(calendarDay, raisedOn)} value={raisedOn} onPick={setRaisedOn} />
       </div>
 
       <ol aria-label="The lines of this bill" className="flex flex-col gap-5">

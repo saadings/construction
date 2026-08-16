@@ -1,12 +1,20 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { chooseTheDay } from '../../testing/day'
 import type { BillRow } from './ExtraWork'
 import { ExtraWork, whatItComesTo } from './ExtraWork'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
+
+// The calendar opens on the month the control is holding, and the control starts on today. Frozen so "raised on the 1st of May" is a day this test can reach without paging, and so it is the same day on every machine and in every month.
+const WHILE_THE_WALL_WAS_BEING_BILLED = new Date(2026, 4, 12, 11, 0)
 
 const ONE_BILL: Array<BillRow> = [
   {
@@ -52,10 +60,11 @@ function typeALine(line: { what: string; working?: string; how: string; unit: st
 describe('billing work that was outside the contract', () => {
   it('raises a bill with its lines, keeping the working exactly as it was measured', async () => {
     // `LESS EXTRA WORK` was one figure in the workbooks with nothing behind it. The working is what makes this one defensible, and re-deriving it would only ever disagree with the man who measured it.
+    vi.setSystemTime(WHILE_THE_WALL_WAS_BEING_BILLED)
     const { onRaise } = renderIt()
 
     fireEvent.change(screen.getByLabelText('What the work was'), { target: { value: 'Extra retaining wall' } })
-    fireEvent.change(screen.getByLabelText('Raised on'), { target: { value: '2026-05-01' } })
+    await chooseTheDay(userEvent.setup(), 'Raised on', '2026-05-01')
     typeALine({ what: 'Brickwork', working: "39.75' x 0.375' x 11'", how: '164.01', unit: 'cft', rate: '100' })
     fireEvent.click(screen.getByRole('button', { name: 'Raise the bill' }))
 

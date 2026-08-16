@@ -5,6 +5,7 @@ import { milestoneInput } from '~shared/validation/milestone'
 import { percent as percentRule, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
+import { Day } from '../form/Day'
 import { Field, Line } from '../form/Field'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
@@ -122,16 +123,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
     <span className="flex flex-col items-end gap-1">
       <span className="flex items-center justify-end gap-2">
         {/* Named on the box, because the question it answers is the row it is on. */}
-        <Line
-          look="beside"
-          value={day}
-          onChange={(event) => {
-            setDay(event.target.value)
-          }}
-          type="date"
-          aria-label={`When ${stage.description} was billed`}
-          className="border-border text-muted-foreground w-auto rounded-md border px-2 py-1"
-        />
+        <Day look="beside" label={`When ${stage.description} was billed`} value={day} onPick={setDay} />
         <Button look="beside" busy={saving} className="px-3 py-1 text-sm" onClick={bill}>
           Bill it
         </Button>
