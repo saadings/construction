@@ -60,15 +60,17 @@ export function Figure({ className, children }: { className?: string; children: 
 
 // What the word `Hide` used to carry on its own. Five screens take a row off a list and every one of them is a signed soft hide -- `removed: true` with who and when -- so nothing is destroyed and the record answers for itself forever.
 
-// Nobody was told that. Grepped for the copy expecting to find it: it is a **comment** on five screens of six, and a comment ships to nobody. The one above `Hide it?` even calls the label *said plainly*, which is the author doing the job in the only place then available.
+// Nobody was told that. Grepped for the copy expecting to find it: it is a **comment** on five screens of six, and a comment ships to nobody. The one above the old `Hide it?` even called that label *said plainly*, which is the author doing the job in the only place then available.
 
 // So renaming to `Remove` without this would have taken the only reassurance out of the product and left it true in source, where the person worried about losing a payment cannot read it -- worse than the folksy label it replaced.
+
+// `record` is not in it, and that is not a stylistic choice: two screens hold a rule refusing the words that are the machine showing through, and `record` is on that list. A sentence written to reassure him that fails the app's own no-jargon rule is the wrong sentence.
 
 /** Said at the moment somebody is deciding, which is when they need it, rather than carried permanently by a word. */
 export function NothingIsDeleted({ className }: { className?: string }) {
   return (
     <span data-nothing-is-deleted="" className={cn('text-muted-foreground block text-sm', className)}>
-      It comes off this screen. The record stays, with who removed it and when.
+      It comes off this screen. What was entered stays, with who removed it and when.
     </span>
   )
 }

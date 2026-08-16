@@ -96,7 +96,7 @@ describe('who can sign in', () => {
     render(<WhoCanSignIn waiting={WAITING} onInvite={vi.fn()} onTakeOff={onTakeOff} />)
 
     const steel = screen.getAllByRole('listitem')[1]
-    fireEvent.click(within(steel).getByRole('button', { name: 'Take them off' }))
+    fireEvent.click(within(steel).getByRole('button', { name: 'Remove' }))
 
     await waitFor(() => {
       expect(onTakeOff).toHaveBeenCalledWith('inv_2')

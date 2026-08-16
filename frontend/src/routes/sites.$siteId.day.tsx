@@ -110,7 +110,7 @@ function NotYours() {
         This house may have been put away, or you may not be on it. Ask Nauman.
       </p>
       <Link to="/" className="text-primary pt-2 font-medium">
-        Back to your sites
+        Back to sites
       </Link>
     </main>
   )

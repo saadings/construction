@@ -17,9 +17,9 @@ export function WhereItWent({ spending }: { spending: Array<Spending> }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Where it went</h2>
+      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Spent by trade</h2>
 
-      <ul aria-label="Where it went" className="flex flex-col gap-2.5">
+      <ul aria-label="Spent by trade" className="flex flex-col gap-2.5">
         {spending.map((one) => (
           <li key={one.tradeId ?? 'the rest'} className="flex items-center gap-3">
             <span className="text-foreground w-28 shrink-0 truncate text-sm sm:w-40">{one.name}</span>

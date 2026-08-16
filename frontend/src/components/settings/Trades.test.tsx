@@ -33,7 +33,7 @@ function theRowFor(name: string) {
 
 // The form is behind a button now: 47 things he has used to sit below a box for one he has not.
 function openTheForm() {
-  fireEvent.click(screen.getByRole('button', { name: 'Add one' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 }
 
 describe('what for', () => {
@@ -41,8 +41,8 @@ describe('what for', () => {
     const { onAdd } = renderIt()
     openTheForm()
 
-    fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    fireEvent.change(screen.getByLabelText('Other'), { target: { value: 'Scaffolding' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
       expect(onAdd).toHaveBeenCalledWith({ name: 'Scaffolding', countsAsBuildingCost: true })
@@ -54,9 +54,9 @@ describe('what for', () => {
     const { onAdd } = renderIt()
     openTheForm()
 
-    fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Society dues' } })
+    fireEvent.change(screen.getByLabelText('Other'), { target: { value: 'Society dues' } })
     fireEvent.click(screen.getByRole('radio', { name: 'Land, taxes and commission' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
       expect(onAdd).toHaveBeenCalledWith({ name: 'Society dues', countsAsBuildingCost: false })
@@ -87,17 +87,17 @@ describe('what for', () => {
     // He was on the day sheet looking at `WHAT FOR` and could not find this screen, because it was called "what money is spent on" -- true, and not the words in front of him.
     renderIt()
 
-    expect(screen.getByRole('heading', { name: 'What for' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Trade' })).toBeTruthy()
     expect(document.body.textContent).not.toContain('What money is spent on')
   })
 
   it('shows the list before the form, rather than a box for one he has not above the ones he has', () => {
     renderIt()
 
-    expect(screen.queryByLabelText('Something else it is spent on')).toBeNull()
+    expect(screen.queryByLabelText('Other')).toBeNull()
 
     openTheForm()
-    expect(screen.getByLabelText('Something else it is spent on')).toBeTruthy()
+    expect(screen.getByLabelText('Other')).toBeTruthy()
   })
 
   it('corrects a name and what it is for together, because they are the two things a trade is', async () => {
@@ -105,7 +105,7 @@ describe('what for', () => {
 
     fireEvent.click(within(theRowFor('Cement')).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What Cement is'), { target: { value: 'Cement and lime' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onEdit).toHaveBeenCalledWith('t2', { name: 'Cement and lime', countsAsBuildingCost: true })
@@ -117,7 +117,7 @@ describe('what for', () => {
 
     fireEvent.click(within(theRowFor('Cement')).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What Cement is'), { target: { value: 'Something else entirely' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Never mind' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(theRowFor('Cement').textContent).toContain('Cement')
     expect(onEdit).not.toHaveBeenCalled()
@@ -127,7 +127,7 @@ describe('what for', () => {
     const { onTakeOff } = renderIt()
 
     fireEvent.click(within(theRowFor('Cement')).getByRole('button', { name: 'Change' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Take it off the list' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
 
     await waitFor(() => {
       expect(onTakeOff).toHaveBeenCalledWith('t2')
@@ -139,7 +139,7 @@ describe('what for', () => {
 
     fireEvent.click(within(theRowFor('Cement')).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What Cement is'), { target: { value: 'Civil labour' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('Civil labour is already on the list.')
     expect(screen.getByLabelText<HTMLInputElement>('What Cement is').value).toBe('Civil labour')
@@ -149,12 +149,12 @@ describe('what for', () => {
     renderIt()
     openTheForm()
 
-    fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
-    fireEvent.blur(screen.getByLabelText('Something else it is spent on'))
-    fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    fireEvent.change(screen.getByLabelText('Other'), { target: { value: 'Scaffolding' } })
+    fireEvent.blur(screen.getByLabelText('Other'))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
-      expect(screen.queryByLabelText('Something else it is spent on')).toBeNull()
+      expect(screen.queryByLabelText('Other')).toBeNull()
     })
     expect(screen.queryByRole('alert')).toBeNull()
 
@@ -162,11 +162,11 @@ describe('what for', () => {
     renderIt(THREE, { onAdd: vi.fn().mockRejectedValue(new ConvexError('Scaffolding is already on the list.')) })
     openTheForm()
 
-    fireEvent.change(screen.getByLabelText('Something else it is spent on'), { target: { value: 'Scaffolding' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    fireEvent.change(screen.getByLabelText('Other'), { target: { value: 'Scaffolding' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('Scaffolding is already on the list.')
-    expect(screen.getByLabelText<HTMLInputElement>('Something else it is spent on').value).toBe('Scaffolding')
+    expect(screen.getByLabelText<HTMLInputElement>('Other').value).toBe('Scaffolding')
   })
 
   it('shows the shape of the list while it is coming, and says so when it does not come', () => {

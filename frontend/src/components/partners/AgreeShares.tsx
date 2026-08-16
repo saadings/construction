@@ -61,7 +61,7 @@ export function AgreeShares({
 }) {
   return (
     // No house name beside the title any more: the trail above says it and links back to it, and two of them is the same screen saying one thing twice.
-    <Page title="What each partner takes" named={{ siteId: siteName }}>
+    <Page title="Partner shares" named={{ siteId: siteName }}>
       {what === undefined ? (
         <SharesWaiting />
       ) : what === null ? null : (
@@ -181,7 +181,7 @@ function Setting({
 
       {/* Drawn even when everybody on the list is already down: the point of it now is that the person taking a share may not be on the list at all. */}
       <PickAPerson
-        label="Somebody else takes a share"
+        label="Add partner"
         hint="Anybody taking a share without having put money in."
         who={NOBODY}
         people={notYetIn}
@@ -210,7 +210,7 @@ function Setting({
           }}
           busy={saving}
         >
-          Agree these shares
+          Agree shares
         </Button>
 
         {/* Only where there is something to go back from: a house already following the money has nowhere to go. */}
@@ -222,7 +222,7 @@ function Setting({
             }}
             busy={saving}
           >
-            Go back to what they put in
+            Reset
           </Button>
         ) : null}
       </div>
@@ -279,7 +279,7 @@ function Share({
         aria-label={`Take ${row.name} out of the shares`}
         className="order-4 justify-self-end sm:order-none"
       >
-        Take out
+        Remove
       </WayOut>
 
       {showing ? (

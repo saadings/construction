@@ -22,15 +22,15 @@ export const ABOVE = new Map<string, { name: string; under?: string }>(
     '/people': { name: 'People' },
     '/people/$personId': { name: 'Their account', under: '/people' },
     '/more': { name: 'More' },
-    '/more/what-for': { name: 'What for', under: '/more' },
-    '/more/which-account': { name: 'Which account', under: '/more' },
+    '/more/what-for': { name: 'Trade', under: '/more' },
+    '/more/which-account': { name: 'Account', under: '/more' },
     '/more/who-can-sign-in': { name: 'Who can sign in', under: '/more' },
-    '/more/how-it-looks': { name: 'How it looks', under: '/more' },
+    '/more/how-it-looks': { name: 'Appearance', under: '/more' },
     '/sites/new': { name: 'Start a house', under: '/' },
     '/sites/$siteId': { name: 'The house', under: '/' },
-    '/sites/$siteId/day': { name: 'What went out today', under: '/sites/$siteId' },
-    '/sites/$siteId/coming-in': { name: 'Money coming in', under: '/sites/$siteId' },
-    '/sites/$siteId/shares': { name: 'What each partner takes', under: '/sites/$siteId' },
+    '/sites/$siteId/day': { name: 'Expenses', under: '/sites/$siteId' },
+    '/sites/$siteId/coming-in': { name: 'Invested', under: '/sites/$siteId' },
+    '/sites/$siteId/shares': { name: 'Partner shares', under: '/sites/$siteId' },
   })
 )
 

@@ -118,7 +118,7 @@ function Waiting({ waiting, onTakeOff }: { waiting: Array<Invited> | null; onTak
             }}
             className="shrink-0"
           >
-            Take them off
+            Remove
           </WayOut>
         </li>
       ))}

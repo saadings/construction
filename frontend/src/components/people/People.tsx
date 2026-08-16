@@ -76,7 +76,7 @@ export function People({
           >
             <span>Name</span>
             <span>Number</span>
-            <span>What was written down</span>
+            <span>Notes</span>
           </div>
 
           <ul aria-label="Everyone in the ledger" className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
@@ -186,7 +186,7 @@ function OnePerson({
         </Field>
       </div>
 
-      <Field label="Anything worth remembering">
+      <Field label="Notes">
         <Lines
           value={notes}
           onChange={(event) => {
@@ -216,7 +216,7 @@ function OnePerson({
             })
           }
         >
-          Save it
+          Save
         </Button>
         <WayOut
           onClick={() => {
@@ -226,7 +226,7 @@ function OnePerson({
             setChanging(false)
           }}
         >
-          Never mind
+          Cancel
         </WayOut>
         {/* Hidden rather than deleted, because payments point at a person forever. */}
         <Button look="removing" className="ml-auto" onClick={() => send(async () => await onHide(person._id))}>
@@ -298,13 +298,13 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
         </Field>
       </div>
 
-      <Field label="Anything worth remembering">
+      <Field label="Notes">
         <Lines
           value={notes}
           onChange={(event) => {
             setNotes(event.target.value)
           }}
-          aria-label="Anything worth remembering"
+          aria-label="Notes"
         />
       </Field>
 
@@ -316,7 +316,7 @@ function AddSomebody({ onAdd }: { onAdd: (person: NewPerson) => Promise<void> })
 
       <div>
         <Button onClick={add} busy={saving}>
-          Add them
+          Add
         </Button>
       </div>
     </Form>

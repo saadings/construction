@@ -71,7 +71,7 @@ export function Positions({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h2 className="text-foreground text-base font-medium">What each partner is owed</h2>
+        <h2 className="text-foreground text-base font-medium">Owed to partners</h2>
         <p className="text-muted-foreground flex items-baseline gap-3 text-sm">
           <span>{what.sharesAgreed ? 'Shares agreed between them.' : 'Shares follow what each of them put in.'}</span>
           {beside}
@@ -94,7 +94,7 @@ export function Positions({
             <span className="text-right">Share</span>
             <span className="text-right">Due</span>
             <span className="text-right">Paid</span>
-            <span className="text-right">Left</span>
+            <span className="text-right">Remaining</span>
           </div>
 
           <ul className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
@@ -111,7 +111,7 @@ export function Positions({
                   {formatPaisa(position.paidPaisa)}
                 </Cell>
                 {/* A dash for the same reason `Due` has one, and it took a payout going in to find out why it matters: nothing is due until the house sells, so a partner paid ahead of the sale reads as owed minus paid, which is a negative figure in a column headed Left. That reads as the partnership owing him, when he is the one who has had money early. */}
-                <Cell label="Left" tone={howTheBalanceReads(what.sold, position.balancePaisa)}>
+                <Cell label="Remaining" tone={howTheBalanceReads(what.sold, position.balancePaisa)}>
                   {what.sold ? formatPaisa(position.balancePaisa) : '—'}
                 </Cell>
               </li>
@@ -139,7 +139,7 @@ export function Positions({
 function PositionsWaiting() {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-foreground text-base font-medium">What each partner is owed</h2>
+      <h2 className="text-foreground text-base font-medium">Owed to partners</h2>
 
       <WhileWaiting what="Working out what each partner is owed">
         <div className="border-border bg-panel grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border px-4 py-3 sm:grid-cols-3">
@@ -201,8 +201,8 @@ function Cell({ label, tone, children }: { label: string; tone?: string; childre
 function Profit({ what }: { what: WhatThePartnersHave }) {
   return (
     <dl className="border-border bg-panel grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border px-4 py-3 sm:grid-cols-3">
-      <Sum label="Come in">{formatPaisa(what.broughtInPaisa)}</Sum>
-      <Sum label="Gone out" tone="text-brass">
+      <Sum label="Invested">{formatPaisa(what.broughtInPaisa)}</Sum>
+      <Sum label="Expenses" tone="text-brass">
         {formatPaisa(what.spentPaisa)}
       </Sum>
       <Sum label={what.profitPaisa < 0 ? 'Out of pocket by' : 'Profit'}>{formatPaisa(Math.abs(what.profitPaisa))}</Sum>

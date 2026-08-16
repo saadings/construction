@@ -115,7 +115,7 @@ export function HouseDetails({
       </Field>
 
       <Pick
-        label="Where it has got to"
+        label="Stage"
         chosen={AS_CHOICES.find((each) => each._id === stage) ?? null}
         choices={AS_CHOICES}
         // Looked up in the list it was drawn from rather than asserted, so nothing unknown can become a stage.
@@ -124,9 +124,9 @@ export function HouseDetails({
         }}
       />
 
-      {/* Not a `Field`: a label points at one control, and the first choice inside one takes the label's words as its own name. "Ours to sell" announced itself as "Whose house". */}
+      {/* Not a `Field`: a label points at one control, and the first choice inside one takes the label's words as its own name. "Ours to sell" announced itself as "Built for". */}
       <Choices
-        label="Whose house"
+        label="Built for"
         chosen={builtForAClient}
         choices={[
           { is: false, said: 'Ours to sell' },

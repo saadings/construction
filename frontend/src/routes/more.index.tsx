@@ -27,13 +27,13 @@ function More() {
   const places: Array<WhereToGo> = [
     {
       to: '/more/what-for',
-      name: 'What for',
+      name: 'Trade',
       what: 'The list a day sheet picks from — bricks, steel, plot, and anything you add.',
       now: howMany(trades, 'none yet'),
     },
     {
       to: '/more/which-account',
-      name: 'Which account',
+      name: 'Account',
       what: 'The accounts a cheque or transfer says it left. Only the last four figures are kept.',
       now: howMany(accounts, 'none yet'),
     },
@@ -45,7 +45,7 @@ function More() {
     },
     {
       to: '/more/how-it-looks',
-      name: 'How it looks',
+      name: 'Appearance',
       what: 'Light, dark, or whatever the phone is doing.',
       now: whatItLooksLike(chosen),
     },

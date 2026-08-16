@@ -16,7 +16,7 @@ import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
-import { Figure, Form, SaidUnderneath } from '../shell/Page'
+import { Figure, Form, NothingIsDeleted, SaidUnderneath } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
 // Money going back to a partner, written down after it has moved. The app pays nobody: somebody wrote a cheque or made a transfer, and this is where that gets recorded.
@@ -54,6 +54,8 @@ const SAID: Record<HowPaid, string> = {
   payOrder: 'Pay order',
 }
 
+// `How it went` and `Which account it left` are the same two questions the table maps as `Payment method` and `Account`, worn as longer variants the sweep saw and the table did not. Kept distinct from the receipt screen's `Account it landed in`, because a payout leaves an account and a receipt arrives in one, and on a screen holding both a single `Account` says neither.
+
 // Its own refusal and its own busy, rather than the ones the shares form above it uses. Sharing them puts the sentence the server refused a share with underneath the payout button, where it is about neither thing.
 export function PayOut({
   partners,
@@ -77,7 +79,7 @@ export function PayOut({
   return (
     <section className="flex flex-col gap-6 border-t pt-8">
       <div className="flex flex-col gap-1">
-        <h2 className="text-foreground text-base font-medium">Money gone back to them</h2>
+        <h2 className="text-foreground text-base font-medium">Paid out</h2>
         <p className="text-muted-foreground max-w-prose text-sm">
           A cheque or a transfer that has already left. Writing it here is what makes it show under Paid.
         </p>
@@ -164,25 +166,18 @@ function Paying({
   return (
     <Form freshAfter={goneOut}>
       {/* Only the partners on this house. Everybody in the address book would offer to pay a tile man his share of a profit. */}
-      <Pick
-        label="Who it went to"
-        problem={wrongWho}
-        placeholder="Pick one"
-        chosen={who}
-        choices={partners}
-        onPick={setWho}
-      />
+      <Pick label="Paid to" problem={wrongWho} placeholder="Pick one" chosen={who} choices={partners} onPick={setWho} />
 
       <div className="grid gap-6 sm:grid-cols-2">
         {/* The control this app draws rather than the OS one, which prints the browser's own order: a picture from CI showed `07/04/2026` where the app means the fourth of July. */}
-        <Day label="Which day" value={day} onPick={setDay} />
+        <Day label="Date" value={day} onPick={setDay} />
 
-        <Field label="How much" problem={wrongAmount}>
+        <Field label="Amount" problem={wrongAmount}>
           <Line
             value={amount}
             onChange={(event) => setAmount(groupWhileTyping(event.target.value))}
             inputMode="decimal"
-            aria-label="How much"
+            aria-label="Amount"
             placeholder="0"
           />
         </Field>
@@ -190,11 +185,11 @@ function Paying({
 
       {/* Every way this one payout went: what is typed once -- who, the day, the amount -- is shared, each way carries its own cheque number or account, and the account picker is left without an add until the list is here, because a screen that does not know what is on the list cannot say whether the account being typed is already on it. */}
       <HowItWasPaid
-        label="How it went"
+        label="Payment method"
         parts={parts}
         total={amount}
         accounts={everyAccount.everything}
-        bankLabel="Which account it left"
+        bankLabel="Account it left"
         bankPlaceholder={whileThereIsNoList(accounts)}
         onChange={setParts}
         onAddAccount={
@@ -222,7 +217,7 @@ function Paying({
 
       <div>
         <Button onClick={pay} busy={saving}>
-          Put it in
+          Save
         </Button>
       </div>
     </Form>
@@ -258,11 +253,18 @@ function AlreadyOut({
   }
 
   return (
-    <ul className="divide-hairline flex flex-col divide-y">
-      {paidOut.map((one) => (
-        <OnePayout key={one._id} paidOut={one} onTakeBack={onTakeBack} />
-      ))}
-    </ul>
+    <div className="flex flex-col gap-2">
+      <ul className="divide-hairline flex flex-col divide-y">
+        {paidOut.map((one) => (
+          <OnePayout key={one._id} paidOut={one} onTakeBack={onTakeBack} />
+        ))}
+      </ul>
+
+      {/* Once under the list rather than on every row: every row here removes, and the same sentence repeated per payout is noise rather than reassurance. */}
+
+      {/* It is needed most here, because this is the one removing control in the app that asks nothing first -- one tap and the payout is off the screen. The words are all he has. */}
+      <NothingIsDeleted />
+    </div>
   )
 }
 
@@ -293,7 +295,7 @@ function OnePayout({ paidOut, onTakeBack }: { paidOut: PaidOut; onTakeBack: (pay
         {/* The fourth place this line was written by hand, and the one nobody had photographed: a cheque number here can still break across two lines at its own hyphen, which is no better than the two characters the payment list was cutting it to. */}
         <SaidUnderneath pieces={[SAID[paidOut.method], asDayHeWrites(paidOut.day), paidOut.reference]} />
         <WayOut onClick={takeBack} busy={saving}>
-          {saving ? 'Taking it back…' : 'Take it back'}
+          {saving ? 'Removing…' : 'Remove'}
         </WayOut>
       </span>
       {refusal === null ? null : (

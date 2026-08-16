@@ -25,7 +25,7 @@ export function BankAccounts({
 }) {
   return (
     // In a `Page` like every other screen a route draws. Without it this sat flush against the left edge of a phone, and the title is what the menu row that reaches it says rather than a second name for the same place.
-    <Page title="Which account">
+    <Page title="Account">
       <p className="text-muted-foreground max-w-prose text-sm">
         Only the last four figures are ever kept. The whole number never leaves this device.
       </p>
@@ -48,10 +48,7 @@ export function BankAccounts({
           None yet. Put one in and a cheque can say which account it left.
         </p>
       ) : (
-        <ul
-          aria-label="Accounts money leaves"
-          className="border-border divide-hairline flex flex-col divide-y rounded-md border"
-        >
+        <ul aria-label="Accounts" className="border-border divide-hairline flex flex-col divide-y rounded-md border">
           {accounts.map((account) => (
             <OneAccount key={account._id} account={account} onTakeOff={onTakeOff} />
           ))}
@@ -134,11 +131,7 @@ function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string
   return (
     <Form className="gap-4" freshAfter={added}>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="What you call it"
-          hint="The bank, then its last four figures."
-          problem={whatIsWrong(bankAccountLabel, label)}
-        >
+        <Field label="Name" hint="The bank, then its last four figures." problem={whatIsWrong(bankAccountLabel, label)}>
           <Line
             value={label}
             onChange={(event) => {
@@ -146,12 +139,12 @@ function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string
             }}
             autoComplete="off"
             placeholder="Bank 0000"
-            aria-label="What you call it"
+            aria-label="Name"
           />
         </Field>
 
         <Field
-          label="The account number"
+          label="Account number"
           hint="Only the last four figures leave this device."
           problem={whatIsWrong(lastFourOf, number)}
         >
@@ -162,7 +155,7 @@ function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string
             }}
             inputMode="numeric"
             autoComplete="off"
-            aria-label="The account number"
+            aria-label="Account number"
           />
         </Field>
       </div>
@@ -175,7 +168,7 @@ function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string
 
       <div>
         <Button onClick={add} busy={saving} className="py-2 text-sm">
-          Put the account in
+          Add account
         </Button>
       </div>
     </Form>

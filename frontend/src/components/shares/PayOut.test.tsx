@@ -58,12 +58,12 @@ describe('writing down what has gone back to a partner', () => {
     const user = userEvent.setup()
     const { onPayOut } = renderWith()
 
-    await pick(user, 'Who it went to', 'The one who came in later')
-    await chooseTheDay(user, 'Which day', '2026-08-01')
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '150000' } })
+    await pick(user, 'Paid to', 'The one who came in later')
+    await chooseTheDay(user, 'Date', '2026-08-01')
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '150000' } })
     fireEvent.change(screen.getByLabelText('Cheque number'), { target: { value: '882200' } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       // A list of one: a payout that went one way is one row, and one split between two is two.
@@ -91,12 +91,12 @@ describe('writing down what has gone back to a partner', () => {
       ],
     })
 
-    await user.click(screen.getByRole('combobox', { name: 'Who it went to' }))
+    await user.click(screen.getByRole('combobox', { name: 'Paid to' }))
     const both = await screen.findAllByRole('option', { name: 'Muhammad' })
     await user.click(both[1])
 
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '10000' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '10000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       // One way of paying is one row, and it is the first of the list a payout is sent as now.
@@ -110,16 +110,16 @@ describe('writing down what has gone back to a partner', () => {
 
     // Cash asks nothing further; a transfer has to have come out of somewhere.
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
-    expect(screen.queryByRole('combobox', { name: 'Which account it left' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Account it left' })).toBeNull()
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
 
     fireEvent.click(screen.getByRole('radio', { name: 'Transfer' }))
 
-    await pick(user, 'Who it went to', 'The one who started it')
-    await pick(user, 'Which account it left', 'Bank 1111')
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '5000' } })
+    await pick(user, 'Paid to', 'The one who started it')
+    await pick(user, 'Account it left', 'Bank 1111')
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '5000' } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onPayOut.mock.calls[0]?.[0][0]).toMatchObject({
@@ -135,7 +135,7 @@ describe('writing down what has gone back to a partner', () => {
     renderWith({ accounts: undefined })
     fireEvent.click(screen.getByRole('radio', { name: 'Transfer' }))
 
-    expect(screen.getByRole('combobox', { name: 'Which account it left' }).getAttribute('placeholder')).toBe(
+    expect(screen.getByRole('combobox', { name: 'Account it left' }).getAttribute('placeholder')).toBe(
       'Still getting the accounts…'
     )
 
@@ -143,7 +143,7 @@ describe('writing down what has gone back to a partner', () => {
     renderWith({ accounts: [] })
     fireEvent.click(screen.getByRole('radio', { name: 'Transfer' }))
 
-    expect(screen.getByRole('combobox', { name: 'Which account it left' }).getAttribute('placeholder')).toBe(
+    expect(screen.getByRole('combobox', { name: 'Account it left' }).getAttribute('placeholder')).toBe(
       'No accounts written down yet'
     )
   })
@@ -154,8 +154,9 @@ describe('writing down what has gone back to a partner', () => {
     const { onAddAccount } = renderWith({ accounts: [] })
 
     await user.click(screen.getByRole('radio', { name: 'Transfer' }))
-    await useTheName(user, 'Which account it left', 'Bank 3311')
+    await useTheName(user, 'Account it left', 'Bank 3311')
     await user.type(screen.getByLabelText('The account number for Bank 3311'), '3311')
+    // Named as the picker still names it. Adding an account from inside the control lives in `components/form/`, which is the other half of this rename -- so this asks for the label that is there today and moves when that half lands.
     await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
 
     expect(onAddAccount).toHaveBeenCalledWith('Bank 3311', '3311')
@@ -164,8 +165,8 @@ describe('writing down what has gone back to a partner', () => {
     renderWith({ accounts: undefined })
 
     await user.click(screen.getByRole('radio', { name: 'Transfer' }))
-    await user.click(screen.getByRole('combobox', { name: 'Which account it left' }))
-    await user.type(screen.getByRole('combobox', { name: 'Which account it left' }), 'Bank 3311')
+    await user.click(screen.getByRole('combobox', { name: 'Account it left' }))
+    await user.type(screen.getByRole('combobox', { name: 'Account it left' }), 'Bank 3311')
 
     expect(screen.queryByRole('button', { name: /^Use/ })).toBeNull()
   })
@@ -175,18 +176,16 @@ describe('writing down what has gone back to a partner', () => {
     const user = userEvent.setup()
     renderWith()
 
-    await pick(user, 'Who it went to', 'The one who started it')
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '5000' } })
+    await pick(user, 'Paid to', 'The one who started it')
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '5000' } })
     fireEvent.change(screen.getByLabelText('Cheque number'), { target: { value: '774412' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
-      expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
+      expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('')
     })
     expect(screen.getByLabelText<HTMLInputElement>('Cheque number').value).toBe('')
-    expect(screen.getByRole('combobox', { name: 'Who it went to' }).getAttribute('value')).toBe(
-      'The one who started it'
-    )
+    expect(screen.getByRole('combobox', { name: 'Paid to' }).getAttribute('value')).toBe('The one who started it')
   })
 
   it('leaves what was typed exactly where it was when the server refuses it', async () => {
@@ -196,20 +195,20 @@ describe('writing down what has gone back to a partner', () => {
 
     renderWith({ onPayOut: refused })
 
-    await pick(user, 'Who it went to', 'The one who started it')
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '5000' } })
+    await pick(user, 'Paid to', 'The one who started it')
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '5000' } })
     fireEvent.change(screen.getByLabelText('Cheque number'), { target: { value: '774413' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'That day is before the house started.')
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('5,000')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('5,000')
     expect(screen.getByLabelText<HTMLInputElement>('Cheque number').value).toBe('774413')
   })
 
   it('offers nobody to pay on a house nobody has a share of', () => {
     renderWith({ partners: [] })
 
-    expect(screen.queryByRole('button', { name: 'Put it in' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     expect(screen.getByText(/Nobody has a share of this house yet/)).toBeTruthy()
   })
 })
@@ -238,7 +237,7 @@ describe('what has already gone back to them', () => {
     })
 
     const rows = screen.getAllByRole('listitem')
-    fireEvent.click(within(rows[1]).getByRole('button', { name: 'Take it back' }))
+    fireEvent.click(within(rows[1]).getByRole('button', { name: 'Remove' }))
 
     await waitFor(() => {
       expect(onTakeBack).toHaveBeenCalledWith('o2')
@@ -249,7 +248,7 @@ describe('what has already gone back to them', () => {
     const refused = vi.fn(() => Promise.reject(new ConvexError('That payment out is not on this house.')))
     renderWith({ onTakeBack: refused })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take it back' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
 
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'That payment out is not on this house.')
   })

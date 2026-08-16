@@ -33,6 +33,8 @@ import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fix
 
 // Every screen a route draws whole, with invented figures, so somebody can look at one without signing in.
 
+// What each screen proves is the words that screen really shows, so a marker here is a claim about somebody else's file. Twelve of these draw components in the other half of the vocabulary rename -- `daySheet/`, `moneyIn/`, `site/`, `form/` -- and their markers say what those screens say **today**. They move in that half's change, in the same commit as the label they name, or this gallery photographs a screen it has already renamed in its head.
+
 // The list is what the gallery is: a screen missing from it is a screen nobody looks at, and a gallery of eleven looks exactly like a gallery of twelve. `everyScreenIsHere.test.ts` is what stops that, and it reads this file.
 
 /** A screen, named the way somebody would ask for it. */
@@ -94,7 +96,7 @@ export const ON_SHOW: Array<OnShow> = [
     at: '/dashboard',
     name: 'Dashboard',
     where: 'the first row of the nav',
-    proves: 'Owed right now',
+    proves: 'Outstanding',
     // Every figure below is a different number on purpose. Two that happen to match make a wiring bug look like a working screen -- a tile reading the wrong field, a house's column drawn from the total -- and this has been caught twice already in fixtures that were not this careful.
     draw: () => (
       <Dashboard
@@ -213,7 +215,7 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'extra-work',
     at: '/sites/$siteId',
-    name: 'Work outside the contract',
+    name: 'Extra work',
     where: 'a house built for a client, down the screen',
     partOf: 'the house screen',
     proves: 'Work outside the contract',
@@ -294,7 +296,7 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'day-sheet',
     at: '/sites/$siteId/day',
-    name: 'What went out today',
+    name: 'Expenses',
     where: 'a house, then the day sheet',
     // Not `In this sitting`, which is the first thing that came to mind and is `hidden lg:block`. jsdom applies no CSS, so it passed there and the browser found it thirty-four times and never visible -- which is the gallery earning its keep before it had taken a single picture.
     proves: 'Add another',
@@ -317,7 +319,7 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'coming-in',
     at: '/sites/$siteId/coming-in',
-    name: 'Money coming in',
+    name: 'Invested',
     where: 'a house, then money coming in',
     proves: 'Money coming in',
     draw: () => (
@@ -347,9 +349,9 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'shares',
     at: '/sites/$siteId/shares',
-    name: 'What each partner takes',
+    name: 'Partner shares',
     where: 'a house, then what each partner takes',
-    proves: 'Money gone back to them',
+    proves: 'Paid out',
     // The one screen drawn as the route composes it rather than on its own: `PayOut` reaches it through `AgreeShares`'s `beneath`, and a gallery drawing the two side by side would look right with the slot deleted.
     draw: () => {
       const positions = [
@@ -541,12 +543,12 @@ export const ON_SHOW: Array<OnShow> = [
           },
           {
             to: '/more/which-account',
-            name: 'Which account',
+            name: 'Account',
             what: 'The accounts cheques and transfers leave.',
             now: `${String(BANK.length)} of them`,
           },
           { to: '/more/who-can-sign-in', name: 'Who can sign in', what: 'Who may open the ledger.', now: '2 waiting' },
-          { to: '/more/how-it-looks', name: 'How it looks', what: 'Light or dark, or follow the phone.', now: 'Auto' },
+          { to: '/more/how-it-looks', name: 'Appearance', what: 'Light or dark, or follow the phone.', now: 'Auto' },
         ]}
       />
     ),
@@ -556,13 +558,13 @@ export const ON_SHOW: Array<OnShow> = [
     at: '/more/what-for',
     name: 'What money is spent on',
     where: 'More, then what money is spent on',
-    proves: 'What for',
+    proves: 'Trade',
     draw: () => <Trades trades={TRADES} onAdd={nothing} onEdit={nothing} onTakeOff={nothing} />,
   },
   {
     slug: 'which-account',
     at: '/more/which-account',
-    name: 'Which account',
+    name: 'Account',
     where: 'More, then which account',
     // The heading it used to prove itself by was an `<h2>` this screen wrote instead of rendering a `Page`. It has a real title now, so the words that are its alone are the promise underneath it.
     proves: 'Only the last four figures are ever kept',
@@ -652,7 +654,7 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'who-is-on-this-house',
     at: '/sites/$siteId',
-    name: 'People on this house',
+    name: 'People',
     where: 'a house, down the screen',
     partOf: 'the house screen',
     proves: 'People on this house',
@@ -712,10 +714,10 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'what-each-partner-is-owed',
     at: '/sites/$siteId',
-    name: 'What each partner is owed',
+    name: 'Owed to partners',
     where: 'a house, down the screen',
     partOf: 'the house screen',
-    proves: 'What each partner is owed',
+    proves: 'Owed to partners',
     // A partner who has had everything shows `due` and `paid` as one figure, because that is what a zero balance is. One call used twice rather than two that agree by hand: the equality is the point, and it should survive somebody changing what he is owed.
     draw: () => {
       const dueToTheOneWhoCameLater = paisa(1_750_000)
@@ -826,9 +828,9 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'how-it-looks',
     at: '/more/how-it-looks',
-    name: 'How it looks',
+    name: 'Appearance',
     where: 'More, then how it looks',
-    proves: 'How it looks',
+    proves: 'Appearance',
     draw: () => <HowItLooks />,
   },
   {
@@ -871,9 +873,9 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'Putting a house away',
     where: 'a house, then changing it, at the foot of the form',
     partOf: 'the house screen',
-    proves: 'Yes, put it away',
+    proves: 'Yes, archive',
     // Two taps in and at the bottom of a form longer than a phone, which is the whole reason it is photographed rather than reasoned about: the sentence above it says what is kept, and a picture is the only thing that says whether he can read it without scrolling.
-    tapFirst: ['Change this house', 'Put this house away'],
+    tapFirst: ['Edit house', 'Archive'],
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <ChangeTheHouse

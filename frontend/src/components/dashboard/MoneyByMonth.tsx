@@ -10,12 +10,12 @@ import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartToo
 // The two are never stacked into one bar. A single bar holding both says a house is doing well the moment somebody funds it, which is the mistake the whole profit split is built to avoid.
 export type Month = { month: string; ownMoneyPaisa: number; broughtInPaisa: number }
 
-// Both of these are money coming in. `ownMoney` was brass, which is the colour this app uses for money going out -- so half the bars on a chart headed `What came in` were painted as money leaving, on the screen he opens first.
+// Both of these are money coming in. `ownMoney` was brass, which is the colour this app uses for money going out -- so half the bars on a chart headed `Invested` were painted as money leaving, on the screen he opens first.
 
 // The difference between them is not a direction, so it is not carried by a second colour. It is the same green at 45% over the page, which is 29.6 apart from the solid one by CIEDE2000 -- as far apart as brass and green are, which is the pair this app already tells apart. Read from the config by the bars and by the legend alike, so the swatch cannot drift from what it labels.
 export const HOW_IT_IS_DRAWN = {
   broughtIn: { label: 'Brought in', color: 'var(--green)' },
-  ownMoney: { label: 'Your own money', color: 'color-mix(in srgb, var(--green) 45%, var(--ground))' },
+  ownMoney: { label: 'Own funds', color: 'color-mix(in srgb, var(--green) 45%, var(--ground))' },
 } satisfies ChartConfig
 
 /** `2026-04` said the way somebody says it, without building a date to find out. */
@@ -32,6 +32,9 @@ export function asAMonth(month: string): string {
   return `${said[which - 1]} ${year.slice(2)}`
 }
 
+// `Invested by month` rather than `Invested`, which the tile above already says. Both came out of one row of the rename -- `Come in` and `What came in` were different enough to tell apart and `Invested` twice is not -- and they are not the same figure: the tile is everything that has come in, this is that split by month and by where it came from.
+
+// Found in the picture rather than by a test. Nothing asserts two headings on one screen are different, and both are correct on their own.
 export function MoneyByMonth({ months }: { months: Array<Month> }) {
   if (months.length === 0) {
     return null
@@ -45,7 +48,7 @@ export function MoneyByMonth({ months }: { months: Array<Month> }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">What came in</h2>
+      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Invested by month</h2>
 
       <ChartContainer config={HOW_IT_IS_DRAWN} className="h-56 w-full">
         <BarChart accessibilityLayer data={drawn}>

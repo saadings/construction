@@ -61,18 +61,18 @@ function Everything({ what }: { what: WhatIsHappening }) {
   return (
     <div className="flex flex-col gap-8">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Tile label="Owed right now" paisa={what.owed.payablePaisa} tone="text-green">
+        <Tile label="Outstanding" paisa={what.owed.payablePaisa} tone="text-green">
           {/* Never netted into the figure above it. An advance held by the tile man is not money available to pay the steel man. */}
           {what.owed.advancedPaisa === 0
             ? 'Nobody is holding an advance.'
             : `${formatPaisa(what.owed.advancedPaisa)} is held in advance, which is not money to pay anybody with.`}
         </Tile>
 
-        <Tile label="Gone out" paisa={what.goneOutPaisa} tone="text-brass">
+        <Tile label="Expenses" paisa={what.goneOutPaisa} tone="text-brass">
           Across every house, everything not taken back out.
         </Tile>
 
-        <Tile label="Come in" paisa={what.comeIn.receivedPaisa} tone="text-green">
+        <Tile label="Invested" paisa={what.comeIn.receivedPaisa} tone="text-green">
           {/* The line I would not let a reviewer cut. Without it the biggest figure on the screen reads as profit. */}
           {what.comeIn.ownMoneyPaisa === 0
             ? 'None of it is your own money.'
@@ -101,7 +101,7 @@ function Tile({ label, paisa, tone, children }: { label: string; paisa: number; 
 function Houses({ houses }: { houses: WhatIsHappening['houses'] }) {
   return (
     <section className="flex flex-col gap-3">
-      <Heading>The houses</Heading>
+      <Heading>Sites</Heading>
 
       {houses.length === 0 ? (
         <p className="text-muted-foreground">No houses yet.</p>
@@ -120,10 +120,10 @@ function Houses({ houses }: { houses: WhatIsHappening['houses'] }) {
                 Stage
               </TableHead>
               <TableHead className="text-faint py-2 pr-4 text-right text-[0.6875rem] tracking-[0.06em] uppercase">
-                Gone out
+                Expenses
               </TableHead>
               <TableHead className="text-faint py-2 text-right text-[0.6875rem] tracking-[0.06em] uppercase">
-                Come in
+                Invested
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -169,10 +169,10 @@ function NothingYet({ houses }: { houses: number }) {
 
       <div className="flex flex-wrap gap-3">
         <Link to="/" className="bg-primary text-primary-foreground rounded-md px-5 py-3 font-medium">
-          {houses === 0 ? 'Start a house' : 'Go to the houses'}
+          {houses === 0 ? 'Start a house' : 'Back to sites'}
         </Link>
         <Link to="/people" className="border-border text-foreground rounded-md border px-5 py-3 font-medium">
-          Put the people in
+          Add people
         </Link>
       </div>
     </div>

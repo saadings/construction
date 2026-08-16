@@ -36,11 +36,11 @@ export function Trades({
 
   return (
     <Page
-      title="What for"
+      title="Trade"
       beside={
         adding ? null : (
           <Button className="py-2 text-sm" onClick={() => setAdding(true)}>
-            Add one
+            Add
           </Button>
         )
       }
@@ -172,7 +172,7 @@ function OneTrade({
 
   return (
     <li className="flex flex-col gap-3 py-4">
-      <Field label="What it is" problem={whatIsWrong(tradeName, name)}>
+      <Field label="Description" problem={whatIsWrong(tradeName, name)}>
         <Line
           value={name}
           onChange={(event) => {
@@ -201,7 +201,7 @@ function OneTrade({
           className="py-2 text-sm"
           onClick={() => send(async () => await onEdit(trade._id, { name, countsAsBuildingCost: building }))}
         >
-          Save it
+          Save
         </Button>
         <WayOut
           onClick={() => {
@@ -210,11 +210,11 @@ function OneTrade({
             setChanging(false)
           }}
         >
-          Never mind
+          Cancel
         </WayOut>
         {/* Hidden, never deleted: payments point at a trade forever, and one that vanishes turns spent money into money spent on nothing. */}
         <Button look="removing" className="ml-auto" onClick={() => send(async () => await onTakeOff(trade._id))}>
-          Take it off the list
+          Remove
         </Button>
       </div>
     </li>
@@ -243,7 +243,7 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
 
   return (
     <div className="border-border flex w-full max-w-2xl flex-col gap-4 rounded-md border p-4">
-      <Field label="Something else it is spent on" problem={whatIsWrong(tradeName, name)}>
+      <Field label="Other" problem={whatIsWrong(tradeName, name)}>
         <Line
           value={name}
           onChange={(event) => {
@@ -251,11 +251,11 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
           }}
           autoComplete="off"
           placeholder="Scaffolding"
-          aria-label="Something else it is spent on"
+          aria-label="Other"
         />
       </Field>
 
-      <WhatItIsFor building={building} onChange={setBuilding} label="Whether it is part of what the house cost" />
+      <WhatItIsFor building={building} onChange={setBuilding} label="Cost type" />
 
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
@@ -265,9 +265,9 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
 
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={add} busy={saving} className="py-2 text-sm">
-          Put it on the list
+          Add
         </Button>
-        <WayOut onClick={onDone}>Never mind</WayOut>
+        <WayOut onClick={onDone}>Cancel</WayOut>
       </div>
     </div>
   )

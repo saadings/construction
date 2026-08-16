@@ -41,7 +41,7 @@ function OneHouse() {
       <Page title="Nothing to open here">
         <p className="text-muted-foreground max-w-prose">This house may have been put away.</p>
         <Link to="/" className="text-brass font-medium">
-          Back to the houses
+          Back to sites
         </Link>
       </Page>
     )
@@ -59,14 +59,14 @@ function OneHouse() {
             params={{ siteId }}
             className="border-border text-foreground rounded-md border px-4 py-2 text-sm font-medium"
           >
-            Money coming in
+            Invested
           </Link>
           <Link
             to="/sites/$siteId/day"
             params={{ siteId }}
             className="bg-brass text-background rounded-md px-4 py-2 text-sm font-medium"
           >
-            Put in a day
+            Date
           </Link>
         </span>
       }
@@ -303,7 +303,7 @@ function WhatThePartnersAreOwed({ siteId }: { siteId: Id<'sites'> }) {
       beneath={
         <p className="text-sm">
           <Link to="/sites/$siteId/shares" params={{ siteId }} className="text-brass font-medium">
-            What has gone back to them
+            Paid out
           </Link>
         </p>
       }
