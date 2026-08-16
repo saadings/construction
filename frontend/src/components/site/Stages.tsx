@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { todayOnThisDevice } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 import { milestoneInput } from '~shared/validation/milestone'
@@ -41,27 +41,35 @@ export function Stages({
         </p>
       ) : (
         // The size is set back because shadcn's table is `text-sm`, and a stage and the figure against it are what this screen is for.
-        <Table className="min-w-[30rem] text-base">
+
+        // Three columns and no minimum width. Billing a stage used to sit in a fourth, and a date box beside a button is 289px however narrow the screen is: at 390 it took 289 of the table's 490 and starved the description to 38px, which wrapped `On signing` to one letter a line and made a 189px row out of one stage. A figure was never cut, so nothing here could see it.
+        <Table className="text-base">
           <TableBody>
             {stages.map((stage) => (
-              <TableRow key={stage._id}>
-                {/* A stage reads as it does on the contract and can run long, so it wraps rather than pushing the figure off the side. */}
-                <TableCell className="text-foreground py-2.5 pr-4 whitespace-normal">{stage.description}</TableCell>
-                <TableCell className="py-2.5 pr-4">
-                  <Figure className="text-muted-foreground">{stage.percent}%</Figure>
-                </TableCell>
-                {/* Green is money owed to him. */}
-                <TableCell className="py-2.5 pr-4 text-right">
-                  <Figure className="text-green">{formatPaisa(stage.amountPaisa)}</Figure>
-                </TableCell>
-                <TableCell className="py-2.5 text-right">
-                  {stage.billedOn === undefined ? (
-                    <BillIt stage={stage} onBill={onBill} />
-                  ) : (
-                    <span className="text-muted-foreground text-sm">Billed {stage.billedOn}</span>
-                  )}
-                </TableCell>
-              </TableRow>
+              <Fragment key={stage._id}>
+                <TableRow className="border-b-0">
+                  {/* A stage reads as it does on the contract and can run long, so it wraps rather than pushing the figure off the side. */}
+                  <TableCell className="text-foreground py-2.5 pr-4 whitespace-normal">{stage.description}</TableCell>
+                  <TableCell className="py-2.5 pr-4">
+                    <Figure className="text-muted-foreground">{stage.percent}%</Figure>
+                  </TableCell>
+                  {/* Green is money owed to him. */}
+                  <TableCell className="py-2.5 text-right">
+                    <Figure className="text-green">{formatPaisa(stage.amountPaisa)}</Figure>
+                  </TableCell>
+                </TableRow>
+
+                {/* Under the stage rather than beside it, at every width and not only on a phone: one instance of a control that holds a typed date and a refusal, where drawing it twice behind a breakpoint would give a person two of them with different state in each. */}
+                <TableRow>
+                  <TableCell colSpan={3} className="pt-0 pb-2.5 text-right whitespace-normal">
+                    {stage.billedOn === undefined ? (
+                      <BillIt stage={stage} onBill={onBill} />
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Billed {stage.billedOn}</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              </Fragment>
             ))}
           </TableBody>
         </Table>
