@@ -47,9 +47,9 @@ export type NewReceipt = {
 
 // What the money is, in the words somebody would say. The value is the schema's, so a reason cannot appear here without existing there.
 const WHY: Array<{ is: WhyItCame; said: string }> = [
-  { is: 'partnerMoney', said: 'A partner put it in' },
-  { is: 'clientPayment', said: 'The client paid' },
-  { is: 'sale', said: 'The house sold' },
+  { is: 'partnerMoney', said: 'Partner investment' },
+  { is: 'clientPayment', said: 'Client payment' },
+  { is: 'sale', said: 'Sale proceeds' },
 ]
 
 // The other half of the day sheet. Money going out has had a screen since the first day; this is what came in against it.
@@ -181,8 +181,8 @@ function Taking({
         }}
       />
 
-      {/* One under the other on a phone: `A partner put it in` in a third of 390px is three lines in a box meant for one. */}
-      <Choices label="Type" across={1} chosen={why} choices={WHY} onChoose={setWhy} />
+      {/* One under the other on a phone: `Partner investment` in a third of 390px is three lines in a box meant for one. */}
+      <Choices label="What kind" across={1} chosen={why} choices={WHY} onChoose={setWhy} />
 
       {/* Every way this one arrival came in. What is typed once -- the day, who it came from, what it is, the amount -- is shared, and each way carries its own cheque number or account. */}
       <HowItWasPaid
@@ -190,7 +190,7 @@ function Taking({
         parts={parts}
         total={amount}
         accounts={everyAccount.everything}
-        bankLabel="Which account it landed in"
+        bankLabel="Account it landed in"
         onChange={setParts}
         onAddAccount={async (label, lastFourDigits) => {
           const _id = await onAddAccount(label, lastFourDigits)

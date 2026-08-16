@@ -20,8 +20,9 @@ const THE_SENTENCE = '<NothingIsDeleted'
 // Its own sentence, longer and about a house rather than a row: *A house put away comes off the list. What was spent on it is still there, and every payment still points at it.* Held to that below rather than to its name, so an exemption cannot outlive the reason for it.
 const SAYS_IT_ITS_OWN_WAY = 'components/sites/ChangeTheHouse.tsx'
 
-// The one screen in the other half of this rename, which still says `Take it back` and gains the sentence in the change that renames it. Named rather than left to fail, because a guard that lands red is a to-do wearing a rule's clothes -- and named with the assertion below rather than on trust, so it cannot outlive the hour it is true for.
-const STILL_TO_CONVERT = ['components/shares/PayOut.tsx']
+// There was an exemption here, for one hour. `PayOut` was in the other half of this rename and had no sentence yet, so it was named -- with an assertion that it was genuinely still unconverted rather than on trust.
+
+// The other half landed and **that assertion is what took the exemption out**: it failed on the rebase, saying `PayOut is exempted and already says it`. Nobody had to remember. That is the whole of why an exemption may only be written where the sweep can measure its reason -- one that says *waiting on somebody else* has nothing to fail against and looks exactly as self-policing as this one did.
 
 function whatRemovesAStoredRow(): Array<{ path: string; source: string }> {
   return everyScreen()
@@ -33,30 +34,30 @@ describe('a control that removes something already entered', () => {
   it('says that nothing is deleted, on every screen that has one', () => {
     const silent = whatRemovesAStoredRow()
       .filter(({ path }) => path !== SAYS_IT_ITS_OWN_WAY)
-      .filter(({ path }) => !STILL_TO_CONVERT.includes(path))
       .filter(({ source }) => !source.includes(THE_SENTENCE))
       .map(({ path }) => `${path}: removes a stored row and never says the record is kept`)
 
     expect(silent).toEqual([])
   })
 
-  it('still names what is left, so the exemption cannot outlive it', () => {
-    // The other end, and the reason this file may carry an exemption at all. Each named screen has to still be un-converted: the moment it says the sentence, this fails and the name comes out. An exemption that has stopped being true reads exactly like one that is still needed.
-    for (const path of STILL_TO_CONVERT) {
-      const screen = whatRemovesAStoredRow().find((one) => one.path === path)
-
-      expect(screen, `${path} is exempted and is not a screen that removes a stored row`).toBeDefined()
-      expect(screen?.source.includes(THE_SENTENCE), `${path} is exempted and already says it`).toBe(false)
-    }
-  })
-
   it('is asked of the screens that really remove one', () => {
     // The floor. A pattern that stopped matching reports the same clean nothing as an app where every one of them says it -- and this rule was written the day the count of screens saying it went from one to six.
+
+    // Six exactly, not `greaterThan(4)`. The claim in both pull requests is a number, and a number is checked by asserting it: five drawing the shared sentence and `ChangeTheHouse` saying it its own longer way. A range would have passed on a branch where only five converted, which is the case this was written for.
     const removing = whatRemovesAStoredRow().map(({ path }) => path)
 
-    expect(removing.length).toBeGreaterThan(4)
-    expect(removing).toContain('components/shares/PayOut.tsx')
-    expect(removing).toContain('components/site/SpentByTrade.tsx')
+    expect(removing).toHaveLength(6)
+
+    for (const path of [
+      'components/shares/PayOut.tsx',
+      'components/site/SpentByTrade.tsx',
+      'components/site/WhoIsOnThisHouse.tsx',
+      'components/site/ExtraWork.tsx',
+      'components/moneyIn/ComingIn.tsx',
+      'components/sites/ChangeTheHouse.tsx',
+    ]) {
+      expect(removing, `${path} removes a stored row and this is not seeing it`).toContain(path)
+    }
   })
 
   it('does not ask it of a row nothing has stored yet', () => {

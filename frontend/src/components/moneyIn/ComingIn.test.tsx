@@ -78,7 +78,7 @@ describe('money coming in', () => {
 
     fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '2500000' } })
     await pick(user, 'Received from', 'The one it is built for')
-    fireEvent.click(screen.getByRole('radio', { name: 'The house sold' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Sale proceeds' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
@@ -95,16 +95,16 @@ describe('money coming in', () => {
     await screen.findByLabelText('Amount')
 
     // A transfer is what the form opens on, and it lands somewhere.
-    expect(screen.getByLabelText('Which account it landed in')).toBeTruthy()
+    expect(screen.getByLabelText('Account it landed in')).toBeTruthy()
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
 
     fireEvent.click(screen.getByRole('radio', { name: 'Cheque' }))
     expect(screen.getByLabelText('Cheque number')).toBeTruthy()
-    expect(screen.getByLabelText('Which account it landed in')).toBeTruthy()
+    expect(screen.getByLabelText('Account it landed in')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
-    expect(screen.queryByLabelText('Which account it landed in')).toBeNull()
+    expect(screen.queryByLabelText('Account it landed in')).toBeNull()
   })
 
   it('lets an account be added from the picker, on a screen that had no way to add one at all', async () => {
@@ -113,7 +113,7 @@ describe('money coming in', () => {
     const { onAddAccount } = renderWith()
 
     await user.click(await screen.findByRole('radio', { name: 'Transfer' }))
-    await useTheName(user, 'Which account it landed in', 'Bank 7788')
+    await useTheName(user, 'Account it landed in', 'Bank 7788')
     await user.type(screen.getByLabelText('The account number for Bank 7788'), '11112222337788')
     await user.click(screen.getByRole('button', { name: 'Add' }))
 
@@ -207,7 +207,7 @@ describe('money coming in', () => {
     await screen.findByLabelText('Amount')
 
     expect(screen.getByRole('radio', { name: 'Cheque' })).toBeTruthy()
-    expect(screen.getByRole('radio', { name: 'A partner put it in' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Partner investment' })).toBeTruthy()
   })
 
   it('says nothing technical anywhere on it', async () => {
