@@ -13,6 +13,7 @@
     "gallery": "cd frontend && vite --config vite.gallery.config.ts",
     "gallery:build": "cd frontend && vite build --config vite.gallery.config.ts",
     "shots": "tsx scripts/shots.ts",
+    "what-moved": "tsx scripts/whatMoved.ts",
     "lint:check": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsx scripts/generatedTypes.ts && tsc -b && tsc --project convex",

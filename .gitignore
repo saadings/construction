@@ -14,6 +14,8 @@ dist-ssr
 dist-gallery
 # The pictures taken of it. They travel as a CI artifact rather than in history: a binary that changes on every layout change is a repository nobody can clone quickly.
 shots
+# The same pictures kept from before a change, so `yarn what-moved` has something to compare against. Local and temporary by definition.
+shots-before
 *.local
 
 # Convex
