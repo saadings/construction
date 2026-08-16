@@ -27,10 +27,13 @@ function stubClerk(answers: (asked: AskedOfClerk) => { ok: boolean; status?: num
     asked.push(call)
 
     const answer = answers(call)
+
+    // `text` as well as `json`, because a refusal's body is now read rather than discarded -- and a real `Response` can only be read once, so the two are the same body reached two ways rather than two bodies.
     return Promise.resolve({
       ok: answer.ok,
       status: answer.status ?? (answer.ok ? 200 : 422),
       json: () => Promise.resolve(answer.json),
+      text: () => Promise.resolve(JSON.stringify(answer.json)),
     })
   })
 
@@ -116,8 +119,8 @@ describe('inviting somebody', () => {
     expect(asked).toEqual([])
   })
 
-  it('says one sentence when Clerk refuses, rather than passing its words on', async () => {
-    // Clerk's own words name fields and identifiers. They are for us, in the log, and never for him.
+  it('says what Clerk actually refused, in our words rather than theirs', async () => {
+    // This asserted the generic sentence until Nauman met it: he invited his first partner, Clerk said the address was already spoken for, and the app told him to try once more in a moment -- the one answer that could never work. The status and the code went to a log nobody watching a screen can read.
     const t = convexWithInvites()
     const signedIn = await anAccount(t)
     stubClerk(() => ({
@@ -129,8 +132,37 @@ describe('inviting somebody', () => {
 
     const refusal = await refusalFrom(signedIn.action(api.invites.actions.invite, { email: 'mason@example.com' }))
 
-    expect(refusal).toBe('That did not go through. Try once more in a moment.')
+    expect(refusal).toBe('That address has already been invited, or somebody is signed in with it already.')
+
+    // Clerk's own words still never reach a screen. They name fields and identifiers and quote the address back.
     expect(refusal).not.toMatch(/identifier|duplicate|record|422/i)
+  })
+
+  it('still says the one generic sentence for a refusal nothing has been taught to name', async () => {
+    // The other end. Naming some cases must not turn every unnamed one into a guess, and a mapping that answered confidently for everything would be worse than the sentence it replaced.
+    const t = convexWithInvites()
+    const signedIn = await anAccount(t)
+    stubClerk(() => ({ ok: false, status: 500, json: { errors: [{ code: 'nobody_has_seen_this' }] } }))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const refusal = await refusalFrom(signedIn.action(api.invites.actions.invite, { email: 'mason@example.com' }))
+
+    expect(refusal).toBe('That did not go through. Try once more in a moment.')
+  })
+
+  it('reaches the other two ways of asking Clerk, which share the same blindness', async () => {
+    // `whoIsWaiting` and `takeOff` go through the same helper, so the mapping is a property of asking Clerk rather than of inviting.
+    const t = convexWithInvites()
+    const signedIn = await anAccount(t)
+    stubClerk(() => ({ ok: false, status: 429, json: { errors: [{ code: 'rate_limit_exceeded' }] } }))
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    expect(await refusalFrom(signedIn.action(api.invites.actions.whoIsWaiting, {}))).toBe(
+      'Too many invitations just now. Try again in a few minutes.'
+    )
+    expect(await refusalFrom(signedIn.action(api.invites.actions.takeOff, { id: 'inv_1' }))).toBe(
+      'Too many invitations just now. Try again in a few minutes.'
+    )
   })
 
   it('says which of the two is wrong when the key is not there at all', async () => {

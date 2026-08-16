@@ -6,6 +6,16 @@ export const SAY_INVITE = {
   notAnEmail: 'That does not look like an email address.',
 } as const
 
+// What somebody is told when Clerk refuses. Here rather than beside the action, for the same reason as everything above it: the screen falls back to the last of these when nothing readable was thrown at all, so the two would otherwise be one sentence written twice and free to drift.
+
+// Clerk's own words never reach a screen. They are written for developers, they name fields and identifiers, and they quote the address back. Their body is evidence; these are the copy.
+export const SAY_CLERK = {
+  already: 'That address has already been invited, or somebody is signed in with it already.',
+  tooMany: 'Too many invitations just now. Try again in a few minutes.',
+  notSwitchedOn: 'Inviting is not switched on yet. Whoever set this up needs to finish it.',
+  unknown: 'That did not go through. Try once more in a moment.',
+} as const
+
 // Lowercased and trimmed, because an address typed with a capital is the same address and Clerk will not treat it as one.
 export const emailToInvite = z
   .string()
