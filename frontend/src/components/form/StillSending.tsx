@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useLongerThan } from '../../lib/longerThan'
 
 // What a phone with no signal does to this app, which is nothing anybody can see.
 
@@ -16,25 +16,7 @@ import { useEffect, useState } from 'react'
 const LONG_ENOUGH_TO_BE_WORTH_SAYING = 8_000
 
 export function useStillSending(busy: boolean, after: number = LONG_ENOUGH_TO_BE_WORTH_SAYING): boolean {
-  const [stuck, setStuck] = useState(false)
-
-  useEffect(() => {
-    if (!busy) {
-      setStuck(false)
-
-      return
-    }
-
-    const waiting = setTimeout(() => {
-      setStuck(true)
-    }, after)
-
-    return () => {
-      clearTimeout(waiting)
-    }
-  }, [busy, after])
-
-  return stuck
+  return useLongerThan(busy, after)
 }
 
 /** Said beside the button that is still sending, in the place a refusal would go. Nothing at all while a send is ordinary. */
