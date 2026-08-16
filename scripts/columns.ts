@@ -5,7 +5,9 @@ import { chromium } from 'playwright'
 
 import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnServer'
 
-// Whether a column of figures is a column, measured rather than described.
+// What the browser actually drew, measured rather than described. It began with one question -- whether a column of figures is a column -- and each one since was added the day something got past every check we had: a figure cut in half, a column squeezed to a letter a line, a trail pinned beside the heading that repeats it.
+
+// Four questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures.
 
 // `width.test.ts` asserts every figure goes through `<Figure>`, for the stated reason that it is what makes a column of amounts read as one. That guard passes, every figure is in the right face, and the grid moved the columns anyway. It is the one instrument here answering exactly the right question, truthfully, while the outcome it stands in for does not happen -- and nothing else in this repository could see the difference, because nothing else in it lays anything out.
 
@@ -26,6 +28,9 @@ const AT_LEAST_THIS_MANY_FIGURES = 100
 
 /** The same floor again. A selector that stopped finding cells reports the same clean nothing as an app where none is squeezed. */
 const AT_LEAST_THIS_MANY_CELLS = 100
+
+/** And once more for the trails. Only the screens with something above them draw one, so this is well under what a full sweep sees -- but a `data-slot` renamed under us would report every trail unpinned across an app whose trails it never found. */
+const AT_LEAST_THIS_MANY_TRAILS = 20
 
 // Handed to the browser as text rather than as a function, so this file stays a Node script with no DOM types in it -- the same reason the pictures are taken through the locator API. What comes back is checked below rather than trusted, because a string evaluated in a page can return anything at all.
 
@@ -128,11 +133,37 @@ const WHAT_IS_CRUSHED = `(() => {
   return { cells, crushed }
 })()`
 
+// The fourth question, and the one this file was extended for. The day sheet drew its trail inside its own sticky header, so `1-A, Phase 0` sat on the screen twice, thirty-four pixels apart, and stayed there through every scroll -- on the screen he uses most.
+
+// Two tests said the trail was present and a picture confirmed it, which was the right question asked twice; neither could say it was present twice. Measured here because that is what nothing else could see: a trail is navigation and belongs at the top of the content where it scrolls away, and a sticky header is for what somebody needs in front of them while typing.
+const WHAT_IS_PINNED = `(() => {
+  const pinned = []
+  let trails = 0
+
+  for (const trail of document.querySelectorAll('[data-slot="breadcrumb-list"]')) {
+    const box = trail.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    trails += 1
+
+    for (let above = trail.parentElement; above !== null; above = above.parentElement) {
+      const how = getComputedStyle(above).position
+      if (how !== 'sticky' && how !== 'fixed') continue
+
+      pinned.push({ said: trail.textContent.trim().slice(0, 40), how, held: above.className.toString().slice(0, 60) })
+      break
+    }
+  }
+
+  return { trails, pinned }
+})()`
+
 type Moved = { cls: string; cell: number; xs: Array<number> }
 
 type Cut = { said: string; hidden: number; width: number }
 
 type Crushed = { said: string; wide: number; tall: number }
+
+type Pinned = { said: string; how: string; held: string }
 
 /** What came back from the page, checked rather than assumed: a bad shape here would read as a screen with nothing wrong on it. */
 function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
@@ -218,6 +249,34 @@ function whatIsCrushed(said: unknown): { cells: number; crushed: Array<Crushed> 
   }
 }
 
+/** The fourth measurement, checked the same way and for the same reason. */
+function whatIsPinned(said: unknown): { trails: number; pinned: Array<Pinned> } {
+  if (typeof said !== 'object' || said === null || !('trails' in said) || !('pinned' in said)) {
+    throw new Error('The page answered something that is not a count of trails.')
+  }
+
+  const { trails, pinned } = said
+  if (typeof trails !== 'number' || !Array.isArray(pinned)) {
+    throw new Error('The page answered a count with no trails or no findings in it.')
+  }
+
+  return {
+    trails,
+    pinned: pinned.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('how' in one) || !('held' in one)) {
+        throw new Error('The page answered a pinned trail with nothing in it.')
+      }
+
+      const { said: text, how, held } = one
+      if (typeof text !== 'string' || typeof how !== 'string' || typeof held !== 'string') {
+        throw new Error('The page answered a pinned trail of the wrong shape.')
+      }
+
+      return { said: text, how, held }
+    }),
+  }
+}
+
 async function main(): Promise<void> {
   if (!existsSync(join(GALLERY, 'gallery.html'))) {
     throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
@@ -229,6 +288,7 @@ async function main(): Promise<void> {
   let rowsSeen = 0
   let figuresSeen = 0
   let cellsSeen = 0
+  let trailsSeen = 0
 
   try {
     const page = await browser.newPage()
@@ -273,6 +333,15 @@ async function main(): Promise<void> {
             `${screen.slug} at ${String(size.width)}: ${crushed.said} is squeezed into ${String(crushed.wide)}px and ${String(crushed.tall)}px tall`
           )
         }
+
+        const trails = whatIsPinned(await page.evaluate(WHAT_IS_PINNED))
+        trailsSeen += trails.trails
+
+        for (const pinned of trails.pinned) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: the trail \`${pinned.said}\` is held ${pinned.how} by ${pinned.held}, so it never scrolls away`
+          )
+        }
       }
     }
   } finally {
@@ -299,10 +368,16 @@ async function main(): Promise<void> {
     )
   }
 
+  if (trailsSeen < AT_LEAST_THIS_MANY_TRAILS) {
+    throw new Error(
+      `Only ${String(trailsSeen)} trails were measured across every screen, which is too few to have looked.`
+    )
+  }
+
   if (wrong.length > 0) {
     console.error(`A column of figures does not read as one:\n\n${wrong.join('\n')}\n`)
     console.error(
-      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. A figure cut in half reads as a smaller figure rather than an incomplete one. And a column squeezed to a letter a line is a column that should have left the row — give a phone fewer columns rather than narrower ones.'
+      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. A figure cut in half reads as a smaller figure rather than an incomplete one. A column squeezed to a letter a line is a column that should have left the row — give a phone fewer columns rather than narrower ones. And a trail inside a sticky header is a screen saying where you are twice at once: navigation scrolls off, identity stays.'
     )
     process.exitCode = 1
 
@@ -310,7 +385,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut and nothing is squeezed, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures and ${String(cellsSeen)} cells at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed and no trail is pinned, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells and ${String(trailsSeen)} trails at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 

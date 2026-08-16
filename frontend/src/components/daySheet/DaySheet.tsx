@@ -121,12 +121,16 @@ export function DaySheet({
 
   return (
     <div className="flex flex-col">
+      {/* Asked for rather than inherited: this screen draws its own layout instead of sitting in a `Page`, because a sticky header over a form wants its padding inside each rather than around both. So the one thing `Page` would have given it has to be requested here, where forgetting it would be visible. */}
+
+      {/* Above the sticky header rather than inside it, which is the one thing that makes the heading below not a duplicate. Put in with the header it was pinned too, so `1-A, Phase 0` sat on the screen twice, thirty-three pixels apart, permanently -- on the screen he uses most. A trail is navigation and scrolls away like it does on every other screen; the header is what somebody needs in front of them while typing, so the house, the day and the running total stay. */}
+      <div className="px-5 pt-4 sm:px-7 lg:px-9">
+        <Trail named={{ siteId: siteName }} />
+      </div>
+
       <header className="border-border bg-background/95 sticky top-0 z-10 border-b backdrop-blur-sm">
         <div className="flex flex-col gap-3 px-5 pt-4 pb-4 sm:px-7 lg:px-9">
-          {/* Asked for rather than inherited: this screen draws its own layout instead of sitting in a `Page`, because a sticky header over a form wants its padding inside each rather than around both. So the one thing `Page` would have given it has to be requested here, where forgetting it would be visible. */}
-          <Trail named={{ siteId: siteName }} />
-
-          {/* The house stays named here even though the trail above says it too. On the other screens that name is a subtitle under a real title and the trail makes it a duplicate; this screen has no `Page` and no title, so the house *is* the heading. Taking it out left the day sheet with nothing saying what it was. */}
+          {/* The house is the heading here: this screen has no `Page` and no title, so taking it out left nothing saying what the day sheet was. It is not a duplicate of the trail once the trail is not pinned beside it. */}
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
             {/* Named on the box rather than beside it: this sits in the header of a sitting, where an upper-case question over it would be a second heading. */}
