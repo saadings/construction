@@ -2,6 +2,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { tapThrough } from '../testing/tapThrough'
 import { Gallery } from './Gallery'
 import { ON_SHOW } from './screens'
 
@@ -22,6 +23,9 @@ describe('every screen in the gallery', () => {
     for (const showing of ON_SHOW) {
       window.location.hash = showing.slug
       render(<Gallery />)
+
+      // What a folded screen shows is what it shows after the taps. Two screens here prove words that do not exist until a control has been tapped, and asking those at rest is asking them to be a screen nobody is ever on.
+      await tapThrough(showing.tapFirst, drawn())
 
       // Words that screen shows and no other does, so this is not satisfied by a gallery that answers every address with the first screen. Awaited, because the router matches before it draws, and a screen read too early is empty for a reason that has nothing to do with it.
 

@@ -2,6 +2,8 @@ import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 
+import type { Page } from 'playwright'
+
 // The built gallery, served to a browser. Written once because two scripts now want it: one takes the pictures, and one measures whether the columns line up in them.
 
 /** Where the gallery draws a screen, and what a picture is a picture of. */
@@ -96,15 +98,39 @@ export async function serveTheGallery(): Promise<{ at: string; stop: () => Promi
   }
 }
 
+/** A screen as the gallery describes itself: enough to find it, wait for it and unfold it. */
+export type ScreenItShows = { slug: string; proves: string; shownIn: string; tapFirst: Array<string> }
+
+// Every instrument here had the same blindness and each one had to be found separately: the camera, the two jsdom sweeps that render every screen, and the column measurements. Four harnesses waited for a screen at rest, and half the controls in this app are behind a tap.
+
+// So this is written once, here, where all three of the ones that drive a browser already come. The assumption was in the harness rather than in any guard, which is why it was copied rather than reasoned about.
+
+/** Wait for a screen to arrive and tap it open, so what is measured next is the state somebody is really standing in front of. */
+export async function unfoldIt(on: Page, screen: ScreenItShows): Promise<void> {
+  // What to wait for depends on which state is being asked about. A folded screen proves words that do not exist yet, and the button that unfolds it stops existing the moment it is pressed, so the wait before the taps is for the tap itself.
+  const waitingFor =
+    screen.tapFirst.length === 0
+      ? on.locator(screen.shownIn).getByText(screen.proves, { exact: false }).first()
+      : on.getByRole('button', { name: screen.tapFirst[0] }).first()
+
+  await waitingFor.waitFor({ timeout: 15_000 })
+
+  for (const tap of screen.tapFirst) {
+    // The first of them, because a way out sits on a row and a screen may draw several rows. Playwright matches part of an accessible name, which is what lets `Take out` find `Take out ₨26,50,000 paid to …`.
+    await on.getByRole('button', { name: tap }).first().click()
+    await on.waitForTimeout(50)
+  }
+}
+
 /** Every screen the gallery shows, read off the page rather than listed here: a list in a script drifts from the gallery silently. */
 export async function everyScreenItShows(page: {
   locator: (selector: string) => {
     count: () => Promise<number>
     nth: (at: number) => { getAttribute: (name: string) => Promise<string | null> }
   }
-}): Promise<Array<{ slug: string; proves: string; shownIn: string; tapFirst: string | null }>> {
+}): Promise<Array<ScreenItShows>> {
   const buttons = page.locator('[data-slug]')
-  const screens: Array<{ slug: string; proves: string; shownIn: string; tapFirst: string | null }> = []
+  const screens: Array<ScreenItShows> = []
 
   for (let at = 0; at < (await buttons.count()); at += 1) {
     const button = buttons.nth(at)
@@ -114,8 +140,8 @@ export async function everyScreenItShows(page: {
       proves: (await button.getAttribute('data-proves')) ?? '',
       // Where the screen really drew, for the screens that leave the element the gallery draws them into. Almost none do, so the element is the answer unless the screen says otherwise.
       shownIn: (await button.getAttribute('data-shown-in')) ?? THE_SCREEN,
-      // What somebody taps to see it, for the screens that fold themselves away until asked. `null` is every other screen.
-      tapFirst: await button.getAttribute('data-tap-first'),
+      // What somebody taps to see it, for the screens that fold themselves away until asked. Empty for every other screen; more than one for a way out that lives behind an are-you-sure.
+      tapFirst: ((await button.getAttribute('data-tap-first')) ?? '').split('|').filter((tap) => tap !== ''),
     })
   }
 

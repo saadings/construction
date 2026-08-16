@@ -3,6 +3,9 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type * as Money from '~shared/money'
 
+import { tapThrough } from '../testing/tapThrough'
+import type { OnShow } from './screens'
+
 // Two figures on one screen reading the same string are two ways for an assertion to match the wrong one. It has already happened twice here: `CLIENT_PAID − PAID_TO_SUPPLIER` came out equal to `PARTNER_PUT_IN` and a cross-screen test passed for the wrong reason, and on `Owed` the advance held against a supplier renders `58,000` while the kitchen people's outstanding renders `58,000`.
 
 // Both times the figures were distinct as chosen and collided as the app derived them. "One distinctive figure per idea" was written into a fixture file and broken by arithmetic three lines below it, which is what a rule with no instrument does.
@@ -41,14 +44,17 @@ function figuresOnScreen(): Array<string> {
 }
 
 // The two screens whose subject is a wait say what they prove after eight and twelve seconds. Asked for in a second, they answer with the same nothing they are drawn to show.
-async function draw(slug: string, proves: string, nudge: number, provesAfter = 0): Promise<Array<string>> {
-  window.location.hash = slug
+async function draw(showing: OnShow, nudge: number): Promise<Array<string>> {
+  window.location.hash = showing.slug
   asked = 0
   nudgeAt = nudge
 
   const { Gallery } = await import('./Gallery')
   render(<Gallery />)
-  await screen.findAllByText(proves, { exact: false }, { timeout: provesAfter + 4_000 })
+
+  // Folded screens are read after the taps that unfold them, so the figures counted here are the ones somebody is looking at. A figure that only appears behind a tap was never nudged, and two of them could have collided in front of him unmeasured.
+  await tapThrough(showing.tapFirst, screen.getByTestId('the-screen'))
+  await screen.findAllByText(showing.proves, { exact: false }, { timeout: (showing.provesAfter ?? 0) + 4_000 })
 
   const figures = figuresOnScreen()
   cleanup()
@@ -104,13 +110,13 @@ describe('what a figure on a gallery screen means', () => {
     let figuresSeen = 0
 
     for (const showing of ON_SHOW) {
-      const before = await draw(showing.slug, showing.proves, -1, showing.provesAfter)
+      const before = await draw(showing, -1)
       figuresSeen += before.length
       if (before.length < 2) continue
 
       const rounds: Array<Array<string>> = []
       for (let nudge = 0; nudge < asked; nudge += 1) {
-        rounds.push(await draw(showing.slug, showing.proves, nudge, showing.provesAfter))
+        rounds.push(await draw(showing, nudge))
       }
 
       for (const collision of whatMeansTwoThings(before, rounds)) {

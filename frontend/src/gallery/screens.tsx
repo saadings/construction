@@ -24,6 +24,7 @@ import { ExtraWork } from '../components/site/ExtraWork'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 import { Stages } from '../components/site/Stages'
 import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
+import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import { HouseDetails } from '../components/sites/HouseDetails'
 import { SitesList } from '../components/sites/SitesList'
 import { SidebarProvider, useSidebar } from '../components/ui/sidebar'
@@ -47,8 +48,8 @@ export type OnShow = {
   partOf?: string
   /** How long the words a screen proves take to arrive, for the two screens whose whole subject is a wait. A send that has not come back speaks after eight seconds and a reading that has not arrived after twelve -- the harness waited a second, which is the same "nothing there" this pair is about. */
   provesAfter?: number
-  /** What to tap before the picture is taken, when a screen keeps itself folded up until somebody asks for it. `Change it` is a button until it is pressed, and a photograph of a button is not a photograph of a screen -- the harness's own floor said so, in the words "that is not a short screen, it is a screen that did not draw". */
-  tapFirst?: string
+  /** What to tap before the picture is taken, in order, for a screen that keeps itself folded up until somebody asks. A list, because a destructive control lives two taps in -- a way out, then the are-you-sure behind it -- and every screen was photographed at rest, so that half of them had never been on the page while anything measured. */
+  tapFirst?: Array<string>
   /** Where this screen's markup ends up, when it is not inside the element the gallery draws screens into. Below 768 the nav is a sheet, and Radix puts a sheet in a portal on `body` -- outside `[data-testid="the-screen"]` entirely. Nothing was wrong with the marker or the timing: the camera was looking inside an element the screen had left. */
   shownIn?: string
   /** Words this screen shows and no other does. A gallery that answered every address with the first screen would otherwise draw twelve pictures of one, and every one of them would look right. */
@@ -615,11 +616,12 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'change-the-contract',
     at: '/sites/$siteId',
-    tapFirst: 'Change it',
+    tapFirst: ['Change it'],
     name: 'Correcting what was agreed',
     where: 'a house with a contract, down the screen',
     partOf: 'the house screen',
-    proves: 'Change it',
+    // What it proves has to be true of the state it is photographed in. `Change it` is the button that opens this, and tapping it is the first thing the harness does -- so the marker was gone by the time anything looked for it, and the check that now asks whether the proof is in the picture is what said so.
+    proves: 'Put the measurement in',
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <ChangeTheContract
@@ -752,27 +754,47 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'a-send-that-has-not-come-back',
-    at: '/sites/$siteId/coming-in',
-    name: 'A send with no signal',
-    where: 'any screen, the moment the phone loses signal mid-send',
-    // The sentence itself, because it is the whole of what this screen is here to show. `shots` waits for what a screen proves, so the wait for it is the wait that was already there -- nothing in the harness had to learn about time.
+    at: '/sites/$siteId/day',
+    // The sentence itself, because it is the whole of what this screen is here to show. `shots` waits for what a screen proves, so the wait for it is the wait that was already there.
     proves: 'This has not gone in yet',
     provesAfter: 8_000,
-    // Two states of this app existed only in tests: a send that never comes back and a reading that never arrives. Convex holds both open rather than failing them, so what they look like is what nothing looks like -- which is exactly the pair a photograph settles and a test cannot.
-
-    // Drawn with `saving` held true rather than with a promise that never settles: the screen is written against that flag, so this is the same state and there is nothing pending for the harness to hang on.
+    name: 'A send with no signal',
+    where: 'any screen, the moment the phone loses signal mid-send',
+    // Drawn on the day sheet rather than on money coming in, and the reason is the picture rather than the state. Both screens hold the same sentence; on money coming in it sits at the foot of a form longer than a phone, so the photograph framed a form that could have been any screen while the thing it is named for sat 300px below the picture. The day sheet's bar is sticky, so what he sees is what this shows.
     draw: () => (
-      <ComingIn
+      <DaySheet
         siteName={THE_HOUSE}
-        received={[]}
-        people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))}
-        accounts={BANK.map((account) => ({ _id: account._id, label: account.label }))}
+        day={A_DAY}
+        onChangeDay={() => undefined}
+        trades={TRADES.map((trade) => ({ _id: trade._id as never, name: trade.name }))}
+        people={NOBODY.map((person) => ({ _id: person._id as never, name: person.name }))}
+        accounts={BANK.map((account) => ({ _id: account._id as never, label: account.label }))}
         saving
         refusal={null}
         onPutIn={nothingTrue}
-        onTakeBack={nothing}
-        onAddAccount={() => Promise.resolve('b9')}
+        onAddAccount={() => Promise.resolve('b1' as never)}
+        onAddTrade={() => Promise.resolve('t1' as never)}
       />
+    ),
+  },
+  {
+    slug: 'sure-you-want-to',
+    at: '/sites/$siteId',
+    name: 'Being asked if you are sure',
+    where: 'a house with a contract, two taps into changing it',
+    partOf: 'the house screen',
+    proves: 'Yes, cancel it',
+    // Two taps in, which is where every destructive control in this app lives and where nothing had ever photographed one. Every screen was drawn at rest, so the are-you-sure was never on the page while anything measured -- and the more destructive half of the controls is the half behind it.
+    tapFirst: ['Change it', 'Cancel this contract'],
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <ChangeTheContract
+          contract={{ priced: { how: 'ratePerSqft', ratePerSqftPaisa: paisa(2_400) }, agreedAreaSqft: 5_000 }}
+          onMeasure={nothing}
+          onRevise={nothing}
+          onCancel={nothing}
+        />
+      </Page>
     ),
   },
   {
@@ -792,5 +814,58 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'More, then how it looks',
     proves: 'How it looks',
     draw: () => <HowItLooks />,
+  },
+  {
+    slug: 'taking-a-payment-back-out',
+    at: '/sites/$siteId',
+    name: 'Taking a payment back out',
+    where: 'a house, a trade opened, then the way out on a payment',
+    partOf: 'the house screen',
+    proves: 'Yes, take it out',
+    // The same are-you-sure `WhoIsOnThisHouse` draws on a bill, word for word, so a picture of this row is a picture of that one. The label carries the figure and the name -- `Take out ₨26,50,000 paid to …` -- which is why what is tapped is part of a name rather than all of it.
+    tapFirst: ['Take out'],
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <SpentByTrade
+          byTrade={[{ tradeId: 't1', name: 'Civil labour', paisa: paisa(4_318_000) }]}
+          onOpen={() => undefined}
+          opened={{
+            tradeId: 't1',
+            went: [
+              {
+                _id: 'w1',
+                day: A_DAY,
+                amountPaisa: paisa(2_650_000),
+                paidToName: NOBODY[2].name,
+                method: 'cheque',
+                reference: '774312',
+              },
+            ],
+          }}
+          onTakeOut={nothingTrue}
+          takingOut={null}
+          refusal={null}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'putting-a-house-away',
+    at: '/sites/$siteId',
+    name: 'Putting a house away',
+    where: 'a house, then changing it, at the foot of the form',
+    partOf: 'the house screen',
+    proves: 'Yes, put it away',
+    // Two taps in and at the bottom of a form longer than a phone, which is the whole reason it is photographed rather than reasoned about: the sentence above it says what is kept, and a picture is the only thing that says whether he can read it without scrolling.
+    tapFirst: ['Change this house', 'Put this house away'],
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <ChangeTheHouse
+          house={{ name: THE_HOUSE, coveredAreaSqft: '5,000', stage: 'building', builtForAClient: true }}
+          onSave={nothing}
+          onPutAway={nothing}
+        />
+      </Page>
+    ),
   },
 ]

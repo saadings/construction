@@ -108,6 +108,61 @@ const NO_PICTURE_CAN_REACH: Record<string, string> = {
     'reads Convex itself -- `useQuery` for the contract, the stages and the extra work -- and the gallery must hold nothing that could reach a deployment. What it draws is on show one piece at a time.',
 }
 
+// The half of this app that nothing had ever drawn. Every screen was photographed at rest, and a destructive control lives two taps in: a way out, then an are-you-sure behind it. So the more dangerous half of every removing control had never been on a page while anything measured, and the first thing that tapped through one found a crash that was live in production.
+
+// Found by its second step, which this app says the same way everywhere: a button whose label begins `Yes,`. Four of them in the tree, three distinct -- a payment and a bill are removed by the same words, so a picture of one is a picture of both.
+
+const SAYS_YES = /(?:>|')(Yes,[^'<{\n]+)/g
+
+/** What a confirmation's own button says, wherever one is drawn. */
+export function everyAreYouSure(source: string): Array<string> {
+  return [...source.matchAll(SAYS_YES)].map((found) => found[1].trim())
+}
+
+/** The gallery's entries as text, one to a chunk, so what a screen proves can be read beside what it taps first. */
+function entriesInTheGallery(): Array<string> {
+  return SHOWN.split(/\n {2}\{\n/).slice(1)
+}
+
+describe('an are-you-sure', () => {
+  it('is photographed, every distinct one of them', () => {
+    // Not "at least one". A confirmation nobody has drawn is a confirmation nobody has read, and this app has already shipped a crash and an unreadable line behind that.
+    const unphotographed = [...new Set(everyScreen().flatMap(({ source }) => everyAreYouSure(source)))].filter(
+      (said) =>
+        !entriesInTheGallery().some((entry) => entry.includes(`proves: '${said}'`) && entry.includes('tapFirst'))
+    )
+
+    expect(unphotographed).toEqual([])
+  })
+
+  it('is found in the app rather than in an empty sweep', () => {
+    // The floor. A regex that stopped matching reports every one of nothing photographed, which is exactly what a clean gallery reports.
+    const found = everyScreen().flatMap(({ source }) => everyAreYouSure(source))
+
+    expect(found.length).toBeGreaterThan(3)
+    expect(found).toContain('Yes, cancel it')
+    expect(found).toContain('Yes, take it out')
+  })
+
+  it('would notice one drawn either way this app draws them', () => {
+    // Both shapes, verbatim: a label written in the markup, and one chosen between two strings while a send is in flight.
+    expect(everyAreYouSure('<Button look="removing">Yes, put it away</Button>')).toEqual(['Yes, put it away'])
+    expect(everyAreYouSure("<Button>{takingOut ? 'Taking it out…' : 'Yes, take it out'}</Button>")).toEqual([
+      'Yes, take it out',
+    ])
+    expect(everyAreYouSure('<Button>Take out</Button>')).toEqual([])
+  })
+
+  it('is read against gallery entries this really split apart', () => {
+    // The other floor. A split that stopped splitting hands the whole file to every `includes` above, and then any screen with any `tapFirst` excuses every confirmation in the app.
+    const entries = entriesInTheGallery()
+
+    expect(entries.length).toBeGreaterThan(20)
+    expect(entries.filter((entry) => entry.includes('tapFirst')).length).toBeGreaterThan(2)
+    expect(entries.every((entry) => entry.includes('proves:'))).toBe(true)
+  })
+})
+
 describe('the gallery', () => {
   it('shows every screen a route draws whole', () => {
     const missing = whatTheRoutesDraw().filter(

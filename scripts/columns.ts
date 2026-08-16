@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { chromium } from 'playwright'
 
-import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnServer'
+import { GALLERY, everyScreenItShows, serveTheGallery, unfoldIt } from './theGallerysOwnServer'
 
 // What the browser actually drew, measured rather than described. It began with one question -- whether a column of figures is a column -- and each one since was added the day something got past every check we had: a figure cut in half, a column squeezed to a letter a line, a trail pinned beside the heading that repeats it.
 
@@ -408,7 +408,9 @@ async function main(): Promise<void> {
 
       for (const screen of screens) {
         await page.goto(`${server.at}/gallery.html#${screen.slug}`)
-        // Waited for by what the screen says rather than by a timer, the same way the pictures are.
+
+        // Waited for by what the screen says rather than by a timer, and tapped open first where a screen keeps itself folded -- the same way the pictures are, out of the same function, because this had the same blindness and found out about it separately.
+        await unfoldIt(page, screen)
         await page.getByText(screen.proves, { exact: false }).first().waitFor({ timeout: 15_000 })
 
         const measured = whatItMeasured(await page.evaluate(WHERE_THE_COLUMNS_ARE))
