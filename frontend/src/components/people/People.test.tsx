@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { PersonRow } from './People'
@@ -124,7 +125,7 @@ describe('the people in the ledger', () => {
   })
 
   it('keeps what was typed when it did not go in, and says why', async () => {
-    renderWith([], vi.fn().mockRejectedValue({ data: 'Put in a name. A person, a shop or a company.' }))
+    renderWith([], vi.fn().mockRejectedValue(new ConvexError('Put in a name. A person, a shop or a company.')))
     await screen.findByLabelText('Name')
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A' } })
@@ -203,7 +204,7 @@ describe('the people in the ledger', () => {
       EVERYONE,
       vi.fn(),
       vi.fn(),
-      vi.fn().mockRejectedValue({ data: 'There is already somebody called A steel supplier.' })
+      vi.fn().mockRejectedValue(new ConvexError('There is already somebody called A steel supplier.'))
     )
 
     const rows = await screen.findAllByRole('listitem')

@@ -1,11 +1,11 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
-import { ConvexError } from 'convex/values'
 import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { whatWentWrong } from '../components/form/whatWentWrong'
 import { WhatHasComeIn } from '../components/moneyIn/WhatHasComeIn'
 import { Positions } from '../components/partners/Positions'
 import { Figure, Page } from '../components/shell/Page'
@@ -184,7 +184,7 @@ function WhatItWentOn({ siteId, byTrade }: { siteId: Id<'sites'>; byTrade: Array
           return true
         } catch (thrown) {
           // The sentence the server refused with, which is written for him. A removal that quietly does nothing is the worst of both: the figure stays and nobody is told why.
-          setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not come out. Try once more.')
+          setRefusal(whatWentWrong(thrown, 'That did not come out. Try once more.'))
 
           return false
         } finally {
@@ -219,7 +219,7 @@ function WhoIsOnIt({ siteId }: { siteId: Id<'sites'> }) {
 
       return true
     } catch (thrown) {
-      setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
 
       return false
     }

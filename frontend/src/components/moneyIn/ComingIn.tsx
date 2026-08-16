@@ -9,6 +9,7 @@ import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick, asChoices } from '../form/Pick'
 import { WayOut } from '../form/WayOut'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
@@ -300,8 +301,7 @@ function OneReceipt({
     try {
       await onTakeBack(received._id)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

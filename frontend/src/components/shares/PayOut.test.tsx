@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { pick } from '../../testing/pick'
@@ -162,9 +163,7 @@ describe('writing down what has gone back to a partner', () => {
   it('leaves what was typed exactly where it was when the server refuses it', async () => {
     // The sentence under the button is about the figure still in the box. Emptying it leaves him reading a refusal against nothing, and typing the lot again to find out what he got wrong.
     const user = userEvent.setup()
-    const refused = vi.fn(() =>
-      Promise.reject(Object.assign(new Error('refused'), { data: 'That day is before the house started.' }))
-    )
+    const refused = vi.fn(() => Promise.reject(new ConvexError('That day is before the house started.')))
 
     renderWith({ onPayOut: refused })
 
@@ -214,9 +213,7 @@ describe('what has already gone back to them', () => {
   })
 
   it('says what the server refused a removal with, beside the one it was about', async () => {
-    const refused = vi.fn(() =>
-      Promise.reject(Object.assign(new Error('refused'), { data: 'That payment out is not on this house.' }))
-    )
+    const refused = vi.fn(() => Promise.reject(new ConvexError('That payment out is not on this house.')))
     renderWith({ onTakeBack: refused })
 
     fireEvent.click(screen.getByRole('button', { name: 'Take it back' }))

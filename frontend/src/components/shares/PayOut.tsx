@@ -9,6 +9,7 @@ import { Choices, Field, Line, Lines } from '../form/Field'
 import type { Choice as Pickable } from '../form/Pick'
 import { Pick, asChoices } from '../form/Pick'
 import { WayOut } from '../form/WayOut'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
@@ -129,8 +130,7 @@ function Paying({
         note: note.trim() === '' ? undefined : note,
       })
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
 
       // Left exactly as it was typed. The sentence above the button is about the figure still in the box, and emptying it leaves him reading a refusal against nothing.
       return
@@ -298,8 +298,7 @@ function OnePayout({ paidOut, onTakeBack }: { paidOut: PaidOut; onTakeBack: (pay
     try {
       await onTakeBack(paidOut._id)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

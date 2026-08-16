@@ -1,6 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
-import { ConvexError } from 'convex/values'
 import { useState } from 'react'
 import { todayOnThisDevice } from '~shared/calendarDate'
 
@@ -9,6 +8,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import type { Draft } from '../components/daySheet/sitting'
 import { asAnEntry } from '../components/daySheet/sitting'
+import { whatWentWrong } from '../components/form/whatWentWrong'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 
 export const Route = createFileRoute('/sites/$siteId/day')({ component: ADayOnSite })
@@ -47,7 +47,7 @@ function ADayOnSite() {
       // Back to the site itself, not the list: the number he has just moved is that house's, and watching it move is the whole reason the day was entered.
       await router.navigate({ to: '/sites/$siteId', params: { siteId } })
     } catch (thrown) {
-      setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

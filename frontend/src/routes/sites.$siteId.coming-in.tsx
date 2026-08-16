@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { whatWentWrong } from '../components/form/whatWentWrong'
 import { ComingIn } from '../components/moneyIn/ComingIn'
 
 export const Route = createFileRoute('/sites/$siteId/coming-in')({ component: WhatCameIn })
@@ -69,7 +70,7 @@ function WhatCameIn() {
           return true
         } catch (thrown) {
           // The sentence the server refused with, which is written for him. Anything else is the app failing rather than him being wrong.
-          setRefusal(thrown instanceof ConvexError ? String(thrown.data) : 'That did not go in. Try once more.')
+          setRefusal(whatWentWrong(thrown))
 
           // Said rather than swallowed: the screen empties its boxes on a yes, and a refusal that came back as one takes the amount he is being asked about with it.
           return false

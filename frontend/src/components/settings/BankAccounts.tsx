@@ -4,6 +4,7 @@ import { whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -83,8 +84,7 @@ function OneAccount({
             setRefusal(null)
             void onTakeOff(account._id)
               .catch((thrown: unknown) => {
-                const said: unknown = (thrown as { data?: unknown }).data
-                setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+                setRefusal(whatWentWrong(thrown))
               })
               .finally(() => {
                 setSaving(false)
@@ -123,8 +123,7 @@ function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string
       setNumber('')
       setAdded((before) => before + 1)
     } catch (thrown) {
-      const said: unknown = (thrown as { data?: unknown }).data
-      setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+      setRefusal(whatWentWrong(thrown))
     } finally {
       setSaving(false)
     }

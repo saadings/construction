@@ -5,6 +5,7 @@ import { note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation
 
 import { Button } from '../form/Button'
 import { Field, Line, Lines } from '../form/Field'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 import type { Priced } from './AgreeAContract'
 
@@ -259,8 +260,7 @@ function whileSending() {
       try {
         await what()
       } catch (thrown) {
-        const said: unknown = (thrown as { data?: unknown }).data
-        setRefusal(typeof said === 'string' && said !== '' ? said : 'That did not go in. Try once more.')
+        setRefusal(whatWentWrong(thrown))
       } finally {
         setSaving(false)
       }

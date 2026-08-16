@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { WayOut } from '../form/WayOut'
+import { whatWentWrong } from '../form/whatWentWrong'
 import { Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -30,7 +31,8 @@ export function WhoCanSignIn({
       await onInvite(email)
       setEmail('')
     } catch (thrown) {
-      setProblem(whatWentWrong(thrown))
+      // Its own words, because an invitation goes out through Clerk rather than into the ledger: it is a message that did not send, not a row that did not go in.
+      setProblem(whatWentWrong(thrown, 'That did not go through. Try once more in a moment.'))
     } finally {
       setSending(false)
     }
@@ -117,8 +119,3 @@ function Waiting({ waiting, onTakeOff }: { waiting: Array<Invited> | null; onTak
 }
 
 // What the server refused with, if it said anything a person can read. Anything else is the app failing rather than the person being wrong, and says so.
-function whatWentWrong(thrown: unknown): string {
-  const data: unknown = (thrown as { data?: unknown }).data
-
-  return typeof data === 'string' && data !== '' ? data : 'That did not go through. Try once more in a moment.'
-}
