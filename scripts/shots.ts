@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import type { Page } from 'playwright'
 import { chromium } from 'playwright'
 
-import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnServer'
+import { GALLERY, everyScreenItShows, serveTheGallery, unfoldIt } from './theGallerysOwnServer'
 
 // A picture of every screen, at the three widths the app is read at, from the gallery's own build.
 
@@ -126,17 +126,37 @@ async function main(): Promise<void> {
         // Asked of the screen and not of the page: the words are on the gallery's own button for that screen too, so unscoped this waits for the picker and is satisfied before the screen has drawn a thing.
 
         // Where the screen says it drew, which is the gallery's own element for all but one of them. A sheet is portalled onto `body`, so scoping this to the element the gallery draws into waits fifteen seconds for a marker that is on the page and not in there -- and had it not timed out, the picture would have been of an element the screen had left.
-        await on.locator(screen.shownIn).getByText(screen.proves, { exact: false }).first().waitFor({ timeout: 15_000 })
+
+        // Waited for by what it proves, unless it has to be tapped open first: what a folded-up screen proves is true of the state after the taps, and `Change it` is a button that stops existing the moment it is pressed. So the wait before is for the tap itself, and the proof is asked for after, where it is. Shared with the column measurements, which had the same blindness and needed the same fix.
+        await unfoldIt(on, screen)
 
         // The picture is only a picture of a phone if the app starts where a phone's screen starts. Hiding the gallery's furniture was not enough and was the second wrong answer: it left 287px of an 844px screen to the banner and the chips, and at that height the day sheet's amount box sat under its own footer. Anybody reading those images would have found a bug that is not there.
 
-        // Tapped before anything is measured, for a screen that keeps itself folded up: what a person does to see it, done the way they do it.
-        if (screen.tapFirst !== null) {
-          await on.getByRole('button', { name: screen.tapFirst }).first().click()
-        }
-
         // Asserted every time rather than checked once. Furniture creeps back, and when it does every picture silently becomes a third furniture again with nothing saying so.
         await onceItHasStoppedMoving(on, screen.shownIn)
+
+        // What the wait above does not prove. Playwright's `visible` means drawn with a box, not in the frame -- so a marker below the fold satisfies it exactly, and `a-send-that-has-not-come-back` came out framing a form that could have been any screen while the sentence it is named for sat 300px under the picture.
+
+        // Four lines above this file already said the sharper version of the thought -- the marker proves one string is drawn, not that the screen has a body -- and then let `visible` stand in for `in the picture`.
+
+        // Failed rather than scrolled to. A picture that had to be scrolled to is a picture of something he would have to scroll to, and auto-scrolling would produce a correct-looking photograph of a screen he does not have.
+        const proving = on.locator(screen.shownIn).getByText(screen.proves, { exact: false }).first()
+        await proving.waitFor({ timeout: 15_000 })
+
+        const proof = await proving.boundingBox()
+
+        if (proof === null) {
+          throw new Error(
+            `${screen.slug} at ${String(size.width)}: what it proves has no box, so there is nothing to photograph.`
+          )
+        }
+
+        if (proof.y + proof.height > size.height) {
+          throw new Error(
+            `${screen.slug} at ${String(size.width)}: "${screen.proves}" ends ${String(Math.round(proof.y + proof.height - size.height))}px below the picture. ` +
+              `A picture named for a state has to contain it -- draw the screen so the state is in frame, or photograph a screen where it is.`
+          )
+        }
 
         const box = await on.locator(screen.shownIn).boundingBox()
 
