@@ -24,6 +24,9 @@ const AT_LEAST_THIS_MANY_ROWS = 20
 /** The same floor for the other half. A selector that stopped finding figures reports the same clean nothing as a screen where none is cut. */
 const AT_LEAST_THIS_MANY_FIGURES = 100
 
+/** The same floor again. A selector that stopped finding cells reports the same clean nothing as an app where none is squeezed. */
+const AT_LEAST_THIS_MANY_CELLS = 100
+
 // Handed to the browser as text rather than as a function, so this file stays a Node script with no DOM types in it -- the same reason the pictures are taken through the locator API. What comes back is checked below rather than trusted, because a string evaluated in a page can return anything at all.
 
 // Two things it is careful about. A class worn by one element is not a column of anything, so only a row written once and drawn many times is compared. And a cell that is not drawn has no position while a browser still answers 0 for it: counted as a column at x=0, every row with an optional cell reads as broken -- `their-account` shows `Billed` or `Paid` and never both, and reading that absence as a position is the instrument inventing the defect it went looking for.
@@ -101,9 +104,35 @@ const WHAT_IS_CUT_IN_HALF = `(() => {
   return { figures, cut }
 })()`
 
+// The third question, and the one that found a screen every other check had cleared. `Stages` passed the two above — no column moved, no figure was cut — while its first column was 38px wide and 189 tall, wrapping `On signing` to one letter a line. A date box beside a button took 289 of the table's 490px and starved everything else.
+
+// A cell far taller than it is wide is a column that has been squeezed rather than one that is long. Twice is the line because two lines of wrapped words in a narrow cell is ordinary and eight lines of single letters is not, and at 390 across seventeen screens it found those two cells and nothing else.
+const WHAT_IS_CRUSHED = `(() => {
+  const crushed = []
+  let cells = 0
+
+  for (const cell of document.querySelectorAll('td, th')) {
+    const box = cell.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    cells += 1
+
+    if (box.height > box.width * 2) {
+      crushed.push({
+        said: cell.textContent.trim().slice(0, 24),
+        wide: Math.round(box.width),
+        tall: Math.round(box.height),
+      })
+    }
+  }
+
+  return { cells, crushed }
+})()`
+
 type Moved = { cls: string; cell: number; xs: Array<number> }
 
 type Cut = { said: string; hidden: number; width: number }
+
+type Crushed = { said: string; wide: number; tall: number }
 
 /** What came back from the page, checked rather than assumed: a bad shape here would read as a screen with nothing wrong on it. */
 function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
@@ -161,6 +190,34 @@ function whatIsCut(said: unknown): { figures: number; cut: Array<Cut> } {
   }
 }
 
+/** The third measurement, checked the same way and for the same reason. */
+function whatIsCrushed(said: unknown): { cells: number; crushed: Array<Crushed> } {
+  if (typeof said !== 'object' || said === null || !('cells' in said) || !('crushed' in said)) {
+    throw new Error('The page answered something that is not a count of cells.')
+  }
+
+  const { cells, crushed } = said
+  if (typeof cells !== 'number' || !Array.isArray(crushed)) {
+    throw new Error('The page answered a count with no cells or no findings in it.')
+  }
+
+  return {
+    cells,
+    crushed: crushed.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('wide' in one) || !('tall' in one)) {
+        throw new Error('The page answered a crushed cell with nothing in it.')
+      }
+
+      const { said: text, wide, tall } = one
+      if (typeof text !== 'string' || typeof wide !== 'number' || typeof tall !== 'number') {
+        throw new Error('The page answered a crushed cell of the wrong shape.')
+      }
+
+      return { said: text, wide, tall }
+    }),
+  }
+}
+
 async function main(): Promise<void> {
   if (!existsSync(join(GALLERY, 'gallery.html'))) {
     throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
@@ -171,6 +228,7 @@ async function main(): Promise<void> {
   const wrong: Array<string> = []
   let rowsSeen = 0
   let figuresSeen = 0
+  let cellsSeen = 0
 
   try {
     const page = await browser.newPage()
@@ -206,6 +264,15 @@ async function main(): Promise<void> {
             `${screen.slug} at ${String(size.width)}: ${cut.said} is cut in half — ${String(cut.hidden)}px of ${String(cut.width)} is outside what holds it`
           )
         }
+
+        const cells = whatIsCrushed(await page.evaluate(WHAT_IS_CRUSHED))
+        cellsSeen += cells.cells
+
+        for (const crushed of cells.crushed) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: ${crushed.said} is squeezed into ${String(crushed.wide)}px and ${String(crushed.tall)}px tall`
+          )
+        }
       }
     }
   } finally {
@@ -226,10 +293,16 @@ async function main(): Promise<void> {
     )
   }
 
+  if (cellsSeen < AT_LEAST_THIS_MANY_CELLS) {
+    throw new Error(
+      `Only ${String(cellsSeen)} table cells were measured across every screen, which is too few to have looked.`
+    )
+  }
+
   if (wrong.length > 0) {
     console.error(`A column of figures does not read as one:\n\n${wrong.join('\n')}\n`)
     console.error(
-      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. And a figure cut in half reads as a smaller figure rather than an incomplete one, so give a phone fewer columns rather than a narrower one.'
+      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. A figure cut in half reads as a smaller figure rather than an incomplete one. And a column squeezed to a letter a line is a column that should have left the row — give a phone fewer columns rather than narrower ones.'
     )
     process.exitCode = 1
 
@@ -237,7 +310,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds and no figure is cut, across ${String(rowsSeen)} rows and ${String(figuresSeen)} figures at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut and nothing is squeezed, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures and ${String(cellsSeen)} cells at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 
