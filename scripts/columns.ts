@@ -194,6 +194,41 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
   return { tapped, small }
 })()`
 
+// The sixth question, and the one with the sharpest cost. A first pass over every control at 390 found 104 of 151 under the bar, which is a real finding and a piece of work nobody is doing today -- and a guard that fails on a hundred things gets switched off. So this asks it of the controls where a mis-tap costs something: the ones that remove a row.
+
+// Thirteen of the thirteen were 20px. Not most of them, not the ones on the crowded screens -- every single control in this app that takes a row out was less than half of what a thumb needs, including `Take out` beside a figure on a phone.
+
+// Asked of `[data-removes]`, which `WayOut` and `Button look="removing"` put on themselves, rather than worked out from colour or class. A probe that infers what a control is from how it looks agrees with its own guess; one that asks the control what it does cannot.
+
+// And what is measured is the box a finger lands on rather than the visible size, which is why the fix moved nothing: `py-3 -my-3` grows the hit area by 24px and gives the same 24 back to the layout. A rule read as "44px tall" is one somebody argues an exemption out of the first time it would double a dense table.
+const WHAT_REMOVES_SOMETHING = `(() => {
+  const small = []
+  let tapped = 0
+
+  for (const control of document.querySelectorAll('[data-removes]')) {
+    const box = control.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    tapped += 1
+
+    if (Math.round(box.height) < ${String(A_THUMB_NEEDS)}) {
+      small.push({
+        said: (control.textContent ?? '').trim().slice(0, 24) || control.getAttribute('aria-label') || 'a way out',
+        high: Math.round(box.height),
+        wide: Math.round(box.width),
+      })
+    }
+  }
+
+  return { tapped, small }
+})()`
+
+// What this cannot reach, said here rather than left as a number nobody questions. Thirteen controls are measured and all thirteen are a `WayOut`. The other four -- `Button look="removing"`, the press that actually takes the row out -- sit behind an are-you-sure, and every screen here is photographed in its resting state, so the confirming step is never on the page when this runs.
+
+// So the guard covers the openers and not the confirmations, which are the more destructive half. `Button.test.tsx` asserts their padding off the merged class list instead; that is a weaker instrument -- it reads what was written rather than what was drawn -- and it is what there is until something draws a screen mid-confirmation.
+
+/** The floor for it. Thirteen were found the day this was written, across seven screens; a selector that stopped matching would report the same clean nothing as an app where every one of them is big enough. */
+const AT_LEAST_THIS_MANY_REMOVE = 10
+
 type Moved = { cls: string; cell: number; xs: Array<number> }
 
 type Cut = { said: string; hidden: number; width: number }
@@ -357,6 +392,7 @@ async function main(): Promise<void> {
   let cellsSeen = 0
   let trailsSeen = 0
   let tappedSeen = 0
+  let removesSeen = 0
 
   try {
     const page = await browser.newPage()
@@ -414,6 +450,15 @@ async function main(): Promise<void> {
               `${screen.slug} at ${String(size.width)}: ${small.said} is ${String(small.high)}px high and ${String(small.wide)} wide, under the ${String(A_THUMB_NEEDS)} a thumb needs`
             )
           }
+
+          const removes = whatIsTooSmall(await page.evaluate(WHAT_REMOVES_SOMETHING))
+          removesSeen += removes.tapped
+
+          for (const small of removes.small) {
+            wrong.push(
+              `${screen.slug} at ${String(size.width)}: "${small.said}" removes something and is ${String(small.high)}px high, under the ${String(A_THUMB_NEEDS)} a thumb needs`
+            )
+          }
         }
 
         for (const pinned of trails.pinned) {
@@ -453,6 +498,13 @@ async function main(): Promise<void> {
     )
   }
 
+  // The same floor for the sixth question, and it needs its own: `[data-removes]` is an attribute two components put on themselves, and an attribute nobody renders any more reports exactly what an app whose ways out are all big enough reports.
+  if (removesSeen < AT_LEAST_THIS_MANY_REMOVE) {
+    throw new Error(
+      `Only ${String(removesSeen)} controls that remove something were measured on a phone, which is too few to have looked -- there were thirteen the day this was written, and they are the controls where a mis-tap costs a row.`
+    )
+  }
+
   if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
     throw new Error(
       `Only ${String(tappedSeen)} nav controls were measured on a phone, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
@@ -470,7 +522,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, no trail is pinned and every nav control clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(trailsSeen)} trails and ${String(tappedSeen)} controls at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, no trail is pinned and every nav control and every way out clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls and ${String(removesSeen)} controls that remove something, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 

@@ -8,7 +8,7 @@ import { whatSizeItComesTo } from './theSizeOnAPhone'
 
 afterEach(cleanup)
 
-function classesOn(look?: 'send' | 'beside', className?: string): string {
+function classesOn(look?: 'send' | 'beside' | 'another' | 'removing', className?: string): string {
   cleanup()
   render(
     <Button look={look} className={className}>
@@ -132,6 +132,30 @@ describe('what shadcn brings that this button does not want', () => {
 
     expect(classes).toContain('has-[>svg]:px-5')
     expect(classes).not.toContain('has-[>svg]:px-3')
+  })
+
+  it('gives a thumb something to hit on the look that removes a row', () => {
+    // Measured for real in `yarn columns`, at 390, in a browser -- for every control that removes something **except these four**. `removing` is the press behind an are-you-sure, and every screen is photographed at rest, so the confirming step is never on the page when the measuring runs.
+
+    // So this is the weaker instrument standing in for the stronger one: it reads what was written rather than what was drawn. Said plainly, because a class list that says `py-3` is not the same fact as a box that measured 44px, and the two are only equal while nothing else is fighting for the height.
+
+    // The pair is the point. `py-3` grows the box a finger lands on by 24px; `-my-3` gives the same 24 back to the layout, so no row moves. Thirteen of the thirteen controls this app has for removing a row were 20px high before it.
+    expect(classesOn('removing'), 'nothing makes this bigger than its own words').toMatch(/(^|\s)py-3(\s|$)/)
+    expect(classesOn('removing'), 'the row it sits in moves to make room').toMatch(/(^|\s)-my-3(\s|$)/)
+  })
+
+  it('says what it does, so the thing that measures does not have to guess', () => {
+    // `yarn columns` finds these by asking the page for `[data-removes]`. A probe that worked out what a control is from its colour or its class list would agree with its own guess; this one asks the control.
+    cleanup()
+    render(<Button look="removing">Yes, take it out</Button>)
+    expect(screen.getByRole('button').hasAttribute('data-removes')).toBe(true)
+
+    // And the other looks must not say it, or the measurement is of every button in the app and the floor stops being about the ones where a mis-tap costs a row.
+    for (const look of ['send', 'beside', 'another'] as const) {
+      cleanup()
+      render(<Button look={look}>Put them in</Button>)
+      expect(screen.getByRole('button').hasAttribute('data-removes'), `${look} claims to remove something`).toBe(false)
+    }
   })
 
   it('keeps the turning ring out of reach of that variant, which is why it is wrapped', () => {
