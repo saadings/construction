@@ -135,10 +135,10 @@ describe('taking a wrong figure out', () => {
   it('asks before it does it, because a payment cannot be put back from a screen', async () => {
     const { onTakeOut } = renderWith({ opened: { tradeId: 't1', went: WENT_ON_CEMENT } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 500,000 paid to The cement man' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 500,000 paid to The cement man' }))
     expect(onTakeOut).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, take it out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }))
 
     await waitFor(() => {
       expect(onTakeOut).toHaveBeenCalledWith('pay1')
@@ -148,38 +148,38 @@ describe('taking a wrong figure out', () => {
   it('says it is being hidden rather than erased, because that is what happens', () => {
     renderWith({ opened: { tradeId: 't1', went: WENT_ON_CEMENT } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 500,000 paid to The cement man' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 500,000 paid to The cement man' }))
 
-    expect(screen.getByText('Hide it?')).toBeTruthy()
+    expect(screen.getByText('Remove this?')).toBeTruthy()
   })
 
   it('lets somebody change their mind without anything happening', () => {
     const { onTakeOut } = renderWith({ opened: { tradeId: 't1', went: WENT_ON_CEMENT } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 500,000 paid to The cement man' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Never mind' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 500,000 paid to The cement man' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(onTakeOut).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: 'Take out 500,000 paid to The cement man' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Remove 500,000 paid to The cement man' })).toBeTruthy()
   })
 
   it('asks about one payment at a time, not about all of them at once', () => {
     renderWith({ opened: { tradeId: 't1', went: WENT_ON_CEMENT } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 500,000 paid to The cement man' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 500,000 paid to The cement man' }))
 
-    expect(screen.getAllByText('Hide it?')).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Take out 359,280 paid to A one-off' })).toBeTruthy()
+    expect(screen.getAllByText('Remove this?')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Remove 359,280 paid to A one-off' })).toBeTruthy()
   })
 
   it('turns the one being taken out off while it is going, and leaves the others alone', () => {
     renderWith({ opened: { tradeId: 't1', went: WENT_ON_CEMENT }, takingOut: 'pay1' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 500,000 paid to The cement man' }))
-    expect(screen.getByRole('button', { name: 'Taking it out…' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 500,000 paid to The cement man' }))
+    expect(screen.getByRole('button', { name: 'Removing…' }).hasAttribute('disabled')).toBe(true)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 359,280 paid to A one-off' }))
-    expect(screen.getByRole('button', { name: 'Yes, take it out' }).hasAttribute('disabled')).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 359,280 paid to A one-off' }))
+    expect(screen.getByRole('button', { name: 'Yes, remove' }).hasAttribute('disabled')).toBe(false)
   })
 
   it('shows the refusal the server sent, in its own words', () => {

@@ -156,8 +156,8 @@ describe('writing down what has gone back to a partner', () => {
     await user.click(screen.getByRole('radio', { name: 'Transfer' }))
     await useTheName(user, 'Account it left', 'Bank 3311')
     await user.type(screen.getByLabelText('The account number for Bank 3311'), '3311')
-    // Named as the picker still names it. Adding an account from inside the control lives in `components/form/`, which is the other half of this rename -- so this asks for the label that is there today and moves when that half lands.
-    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    // The label the picker draws now. Adding an account from inside the control lives in `components/form/`, which is the half this commit renames.
+    await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onAddAccount).toHaveBeenCalledWith('Bank 3311', '3311')
 

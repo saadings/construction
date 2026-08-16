@@ -89,7 +89,7 @@ describe('a control the browser draws', () => {
 
   it('would notice the third, which it was written for and missed', () => {
     // As it is actually written on a screen: not `<input>`, but the app's own box with the attribute on it, which hands it to an input two files away.
-    expect(drawnByTheBrowserIn('<Line value={day} onChange={change} type="date" aria-label="Which day" />')).toEqual([
+    expect(drawnByTheBrowserIn('<Line value={day} onChange={change} type="date" aria-label="Date" />')).toEqual([
       'date',
     ])
     expect(drawnByTheBrowserIn("<input type='file' onChange={read} />")).toEqual(['file'])

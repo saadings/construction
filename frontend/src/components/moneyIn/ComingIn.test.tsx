@@ -65,7 +65,7 @@ describe('money coming in', () => {
 
   it('says nothing has come in yet rather than showing an empty space', async () => {
     renderWith({ received: [] })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
     expect(screen.getByText('Nothing has come in on this house yet.')).toBeTruthy()
     expect(screen.queryByRole('listitem')).toBeNull()
@@ -74,11 +74,11 @@ describe('money coming in', () => {
   it('takes a receipt, with what it is asked at the time', async () => {
     const user = userEvent.setup()
     const { onPutIn } = renderWith({ received: [] })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
-    await pick(user, 'Who it came from', 'The one it is built for')
-    fireEvent.click(screen.getByRole('radio', { name: 'The house sold' }))
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '2500000' } })
+    await pick(user, 'Received from', 'The one it is built for')
+    fireEvent.click(screen.getByRole('radio', { name: 'Sale proceeds' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
@@ -92,19 +92,19 @@ describe('money coming in', () => {
 
   it('asks a cheque for its number and an account, and cash for neither', async () => {
     renderWith({ received: [] })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
     // A transfer is what the form opens on, and it lands somewhere.
-    expect(screen.getByLabelText('Which account it landed in')).toBeTruthy()
+    expect(screen.getByLabelText('Account it landed in')).toBeTruthy()
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
 
     fireEvent.click(screen.getByRole('radio', { name: 'Cheque' }))
     expect(screen.getByLabelText('Cheque number')).toBeTruthy()
-    expect(screen.getByLabelText('Which account it landed in')).toBeTruthy()
+    expect(screen.getByLabelText('Account it landed in')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
-    expect(screen.queryByLabelText('Which account it landed in')).toBeNull()
+    expect(screen.queryByLabelText('Account it landed in')).toBeNull()
   })
 
   it('lets an account be added from the picker, on a screen that had no way to add one at all', async () => {
@@ -113,9 +113,9 @@ describe('money coming in', () => {
     const { onAddAccount } = renderWith()
 
     await user.click(await screen.findByRole('radio', { name: 'Transfer' }))
-    await useTheName(user, 'Which account it landed in', 'Bank 7788')
+    await useTheName(user, 'Account it landed in', 'Bank 7788')
     await user.type(screen.getByLabelText('The account number for Bank 7788'), '11112222337788')
-    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    await user.click(screen.getByRole('button', { name: 'Add' }))
 
     // Only the last four were handed on: the rest never crosses the wire.
     expect(onAddAccount).toHaveBeenCalledWith('Bank 7788', '7788')
@@ -124,26 +124,26 @@ describe('money coming in', () => {
 
   it('says what is missing beside the question, once the eye has left it', async () => {
     renderWith({ received: [] })
-    await screen.findByLabelText('Who it came from')
+    await screen.findByLabelText('Received from')
 
-    fireEvent.focus(screen.getByLabelText('Who it came from'))
-    fireEvent.blur(screen.getByLabelText('Who it came from'))
+    fireEvent.focus(screen.getByLabelText('Received from'))
+    fireEvent.blur(screen.getByLabelText('Received from'))
 
     expect(screen.getByRole('alert').textContent).toBe('Say who this came from.')
   })
 
   it('groups the amount with commas as it is typed', async () => {
     renderWith({ received: [] })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '2500000' } })
 
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('2,500,000')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('2,500,000')
   })
 
   it('shows the refusal the server sent, in its own words', async () => {
     renderWith({ received: [], refusal: 'Add the cheque number.' })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
     expect(screen.getByRole('alert').textContent).toBe('Add the cheque number.')
   })
@@ -156,7 +156,7 @@ describe('money coming in', () => {
 
     cleanup()
     renderWith({ received: null })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByRole('listitem')).toBeNull()
   })
@@ -172,14 +172,14 @@ describe('money coming in', () => {
   it('empties the boxes once it has gone in', async () => {
     const user = userEvent.setup()
     renderWith({ received: [] })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
-    await pick(user, 'Who it came from', 'The one it is built for')
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '2500000' } })
+    await pick(user, 'Received from', 'The one it is built for')
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
-      expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
+      expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('')
     })
   })
 
@@ -188,26 +188,26 @@ describe('money coming in', () => {
     // The refusal is about the amount in the box. Emptying the box on a no leaves him reading a sentence about a figure that is no longer on the screen, and typing the whole receipt again to see it.
     const { onPutIn } = renderWith({ received: [] })
     onPutIn.mockResolvedValue(false)
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
-    fireEvent.change(screen.getByLabelText('How much'), { target: { value: '2500000' } })
-    await pick(user, 'Who it came from', 'The one it is built for')
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '2500000' } })
+    await pick(user, 'Received from', 'The one it is built for')
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
       expect(onPutIn).toHaveBeenCalled()
     })
 
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('2,500,000')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('2,500,000')
   })
 
   it('lets every choice be found by what is written on it', async () => {
     // A row of choices inside a `<label>` gives its first button the label's own words as its name: "How it came How it came", which is what a screen reader says and what nothing can find. The first of each row is the one that breaks, so both are checked.
     renderWith({ received: [] })
-    await screen.findByLabelText('How much')
+    await screen.findByLabelText('Amount')
 
     expect(screen.getByRole('radio', { name: 'Cheque' })).toBeTruthy()
-    expect(screen.getByRole('radio', { name: 'A partner put it in' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Partner investment' })).toBeTruthy()
   })
 
   it('says nothing technical anywhere on it', async () => {
@@ -223,9 +223,11 @@ describe('taking money coming in back out', () => {
     // Money going out could be taken back from the first day and money coming in could not. A partner's capital entered wrong was permanent, and capital is what the whole profit split is worked out from.
     const { onTakeBack } = renderWith()
     // Waited for by the buttons rather than by a name: a person is in the picker as well as in the list, and there are two of every name on this screen.
-    const takingBack = await screen.findAllByRole('button', { name: 'Take it back' })
+    const takingBack = await screen.findAllByRole('button', { name: 'Remove' })
 
+    // Two taps now: `Take it back` was soft enough to be its own warning and `Remove` is not, so this asks first. A partner's capital is what the profit split is worked out from.
     fireEvent.click(takingBack[1])
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }))
 
     await waitFor(() => {
       expect(onTakeBack).toHaveBeenCalledWith('m2')
@@ -237,20 +239,21 @@ describe('taking money coming in back out', () => {
       Promise.reject(new ConvexError('That money is not on this site.'))
     )
     renderWith({ onTakeBack })
-    const takingBack = await screen.findAllByRole('button', { name: 'Take it back' })
+    const takingBack = await screen.findAllByRole('button', { name: 'Remove' })
 
     fireEvent.click(takingBack[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('That money is not on this site.')
   })
 
   it('offers it against every receipt, and none when nothing has come in', async () => {
     renderWith()
-    expect(await screen.findAllByRole('button', { name: 'Take it back' })).toHaveLength(2)
+    expect(await screen.findAllByRole('button', { name: 'Remove' })).toHaveLength(2)
 
     cleanup()
     renderWith({ received: [] })
     await screen.findByText(/Nothing has come in on this house yet/)
-    expect(screen.queryByRole('button', { name: 'Take it back' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull()
   })
 })

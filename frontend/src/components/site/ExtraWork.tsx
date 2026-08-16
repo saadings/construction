@@ -10,7 +10,7 @@ import { Field, Line } from '../form/Field'
 import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
-import { Figure, Form } from '../shell/Page'
+import { Figure, Form, NothingIsDeleted } from '../shell/Page'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
 // Work outside what was contracted, with the working exactly as it was measured on site. `LESS EXTRA WORK` in the workbooks was one figure with nothing behind it; this is the same figure with every line of it still there.
@@ -53,7 +53,7 @@ export function ExtraWork({
 }) {
   return (
     <section className="flex flex-col gap-5">
-      <Heading>Work outside the contract</Heading>
+      <Heading>Extra work</Heading>
 
       {bills.length === 0 ? (
         <p className="text-muted-foreground">None billed.</p>
@@ -72,6 +72,7 @@ export function ExtraWork({
 
 function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string) => Promise<void> }) {
   const [saving, setSaving] = useState(false)
+  const [asking, setAsking] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
 
   return (
@@ -118,24 +119,36 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
         </TableBody>
       </Table>
 
-      <div className="flex items-baseline gap-4">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
         <span className="text-faint text-sm">Raised {asDayHeWrites(bill.raisedOn)}</span>
-        <WayOut
-          busy={saving}
-          onClick={() => {
-            setSaving(true)
-            setRefusal(null)
-            void onTakeBack(bill._id)
-              .catch((thrown: unknown) => {
-                setRefusal(whatWentWrong(thrown))
-              })
-              .finally(() => {
-                setSaving(false)
-              })
-          }}
-        >
-          {saving ? 'Taking it back…' : 'Take it back'}
-        </WayOut>
+
+        {/* Asked before it happens, which it was not until the label changed. `Take it back` was soft enough to be its own warning; `Remove` is not, and this bill is a signed row a client may be disputing. The other three screens that remove a stored row already ask. */}
+        {asking ? (
+          <>
+            <span className="text-muted-foreground text-sm">Remove this?</span>
+            <Button
+              look="removing"
+              disabled={saving}
+              onClick={() => {
+                setSaving(true)
+                setRefusal(null)
+                void onTakeBack(bill._id)
+                  .catch((thrown: unknown) => {
+                    setRefusal(whatWentWrong(thrown))
+                  })
+                  .finally(() => {
+                    setSaving(false)
+                  })
+              }}
+            >
+              {saving ? 'Removing…' : 'Yes, remove'}
+            </Button>
+            <WayOut onClick={() => setAsking(false)}>Cancel</WayOut>
+            <NothingIsDeleted />
+          </>
+        ) : (
+          <WayOut onClick={() => setAsking(true)}>Remove</WayOut>
+        )}
         <StillSending busy={saving} />
         {refusal === null ? null : (
           <span role="alert" className="text-destructive text-sm">
@@ -279,20 +292,20 @@ function TypeALine({
         </Field>
 
         {/* Left exactly as written. `39.75' x 0.375' x 11'` is how the man on site worked it out, and re-deriving it would only ever disagree with him. */}
-        <Field label="How it was worked out" hint="Optional, exactly as it was measured.">
+        <Field label="Calculation" hint="Optional, exactly as it was measured.">
           <Line
             value={line.working}
             onChange={(event) => {
               onChange(at, { working: event.target.value })
             }}
             autoComplete="off"
-            aria-label={said('How it was worked out')}
+            aria-label={said('Calculation')}
           />
         </Field>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="How much of it" problem={whatIsWrong(extraWorkLineInput.shape.quantity, line.quantity)}>
+        <Field label="Amount" problem={whatIsWrong(extraWorkLineInput.shape.quantity, line.quantity)}>
           <Line
             value={line.quantity}
             onChange={(event) => {
@@ -300,7 +313,7 @@ function TypeALine({
             }}
             inputMode="decimal"
             autoComplete="off"
-            aria-label={said('How much of it')}
+            aria-label={said('Amount')}
           />
         </Field>
 

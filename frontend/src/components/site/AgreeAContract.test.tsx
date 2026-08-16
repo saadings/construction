@@ -40,13 +40,13 @@ describe('agreeing what a client is paying', () => {
     const { onAgree } = renderIt()
     const user = userEvent.setup()
 
-    await pick(user, 'Who it is for', 'The one it is built for')
+    await pick(user, 'Client', 'The one it is built for')
     await chooseTheDay(user, 'Agreed on', '2026-04-01')
     fillIn({
-      'The whole price': '12,500,000',
+      'Contract price': '12,500,000',
       'Area agreed': '2,250',
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith({
@@ -64,16 +64,16 @@ describe('agreeing what a client is paying', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'A rate per square foot' }))
     // The one box is now asking a different question, so it is found by the words it is asking.
-    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
+    await pick(userEvent.setup(), 'Client', 'The one it is built for')
     fillIn({ 'Rate per square foot': '5,500', 'Area agreed': '2,250' })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(
         expect.objectContaining({ priced: { how: 'ratePerSqft', ratePerSqftPaisa: '5,500' } })
       )
     })
-    expect(screen.queryByLabelText('The whole price')).toBeNull()
+    expect(screen.queryByLabelText('Contract price')).toBeNull()
   })
 
   it('takes a client who is not in the ledger yet, which is the ordinary case at this moment', async () => {
@@ -82,13 +82,13 @@ describe('agreeing what a client is paying', () => {
     const { onAgree } = renderIt()
     const user = userEvent.setup()
 
-    await useTheName(user, 'Who it is for', 'A new client')
+    await useTheName(user, 'Client', 'A new client')
     await chooseTheDay(user, 'Agreed on', '2026-04-01')
     fillIn({
-      'The whole price': '12,500,000',
+      'Contract price': '12,500,000',
       'Area agreed': '2,250',
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       // The name goes as a name, with no id invented for it here: only the server can say whether it is somebody the ledger already has.
@@ -101,7 +101,7 @@ describe('agreeing what a client is paying', () => {
   it('says a house has to be for somebody, once the eye has left the box', () => {
     renderIt()
 
-    fireEvent.blur(screen.getByLabelText('Who it is for'))
+    fireEvent.blur(screen.getByLabelText('Client'))
 
     expect(screen.getByRole('alert').textContent).toBe('Say who the house is being built for.')
   })
@@ -119,24 +119,24 @@ describe('agreeing what a client is paying', () => {
   it('keeps what was typed when it did not go in, and says why', async () => {
     renderIt(vi.fn().mockRejectedValue(new ConvexError('This house already has a contract.')))
 
-    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
-    fillIn({ 'The whole price': '12,500,000', 'Area agreed': '2,250' })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    await pick(userEvent.setup(), 'Client', 'The one it is built for')
+    fillIn({ 'Contract price': '12,500,000', 'Area agreed': '2,250' })
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     expect((await screen.findByText('This house already has a contract.')).textContent).toBe(
       'This house already has a contract.'
     )
-    expect(screen.getByLabelText<HTMLInputElement>('The whole price').value).toBe('12,500,000')
+    expect(screen.getByLabelText<HTMLInputElement>('Contract price').value).toBe('12,500,000')
   })
 
   it('does not turn red under boxes nobody has touched once one has gone in', async () => {
     // The same defect the People screen had: clearing what was typed without clearing that focus had been there leaves a form arguing about answers it just accepted.
     renderIt()
 
-    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
-    fillIn({ 'The whole price': '12,500,000', 'Area agreed': '2,250' })
+    await pick(userEvent.setup(), 'Client', 'The one it is built for')
+    fillIn({ 'Contract price': '12,500,000', 'Area agreed': '2,250' })
     fireEvent.blur(screen.getByLabelText('Area agreed'))
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(screen.getByLabelText<HTMLInputElement>('Area agreed').value).toBe('')
@@ -147,8 +147,8 @@ describe('agreeing what a client is paying', () => {
   it('groups the figures as they are typed, because these are the largest in the app', () => {
     renderIt()
 
-    fillIn({ 'The whole price': '12500000' })
+    fillIn({ 'Contract price': '12500000' })
 
-    expect(screen.getByLabelText<HTMLInputElement>('The whole price').value).toBe('12,500,000')
+    expect(screen.getByLabelText<HTMLInputElement>('Contract price').value).toBe('12,500,000')
   })
 })

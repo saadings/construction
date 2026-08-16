@@ -97,7 +97,7 @@ export function PickATrade({
 
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={() => add(naming)} busy={saving} className="py-2 text-sm">
-              Put it on the list
+              Add
             </Button>
 
             {/* A way out of a question he did not mean to open, in the same words as everywhere else it is offered. */}
@@ -107,7 +107,7 @@ export function PickATrade({
                 setRefusal(null)
               }}
             >
-              Never mind
+              Cancel
             </WayOut>
           </div>
         </div>

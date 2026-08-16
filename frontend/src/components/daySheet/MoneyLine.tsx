@@ -17,7 +17,7 @@ export function MoneyLine({
   problem?: string | null
 }) {
   return (
-    <Field label="How much" problem={problem}>
+    <Field label="Amount" problem={problem}>
       <div className="border-border focus-within:border-primary flex items-baseline gap-2 border-b-2 transition-colors">
         {/* Never allowed to give up its width. It is two characters beside a box that asks for all of them, so flex took the space out of the label and broke `Rs` over two lines at desk width. */}
         <span className="text-muted-foreground font-display shrink-0 text-2xl leading-none">Rs</span>

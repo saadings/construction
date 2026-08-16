@@ -43,8 +43,8 @@ describe('what has come in on a house', () => {
     renderWith(FUNDED_AND_PAID)
     await screen.findByText('Come in')
 
-    expect(within(theRowFor('Partners put in')).getByText('2,000,000')).toBeTruthy()
-    expect(within(theRowFor('The client paid')).getByText('5,500,000')).toBeTruthy()
+    expect(within(theRowFor('Partner investment')).getByText('2,000,000')).toBeTruthy()
+    expect(within(theRowFor('Client payment')).getByText('5,500,000')).toBeTruthy()
   })
 
   it('says on the row which of them is funding and which the house brought in', async () => {
@@ -52,9 +52,9 @@ describe('what has come in on a house', () => {
     renderWith(FUNDED_AND_PAID)
     await screen.findByText('Come in')
 
-    expect(theRowFor('Partners put in').textContent).toContain('Funding the house')
-    expect(theRowFor('The client paid').textContent).toContain('Brought in')
-    expect(theRowFor('The house sold').textContent).toContain('Brought in')
+    expect(theRowFor('Partner investment').textContent).toContain('Partner investment')
+    expect(theRowFor('Client payment').textContent).toContain('Client & sale')
+    expect(theRowFor('Sale proceeds').textContent).toContain('Client & sale')
   })
 
   it('shows a reason nothing has come in under as nothing, rather than leaving it out', async () => {
@@ -62,7 +62,7 @@ describe('what has come in on a house', () => {
     renderWith(FUNDED_AND_PAID)
     await screen.findByText('Come in')
 
-    expect(within(theRowFor('The house sold')).getByText('0')).toBeTruthy()
+    expect(within(theRowFor('Sale proceeds')).getByText('0')).toBeTruthy()
   })
 
   it('adds no fourth figure of its own', async () => {

@@ -141,7 +141,7 @@ export function HowItWasPaid({
 
           {/* Only once it is split. One way of paying takes the whole amount, and a box asking for a figure already on the screen is a box he has to agree with himself in. */}
           {split ? (
-            <Field label={`How much of it, part ${String(at + 1)}`}>
+            <Field label={`Amount, part ${String(at + 1)}`}>
               <Line
                 value={part.amount}
                 // Grouped as it is typed, the same as the figure above it. Without this the whole amount reads `300,000` and its parts read `200000` -- two ways of writing money on one screen, and the parts are the half he is checking against the total.
@@ -149,7 +149,7 @@ export function HowItWasPaid({
                 inputMode="decimal"
                 autoComplete="off"
                 placeholder="0"
-                aria-label={`How much of it, part ${String(at + 1)}`}
+                aria-label={`Amount, part ${String(at + 1)}`}
               />
             </Field>
           ) : null}
@@ -186,7 +186,7 @@ export function HowItWasPaid({
           {split ? (
             <WayOut
               className="self-start"
-              aria-label={`Take out part ${String(at + 1)}`}
+              aria-label={`Remove part ${String(at + 1)}`}
               onClick={() => onChange(parts.filter((_, index) => index !== at))}
             >
               Take this part out
@@ -208,7 +208,7 @@ export function HowItWasPaid({
         className="self-start"
         onClick={() => onChange([...parts, onePart(parts.some((part) => part.method === 'cash') ? 'cheque' : 'cash')])}
       >
-        {split ? 'Add another way' : 'Pay it more than one way'}
+        {split ? 'Add another payment' : 'Split payment'}
       </Button>
     </div>
   )

@@ -40,7 +40,7 @@ export function WhoWasPaid({
 }) {
   return (
     <PickAPerson
-      label="Who was paid"
+      label="Paid to"
       // A shop nobody will be paid twice is still a person here, because a payment has to point at somebody.
       problem={problem}
       who={asNamed(who)}

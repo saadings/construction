@@ -22,7 +22,7 @@ const HOW = [
 function ARowOfChoices({ start = 'cheque' }: { start?: string }) {
   const [chosen, setChosen] = useState(start)
 
-  return <Choices label="How paid" chosen={chosen} choices={HOW} onChoose={setChosen} />
+  return <Choices label="Payment method" chosen={chosen} choices={HOW} onChoose={setChosen} />
 }
 
 describe('a row of choices as this app writes one', () => {
@@ -30,7 +30,7 @@ describe('a row of choices as this app writes one', () => {
     render(<ARowOfChoices />)
 
     // Radix's own root is `role="group"` even in single mode while its items are `role="radio"`, so this is the app overriding it. If a version of theirs stops letting that through, this is what says so.
-    expect(screen.getByRole('radiogroup', { name: 'How paid' })).toBeTruthy()
+    expect(screen.getByRole('radiogroup', { name: 'Payment method' })).toBeTruthy()
     expect(screen.getAllByRole('radio')).toHaveLength(4)
   })
 
@@ -49,7 +49,7 @@ describe('a row of choices as this app writes one', () => {
     // The stop is the group itself and not the chosen box. Radix puts the tab stop on the root and hands focus inward to whichever choice is current, which is why asking the boxes finds none -- and a row where nothing at all is tabbable would look exactly the same from that end, so both are asked.
     render(<ARowOfChoices />)
 
-    const group = screen.getByRole('radiogroup', { name: 'How paid' })
+    const group = screen.getByRole('radiogroup', { name: 'Payment method' })
     const stops = screen.getAllByRole('radio').filter((one) => one.getAttribute('tabindex') !== '-1')
 
     expect(group.getAttribute('tabindex'), 'the row cannot be reached by a keyboard at all').toBe('0')

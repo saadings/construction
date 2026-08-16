@@ -111,9 +111,9 @@ describe('who is on a house', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
     await pick(user, 'Who', 'A mason')
-    await pick(user, 'What for', 'Civil labour')
+    await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith({
@@ -132,10 +132,10 @@ describe('who is on a house', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
     await pick(user, 'Who', 'A tile fixer')
-    await pick(user, 'What for', 'Tiles')
+    await pick(user, 'Trade', 'Tiles')
     fireEvent.change(screen.getByLabelText('Or a rate'), { target: { value: '45' } })
     fireEvent.change(screen.getByLabelText('For each'), { target: { value: 'square foot' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith({
@@ -155,9 +155,9 @@ describe('who is on a house', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
     await useTheName(user, 'Who', 'A new mason')
-    await pick(user, 'What for', 'Civil labour')
+    await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalled()
@@ -174,11 +174,11 @@ describe('who is on a house', () => {
     const { onAddTrade } = renderWith()
 
     await user.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
-    await useTheName(user, 'What for', 'Waterproofing')
+    await useTheName(user, 'Trade', 'Waterproofing')
 
     expect(onAddTrade).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    await user.click(screen.getByRole('button', { name: 'Add' }))
 
     // Part of what the house cost is the answer it opens on, and it is the one he taps past rather than the one it assumes: nothing is sent until he sends it.
     expect(onAddTrade).toHaveBeenCalledWith({ name: 'Waterproofing', countsAsBuildingCost: true })
@@ -200,10 +200,10 @@ describe('who is on a house', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Somebody has billed us' }))
     await pick(user, 'Who', 'A mason')
-    await pick(user, 'What for', 'Civil labour')
-    fireEvent.change(screen.getByLabelText('How much they have billed'), { target: { value: '340000' } })
+    await pick(user, 'Trade', 'Civil labour')
+    fireEvent.change(screen.getByLabelText('Amount billed'), { target: { value: '340000' } })
     fireEvent.change(screen.getByLabelText('Their bill number'), { target: { value: 'CH-12' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put it down' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onRaise).toHaveBeenCalledWith(
@@ -217,13 +217,13 @@ describe('who is on a house', () => {
     renderWith()
 
     fireEvent.click(screen.getByRole('button', { name: 'Somebody has billed us' }))
-    expect(screen.getByLabelText('Which day')).toBeTruthy()
+    expect(screen.getByLabelText('Date')).toBeTruthy()
     expect(screen.queryByLabelText('Or a rate')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Never mind' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
     expect(screen.getByLabelText('Or a rate')).toBeTruthy()
-    expect(screen.queryByLabelText('Which day')).toBeNull()
+    expect(screen.queryByLabelText('Date')).toBeNull()
   })
 
   it('keeps the form open with what was typed when the server refused it', async () => {
@@ -244,9 +244,9 @@ describe('who is on a house', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
     await pick(user, 'Who', 'A mason')
-    await pick(user, 'What for', 'Civil labour')
+    await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(screen.queryByLabelText('Who')).toBeNull()
@@ -261,9 +261,9 @@ describe('who is on a house', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
     await pick(user, 'Who', 'A mason')
-    await pick(user, 'What for', 'Civil labour')
+    await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalled()
@@ -276,12 +276,12 @@ describe('a bill that should not have been raised', () => {
   it('asks before it takes one out, because a bill cannot be put back from a screen', async () => {
     const { onTakeOut } = renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 340,000 billed by A mason' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 340,000 billed by A mason' }))
     expect(onTakeOut).not.toHaveBeenCalled()
     // Said plainly, because somebody disputing a bill is exactly the case the record is kept for.
-    expect(screen.getByText('Hide it?')).toBeTruthy()
+    expect(screen.getByText('Remove this?')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, take it out' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }))
 
     await waitFor(() => {
       expect(onTakeOut).toHaveBeenCalledWith('b1')
@@ -291,8 +291,8 @@ describe('a bill that should not have been raised', () => {
   it('lets somebody change their mind without anything happening', () => {
     const { onTakeOut } = renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take out 340,000 billed by A mason' }))
-    fireEvent.click(screen.getAllByRole('button', { name: 'Never mind' })[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 340,000 billed by A mason' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel' })[0])
 
     expect(onTakeOut).not.toHaveBeenCalled()
   })

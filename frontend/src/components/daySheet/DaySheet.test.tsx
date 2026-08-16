@@ -50,11 +50,11 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 }
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
-  await pick(user, 'What for', 'Cement')
-  await pick(user, 'Who was paid', 'A mason')
-  await user.type(screen.getByLabelText('How much'), amount)
+  await pick(user, 'Trade', 'Cement')
+  await pick(user, 'Paid to', 'A mason')
+  await user.type(screen.getByLabelText('Amount'), amount)
   await user.type(screen.getByLabelText('Cheque number'), '0001')
-  await pick(user, 'Which account', 'Bank 0000')
+  await pick(user, 'Account', 'Bank 0000')
 }
 
 describe('a day of payments', () => {
@@ -62,9 +62,9 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.type(screen.getByLabelText('How much'), '4974980')
+    await user.type(screen.getByLabelText('Amount'), '4974980')
 
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('4,974,980')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('4,974,980')
   })
 
   it('keeps the running total of the sitting at the top', async () => {
@@ -73,7 +73,7 @@ describe('a day of payments', () => {
 
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
-    await user.type(screen.getByLabelText('How much'), '10000')
+    await user.type(screen.getByLabelText('Amount'), '10000')
 
     // What is already down plus what is being typed, because he is reconciling against a cheque book while he types.
     expect(screen.getByText('35,000')).toBeTruthy()
@@ -87,10 +87,10 @@ describe('a day of payments', () => {
     await user.click(screen.getByRole('button', { name: 'Add another' }))
 
     // Said by the name he calls it rather than by the id it is stored under, because the control now holds the row rather than a string.
-    expect(screen.getByLabelText<HTMLInputElement>('Which account').value).toBe('Bank 0000')
+    expect(screen.getByLabelText<HTMLInputElement>('Account').value).toBe('Bank 0000')
     // What does change: it is a different trade, a different person and a different amount every time.
-    expect(screen.getByLabelText<HTMLSelectElement>('What for').value).toBe('')
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
+    expect(screen.getByLabelText<HTMLSelectElement>('Trade').value).toBe('')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('')
     expect(screen.getByText('1-A, Phase 0')).toBeTruthy()
   })
 
@@ -128,13 +128,13 @@ describe('a day of payments', () => {
 
     expect(within(screen.getByRole('list')).getByText('25,000')).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Take out 25,000 to A mason' }))
+    await user.click(screen.getByRole('button', { name: 'Remove 25,000 to A mason' }))
 
     expect(within(screen.getByRole('list')).queryByText('25,000')).toBeNull()
     // And the total follows it out, because the total is what is in the sitting rather than what was ever typed into it.
     expect(within(screen.getByRole('banner')).getByText('10,000')).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
     expect(onPutIn).toHaveBeenCalledWith([expect.objectContaining({ amount: '10,000' })])
   })
 
@@ -148,7 +148,7 @@ describe('a day of payments', () => {
 
     // Not there at all, rather than there and greyed out: a question that does not apply should not be on the screen.
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
-    expect(screen.queryByLabelText('Which account')).toBeNull()
+    expect(screen.queryByLabelText('Account')).toBeNull()
   })
 
   it('asks which account for a transfer but not for a pay order', async () => {
@@ -156,12 +156,12 @@ describe('a day of payments', () => {
     aSheet()
 
     await user.click(screen.getByRole('radio', { name: 'Transfer' }))
-    expect(screen.getByLabelText('Which account')).toBeTruthy()
+    expect(screen.getByLabelText('Account')).toBeTruthy()
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
 
     // A pay order can be bought over the counter with cash, so there may be no account behind it.
     await user.click(screen.getByRole('radio', { name: 'Pay order' }))
-    expect(screen.queryByLabelText('Which account')).toBeNull()
+    expect(screen.queryByLabelText('Account')).toBeNull()
   })
 
   it('lets an account be added from the picker, without leaving the sitting', async () => {
@@ -171,19 +171,19 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onAddAccount } = aSheet({ accounts: [] })
 
-    await pick(user, 'What for', 'Cement')
-    await user.type(screen.getByLabelText('How much'), '25000')
+    await pick(user, 'Trade', 'Cement')
+    await user.type(screen.getByLabelText('Amount'), '25000')
 
-    await useTheName(user, 'Which account', 'Bank 0000')
+    await useTheName(user, 'Account', 'Bank 0000')
     await user.type(screen.getByLabelText('The account number for Bank 0000'), '55555555550000')
-    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    await user.click(screen.getByRole('button', { name: 'Add' }))
 
     // The whole number was typed; only its last four digits were handed on, so the rest never crosses the wire.
     expect(onAddAccount).toHaveBeenCalledWith('Bank 0000', '0000')
     expect(JSON.stringify(onAddAccount.mock.calls)).not.toContain('5555555555')
     // Back in the sitting with the account chosen, and nothing typed so far thrown away.
-    expect(screen.getByLabelText<HTMLInputElement>('What for').value).toBe('Cement')
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('25,000')
+    expect(screen.getByLabelText<HTMLInputElement>('Trade').value).toBe('Cement')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('25,000')
   })
 
   it('asks what kind of cost a new trade is, and never guesses it', async () => {
@@ -191,17 +191,17 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onAddTrade } = aSheet()
 
-    await useTheName(user, 'What for', 'Scaffolding')
+    await useTheName(user, 'Trade', 'Scaffolding')
 
     // Nothing has been added yet: the offer opens the question rather than answering it.
     expect(onAddTrade).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('radio', { name: 'Land, taxes and commission' }))
-    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+    await user.click(screen.getByRole('button', { name: 'Add' }))
 
     expect(onAddTrade).toHaveBeenCalledWith({ name: 'Scaffolding', countsAsBuildingCost: false })
     // Added and picked. Adding a trade and leaving the field empty is the same walk again.
-    expect(screen.getByLabelText<HTMLInputElement>('What for').value).toBe('Scaffolding')
+    expect(screen.getByLabelText<HTMLInputElement>('Trade').value).toBe('Scaffolding')
   })
 
   it('offers nothing to add for a trade already on the list, however it is spelt or spaced', async () => {
@@ -211,8 +211,8 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.click(screen.getByRole('combobox', { name: 'What for' }))
-    await user.type(screen.getByRole('combobox', { name: 'What for' }), ' grey  STRUCTURE ')
+    await user.click(screen.getByRole('combobox', { name: 'Trade' }))
+    await user.type(screen.getByRole('combobox', { name: 'Trade' }), ' grey  STRUCTURE ')
 
     expect(screen.queryByRole('button', { name: /^Use/ })).toBeNull()
   })
@@ -222,7 +222,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.type(screen.getByLabelText('How much'), '111111111111')
+    await user.type(screen.getByLabelText('Amount'), '111111111111')
 
     expect(screen.getByRole('status').textContent).toContain('not one this can add')
 
@@ -238,7 +238,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Amount'))
     await user.click(screen.getByLabelText('Note'))
 
     expect(screen.getByText('Put in how much was paid.')).toBeTruthy()
@@ -250,25 +250,25 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onPutIn } = aSheet()
 
-    await pick(user, 'What for', 'Cement')
-    await pick(user, 'Who was paid', 'A mason')
-    await user.type(screen.getByLabelText('How much'), '300000')
+    await pick(user, 'Trade', 'Cement')
+    await pick(user, 'Paid to', 'A mason')
+    await user.type(screen.getByLabelText('Amount'), '300000')
 
-    await user.click(screen.getByRole('button', { name: 'Pay it more than one way' }))
-    await user.type(screen.getByLabelText('How much of it, part 1'), '200000')
+    await user.click(screen.getByRole('button', { name: 'Split payment' }))
+    await user.type(screen.getByLabelText('Amount, part 1'), '200000')
     await user.type(screen.getByLabelText('Cheque number, part 1'), '4471')
     // A cheque asks which account it left, and it asks that of the part rather than of the payment: the cash half has no account and never will.
-    await pick(user, 'Which account, part 1', 'Bank 0000')
+    await pick(user, 'Account, part 1', 'Bank 0000')
     // Scoped to the second part's own group: both parts draw the same four words, and what tells them apart is the group each sits in -- which is also what a screen reader announces.
     await user.click(
-      within(screen.getByRole('radiogroup', { name: 'How paid, part 2' })).getByRole('radio', { name: 'Cash' })
+      within(screen.getByRole('radiogroup', { name: 'Payment method, part 2' })).getByRole('radio', { name: 'Cash' })
     )
-    await user.type(screen.getByLabelText('How much of it, part 2'), '100000')
+    await user.type(screen.getByLabelText('Amount, part 2'), '100000')
 
     // The arithmetic while he types, not a refusal at the end.
     expect(screen.getByRole('status').textContent).toContain('all of it')
 
-    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     const [sent] = onPutIn.mock.calls[0]
     expect(sent).toHaveLength(1)
@@ -286,10 +286,10 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.type(screen.getByLabelText('How much'), '300000')
-    await user.click(screen.getByRole('button', { name: 'Pay it more than one way' }))
-    await user.type(screen.getByLabelText('How much of it, part 1'), '200000')
-    await user.type(screen.getByLabelText('How much of it, part 2'), '40000')
+    await user.type(screen.getByLabelText('Amount'), '300000')
+    await user.click(screen.getByRole('button', { name: 'Split payment' }))
+    await user.type(screen.getByLabelText('Amount, part 1'), '200000')
+    await user.type(screen.getByLabelText('Amount, part 2'), '40000')
 
     expect(screen.getByRole('status').textContent).toContain('60,000')
     expect(screen.getByRole('status').textContent).toContain('still to split')
@@ -302,7 +302,7 @@ describe('a day of payments', () => {
     expect(document.body.textContent).not.toContain('More')
 
     // What replaced the promise: the account is added from the picker itself, so the way to add one is where he is already looking rather than on another screen.
-    expect(screen.getByRole('combobox', { name: 'Which account' }).getAttribute('placeholder')).toBe('No accounts yet')
+    expect(screen.getByRole('combobox', { name: 'Account' }).getAttribute('placeholder')).toBe('No accounts yet')
   })
 
   it('sends the whole sitting in one go', async () => {
@@ -311,11 +311,11 @@ describe('a day of payments', () => {
 
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
-    await pick(user, 'What for', 'Grey structure')
-    await pick(user, 'Who was paid', 'A mason')
-    await user.type(screen.getByLabelText('How much'), '10000')
+    await pick(user, 'Trade', 'Grey structure')
+    await pick(user, 'Paid to', 'A mason')
+    await user.type(screen.getByLabelText('Amount'), '10000')
     await user.type(screen.getByLabelText('Cheque number'), '0002')
-    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(onPutIn).toHaveBeenCalledTimes(1)
     const sent = onPutIn.mock.calls[0]?.[0] as Array<Draft>
@@ -327,8 +327,8 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onPutIn } = aSheet()
 
-    await pick(user, 'What for', 'Cement')
-    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    await pick(user, 'Trade', 'Cement')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(screen.getByRole('alert').textContent).toContain('Say who was paid.')
     expect(onPutIn).not.toHaveBeenCalled()
@@ -345,7 +345,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet({ refusal: 'This site is not one of yours.' })
 
-    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     const onScreen = document.body.textContent
     for (const technical of [
@@ -375,7 +375,7 @@ describe('a question that answers for itself', () => {
     // Opening a day sheet is not a mistake. Six red questions before a single answer is the app shouting at somebody who has done nothing.
     aSheet()
 
-    expect(await screen.findByLabelText('What for')).toBeTruthy()
+    expect(await screen.findByLabelText('Trade')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
@@ -384,8 +384,8 @@ describe('a question that answers for itself', () => {
     aSheet()
 
     // Straight past "what for" without answering it.
-    await user.click(screen.getByLabelText('What for'))
-    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Trade'))
+    await user.click(screen.getByLabelText('Amount'))
 
     expect(screen.getByRole('alert').textContent).toBe('Pick what this was for.')
   })
@@ -394,11 +394,11 @@ describe('a question that answers for itself', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.click(screen.getByLabelText('What for'))
-    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Trade'))
+    await user.click(screen.getByLabelText('Amount'))
     expect(screen.getByText('Pick what this was for.')).toBeTruthy()
 
-    await pick(user, 'What for', 'Cement')
+    await pick(user, 'Trade', 'Cement')
 
     // Only that one goes. The amount, which the eye also left, is still unanswered and still says so.
     expect(screen.queryByText('Pick what this was for.')).toBeNull()
@@ -411,7 +411,7 @@ describe('a question that answers for itself', () => {
     aSheet()
 
     await user.click(screen.getByRole('radio', { name: 'Cash' }))
-    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Amount'))
     await user.click(screen.getByLabelText('Note'))
 
     expect(screen.queryByText('Add the cheque number.')).toBeNull()
@@ -422,10 +422,10 @@ describe('a question that answers for itself', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.click(screen.getByLabelText('How much'))
+    await user.click(screen.getByLabelText('Amount'))
     await user.click(screen.getByLabelText('Note'))
 
     expect(screen.getByRole('alert').textContent).toBe('Put in how much was paid.')
-    expect(screen.getByLabelText('How much').getAttribute('aria-invalid')).toBe('true')
+    expect(screen.getByLabelText('Amount').getAttribute('aria-invalid')).toBe('true')
   })
 })
