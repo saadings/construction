@@ -23,7 +23,12 @@ const LOOKS = {
   // The press that actually removes something, and the only red in this list.
 
   // Never the step that *opens* an are-you-sure. `oneWayOut` states that in words -- red belongs to the step that removes rather than to the thing somebody hits by accident -- and both screens that had one did the opposite, with `Put this house away` red and the confirmation under it grey. Those two openers are `WayOut` now, and this is where their colour went.
-  removing: { variant: 'link', undoing: 'text-destructive h-auto p-0 has-[>svg]:px-0 text-sm no-underline' } as const,
+
+  // `py-3 -my-3` for the reason `WayOut` has it: the padding makes the box a finger lands on 44px, the negative margin takes it back out of the layout so no row moves. A floor about tappable area rather than visible size.
+  removing: {
+    variant: 'link',
+    undoing: 'text-destructive h-auto px-0 py-3 -my-3 has-[>svg]:px-0 text-sm no-underline',
+  } as const,
 }
 
 // What is undone whichever look it wears, and each is one of shadcn's own defaults. `text-base` because theirs is `text-sm`, which is 14px on a control this app is pressed on all day; `h-auto` because theirs is a fixed 36px that cuts the padding below off. The padding and the size are this app's and are older than the wrapper -- rebuilding what a button is made of is not a decision to make its buttons a different shape.
@@ -49,6 +54,8 @@ export function Button({
   return (
     <OnShadcn
       variant={variant}
+      // Said on the control rather than worked out from its class list, so what measures tap targets can ask the page which controls remove something. `removing` is the press that takes a row out; `WayOut` says the same of itself. A probe that infers what a control is from how it looks agrees with its own guess.
+      data-removes={look === 'removing' ? '' : undefined}
       // Never `submit`: nothing here is inside a `form`, and a stray submit reloads the page and loses everything typed. shadcn's button does not say this, so it is a `submit` the moment one of these ends up in a form somebody adds later.
       type="button"
       // Off while it is sending, so the same day sheet cannot go in twice.

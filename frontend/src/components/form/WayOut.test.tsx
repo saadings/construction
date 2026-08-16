@@ -73,6 +73,22 @@ describe('what shadcn brings that a way out does not want', () => {
     expect(classesOn()).not.toContain('inline-flex')
     expect(classesOn()).toContain('h-auto')
     expect(classesOn()).not.toContain('h-9')
-    expect(classesOn()).toMatch(/(^|\s)p-0(\s|$)/)
+    // Horizontally only. This used to say `p-0` and the vertical half of that was the defect: measured at 390, thirteen of the thirteen controls in this app that remove something were 20px high, less than half of what a thumb needs, on the controls where a mis-tap costs a row somebody has to re-enter.
+    expect(classesOn()).toMatch(/(^|\s)px-0(\s|$)/)
+  })
+
+  it('gives a thumb something to hit without moving the row it sits in', () => {
+    // The pair, and the pair is the whole trick. `py-3` grows the box a finger lands on from 20px to 44; `-my-3` gives the same 24px back to the layout, so nothing on any row moves -- 68 of the 69 comparable pictures were identical afterwards, and the one that differed was the chart that never draws twice the same.
+
+    // Which is why the floor is written as tappable area rather than as visible size. A rule read as "44px tall" is one somebody argues an exemption out of the first time it would double the height of a dense table; this one needs no exemption at all.
+    expect(classesOn(), 'nothing makes this bigger than its own words').toMatch(/(^|\s)py-3(\s|$)/)
+    expect(classesOn(), 'the row it sits in moves to make room').toMatch(/(^|\s)-my-3(\s|$)/)
+  })
+
+  it('says what it does, so the thing that measures does not have to guess', () => {
+    // `yarn columns` finds these by asking the page for `[data-removes]` and measuring what it finds. A probe that worked out what a control is from its colour or its class list would agree with its own guess; this one asks the control.
+    render(<WayOut>Take it back</WayOut>)
+
+    expect(screen.getByRole('button').hasAttribute('data-removes')).toBe(true)
   })
 })
