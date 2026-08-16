@@ -1,4 +1,4 @@
-import { createReadStream, existsSync } from 'node:fs'
+import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve } from 'node:path'
 
@@ -17,8 +17,45 @@ const MIME: Record<string, string> = {
   '.json': 'application/json',
 }
 
+// What the gallery is built from. Anything newer than the build means the pictures would be of an older app.
+const THE_SOURCES = ['frontend/src', 'frontend/gallery.html', 'frontend/vite.gallery.config.ts', 'shared'].map((from) =>
+  resolve(import.meta.dirname, '..', from)
+)
+
+function newestUnder(path: string): number {
+  const it = statSync(path)
+
+  if (!it.isDirectory()) return it.mtimeMs
+
+  return readdirSync(path).reduce((newest, name) => Math.max(newest, newestUnder(join(path, name))), it.mtimeMs)
+}
+
+// A build older than what it was built from. Nothing else notices: the server happily serves it, every screen draws, the count comes out right, and the run reports thirteen screens and fifty pictures of an app four merges old.
+
+// That is what happened -- `yarn shots` serves `dist-gallery` and does not build it, and a stale build produces a complete-looking set with nothing anywhere saying so. Refused rather than rebuilt, because the gallery is a separate artifact and CI builds it in its own step; a silent rebuild here would hide that and pay for it twice.
+
+// Modification times, so a branch switch that rewrites sources reads as stale. That is a false alarm in the cheap direction: the answer is one command, and the alternative is a confident picture of the wrong commit.
+function refuseAGalleryOlderThanTheApp(): void {
+  const built = statSync(join(GALLERY, 'gallery.html')).mtimeMs
+  const newest = Math.max(...THE_SOURCES.map(newestUnder))
+
+  if (newest > built) {
+    throw new Error(
+      `The built gallery is older than what it is built from. Run \`yarn gallery:build\`.\n` +
+        `  built  ${new Date(built).toISOString()}\n` +
+        `  source ${new Date(newest).toISOString()}`
+    )
+  }
+}
+
 // Port zero, so a second run of this on the same machine is not fighting the first. Two sessions share this one.
 export async function serveTheGallery(): Promise<{ at: string; stop: () => Promise<void> }> {
+  if (!existsSync(join(GALLERY, 'gallery.html'))) {
+    throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
+  }
+
+  refuseAGalleryOlderThanTheApp()
+
   const server = createServer((request, response) => {
     const asked = new URL(request.url ?? '/', 'http://localhost').pathname
     const wanted = asked === '/' ? '/gallery.html' : asked

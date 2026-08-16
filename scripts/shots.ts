@@ -92,7 +92,8 @@ async function main(): Promise<void> {
       await on.clock.install({ time: new Date(`${A_DAY}T09:00:00`) })
 
       for (const screen of screens) {
-        await on.goto(`${server.at}/?camera#${screen.slug}`)
+        // The slug is in the query as well as the hash, so this is a real load rather than a jump within one document. Going to a new hash alone leaves everything as it was -- including how far down the page was scrolled for the lower half of the screen before it, which put `extra-work` 348px above the top of its own picture and opened it on the form instead of the bill list.
+        await on.goto(`${server.at}/?camera&screen=${screen.slug}#${screen.slug}`)
 
         // Waited for by what the screen says rather than by a timer. A screenshot on a timeout is a picture of whatever had loaded, and it looks exactly like a screenshot.
 
@@ -115,10 +116,11 @@ async function main(): Promise<void> {
 
         const startsAt = box.y
 
-        if (startsAt > TOP_OF_THE_SCREEN) {
+        // Both directions. This was `> TOP_OF_THE_SCREEN` alone, which is only half an assertion: it catches furniture pushing the screen down and says nothing about the screen being pushed *up*, which is what a page left scrolled does. Going to a new hash on the same document is not a reload, so the scroll from the lower half of the screen before this one is still there -- and a negative top passed this happily.
+        if (Math.abs(startsAt) > TOP_OF_THE_SCREEN) {
           throw new Error(
-            `The app's screen starts ${String(Math.round(startsAt))}px down on ${screen.slug} at ${String(size.width)}. ` +
-              `A picture with the gallery's own furniture in it is not a picture of a phone.`
+            `The app's screen starts ${String(Math.round(startsAt))}px from the top on ${screen.slug} at ${String(size.width)}. ` +
+              `Positive is the gallery's own furniture in the picture; negative is a page still scrolled from the screen before it.`
           )
         }
 
