@@ -21,6 +21,9 @@ const SCREENS_READ_ON = [
 /** The floor. A run that measured nothing reports the same clean nothing as an app whose columns all line up. */
 const AT_LEAST_THIS_MANY_ROWS = 20
 
+/** The same floor for the other half. A selector that stopped finding figures reports the same clean nothing as a screen where none is cut. */
+const AT_LEAST_THIS_MANY_FIGURES = 100
+
 // Handed to the browser as text rather than as a function, so this file stays a Node script with no DOM types in it -- the same reason the pictures are taken through the locator API. What comes back is checked below rather than trusted, because a string evaluated in a page can return anything at all.
 
 // Two things it is careful about. A class worn by one element is not a column of anything, so only a row written once and drawn many times is compared. And a cell that is not drawn has no position while a browser still answers 0 for it: counted as a column at x=0, every row with an optional cell reads as broken -- `their-account` shows `Billed` or `Paid` and never both, and reading that absence as a position is the instrument inventing the defect it went looking for.
@@ -58,7 +61,49 @@ const WHERE_THE_COLUMNS_ARE = `(() => {
   return { rows, moved }
 })()`
 
+// The second question, and a different failure from the first. A wide table in its own scroll container is the right pattern and this does not argue with it -- what it asks is which column ends up under the cut.
+
+// Text may truncate; a figure may not. A name cut with an ellipsis reads as incomplete and the reader swipes. `9,310,000` cut to `9,3` reads as a different, smaller number, and nothing on the screen says otherwise -- on a table of house totals that is a wrong figure presented as a right one.
+
+// Asked of the page as first drawn rather than of what a scroll could reveal, because what a person sees is the first state. And a figure with no box answers 0 for every edge, which is the same not-there-reading-as-a-value the sweep above already skips.
+const WHAT_IS_CUT_IN_HALF = `(() => {
+  const clipping = (el) => {
+    const how = getComputedStyle(el)
+    return how.overflowX === 'auto' || how.overflowX === 'scroll' || how.overflowX === 'hidden'
+  }
+
+  const cut = []
+  let figures = 0
+
+  for (const figure of document.querySelectorAll('.tabular-nums')) {
+    const box = figure.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    figures += 1
+
+    // The worst of them and not one line each: a figure can sit inside several things that clip, and the same figure reported three times reads as three defects.
+    let worst = 0
+
+    for (let above = figure.parentElement; above !== null; above = above.parentElement) {
+      if (!clipping(above)) continue
+
+      const holds = above.getBoundingClientRect()
+      const hidden = Math.round(Math.max(0, holds.left - box.left) + Math.max(0, box.right - holds.right))
+
+      // A whole figure outside the container is off-screen rather than cut in half, and that is the pattern working: nothing of it is being read.
+      if (hidden > 0 && hidden < Math.round(box.width)) worst = Math.max(worst, hidden)
+    }
+
+    if (worst > 0) {
+      cut.push({ said: figure.textContent.trim().slice(0, 24), hidden: worst, width: Math.round(box.width) })
+    }
+  }
+
+  return { figures, cut }
+})()`
+
 type Moved = { cls: string; cell: number; xs: Array<number> }
+
+type Cut = { said: string; hidden: number; width: number }
 
 /** What came back from the page, checked rather than assumed: a bad shape here would read as a screen with nothing wrong on it. */
 function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
@@ -88,6 +133,34 @@ function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
   }
 }
 
+/** The other half of what came back, checked the same way and for the same reason. */
+function whatIsCut(said: unknown): { figures: number; cut: Array<Cut> } {
+  if (typeof said !== 'object' || said === null || !('figures' in said) || !('cut' in said)) {
+    throw new Error('The page answered something that is not a count of figures.')
+  }
+
+  const { figures, cut } = said
+  if (typeof figures !== 'number' || !Array.isArray(cut)) {
+    throw new Error('The page answered a count with no figures or no findings in it.')
+  }
+
+  return {
+    figures,
+    cut: cut.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('hidden' in one) || !('width' in one)) {
+        throw new Error('The page answered a cut figure with nothing in it.')
+      }
+
+      const { said: text, hidden, width } = one
+      if (typeof text !== 'string' || typeof hidden !== 'number' || typeof width !== 'number') {
+        throw new Error('The page answered a cut figure of the wrong shape.')
+      }
+
+      return { said: text, hidden, width }
+    }),
+  }
+}
+
 async function main(): Promise<void> {
   if (!existsSync(join(GALLERY, 'gallery.html'))) {
     throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
@@ -97,6 +170,7 @@ async function main(): Promise<void> {
   const browser = await chromium.launch()
   const wrong: Array<string> = []
   let rowsSeen = 0
+  let figuresSeen = 0
 
   try {
     const page = await browser.newPage()
@@ -123,6 +197,15 @@ async function main(): Promise<void> {
             `${screen.slug} at ${String(size.width)}: cell ${String(moved.cell)} sits at ${moved.xs.join(', ')} — ${moved.cls}`
           )
         }
+
+        const figures = whatIsCut(await page.evaluate(WHAT_IS_CUT_IN_HALF))
+        figuresSeen += figures.figures
+
+        for (const cut of figures.cut) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: ${cut.said} is cut in half — ${String(cut.hidden)}px of ${String(cut.width)} is outside what holds it`
+          )
+        }
       }
     }
   } finally {
@@ -137,17 +220,25 @@ async function main(): Promise<void> {
     )
   }
 
+  if (figuresSeen < AT_LEAST_THIS_MANY_FIGURES) {
+    throw new Error(
+      `Only ${String(figuresSeen)} figures were measured across every screen, which is too few to have looked.`
+    )
+  }
+
   if (wrong.length > 0) {
-    console.error(`A column moves between rows of the same list:\n\n${wrong.join('\n')}\n`)
+    console.error(`A column of figures does not read as one:\n\n${wrong.join('\n')}\n`)
     console.error(
-      'A grid written once per row sizes a content-shaped track to that row alone. Declare the tracks once on the list and give every row `grid-cols-subgrid`.'
+      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. And a figure cut in half reads as a smaller figure rather than an incomplete one, so give a phone fewer columns rather than a narrower one.'
     )
     process.exitCode = 1
 
     return
   }
 
-  console.log(`Every column holds, across ${String(rowsSeen)} rows at ${String(SCREENS_READ_ON.length)} widths.`)
+  console.log(
+    `Every column holds and no figure is cut, across ${String(rowsSeen)} rows and ${String(figuresSeen)} figures at ${String(SCREENS_READ_ON.length)} widths.`
+  )
 }
 
 await main()

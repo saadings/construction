@@ -107,7 +107,9 @@ function Houses({ houses }: { houses: WhatIsHappening['houses'] }) {
         <p className="text-muted-foreground">No houses yet.</p>
       ) : (
         // The size is set back because shadcn's table is `text-sm`, and these rows are the reading rather than a note under it -- the same decision the other four tables took.
-        <Table className="min-w-[26rem] text-base">
+
+        // And no minimum width, because at 390 a 26rem table left `9,310,000` rendering as `9,3` under the edge of its own scroller. A name cut with an ellipsis reads as incomplete and somebody swipes; a figure cut in half reads as a different, smaller figure, and nothing on the screen says otherwise. So a phone gets fewer columns rather than narrower ones, and the money is what survives.
+        <Table className="text-base">
           <TableBody>
             {houses.map((house) => (
               <TableRow key={house.siteId}>
@@ -117,7 +119,8 @@ function Houses({ houses }: { houses: WhatIsHappening['houses'] }) {
                     {house.name}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground py-2.5 pr-4 text-sm">
+                {/* The column a phone gives up. Where a house has got to is a word somebody can get from the house itself; the two figures beside it are not. */}
+                <TableCell className="text-muted-foreground hidden py-2.5 pr-4 text-sm sm:table-cell">
                   {STAGE[house.stage] ?? house.stage}
                 </TableCell>
                 <TableCell className="py-2.5 pr-4 text-right">
