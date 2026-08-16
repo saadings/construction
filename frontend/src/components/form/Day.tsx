@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils'
 import { Button } from '../ui/button'
 import { Calendar } from '../ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
-import { Field } from './Field'
+import { Field, useWhatIsAsked } from './Field'
 
 // One way to pick a day in this app. Every screen used `<Line type="date" />`, which is an input the browser draws: a grey OS field with a calendar glyph in it, at its own size, in its own colours, and no CSS here reaches any of it. Nauman sent a screenshot of one and asked why the app is not shadcn throughout when he had said it should be.
 
@@ -64,14 +64,41 @@ export function Day({
   onPick: (day: string) => void
   look?: keyof typeof LOOKS
 }) {
+  return look === 'beside' ? (
+    <TheDay label={label} value={value} onPick={onPick} look={look} />
+  ) : (
+    <Field label={label} hint={hint} problem={problem}>
+      <TheDay label={label} value={value} onPick={onPick} look={look} />
+    </Field>
+  )
+}
+
+// Its own component only so that it is inside the `Field` and can read what the field is asking. The id is the whole reason: `Field` draws a label pointing at one, nothing here carried it, and tapping the words above every date in the app did nothing at all. On a phone those words are a bigger target than the control under them.
+
+// Read outside a `Field` too, when the look is `beside` -- and the answer there is the empty one every context has, so the control carries no id and no label points at it. That is right rather than a gap: a date sitting in a stage's row has no label of its own to be pointed at.
+function TheDay({
+  label,
+  value,
+  onPick,
+  look,
+}: {
+  label: string
+  value: string
+  onPick: (day: string) => void
+  look: keyof typeof LOOKS
+}) {
   const [open, setOpen] = useState(false)
+  const asked = useWhatIsAsked()
   const chosen = theDayIn(value)
   const said = asWords(value)
 
-  const control = (
+  return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={asked.id}
+          aria-invalid={asked.invalid || undefined}
+          aria-describedby={asked.describedBy}
           variant={LOOKS[look].variant}
           // Always named, even where there is no label above it: in a row of stages the visible words belong to the stage, and a screen reader would otherwise be handed a date with nothing saying which one.
           aria-label={said === undefined ? `${label}: no day chosen` : `${label}: ${said}`}
@@ -98,13 +125,5 @@ export function Day({
         />
       </PopoverContent>
     </Popover>
-  )
-
-  return look === 'beside' ? (
-    control
-  ) : (
-    <Field label={label} hint={hint} problem={problem}>
-      {control}
-    </Field>
   )
 }

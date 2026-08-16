@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
+import { drawnByTheBrowserIn } from './components/form/theBrowserDrawsItNot.test'
 import { everyScreen } from './testing/screens'
 import { withoutComments } from './testing/source'
 
@@ -13,10 +14,22 @@ import { withoutComments } from './testing/source'
 /** The fields that hold a `YYYY-MM-DD` day. Every one of them is stored the way the ledger stores a day and read by somebody who does not. */
 const A_DAY = ['day', 'raisedOn', 'billedOn', 'agreedOn', 'paidOn', 'receivedOn', 'takenOn']
 
-// One left of the three. Money coming in and paying out came out of this list in the branch that split a payment between cash and cheques -- both were being rewritten there anyway, and a picture from CI had already shown what the native control does: `07/04/2026` beside `Sat 4 Jul`, from one variable, disagreeing.
+// Empty. Money coming in and paying out came out of it in the branch that split a payment between cash and cheques; `WhoIsOnThisHouse` is the last and it converts in this change.
 
-// Listed rather than skipped, so a screen that starts showing a day tomorrow fails here on the day it is written rather than passing over a gap somebody already knew about.
-const STILL_TO_CONVERT = ['components/site/WhoIsOnThisHouse.tsx']
+// Kept rather than deleted, so a screen that starts showing a day tomorrow has somewhere for its name to go -- a list that has to be re-invented comes back as a skip. What has to be watched is the check underneath: a loop over an empty list passes by running no times.
+const STILL_TO_CONVERT: Array<string> = []
+
+/** Every place a screen hands a day to a control the OS draws, which then writes it in whatever order the device is set to. Borrowed rather than re-written: one reader, and it already knows that `type="date"` inside a comment is not a control. */
+export function whereTheOSWritesADay(source: string): Array<string> {
+  return drawnByTheBrowserIn(source).filter(
+    (what) => what.startsWith('date') || what === 'time' || what === 'month' || what === 'week'
+  )
+}
+
+/** Everything about a day that a screen has not converted yet, both halves together. */
+export function whatIsLeftIn(source: string): Array<string> {
+  return [...aDayWrittenRaw(source), ...whereTheOSWritesADay(source)]
+}
 
 /** Every place a screen puts a stored day straight onto the page. */
 export function aDayWrittenRaw(written: string): Array<string> {
@@ -43,7 +56,8 @@ export function aDayWrittenRaw(written: string): Array<string> {
 }
 
 describe('a day put on the page the way it is stored', () => {
-  const screens = everyScreen()
+  // shadcn's own are left out the way the guard this borrows from leaves them out: their `Input` *is* an `<input>`, and holding somebody else's component to this rule is how you come to maintain a fork of it.
+  const screens = everyScreen().filter(({ path }) => !path.startsWith('components/ui/'))
 
   it('is on none of our screens, but the one still waiting on the picker work', () => {
     const raw = screens
@@ -55,16 +69,37 @@ describe('a day put on the page the way it is stored', () => {
     expect(raw).toEqual([])
   })
 
+  it('is not left to the OS either, which writes one in whatever order the device is set to', () => {
+    // The hole this had, found in a picture rather than in the code. The day sheet at 390 showed `07/04/2026` at the top and `Sat 4 Jul` fifteen pixels under it -- the same variable twice, one written by the OS in American order, and under the rule above that string is the 7th of April. Two orders on one screen, in the change that existed to end three of them.
+
+    // Not a mistake in the sweep above; the sweep's subject was narrower than the rule's. It asks where *we* write a day and is blind to the places we let the browser write one for us. So the rule is asked here as well: a control whose order we cannot set cannot satisfy "one way to write a day".
+    const leftToTheOS = screens
+      .filter(({ path }) => !STILL_TO_CONVERT.includes(path))
+      .flatMap(({ path, source }) =>
+        whereTheOSWritesADay(source).map((what) => `${path}: type="${what}" is written by the OS, in the OS's order`)
+      )
+
+    expect(leftToTheOS).toEqual([])
+  })
+
   it('still names what is left, so the exemption cannot outlive it', () => {
     // The other end. An exemption that has stopped being true reads exactly like one that is still needed.
     for (const path of STILL_TO_CONVERT) {
       const screen = screens.find((one) => one.path === path)
 
       expect(screen, `${path} is exempted and is not a screen this app has`).toBeDefined()
-      expect(aDayWrittenRaw(screen?.source ?? ''), `${path} is exempted and has nothing left to convert`).not.toEqual(
-        []
-      )
+      expect(whatIsLeftIn(screen?.source ?? ''), `${path} is exempted and has nothing left to convert`).not.toEqual([])
     }
+
+    // And the check itself, against fixtures rather than against the app, because the list is now empty and a loop over nothing passes by running no times. This was written to catch a reader that had stopped seeing anything -- and it would have stopped being able to, on the day the last screen was converted. A floor that counts the defect is removed by the fix.
+
+    // Both halves, and the boundary between them: a date control in code is something left to convert, one inside a comment is not, and a screen with neither is finished. The middle line is the one that keeps `Day.tsx`'s own comment from reading as a defect.
+    expect(whatIsLeftIn('<Line value={day} type="date" />'), 'an OS control no longer reads as one').not.toEqual([])
+    expect(whatIsLeftIn('<span>Billed {stage.billedOn}</span>'), 'a raw day no longer reads as one').not.toEqual([])
+    expect(whatIsLeftIn('// it used to be `type="date"` and render {stage.billedOn}'), 'prose reads as code').toEqual(
+      []
+    )
+    expect(whatIsLeftIn('<Day value={day} onPick={setDay} />'), 'anything at all now reads as unconverted').toEqual([])
   })
 
   it('is asked of the screens that really show a day', () => {

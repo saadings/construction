@@ -35,10 +35,10 @@ const DRAWN_BY_THE_BROWSER_TOO = [
 // shadcn's own, copied in by their CLI. What they use inside themselves is theirs; what this repository writes is what this is about. Said as a path relative to `src`, which is how `everyScreen` names them; the sweep it replaced named them absolutely, and a leading slash left here would have quietly stopped filtering anything.
 const THEIRS = 'components/ui/'
 
-// One left of the four, listed by name and not by a count, because a count is satisfied by any four. The day sheet, money coming in and paying out came out of this list in the branch that split a payment between cash and cheques -- the three were being rewritten there, and a picture from CI had shown what the browser's own control does with a day: `07/04/2026` beside `Sat 4 Jul`, from one variable, disagreeing by fifteen pixels.
+// Empty, and it took eleven controls across eight screens to get here. The day sheet, money coming in and paying out came out of it in the branch that split a payment between cash and cheques; `WhoIsOnThisHouse` is the last, and it converts in this change.
 
-// Listed rather than skipped, so a screen reaching for a browser-drawn control fails here on the day it is written rather than passing over a gap somebody already knew about.
-const STILL_TO_CONVERT = ['components/site/WhoIsOnThisHouse.tsx']
+// Kept rather than deleted, because the next person reaching for `<select>` needs somewhere for their name to go and a list that has to be re-invented is a list that comes back as a skip. What has to be watched is the check underneath it: a loop over an empty list passes by running no times, which is the shape of a test that has stopped being able to fail.
+const STILL_TO_CONVERT: Array<string> = []
 
 /** Every place a screen opens a control the browser will draw. */
 export function drawnByTheBrowserIn(written: string): Array<string> {
@@ -69,6 +69,10 @@ describe('a control the browser draws', () => {
         `${path} is exempted and has nothing left to convert`
       ).not.toEqual([])
     }
+
+    // And the check itself, against something the app cannot repair away. The list is empty now, so the loop above runs no times and passes -- a test that has stopped being able to fail, on the day the thing it guarded was finally fixed. Two strings, one exempt-worthy and one not, keep it honest whatever the app does.
+    expect(drawnByTheBrowserIn('<Line value={day} type="date" />'), 'a real one no longer reads as one').not.toEqual([])
+    expect(drawnByTheBrowserIn('<Line value={name} type="text" />'), 'anything at all now reads as one').toEqual([])
   })
 
   it('is asked of the screens this app really has', () => {

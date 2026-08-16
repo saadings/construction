@@ -33,7 +33,7 @@ const ENGAGED: Array<Engaged> = [
 const CLAIMED: Array<Claimed> = [
   {
     _id: 'b1',
-    day: '2026-04-01',
+    day: '2026-04-21',
     amountPaisa: 340_000_00,
     personName: 'A mason',
     tradeName: 'Civil labour',
@@ -300,9 +300,37 @@ describe('a bill that should not have been raised', () => {
   it('reads a bill the way somebody would say it', () => {
     renderWith()
 
-    const bill = screen.getByText(/Civil labour · 2026-04-01/)
-    expect(bill.textContent).toContain('CH-12')
-    expect(bill.textContent).toContain('Including the extra room')
+    // The day first and the month second, on a day past the twelfth so both orders cannot be read into it.
+    const bill = screen.getByText('CH-12').parentElement
+    expect(bill?.textContent).toContain('21/04/2026')
+    expect(bill?.textContent).toContain('Civil labour')
+    expect(bill?.textContent).toContain('Including the extra room')
+  })
+
+  it('keeps the cheque number in one piece, however narrow the screen is', () => {
+    // Found in a picture and then found again in the next picture. This line was truncated, so at 390 it read `Civil labour · 27/06/2026 · CH…` -- two characters of the number, on the screen where somebody checks which cheque paid which bill, and the number is nowhere else on it.
+
+    // Letting it wrap fixed that and made a second one: `CH-114` came out as `CH-` and `114`, because a browser breaks a line at a hyphen. A cheque number in two halves is no better than one in two characters.
+
+    // Asserted as what holds each piece together rather than as where the line breaks, because nothing here lays anything out -- jsdom has no widths and `columns.ts` measures figures and cells rather than this. What can be asked is that every piece is inside something that refuses to break.
+    renderWith()
+
+    // Found from the cheque number, which is the one piece that appears once on the screen: the trade name is on the row above as well, and asking for it by text finds two.
+    const line = screen.getByText('CH-12').parentElement
+    const pieces = [...(line?.children ?? [])]
+
+    expect(pieces.map((piece) => piece.textContent)).toEqual([
+      'Civil labour',
+      '21/04/2026',
+      'CH-12',
+      'Including the extra room',
+    ])
+
+    for (const piece of pieces) {
+      expect(piece.className, `${String(piece.textContent)} can be broken across two lines`).toContain(
+        'whitespace-nowrap'
+      )
+    }
   })
 })
 
