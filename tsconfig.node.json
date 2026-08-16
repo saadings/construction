@@ -28,5 +28,6 @@
     "vitest.scenario.config.ts",
     "scripts/**/*.ts",
     "scenarios/**/*.ts"
-  ]
+  ],
+  "exclude": ["scenarios/control.scenario.test.ts"]
 }
