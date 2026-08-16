@@ -32,15 +32,23 @@ describe('who can sign in', () => {
     // A blank space reads as something that has not loaded, which is the same thing an empty list looks like.
     render(<WhoCanSignIn waiting={[]} onInvite={vi.fn()} onTakeOff={vi.fn()} />)
 
-    expect(screen.getByText('Nobody is waiting. Everyone invited has signed in.')).toBeTruthy()
+    expect(screen.getByText('Nobody is waiting.')).toBeTruthy()
     expect(screen.queryByRole('listitem')).toBeNull()
+  })
+
+  it('claims nothing about invitations that may never have been sent', () => {
+    // It said "Everyone invited has signed in" whenever the list was empty -- including on an instance where inviting has never once worked, which is where Nauman read it while working out why it did not. Zero and none-outstanding are the same empty list, and this component cannot tell them apart: it holds `waiting` and nothing else.
+    render(<WhoCanSignIn waiting={[]} onInvite={vi.fn()} onTakeOff={vi.fn()} />)
+
+    expect(screen.queryByText(/signed in/i)).toBeNull()
+    expect(screen.queryByText(/everyone/i)).toBeNull()
   })
 
   it('says it is still looking before the answer arrives', () => {
     render(<WhoCanSignIn waiting={null} onInvite={vi.fn()} onTakeOff={vi.fn()} />)
 
     expect(screen.getByRole('status', { name: 'Getting who is waiting' })).toBeTruthy()
-    expect(screen.queryByText('Nobody is waiting. Everyone invited has signed in.')).toBeNull()
+    expect(screen.queryByText('Nobody is waiting.')).toBeNull()
   })
 
   it('sends what was typed, and clears the box once it has gone', async () => {
