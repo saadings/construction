@@ -50,6 +50,7 @@ function OneHouse() {
   return (
     <Page
       title={site.name}
+      named={{ siteId: site.name }}
       beside={
         <span className="flex flex-wrap items-center gap-2">
           {/* Money in and money out, the two halves of the house, reached the same way. */}

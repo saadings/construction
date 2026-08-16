@@ -8,6 +8,7 @@ import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick, asChoices } from '../form/Pick'
 import { WayOut } from '../form/WayOut'
 import { Figure } from '../shell/Page'
+import { Trail } from '../shell/Trail'
 import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
 import { WhoWasPaid } from './WhoWasPaid'
@@ -122,6 +123,10 @@ export function DaySheet({
     <div className="flex flex-col">
       <header className="border-border bg-background/95 sticky top-0 z-10 border-b backdrop-blur-sm">
         <div className="flex flex-col gap-3 px-5 pt-4 pb-4 sm:px-7 lg:px-9">
+          {/* Asked for rather than inherited: this screen draws its own layout instead of sitting in a `Page`, because a sticky header over a form wants its padding inside each rather than around both. So the one thing `Page` would have given it has to be requested here, where forgetting it would be visible. */}
+          <Trail named={{ siteId: siteName }} />
+
+          {/* The house stays named here even though the trail above says it too. On the other screens that name is a subtitle under a real title and the trail makes it a duplicate; this screen has no `Page` and no title, so the house *is* the heading. Taking it out left the day sheet with nothing saying what it was. */}
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
             {/* Named on the box rather than beside it: this sits in the header of a sitting, where an upper-case question over it would be a second heading. */}

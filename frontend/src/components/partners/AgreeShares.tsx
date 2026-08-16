@@ -56,7 +56,8 @@ export function AgreeShares({
   beneath?: (what: WhatThePartnersHave) => ReactNode
 }) {
   return (
-    <Page title="What each partner takes" beside={<span className="text-muted-foreground text-sm">{siteName}</span>}>
+    // No house name beside the title any more: the trail above says it and links back to it, and two of them is the same screen saying one thing twice.
+    <Page title="What each partner takes" named={{ siteId: siteName }}>
       {what === undefined ? (
         <SharesWaiting />
       ) : what === null ? null : (

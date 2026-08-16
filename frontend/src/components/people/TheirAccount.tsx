@@ -73,6 +73,7 @@ export function TheirAccount({ answer }: { answer: { account: Account | null } |
   return (
     <Page
       title={account.name}
+      named={{ personId: account.name }}
       beside={
         account.phone === undefined ? undefined : <span className="text-muted-foreground text-sm">{account.phone}</span>
       }

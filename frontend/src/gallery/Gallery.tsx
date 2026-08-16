@@ -6,15 +6,18 @@ import { ON_SHOW } from './screens'
 
 // Every screen in the app, drawn from invented figures, with nothing signed in. What was missing was never the sign-in -- the screens already take props, and the routes are what hold the readings. What was missing is a renderer that applies CSS and somewhere a person can look.
 
-// The router is here for one reason: several screens carry `<Link>`, and a link outside a router throws. It is the same harness the component tests already use -- a root and a catch-all -- and nothing about routing is being shown.
-function withSomewhereForLinksToPoint(drawing: () => React.ReactNode) {
+// The router was here for one reason -- several screens carry `<Link>`, and a link outside a router throws -- and now for a second: a screen's trail is read off the address it was matched at, so a gallery that drew everything at `/` would photograph every screen with no trail whatever it really shows. Each entry says where it lives and it is drawn there.
+function whereItReallyLives(screen: OnShow) {
   const root = createRootRoute()
-  const anywhere = createRoute({ getParentRoute: () => root, path: '$', component: () => drawing() })
-  const here = createRoute({ getParentRoute: () => root, path: '/', component: () => drawing() })
+  const here = createRoute({ getParentRoute: () => root, path: screen.at, component: () => screen.draw() })
+
+  // Somewhere for a link out of the screen to point, so following one is a navigation rather than an error.
+  const anywhere = createRoute({ getParentRoute: () => root, path: '$', component: () => null })
 
   return createRouter({
     routeTree: root.addChildren([here, anywhere]),
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    // Matched at the pattern and entered at a real address: `$siteId` is what the trail looks up, `s1` is what it fills back into a link.
+    history: createMemoryHistory({ initialEntries: [screen.at.replaceAll(/\$\w+/g, 's1')] }),
   })
 }
 
@@ -68,7 +71,7 @@ export function Gallery() {
 
       {/* Keyed, so moving from one screen to the next starts it fresh rather than carrying half a form over. Named, so a test can ask what the screen drew without the gallery's own chrome counting as part of it. */}
       <div data-testid="the-screen">
-        <RouterProvider key={showing.slug} router={withSomewhereForLinksToPoint(showing.draw)} />
+        <RouterProvider key={showing.slug} router={whereItReallyLives(showing)} />
       </div>
     </div>
   )

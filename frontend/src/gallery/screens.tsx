@@ -33,6 +33,8 @@ export type OnShow = {
   name: string
   /** Where somebody reaches it in the app, so a screenshot can be placed. */
   where: string
+  /** The address pattern it really has, so it is drawn where it lives: a trail is read off the pattern it was matched at, and a screen drawn at `/` shows none. A part of a screen takes the address of the screen it is part of, and a `$param` stays a `$param` -- matching at `/sites/s1/shares` rather than `/sites/$siteId/shares` is what made the trail vanish from three screens while every test passed. */
+  at: string
   /** The screen this is one section of, when it is not a whole screen itself. The house screen composes its page out of several parts rather than drawing one component, so the gallery cannot reach it whole -- and four tables on it were unmeasured for exactly that reason. A part is drawn inside the same `Page` the route puts it in, so what is measured is the width it really has. */
   partOf?: string
   /** Words this screen shows and no other does. A gallery that answered every address with the first screen would otherwise draw twelve pictures of one, and every one of them would look right. */
@@ -47,6 +49,7 @@ const nothingTrue = () => Promise.resolve(true)
 export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'dashboard',
+    at: '/dashboard',
     name: 'Dashboard',
     where: 'the first row of the nav',
     proves: 'Owed right now',
@@ -94,12 +97,13 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'spent-by-trade',
+    at: '/sites/$siteId',
     name: 'What it went on',
     where: 'a house, down the screen',
     partOf: 'the house screen',
     proves: 'What it went on',
     draw: () => (
-      <Page title={THE_HOUSE}>
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <SpentByTrade
           byTrade={[
             { tradeId: 't1', name: 'Civil labour', paisa: paisa(4_318_000) },
@@ -138,12 +142,13 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'stages',
+    at: '/sites/$siteId',
     name: 'Billed in stages',
     where: 'a house built for a client, down the screen',
     partOf: 'the house screen',
     proves: 'Billed in stages',
     draw: () => (
-      <Page title={THE_HOUSE}>
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <Stages
           stages={[
             {
@@ -165,12 +170,13 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'extra-work',
+    at: '/sites/$siteId',
     name: 'Work outside the contract',
     where: 'a house built for a client, down the screen',
     partOf: 'the house screen',
     proves: 'Work outside the contract',
     draw: () => (
-      <Page title={THE_HOUSE}>
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <ExtraWork
           bills={[
             {
@@ -206,12 +212,13 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'what-has-come-in',
+    at: '/sites/$siteId',
     name: 'Come in, on one house',
     where: 'a house, down the screen',
     partOf: 'the house screen',
     proves: 'Partners put in',
     draw: () => (
-      <Page title={THE_HOUSE}>
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <WhatHasComeIn
           siteId="s1"
           totals={{
@@ -228,6 +235,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'sites',
+    at: '/',
     name: 'Sites',
     where: 'the first screen, signed in',
     proves: '204-C, Phase 6',
@@ -243,6 +251,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'day-sheet',
+    at: '/sites/$siteId/day',
     name: 'What went out today',
     where: 'a house, then the day sheet',
     // Not `In this sitting`, which is the first thing that came to mind and is `hidden lg:block`. jsdom applies no CSS, so it passed there and the browser found it thirty-four times and never visible -- which is the gallery earning its keep before it had taken a single picture.
@@ -264,6 +273,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'coming-in',
+    at: '/sites/$siteId/coming-in',
     name: 'Money coming in',
     where: 'a house, then money coming in',
     proves: 'Money coming in',
@@ -292,6 +302,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'shares',
+    at: '/sites/$siteId/shares',
     name: 'What each partner takes',
     where: 'a house, then what each partner takes',
     proves: 'Money gone back to them',
@@ -366,6 +377,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'owed',
+    at: '/owed',
     name: 'Owed',
     where: 'the second place in the nav',
     proves: 'Owed',
@@ -396,6 +408,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'people',
+    at: '/people',
     name: 'People',
     where: 'the third place in the nav',
     proves: 'People',
@@ -410,6 +423,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'their-account',
+    at: '/people/$personId',
     name: 'Their account',
     where: 'People, then one of them',
     // The screen is titled with the person's own name once it has one, so this is what says it drew rather than the words above an empty one.
@@ -447,6 +461,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'more',
+    at: '/more',
     name: 'More',
     where: 'the last place in the nav',
     proves: 'What money is spent on',
@@ -473,6 +488,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'what-for',
+    at: '/more/what-for',
     name: 'What money is spent on',
     where: 'More, then what money is spent on',
     proves: 'What for',
@@ -480,6 +496,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'which-account',
+    at: '/more/which-account',
     name: 'Which account',
     where: 'More, then which account',
     // The heading it used to prove itself by was an `<h2>` this screen wrote instead of rendering a `Page`. It has a real title now, so the words that are its alone are the promise underneath it.
@@ -488,6 +505,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'who-can-sign-in',
+    at: '/more/who-can-sign-in',
     name: 'Who can sign in',
     where: 'More, then who can sign in',
     proves: 'Who can sign in',
@@ -504,6 +522,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'how-it-looks',
+    at: '/more/how-it-looks',
     name: 'How it looks',
     where: 'More, then how it looks',
     proves: 'How it looks',
