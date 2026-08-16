@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { everyScreen } from '../../testing/screens'
 import { Choices } from './Choices'
 
 afterEach(cleanup)
@@ -118,5 +119,31 @@ describe('a row of choices as this app writes one', () => {
     expect(label?.className, 'the words are still drawn, over the choices that ask the question themselves').toContain(
       'sr-only'
     )
+  })
+})
+
+// The seventh row, which the rule that found the other six could not see. `HowItLooks` drew shadcn's `ToggleGroup` directly, and the rule refuses `role="radio"` written by hand -- Radix writes the role there, so nothing had anything to say about it. It stayed 36px, eight under the floor a thumb needs, on the screen somebody opens because the screen is already hard to read outside.
+
+// So the rule is about the control rather than about the role: whatever is drawn on shadcn's segmented control is a row of choices, and there is one place that draws one.
+describe('shadcn’s segmented control', () => {
+  /** The one file whose job is to draw one, and the file that sets the 44px floor every choice in this app is measured against. */
+  const WHERE_IT_IS_DRAWN = 'components/form/Choices.tsx'
+
+  it('is drawn in one place, so the floor is set in one place', () => {
+    const drawn = everyScreen()
+      .filter(({ path }) => path.startsWith('components/') && !path.startsWith('components/ui/'))
+      .filter(({ path }) => path !== WHERE_IT_IS_DRAWN)
+      .filter(({ source }) => /<ToggleGroup\b/.test(source))
+      .map(({ path }) => `${path}: draws a row of choices itself instead of asking for one`)
+
+    expect(drawn).toEqual([])
+  })
+
+  it('is really drawn where this says it is', () => {
+    // The other end. A rule naming one place passes perfectly when that place draws nothing, and then the floor it is trusted for is set nowhere.
+    const draws = everyScreen().find(({ path }) => path === WHERE_IT_IS_DRAWN)
+
+    expect(draws?.source, 'nothing draws a row of choices any more').toMatch(/<ToggleGroup\b/)
+    expect(draws?.source, 'the row of choices no longer sets the floor a thumb needs').toContain('min-h-11')
   })
 })

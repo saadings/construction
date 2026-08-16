@@ -1,7 +1,7 @@
 import type { HowItLooks as Look } from '../../lib/theme'
 import { useHowItLooks } from '../../lib/theme'
+import { Choices } from '../form/Choices'
 import { Page } from '../shell/Page'
-import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 
 const LOOKS: Array<{ value: Look; label: string }> = [
   { value: 'light', label: 'Light' },
@@ -23,26 +23,19 @@ export function HowItLooks() {
         Following the phone is usually right. Change it when you are outside and the screen is hard to read.
       </p>
 
-      <ToggleGroup
-        type="single"
-        value={chosen}
-        // A segmented control hands back an empty string when the pressed one is pressed again, and that is not a fourth way for the app to look.
-        onValueChange={(picked) => {
-          const known = LOOKS.find((look) => look.value === picked)
-          if (known !== undefined) {
-            choose(known.value)
-          }
-        }}
-        variant="outline"
-        aria-label="How it looks"
-        className="w-full max-w-md"
-      >
-        {LOOKS.map((look) => (
-          <ToggleGroupItem key={look.value} value={look.value} className="flex-1">
-            {look.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
+      {/* The seventh row of choices, and the one that was drawn on shadcn's control directly rather than through this app's. Six were converted and this was not, because the rule that found them refuses `role="radio"` written by hand -- and here Radix writes the role, so nothing had anything to say about it. */}
+
+      {/* What it cost: 36px boxes, eight under the floor a thumb needs, on the screen somebody opens because the screen is already hard to read outside. */}
+
+      {/* Spoken rather than drawn, because the page is titled `How it looks` and a second copy of the question over the boxes is the same words twice. */}
+      <Choices
+        label="How it looks"
+        onlySpoken
+        className="max-w-md"
+        chosen={chosen}
+        choices={LOOKS.map((look) => ({ is: look.value, said: look.label }))}
+        onChoose={choose}
+      />
     </Page>
   )
 }
