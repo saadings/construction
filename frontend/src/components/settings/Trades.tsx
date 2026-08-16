@@ -5,6 +5,7 @@ import { tradeName } from '~shared/validation/trade'
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { StillSending } from '../form/StillSending'
+import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -149,15 +150,15 @@ function OneTrade({
       <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5">
         {/* Which side it is on is the heading above it now, so the row carries the name and the way to change it and nothing else. */}
         <span className="text-foreground">{trade.name}</span>
-        <button
-          type="button"
+        <Button
+          look="another"
+          className="shrink-0"
           onClick={() => {
             setChanging(true)
           }}
-          className="text-primary shrink-0 text-sm font-medium"
         >
           Change
-        </button>
+        </Button>
         <StillSending busy={saving} />
         {refusal === null ? null : (
           <span role="alert" className="text-destructive w-full text-sm">
@@ -201,25 +202,19 @@ function OneTrade({
         >
           Save it
         </Button>
-        <button
-          type="button"
+        <WayOut
           onClick={() => {
             setName(trade.name)
             setBuilding(trade.countsAsBuildingCost)
             setChanging(false)
           }}
-          className="text-muted-foreground text-sm underline underline-offset-4"
         >
           Never mind
-        </button>
+        </WayOut>
         {/* Hidden, never deleted: payments point at a trade forever, and one that vanishes turns spent money into money spent on nothing. */}
-        <button
-          type="button"
-          onClick={() => send(async () => await onTakeOff(trade._id))}
-          className="text-destructive ml-auto text-sm"
-        >
+        <Button look="removing" className="ml-auto" onClick={() => send(async () => await onTakeOff(trade._id))}>
           Take it off the list
-        </button>
+        </Button>
       </div>
     </li>
   )
@@ -271,9 +266,7 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
         <Button onClick={add} busy={saving} className="py-2 text-sm">
           Put it on the list
         </Button>
-        <button type="button" onClick={onDone} className="text-muted-foreground text-sm underline underline-offset-4">
-          Never mind
-        </button>
+        <WayOut onClick={onDone}>Never mind</WayOut>
       </div>
     </div>
   )

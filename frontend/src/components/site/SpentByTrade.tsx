@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 
+import { Button } from '../form/Button'
 import { WayOut } from '../form/WayOut'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -101,14 +102,9 @@ function Trade({
       <TableRow>
         {/* A trade is somebody's words and can be long, so it wraps rather than pushing its own figure off the side. `Table` cells do not wrap by default, which is right for a figure and wrong for a name. */}
         <TableCell className="py-2.5 pr-4 whitespace-normal">
-          <button
-            type="button"
-            onClick={onOpen}
-            aria-expanded={open}
-            className="text-foreground text-left underline-offset-4 hover:underline"
-          >
+          <Button look="another" className="text-foreground text-left" onClick={onOpen} aria-expanded={open}>
             {trade.name}
-          </button>
+          </Button>
         </TableCell>
         {/* Brass is money going out. */}
         <TableCell className="py-2.5 text-right">
@@ -191,19 +187,16 @@ function Payment({
         <span className="flex shrink-0 items-baseline gap-3">
           {/* Said plainly, because it is the truth and because somebody worried about losing a record should be able to read that they are not. */}
           <span className="text-muted-foreground text-sm">Hide it?</span>
-          <button
-            type="button"
+          <Button
+            look="removing"
             onClick={() => {
               void onTakeOut(went._id)
             }}
             disabled={takingOut}
-            className="text-destructive text-sm font-medium disabled:opacity-50"
           >
             {takingOut ? 'Taking it out…' : 'Yes, take it out'}
-          </button>
-          <button type="button" onClick={() => setAsking(false)} className="text-muted-foreground text-sm">
-            Never mind
-          </button>
+          </Button>
+          <WayOut onClick={() => setAsking(false)}>Never mind</WayOut>
         </span>
       ) : (
         <WayOut

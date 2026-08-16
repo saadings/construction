@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { Button } from '../form/Button'
 import { StillSending } from '../form/StillSending'
+import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import type { HouseAsSent, HouseAsTyped } from './HouseDetails'
 import { HouseDetails } from './HouseDetails'
@@ -21,15 +22,15 @@ export function ChangeTheHouse({
 
   if (!open) {
     return (
-      <button
-        type="button"
+      <Button
+        look="another"
+        className="self-start"
         onClick={() => {
           setOpen(true)
         }}
-        className="text-primary self-start text-sm font-medium"
       >
         Change this house
-      </button>
+      </Button>
     )
   }
 
@@ -47,15 +48,14 @@ export function ChangeTheHouse({
         beneath={<PutItAway onPutAway={onPutAway} />}
       />
 
-      <button
-        type="button"
+      <WayOut
+        className="self-start"
         onClick={() => {
           setOpen(false)
         }}
-        className="text-muted-foreground self-start text-sm underline underline-offset-4"
       >
         Leave it as it is
-      </button>
+      </WayOut>
     </div>
   )
 }
@@ -97,26 +97,23 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
           <Button look="beside" onClick={putAway} busy={saving} className="py-2 text-sm">
             Yes, put it away
           </Button>
-          <button
-            type="button"
+          <WayOut
             onClick={() => {
               setSure(false)
             }}
-            className="text-muted-foreground text-sm underline underline-offset-4"
           >
             Keep it
-          </button>
+          </WayOut>
         </div>
       ) : (
-        <button
-          type="button"
+        <WayOut
+          className="self-start"
           onClick={() => {
             setSure(true)
           }}
-          className="text-destructive self-start text-sm font-medium"
         >
           Put this house away
-        </button>
+        </WayOut>
       )}
     </div>
   )

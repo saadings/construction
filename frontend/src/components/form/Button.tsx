@@ -14,6 +14,16 @@ const LOOKS = {
   send: { variant: 'default' } as const,
   // Beside it, and never instead of it: cancel, or anything that undoes. shadcn's `outline` brings a filled background and a shadow that this never had, so both are taken back off -- a bordered button on this app shows what is behind it.
   beside: { variant: 'outline', undoing: 'bg-transparent shadow-none' } as const,
+
+  // Something more, said as text rather than as a box: `Add a line`, `Change`, `Pay it more than one way`. It sits inside what it adds to, and a box round it would compete with the send below it -- so it is the primary colour and no underline, which is what six screens had each written out by hand.
+
+  // Not a `WayOut`, which is the same shape pointing the other way: this one puts something in.
+  another: { variant: 'link', undoing: 'text-primary h-auto p-0 has-[>svg]:px-0 text-sm no-underline' } as const,
+
+  // The press that actually removes something, and the only red in this list.
+
+  // Never the step that *opens* an are-you-sure. `oneWayOut` states that in words -- red belongs to the step that removes rather than to the thing somebody hits by accident -- and both screens that had one did the opposite, with `Put this house away` red and the confirmation under it grey. Those two openers are `WayOut` now, and this is where their colour went.
+  removing: { variant: 'link', undoing: 'text-destructive h-auto p-0 has-[>svg]:px-0 text-sm no-underline' } as const,
 }
 
 // What is undone whichever look it wears, and each is one of shadcn's own defaults. `text-base` because theirs is `text-sm`, which is 14px on a control this app is pressed on all day; `h-auto` because theirs is a fixed 36px that cuts the padding below off. The padding and the size are this app's and are older than the wrapper -- rebuilding what a button is made of is not a decision to make its buttons a different shape.
@@ -48,8 +58,10 @@ export function Button({
       className={cn(ALWAYS, undoing, className)}
       {...rest}
     >
-      {/* The ring's room is held on both sides at all times. So the label stays centred, and pressing the button neither resizes it nor shifts what it says under the finger still on it -- "Add them" becoming "Adding…" does both. */}
-      <span aria-hidden className="size-4 shrink-0" />
+      {/* The ring's room is held on both sides at all times, so the label stays centred and pressing the button neither resizes it nor shifts what it says under the finger still on it -- "Add them" becoming "Adding…" does both. */}
+
+      {/* Only for a look whose label is centred in a box of its own. A text action sits at the start of a row of other words, and holding 16px in front of it indents it away from everything it lines up with: the first picture of this sweep showed every trade name on `What it went on` moved 18px right, with nothing else on the screen following. Nothing is centred there, so nothing needs balancing -- the ring appears after the words and shifts none of them. */}
+      {look === 'send' || look === 'beside' ? <span aria-hidden className="size-4 shrink-0" /> : null}
       {children}
       {/* Wrapped, and that is the whole reason for the wrapper: `has-[>svg]:px-3` matches a *direct* child, so a bare ring here made every button in the app take shadcn's icon padding -- and a variant beats a plain `px-3` written at a call site, so "Bill it" on a stage row silently grew. A span between them makes the selector not match, and the padding is decided where it is written. */}
       <span aria-hidden className="inline-flex">

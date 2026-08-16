@@ -450,19 +450,16 @@ function Bill({
       {asking ? (
         <span className="flex shrink-0 items-baseline gap-3">
           <span className="text-muted-foreground text-sm">Hide it?</span>
-          <button
-            type="button"
+          <Button
+            look="removing"
             onClick={() => {
               void onTakeOut(bill._id)
             }}
             disabled={takingOut}
-            className="text-destructive text-sm font-medium disabled:opacity-50"
           >
             {takingOut ? 'Taking it out…' : 'Yes, take it out'}
-          </button>
-          <button type="button" onClick={() => setAsking(false)} className="text-muted-foreground text-sm">
-            Never mind
-          </button>
+          </Button>
+          <WayOut onClick={() => setAsking(false)}>Never mind</WayOut>
         </span>
       ) : (
         <WayOut

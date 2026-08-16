@@ -6,6 +6,7 @@ import { Button } from './Button'
 import type { Choice } from './Pick'
 import { Pick } from './Pick'
 import { StillSending } from './StillSending'
+import { WayOut } from './WayOut'
 import { whatWentWrong } from './whatWentWrong'
 
 // What a payment was for, and a way to add one without leaving the sitting. Nauman, mid-entry on his phone: "in whats for I should be able to add something if that doesn't exist in our system".
@@ -100,16 +101,14 @@ export function PickATrade({
             </Button>
 
             {/* A way out of a question he did not mean to open, in the same words as everywhere else it is offered. */}
-            <button
-              type="button"
+            <WayOut
               onClick={() => {
                 setNaming(null)
                 setRefusal(null)
               }}
-              className="text-muted-foreground text-sm underline underline-offset-4"
             >
               Never mind
-            </button>
+            </WayOut>
           </div>
         </div>
       )}
