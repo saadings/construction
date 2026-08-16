@@ -78,14 +78,18 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
       </div>
 
       {/* The lines under a bill, and the one table here that keeps shadcn's own `text-sm`: these are the working behind the figure above them rather than the reading itself. */}
-      <Table className="min-w-[30rem]">
+
+      {/* No minimum width. At 390 a 30rem table cut `164 cft` in half under the edge of its own scroller, and a quantity cut in half reads as a smaller quantity. Nothing is dropped to fix it -- the description wraps and the columns close up, so a phone still gets every line of the bill. */}
+      <Table>
         <TableBody>
           {bill.lines.map((line) => (
             <TableRow key={line._id}>
               {/* What the work was, in his words, so it wraps. */}
               <TableCell className="text-muted-foreground py-2 pr-4 whitespace-normal">{line.description}</TableCell>
               {/* The working exactly as it was measured on site. It is what makes the bill defensible, and `39.75' x 0.375' x 11'` broken across two lines is no longer a measurement -- so this is the one cell that must keep shadcn's own no-wrap. */}
-              <TableCell className="py-2 pr-4">
+
+              {/* Which is also why it is the column a phone gives up: it cannot be narrowed, and four columns that cannot all fit is how the amount ended up cut in half. It is the line's defence rather than its reading, wanted at a desk when somebody is arguing about the bill, and it is still there at every width above this one. */}
+              <TableCell className="hidden py-2 pr-4 sm:table-cell">
                 <Figure className="text-faint">{line.working ?? ''}</Figure>
               </TableCell>
               <TableCell className="py-2 pr-4 text-right">

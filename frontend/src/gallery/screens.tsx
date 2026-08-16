@@ -4,6 +4,7 @@ import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import { WhoCanSignIn } from '../components/invites/WhoCanSignIn'
 import { ComingIn } from '../components/moneyIn/ComingIn'
+import { WhatHasComeIn } from '../components/moneyIn/WhatHasComeIn'
 import { WhatWeOwe } from '../components/owed/WhatWeOwe'
 import { AgreeShares } from '../components/partners/AgreeShares'
 import { People } from '../components/people/People'
@@ -13,6 +14,10 @@ import { HowItLooks } from '../components/settings/HowItLooks'
 import { TheMenu } from '../components/settings/TheMenu'
 import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
+import { Page } from '../components/shell/Page'
+import { ExtraWork } from '../components/site/ExtraWork'
+import { SpentByTrade } from '../components/site/SpentByTrade'
+import { Stages } from '../components/site/Stages'
 import { SitesList } from '../components/sites/SitesList'
 import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
 
@@ -28,6 +33,8 @@ export type OnShow = {
   name: string
   /** Where somebody reaches it in the app, so a screenshot can be placed. */
   where: string
+  /** The screen this is one section of, when it is not a whole screen itself. The house screen composes its page out of several parts rather than drawing one component, so the gallery cannot reach it whole -- and four tables on it were unmeasured for exactly that reason. A part is drawn inside the same `Page` the route puts it in, so what is measured is the width it really has. */
+  partOf?: string
   /** Words this screen shows and no other does. A gallery that answered every address with the first screen would otherwise draw twelve pictures of one, and every one of them would look right. */
   proves: string
   draw: () => ReactNode
@@ -83,6 +90,120 @@ export const ON_SHOW: Array<OnShow> = [
           nothingYet: false,
         }}
       />
+    ),
+  },
+  {
+    slug: 'spent-by-trade',
+    name: 'What it went on',
+    where: 'a house, down the screen',
+    partOf: 'the house screen',
+    proves: 'What it went on',
+    draw: () => (
+      <Page title={THE_HOUSE}>
+        <SpentByTrade
+          byTrade={[
+            { tradeId: 't1', name: 'Civil labour', paisa: paisa(4_318_000) },
+            { tradeId: 't2', name: 'Bricks', paisa: paisa(2_745_500) },
+            { tradeId: 't3', name: 'Cement', paisa: paisa(1_960_250) },
+            { tradeId: 't5', name: 'Supervision charges', paisa: paisa(415_000) },
+          ]}
+          onOpen={() => undefined}
+          opened={null}
+          onTakeOut={nothingTrue}
+          takingOut={null}
+          refusal={null}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'stages',
+    name: 'Billed in stages',
+    where: 'a house built for a client, down the screen',
+    partOf: 'the house screen',
+    proves: 'Billed in stages',
+    draw: () => (
+      <Page title={THE_HOUSE}>
+        <Stages
+          stages={[
+            {
+              _id: 'm1',
+              description: 'On signing',
+              percent: 20,
+              amountPaisa: paisa(3_640_000),
+              billedOn: '2026-04-11',
+            },
+            { _id: 'm2', description: 'Grey structure complete', percent: 35, amountPaisa: paisa(6_370_000) },
+            { _id: 'm3', description: 'Finishing complete', percent: 30, amountPaisa: paisa(5_460_000) },
+          ]}
+          percentAgreed={85}
+          onAdd={nothing}
+          onBill={nothing}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'extra-work',
+    name: 'Work outside the contract',
+    where: 'a house built for a client, down the screen',
+    partOf: 'the house screen',
+    proves: 'Work outside the contract',
+    draw: () => (
+      <Page title={THE_HOUSE}>
+        <ExtraWork
+          bills={[
+            {
+              _id: 'b1',
+              raisedOn: '2026-06-02',
+              description: 'Boundary wall raised by three feet',
+              totalPaisa: paisa(487_350),
+              lines: [
+                {
+                  _id: 'l1',
+                  description: 'Brickwork',
+                  working: "39.75' x 0.375' x 11'",
+                  quantity: 164,
+                  unit: 'cft',
+                  amountPaisa: paisa(311_600),
+                },
+                {
+                  _id: 'l2',
+                  description: 'Plaster, both faces',
+                  working: "39.75' x 11' x 2",
+                  quantity: 875,
+                  unit: 'sft',
+                  amountPaisa: paisa(175_750),
+                },
+              ],
+            },
+          ]}
+          onRaise={nothing}
+          onTakeBack={nothing}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'what-has-come-in',
+    name: 'Come in, on one house',
+    where: 'a house, down the screen',
+    partOf: 'the house screen',
+    proves: 'Partners put in',
+    draw: () => (
+      <Page title={THE_HOUSE}>
+        <WhatHasComeIn
+          siteId="s1"
+          totals={{
+            byWhy: {
+              partnerMoney: paisa(6_540_000),
+              clientPayment: paisa(9_152_000),
+              sale: paisa(0),
+            },
+            receivedPaisa: paisa(15_692_000),
+          }}
+        />
+      </Page>
     ),
   },
   {
