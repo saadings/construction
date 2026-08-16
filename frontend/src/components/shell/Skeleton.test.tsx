@@ -130,3 +130,42 @@ describe('every screen that waits on a reading', () => {
     expect(waiting.map(({ path }) => path)).toContain('components/owed/WhatWeOwe.tsx')
   })
 })
+
+// Drawn by hand while `ui/skeleton.tsx` sat in the tree imported by their sidebar and nothing else, which was the last of the four gaps the shadcn inventory found. It is shadcn's now, and two of their defaults are undone -- for two different reasons that are worth keeping apart.
+describe('what shadcn brings that a skeleton here does not want', () => {
+  function classesOn(className?: string): string {
+    cleanup()
+    render(<Skeleton className={className} />)
+
+    const bar = document.querySelector('[data-slot="skeleton"]')
+    if (bar === null) throw new Error('no skeleton was drawn at all, so this asserts nothing')
+
+    return bar.className
+  }
+
+  it('is not their colour, because ours is a decision', () => {
+    // `bg-hairline` is the token this app chose for a line that is barely there, and a bar standing in for a row is that colour on purpose. Theirs is `bg-accent`, which is the same grey shadcn gives every project.
+    expect(classesOn()).toContain('bg-hairline')
+    expect(classesOn()).not.toContain('bg-accent')
+  })
+
+  it('is not their corner, because ours is not a decision either way', () => {
+    // The other half, and the difference matters. Nobody chose `rounded` over `rounded-md` -- but 2px of corner on every grey bar in the app is a change this refactor is not entitled to make, and rebuilding what a thing is made of is not permission to alter what it looks like. The picture of `a-reading-that-has-not-arrived` is identical because of this line.
+    expect(classesOn()).toMatch(/(^|\s)rounded(\s|$)/)
+    expect(classesOn()).not.toContain('rounded-md')
+  })
+
+  it('still keeps the pulse, and still says nothing to a reader', () => {
+    // The two things that were already right. `WhileWaiting` announces once; a reader hearing every bar would be read a pulse.
+    expect(classesOn()).toContain('animate-pulse')
+
+    cleanup()
+    render(<Skeleton />)
+    expect(document.querySelector('[data-slot="skeleton"]')?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('still takes what a screen hands it, which is the shape every bar is drawn in', () => {
+    expect(classesOn('h-4 w-24')).toContain('h-4')
+    expect(classesOn('h-4 w-24')).toContain('w-24')
+  })
+})

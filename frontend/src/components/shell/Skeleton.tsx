@@ -1,15 +1,20 @@
 import { useLongerThan } from '../../lib/longerThan'
 import { cn } from '../../lib/utils'
+import { Skeleton as OnShadcn } from '../ui/skeleton'
 
 // Nauman: "Use a skeleton and spinners for all of the loadings, for such UI use skeletons".
 
 // A skeleton is a promise about what is coming, so it is drawn in the shape of the thing it stands in for. "Looking…" tells somebody to wait; a row of grey bars tells them what they are waiting for, and the screen does not jump when it arrives.
+
+// Built on shadcn's rather than on a `<div>`. `ui/skeleton.tsx` has been in the tree since the CLI copied it in, imported by their sidebar and by nothing else, while this drew the same thing by hand a few classes away -- which is the last of the four gaps the inventory found.
+
+// Two of their defaults are undone, and the difference between the two is the point. `bg-accent` is taken back because the colour is a **decision**: `bg-hairline` is the token this app chose for a line that is barely there, and a skeleton is that colour on purpose. `rounded-md` is taken back because it is **not** a decision anybody made -- ours says `rounded` and theirs says `rounded-md`, and 2px of corner on every grey bar in the app is not a change this refactor is entitled to make. Rebuilding what a thing is made of is not permission to alter what it looks like.
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div
-      // Nothing to read, so nothing is read out. The screen that owns it says what is coming.
+    <OnShadcn
+      // Nothing to read, so nothing is read out. `WhileWaiting` below is what announces, and a reader hearing every bar would be read a pulse.
       aria-hidden
-      className={cn('bg-hairline animate-pulse rounded', className)}
+      className={cn('bg-hairline rounded', className)}
     />
   )
 }
