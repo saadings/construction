@@ -72,7 +72,7 @@ function Measure({ contract, onMeasure }: { contract: StandingContract; onMeasur
   const [measured, setMeasured] = useState(
     contract.actualAreaSqft === undefined ? '' : groupWhileTyping(contract.actualAreaSqft.toString())
   )
-  const { saving, refusal, send } = whileSending()
+  const { saving, refusal, send } = useWhileSending()
 
   return (
     <Form className="max-w-md gap-3">
@@ -118,7 +118,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
   )
   const [area, setArea] = useState(groupWhileTyping(contract.agreedAreaSqft.toString()))
   const [note, setNote] = useState('')
-  const { saving, refusal, send } = whileSending()
+  const { saving, refusal, send } = useWhileSending()
 
   return (
     <Form className="max-w-md gap-3">
@@ -210,7 +210,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
 // Cancelled, never erased. Asked twice, because it takes the whole billing side of a house off the screen.
 function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
   const [sure, setSure] = useState(false)
-  const { saving, refusal, send } = whileSending()
+  const { saving, refusal, send } = useWhileSending()
 
   return (
     <div className="border-hairline flex flex-col gap-2 border-t pt-5">
@@ -248,7 +248,7 @@ function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
 }
 
 // The three of these send in exactly the same shape, and writing it out three times is three chances for one of them to swallow what the server said.
-function whileSending() {
+function useWhileSending() {
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
 

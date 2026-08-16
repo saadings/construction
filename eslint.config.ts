@@ -1,6 +1,7 @@
 import convexPlugin from '@convex-dev/eslint-plugin'
 import js from '@eslint/js'
 import { tanstackConfig } from '@tanstack/eslint-config'
+import reactHooks from 'eslint-plugin-react-hooks'
 import { defineConfig } from 'eslint/config'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
@@ -51,6 +52,20 @@ export default defineConfig([
   tseslint.configs.recommended,
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...convexPlugin.configs.recommended,
+  // The rules of hooks, which nothing here was checking. A custom hook named `whileSending` rather than `useWhileSending` passed every check this repository has and then crashed a screen in a real browser: the React Compiler builds the app and the gallery, treats a function not named as a hook as an ordinary call, and the screen died with "Rendered fewer hooks than expected" on a destructive control.
+
+  // Nothing could see it. Vitest compiles without that plugin, so every test ran against source the app does not ship -- and the crash appeared only in a browser, on the second tap of a confirmation nothing had ever photographed.
+
+  // Two rules rather than the whole recommended set. The rest of it is React 19's compiler lint, and `set-state-in-effect` alone reports three places that work: `use-mobile`, `longerThan` and the invites route. They are worth their own change with their own reading; turning them on inside a crash fix would bury the fix.
+  {
+    files: ['frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      // The two that decide whether the compiler can read this code at all. `rules-of-hooks` is the one that would have caught the crash: it refuses a hook called from a function that is neither a component nor a hook.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+    },
+  },
   ...tanstackConfig.map((config) => ({
     ...config,
     files: ['frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}'],
