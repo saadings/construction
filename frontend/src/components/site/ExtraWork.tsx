@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { todayOnThisDevice } from '~shared/calendarDate'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
 import { extraWorkBillInput, extraWorkLineInput, lineAmountPaisa } from '~shared/validation/extraWork'
@@ -78,25 +78,38 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
       </div>
 
       {/* The lines under a bill, and the one table here that keeps shadcn's own `text-sm`: these are the working behind the figure above them rather than the reading itself. */}
-      <Table className="min-w-[30rem]">
+
+      {/* No minimum width. At 390 a 30rem table cut `164 cft` in half under the edge of its own scroller, and a quantity cut in half reads as a smaller quantity. */}
+
+      {/* Three columns rather than four, and the working on its own line under each of them. None of the four could go: the amount cannot be cut, because a sliced figure reads as a smaller figure; the quantity is the same; and the working cannot be dropped, because `39.75' x 0.375' x 11'` is nowhere else in this app -- not on the bill, not on the trade, not on the house. Nor can it wrap, because a measurement broken over two lines stops being one. Four things that will not fit and none that can go means the line needs more room down rather than fewer columns across. */}
+
+      {/* At every width, not only on a phone. A working belongs under the line it explains rather than beside it, which is how a bill reads on paper -- and one shape at both widths is one shape to keep right. It needs no label the way the houses list did: nobody has to be told that `39.75' x 0.375' x 11'` is a measurement. */}
+      <Table>
         <TableBody>
           {bill.lines.map((line) => (
-            <TableRow key={line._id}>
-              {/* What the work was, in his words, so it wraps. */}
-              <TableCell className="text-muted-foreground py-2 pr-4 whitespace-normal">{line.description}</TableCell>
-              {/* The working exactly as it was measured on site. It is what makes the bill defensible, and `39.75' x 0.375' x 11'` broken across two lines is no longer a measurement -- so this is the one cell that must keep shadcn's own no-wrap. */}
-              <TableCell className="py-2 pr-4">
-                <Figure className="text-faint">{line.working ?? ''}</Figure>
-              </TableCell>
-              <TableCell className="py-2 pr-4 text-right">
-                <Figure className="text-muted-foreground">
-                  {line.quantity} {line.unit}
-                </Figure>
-              </TableCell>
-              <TableCell className="py-2 text-right">
-                <Figure className="text-foreground">{formatPaisa(line.amountPaisa)}</Figure>
-              </TableCell>
-            </TableRow>
+            <Fragment key={line._id}>
+              <TableRow className={line.working === undefined ? undefined : 'border-b-0'}>
+                {/* What the work was, in his words, so it wraps. */}
+                <TableCell className="text-muted-foreground py-2 pr-4 whitespace-normal">{line.description}</TableCell>
+                <TableCell className="py-2 pr-4 text-right">
+                  <Figure className="text-muted-foreground">
+                    {line.quantity} {line.unit}
+                  </Figure>
+                </TableCell>
+                <TableCell className="py-2 text-right">
+                  <Figure className="text-foreground">{formatPaisa(line.amountPaisa)}</Figure>
+                </TableCell>
+              </TableRow>
+
+              {/* The working exactly as it was measured on site, and only when there is one: a line without it must not leave an empty row behind. */}
+              {line.working === undefined ? null : (
+                <TableRow>
+                  <TableCell colSpan={3} className="pt-0 pb-2">
+                    <Figure className="text-faint">{line.working}</Figure>
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
           ))}
         </TableBody>
       </Table>

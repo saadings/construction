@@ -67,13 +67,15 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
       </div>
 
       {/* The size is set back because shadcn's table is `text-sm`, and these three lines are the reading, not a footnote under it. */}
-      <Table className="min-w-[22rem] text-base">
+
+      {/* No minimum width: at 390 the 22rem it asked for cut `6,540,000` by 17px, and a figure cut in half reads as a smaller figure. The middle column is what says one of these three is funding rather than income, so it is not the one to drop -- both words columns wrap instead and the figures stay whole. */}
+      <Table className="text-base">
         <TableBody>
           {SPLIT.map((part) => (
             <TableRow key={part.why}>
-              <TableCell className="text-foreground py-2.5 pr-4">{part.label}</TableCell>
+              <TableCell className="text-foreground py-2.5 pr-4 whitespace-normal">{part.label}</TableCell>
               {/* What kind of money it is, said on the row. Three figures under one heading read as three parts of one thing, and one of these is not. */}
-              <TableCell className="text-muted-foreground py-2.5 pr-4 text-sm">{part.is}</TableCell>
+              <TableCell className="text-muted-foreground py-2.5 pr-4 text-sm whitespace-normal">{part.is}</TableCell>
               <TableCell className="py-2.5 text-right">
                 <Figure className="text-foreground">{formatPaisa(totals.byWhy[part.why])}</Figure>
               </TableCell>
