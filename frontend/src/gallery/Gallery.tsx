@@ -91,6 +91,7 @@ function Chips({ showing, show }: { showing: OnShow; show: (slug: string) => voi
           // What the page knows about itself, written where anything opening it can read it. The script that photographs these screens has no list of its own and no marker of its own: it reads the buttons, and it waits for the words a screen shows before it takes the picture. A second list in a script is a list that drifts, and a screenshot taken on a timer is a picture of whatever had loaded.
           data-slug={screen.slug}
           data-proves={screen.proves}
+          data-shown-in={screen.shownIn}
           className={
             screen.slug === showing.slug
               ? 'border-primary bg-accent text-accent-foreground rounded-md border px-2.5 py-1.5 text-sm font-medium'

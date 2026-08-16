@@ -40,6 +40,8 @@ export type OnShow = {
   at: string
   /** The screen this is one section of, when it is not a whole screen itself. The house screen composes its page out of several parts rather than drawing one component, so the gallery cannot reach it whole -- and four tables on it were unmeasured for exactly that reason. A part is drawn inside the same `Page` the route puts it in, so what is measured is the width it really has. */
   partOf?: string
+  /** Where this screen's markup ends up, when it is not inside the element the gallery draws screens into. Below 768 the nav is a sheet, and Radix puts a sheet in a portal on `body` -- outside `[data-testid="the-screen"]` entirely. Nothing was wrong with the marker or the timing: the camera was looking inside an element the screen had left. */
+  shownIn?: string
   /** Words this screen shows and no other does. A gallery that answered every address with the first screen would otherwise draw twelve pictures of one, and every one of them would look right. */
   proves: string
   draw: () => ReactNode
@@ -537,6 +539,8 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'the-nav',
     at: '/dashboard',
+    // The sheet is a portal on `body` below 768 and an ordinary child above it, so the one selector that holds at every width is the nav itself.
+    shownIn: '[data-slot="sidebar"]',
     name: 'The nav',
     where: 'behind the hamburger on a phone, down the side from 768 up',
     proves: 'Construction',
