@@ -118,7 +118,7 @@ export function PickAnAccount({
 
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={() => add(naming, onAdd)} busy={saving} className="py-2 text-sm">
-              Put it on the list
+              Add
             </Button>
 
             <WayOut
@@ -128,7 +128,7 @@ export function PickAnAccount({
                 setRefusal(null)
               }}
             >
-              Never mind
+              Cancel
             </WayOut>
           </div>
         </div>

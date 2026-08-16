@@ -72,7 +72,7 @@ describe('the stages a contract is billed in', () => {
     const { onBill } = renderIt()
 
     await chooseTheDay(userEvent.setup(), 'When At plinth level was billed', '2026-05-02')
-    fireEvent.click(screen.getAllByRole('button', { name: 'Bill it' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Bill' })[0])
 
     await waitFor(() => {
       expect(onBill).toHaveBeenCalledWith('m2', '2026-05-02')
@@ -83,7 +83,7 @@ describe('the stages a contract is billed in', () => {
     renderIt()
 
     // Two of the three are unbilled, and the first is not one of them.
-    expect(screen.getAllByRole('button', { name: 'Bill it' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Bill' })).toHaveLength(2)
     // The day first and the month second, and the twenty-first on purpose: on the first of April both orders read 01/04 and 04/01, and an assertion that cannot tell them apart is one about nothing.
     expect(screen.getByText('Billed 21/04/2026')).toBeTruthy()
 
@@ -101,7 +101,7 @@ describe('the stages a contract is billed in', () => {
       onBill: vi.fn().mockRejectedValue(new ConvexError('That stage has already been billed.')),
     })
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Bill it' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Bill' })[0])
 
     expect((await screen.findByRole('alert')).textContent).toBe('That stage has already been billed.')
     expect(onBill).toHaveBeenCalled()

@@ -60,9 +60,9 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 
 /** One line, typed the way somebody types it. Cash, because a cheque asks for its number and an account as well and none of that is what these are about. */
 async function fillOne(user: ReturnType<typeof userEvent.setup>, amount: string) {
-  await pick(user, 'What for', 'Cement')
-  await pick(user, 'Who was paid', 'A mason')
-  await user.type(screen.getByLabelText('How much'), amount)
+  await pick(user, 'Trade', 'Cement')
+  await pick(user, 'Paid to', 'A mason')
+  await user.type(screen.getByLabelText('Amount'), amount)
   await user.click(screen.getByRole('radio', { name: 'Cash' }))
 }
 
@@ -129,7 +129,7 @@ describe('a sitting on a phone that locks', () => {
       expect(whatWasKept(KEPT_UNDER)).not.toBeNull()
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put them in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(whatWasKept(KEPT_UNDER)).toBeNull()
@@ -142,10 +142,10 @@ describe('a sitting on a phone that locks', () => {
     aSheet({ onPutIn: vi.fn<(drafts: Array<Draft>) => Promise<boolean>>(() => Promise.resolve(false)) })
 
     await fillOne(user, '25000')
-    fireEvent.click(screen.getByRole('button', { name: 'Put them in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
-      expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('25,000')
+      expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('25,000')
     })
 
     expect(whatWasKept(KEPT_UNDER)).not.toBeNull()
@@ -163,7 +163,7 @@ describe('a sitting on a phone that locks', () => {
     aSheet()
 
     expect(screen.queryByText(/Picked up where you left off/)).toBeNull()
-    expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('')
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('')
   })
 
   it('keeps nothing at all on a sheet with nowhere to keep it', async () => {

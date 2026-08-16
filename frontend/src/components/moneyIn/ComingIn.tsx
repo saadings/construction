@@ -17,7 +17,7 @@ import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
-import { Figure, Form, Page, SaidUnderneath } from '../shell/Page'
+import { Figure, Form, NothingIsDeleted, Page, SaidUnderneath } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
 export type Received = {
@@ -79,7 +79,7 @@ export function ComingIn({
 }) {
   return (
     // No house name beside the title any more: the trail above says it and links back to it.
-    <Page title="Money coming in" named={{ siteId: siteName }}>
+    <Page title="Invested" named={{ siteId: siteName }}>
       <Taking
         people={people ?? []}
         accounts={accounts ?? []}
@@ -155,21 +155,21 @@ function Taking({
     <Form freshAfter={gonein}>
       <div className="grid gap-6 sm:grid-cols-2">
         {/* The control this app draws rather than the OS one, which prints the browser's own order: a picture from CI showed `07/04/2026` where the app means the fourth of July. */}
-        <Day label="Which day" value={day} onPick={setDay} />
+        <Day label="Date" value={day} onPick={setDay} />
 
-        <Field label="How much" problem={wrongAmount}>
+        <Field label="Amount" problem={wrongAmount}>
           <Line
             value={amount}
             onChange={(event) => setAmount(groupWhileTyping(event.target.value))}
             inputMode="decimal"
-            aria-label="How much"
+            aria-label="Amount"
             placeholder="0"
           />
         </Field>
       </div>
 
       <Pick
-        label="Who it came from"
+        label="Received from"
         problem={wrongFrom}
         placeholder="Pick one, or type a name"
         chosen={people.find((person) => person._id === fromId) ?? null}
@@ -182,11 +182,11 @@ function Taking({
       />
 
       {/* One under the other on a phone: `A partner put it in` in a third of 390px is three lines in a box meant for one. */}
-      <Choices label="What this money is" across={1} chosen={why} choices={WHY} onChoose={setWhy} />
+      <Choices label="Type" across={1} chosen={why} choices={WHY} onChoose={setWhy} />
 
       {/* Every way this one arrival came in. What is typed once -- the day, who it came from, what it is, the amount -- is shared, and each way carries its own cheque number or account. */}
       <HowItWasPaid
-        label="How it came"
+        label="Payment method"
         parts={parts}
         total={amount}
         accounts={everyAccount.everything}
@@ -271,6 +271,7 @@ function OneReceipt({
   onTakeBack: (moneyInId: string) => Promise<void>
 }) {
   const [saving, setSaving] = useState(false)
+  const [asking, setAsking] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
 
   async function takeBack() {
@@ -294,9 +295,20 @@ function OneReceipt({
       <span className="text-muted-foreground col-span-2 flex flex-wrap items-baseline gap-x-3 text-sm">
         {/* The fourth place this line was written by hand. This one loses no reference outright -- it is not truncated -- but a browser breaks `CH-114` at its own hyphen, and a receipt number in two halves is no better than one cut short. */}
         <SaidUnderneath pieces={[SAID[received.why], asDayHeWrites(received.day), received.reference]} />
-        <WayOut onClick={takeBack} busy={saving}>
-          {saving ? 'Taking it back…' : 'Take it back'}
-        </WayOut>
+
+        {/* Asked before it happens, which it was not until the label changed. `Take it back` was soft enough to be its own warning; `Remove` is not, and a partner's capital is what the whole profit split is worked out from. */}
+        {asking ? (
+          <>
+            <span className="text-muted-foreground text-sm">Remove this?</span>
+            <Button look="removing" onClick={takeBack} disabled={saving}>
+              {saving ? 'Removing…' : 'Yes, remove'}
+            </Button>
+            <WayOut onClick={() => setAsking(false)}>Cancel</WayOut>
+            <NothingIsDeleted />
+          </>
+        ) : (
+          <WayOut onClick={() => setAsking(true)}>Remove</WayOut>
+        )}
       </span>
       {refusal === null ? null : (
         <span role="alert" className="text-destructive col-span-2 text-sm">

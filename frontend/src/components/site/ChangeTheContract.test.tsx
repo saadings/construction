@@ -52,7 +52,7 @@ describe('correcting a contract already agreed', () => {
     open()
 
     fireEvent.change(screen.getByLabelText('Area measured'), { target: { value: '2310' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put the measurement in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }))
 
     await waitFor(() => {
       expect(onMeasure).toHaveBeenCalledWith('2,310')
@@ -75,9 +75,9 @@ describe('correcting a contract already agreed', () => {
     open()
 
     fireEvent.click(screen.getByRole('radio', { name: 'One agreed price' }))
-    fireEvent.change(screen.getByLabelText('The whole price'), { target: { value: '12500000' } })
-    fireEvent.change(screen.getByLabelText('Why it changed'), { target: { value: 'Rate typed wrong' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Correct it' }))
+    fireEvent.change(screen.getByLabelText('Contract price'), { target: { value: '12500000' } })
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Rate typed wrong' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
     await waitFor(() => {
       expect(onRevise).toHaveBeenCalledWith({
@@ -120,7 +120,7 @@ describe('correcting a contract already agreed', () => {
     open()
 
     fireEvent.change(screen.getByLabelText('Area measured'), { target: { value: '2310' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Put the measurement in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('That contract is not on this house.')
   })

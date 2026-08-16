@@ -50,9 +50,9 @@ function renderIt(bills: Array<BillRow> = [], handlers = {}) {
 function typeALine(line: { what: string; working?: string; how: string; unit: string; rate: string }, at = 1) {
   fireEvent.change(screen.getByLabelText(`What it was on line ${at}`), { target: { value: line.what } })
   if (line.working !== undefined) {
-    fireEvent.change(screen.getByLabelText(`How it was worked out on line ${at}`), { target: { value: line.working } })
+    fireEvent.change(screen.getByLabelText(`Calculation on line ${at}`), { target: { value: line.working } })
   }
-  fireEvent.change(screen.getByLabelText(`How much of it on line ${at}`), { target: { value: line.how } })
+  fireEvent.change(screen.getByLabelText(`Amount on line ${at}`), { target: { value: line.how } })
   fireEvent.change(screen.getByLabelText(`Measured in on line ${at}`), { target: { value: line.unit } })
   fireEvent.change(screen.getByLabelText(`Rate on line ${at}`), { target: { value: line.rate } })
 }
@@ -145,7 +145,9 @@ describe('billing work that was outside the contract', () => {
   it('takes a bill back, which is what a client disagreeing about extra work needs', async () => {
     const { onTakeBack } = renderIt(ONE_BILL)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take it back' }))
+    // Two taps now: `Take it back` was soft enough to be its own warning and `Remove` is not, so this asks first.
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }))
 
     await waitFor(() => {
       expect(onTakeBack).toHaveBeenCalledWith('b1')
@@ -164,7 +166,8 @@ describe('billing work that was outside the contract', () => {
   it('says what the server said when one will not come back out', async () => {
     renderIt(ONE_BILL, { onTakeBack: vi.fn().mockRejectedValue(new ConvexError('That bill is not on this house.')) })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Take it back' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, remove' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('That bill is not on this house.')
   })

@@ -80,7 +80,7 @@ describe('what one Field is allowed to hold', () => {
   })
 
   it('would notice the four it was written for', () => {
-    // Verbatim in the shape each of them had. "Whose house" is the one that was read out in place of "Ours to sell".
+    // Verbatim in the shape each of them had, in the words they had then: the labels have since been renamed and these must not follow, because what this records is the defect rather than the app. "Whose house" is the one that was read out in place of "Ours to sell".
     expect(
       whatIsWrongWithTheField('<Field label="Whose house"><div role="radiogroup"><button role="radio">Ours to sell')
     ).toContain('use Choices')
@@ -100,24 +100,22 @@ describe('what one Field is allowed to hold', () => {
 
     // In the shape this app really writes, which is what the matcher was blind to. `Pick` is on ten call sites and was not in the list; `Picker`, which is on none, was.
     expect(
-      whatIsWrongWithTheField('<Field label="What for"><Pick chosen={a} choices={x} /><Pick chosen={b} choices={y} />')
+      whatIsWrongWithTheField('<Field label="Trade"><Pick chosen={a} choices={x} /><Pick chosen={b} choices={y} />')
     ).toContain('2 controls')
-    expect(
-      whatIsWrongWithTheField('<Field label="What for"><Pick chosen={a} choices={x} /><Line value={n} />')
-    ).toContain('2 controls')
+    expect(whatIsWrongWithTheField('<Field label="Trade"><Pick chosen={a} choices={x} /><Line value={n} />')).toContain(
+      '2 controls'
+    )
   })
 
   it('leaves a question with one answer in it alone', () => {
     expect(
       whatIsWrongWithTheField('<Field label="Name" problem={x}><Line value={name} aria-label="Name" /></Field>')
     ).toBeNull()
-    expect(
-      whatIsWrongWithTheField('<Field label="What for"><Pick chosen={trade} choices={trades} /></Field>')
-    ).toBeNull()
+    expect(whatIsWrongWithTheField('<Field label="Trade"><Pick chosen={trade} choices={trades} /></Field>')).toBeNull()
     // And a component whose name merely begins with one of theirs is not one of them. `Picker` used to be in the list itself, which is how a plant written in its shape went on passing after the thing was deleted.
-    expect(whatIsWrongWithTheField('<Field label="Where it has got to"><Picker value={stage} /></Field>')).toBeNull()
+    expect(whatIsWrongWithTheField('<Field label="Stage"><Picker value={stage} /></Field>')).toBeNull()
     // And a row of choices outside a `Field` is the fix, so the sweep does not pick it up at all.
-    expect(fieldsIn('<Choices label="Whose house" chosen={forAClient} choices={WHOSE} onChoose={setWhose} />')).toEqual(
+    expect(fieldsIn('<Choices label="Built for" chosen={forAClient} choices={WHOSE} onChoose={setWhose} />')).toEqual(
       []
     )
     // Nor does a component whose name only begins the same way.

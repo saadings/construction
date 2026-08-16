@@ -89,7 +89,7 @@ describe('a label beside a control that takes the rest', () => {
           inputMode="decimal"
           autoComplete="off"
           placeholder="0"
-          aria-label="How much"
+          aria-label="Amount"
           className="text-foreground placeholder:text-muted-foreground/40 font-display w-full min-w-0 border-0 bg-transparent py-1 text-[2.75rem] leading-tight outline-none"
         />
       </div>`

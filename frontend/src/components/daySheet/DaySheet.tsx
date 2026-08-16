@@ -147,7 +147,7 @@ export function DaySheet({
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
             {/* The control this app draws, rather than the OS one. In a CI picture it read `07/04/2026` beside `Sat 4 Jul` fifteen pixels below: the native control prints the browser's locale, which was July 4 in American order, and this app writes a day the other way round. Two dates from one variable, disagreeing, on the screen where he records what money went out that day. */}
-            <Day look="beside" label="Which day" value={day} onPick={onChangeDay} />
+            <Day look="beside" label="Date" value={day} onPick={onChangeDay} />
           </div>
 
           <div className="flex items-end justify-between gap-4">
@@ -185,7 +185,7 @@ export function DaySheet({
       {/* Beside the form at a desk, above it on a phone: the width is there, and a sitting is read against what is already in it. */}
       <main className="flex flex-col gap-7 px-5 py-6 sm:px-7 lg:grid lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start lg:gap-12 lg:px-9">
         <section className="flex flex-col gap-6 lg:order-2">
-          <p className="text-faint hidden text-[0.75rem] tracking-[0.06em] uppercase lg:block">In this sitting</p>
+          <p className="text-faint hidden text-[0.75rem] tracking-[0.06em] uppercase lg:block">This sitting</p>
           {done.length > 0 ? (
             <ol className="border-border divide-hairline divide-y border-b lg:border-t">
               {done.map((each, index) => (
@@ -203,10 +203,10 @@ export function DaySheet({
                   {/* Nothing here has gone in yet, so this takes a row back out of the sitting rather than out of the ledger. Without it a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards. */}
                   <WayOut
                     onClick={() => takeOut(index)}
-                    aria-label={`Take out ${whatItSays(each)} to ${nameOf(people, each.paidToId) ?? each.newPerson}`}
+                    aria-label={`Remove ${whatItSays(each)} to ${nameOf(people, each.paidToId) ?? each.newPerson}`}
                     className="shrink-0"
                   >
-                    Take out
+                    Remove
                   </WayOut>
                 </li>
               ))}
@@ -218,7 +218,7 @@ export function DaySheet({
 
         <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
           <PickATrade
-            label="What for"
+            label="Trade"
             problem={whatIsWrongWith('trade', asTyped(draft, draft.parts[0]))}
             placeholder="Pick one"
             chosen={everyTrade.everything.find((trade) => trade._id === draft.tradeId) ?? null}
@@ -252,11 +252,11 @@ export function DaySheet({
 
           {/* Every way this one payment was settled. He asked to split between cash and cheques, and chose separate rows: what he types once -- the trade, the person, the amount, the day -- is shared, and each way of paying carries its own cheque number or account. */}
           <HowItWasPaid
-            label="How paid"
+            label="Payment method"
             parts={draft.parts}
             total={draft.amount}
             accounts={everyAccount.everything}
-            bankLabel="Which account"
+            bankLabel="Account"
             onChange={(parts) => change({ parts })}
             onAddAccount={async (label, lastFourDigits) => {
               const _id = await onAddAccount(label, lastFourDigits)
@@ -270,7 +270,7 @@ export function DaySheet({
             <Lines
               value={draft.note}
               onChange={(event) => change({ note: event.target.value })}
-              placeholder="Anything worth remembering"
+              placeholder="Notes"
               aria-label="Note"
             />
           </Field>
@@ -293,7 +293,7 @@ export function DaySheet({
               Add another
             </Button>
             <Button onClick={() => void putThemIn()} busy={saving} className="flex-1">
-              Put them in
+              Save
             </Button>
           </div>
         </div>

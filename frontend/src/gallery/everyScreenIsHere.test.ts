@@ -140,7 +140,7 @@ describe('an are-you-sure', () => {
 
     expect(found.length).toBeGreaterThan(3)
     expect(found).toContain('Yes, cancel it')
-    expect(found).toContain('Yes, take it out')
+    expect(found).toContain('Yes, remove')
   })
 
   it('would notice one drawn either way this app draws them', () => {

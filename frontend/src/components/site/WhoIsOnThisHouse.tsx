@@ -10,7 +10,7 @@ import { PickATrade } from '../form/PickATrade'
 import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
-import { Figure, SaidUnderneath } from '../shell/Page'
+import { Figure, NothingIsDeleted, SaidUnderneath } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Engaged = {
@@ -298,7 +298,7 @@ function TheForm({
         <PickAPerson label="Who" problem={wrongPerson} who={who} people={people} onChange={setWho} />
 
         <PickATrade
-          label="What for"
+          label="Trade"
           problem={wrongTrade}
           placeholder="Pick one"
           chosen={everyTrade.everything.find((trade) => trade._id === tradeId) ?? null}
@@ -316,7 +316,7 @@ function TheForm({
       </div>
 
       <Field
-        label={agreeing ? 'What was agreed' : 'How much they have billed'}
+        label={agreeing ? 'What was agreed' : 'Amount billed'}
         hint={agreeing ? 'A whole figure, or leave it empty and put in a rate instead.' : undefined}
         problem={wrongAmount}
       >
@@ -324,7 +324,7 @@ function TheForm({
           value={amount}
           onChange={(event) => setAmount(groupWhileTyping(event.target.value))}
           inputMode="decimal"
-          aria-label={agreeing ? 'What was agreed' : 'How much they have billed'}
+          aria-label={agreeing ? 'What was agreed' : 'Amount billed'}
           placeholder="0"
         />
       </Field>
@@ -347,7 +347,7 @@ function TheForm({
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2">
-          <Day label="Which day" value={day} onPick={setDay} />
+          <Day label="Date" value={day} onPick={setDay} />
 
           <Field label="Their bill number" hint="Leave it empty if there is none.">
             <Line
@@ -369,10 +369,10 @@ function TheForm({
 
       <div className="flex flex-wrap gap-3">
         <Button onClick={send} busy={saving}>
-          {agreeing ? 'Agree it' : 'Put it down'}
+          {agreeing ? 'Agree' : 'Save'}
         </Button>
         <Button look="beside" onClick={onDone}>
-          Never mind
+          Cancel
         </Button>
       </div>
     </div>
@@ -434,7 +434,7 @@ function Bill({
 
       {asking ? (
         <span className="flex shrink-0 items-baseline gap-3">
-          <span className="text-muted-foreground text-sm">Hide it?</span>
+          <span className="text-muted-foreground text-sm">Remove this?</span>
           <Button
             look="removing"
             onClick={() => {
@@ -442,17 +442,18 @@ function Bill({
             }}
             disabled={takingOut}
           >
-            {takingOut ? 'Taking it out…' : 'Yes, take it out'}
+            {takingOut ? 'Removing…' : 'Yes, remove'}
           </Button>
-          <WayOut onClick={() => setAsking(false)}>Never mind</WayOut>
+          <WayOut onClick={() => setAsking(false)}>Cancel</WayOut>
+          <NothingIsDeleted />
         </span>
       ) : (
         <WayOut
           onClick={() => setAsking(true)}
-          aria-label={`Take out ${formatPaisa(bill.amountPaisa)} billed by ${bill.personName}`}
+          aria-label={`Remove ${formatPaisa(bill.amountPaisa)} billed by ${bill.personName}`}
           className="shrink-0"
         >
-          Take out
+          Remove
         </WayOut>
       )}
     </li>

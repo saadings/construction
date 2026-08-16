@@ -79,7 +79,7 @@ export function AgreeAContract({
     <Form className="gap-5" freshAfter={agreed}>
       <div className="grid gap-5 sm:grid-cols-2">
         <PickAPerson
-          label="Who it is for"
+          label="Client"
           problem={client.personId === '' && client.newPerson === '' ? SAY_CONTRACT.client : null}
           who={client}
           people={people}
@@ -90,12 +90,12 @@ export function AgreeAContract({
       </div>
 
       {/* Not a `Field`: the first choice inside a label takes the label's words as its own name, so "One agreed price" announced itself as "How it is priced". */}
-      <Choices label="How it is priced" chosen={how} choices={HOW} onChoose={setHow} />
+      <Choices label="Pricing" chosen={how} choices={HOW} onChoose={setHow} />
 
       <div className="grid gap-5 sm:grid-cols-2">
         {/* One box, asked two ways. A rate and a total in the same form is how one of them gets left behind holding an old figure. */}
         <Field
-          label={how === 'lumpSum' ? 'The whole price' : 'Rate per square foot'}
+          label={how === 'lumpSum' ? 'Contract price' : 'Rate per square foot'}
           problem={whatIsWrong(positiveMoney, amount)}
         >
           <Line
@@ -106,7 +106,7 @@ export function AgreeAContract({
             inputMode="decimal"
             autoComplete="off"
             placeholder="0"
-            aria-label={how === 'lumpSum' ? 'The whole price' : 'Rate per square foot'}
+            aria-label={how === 'lumpSum' ? 'Contract price' : 'Rate per square foot'}
           />
         </Field>
 
@@ -127,13 +127,13 @@ export function AgreeAContract({
         </Field>
       </div>
 
-      <Field label="Anything worth remembering" problem={note === '' ? null : whatIsWrong(noteRule, note)}>
+      <Field label="Notes" problem={note === '' ? null : whatIsWrong(noteRule, note)}>
         <Lines
           value={note}
           onChange={(event) => {
             setNote(event.target.value)
           }}
-          aria-label="Anything worth remembering"
+          aria-label="Notes"
         />
       </Field>
 
@@ -146,7 +146,7 @@ export function AgreeAContract({
 
       <div>
         <Button onClick={agree} busy={saving}>
-          Agree it
+          Agree
         </Button>
       </div>
     </Form>

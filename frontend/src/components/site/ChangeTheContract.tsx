@@ -61,7 +61,7 @@ export function ChangeTheContract({
           setOpen(false)
         }}
       >
-        Leave it as it is
+        Cancel
       </WayOut>
     </div>
   )
@@ -101,7 +101,7 @@ function Measure({ contract, onMeasure }: { contract: StandingContract; onMeasur
         busy={saving}
         className="self-start py-2 text-sm"
       >
-        Put the measurement in
+        Save measurement
       </Button>
     </Form>
   )
@@ -125,7 +125,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
     <Form className="max-w-md gap-3">
       {/* The question is now written above the row rather than only spoken to a screen reader: this was the one row in the app named by `aria-label` alone, so the two boxes sat over "The whole price" with nothing saying what they were choosing between. */}
       <Choices
-        label="How it is priced"
+        label="Pricing"
         chosen={how}
         choices={[
           { is: 'lumpSum', said: 'One agreed price' },
@@ -135,7 +135,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
       />
 
       <Field
-        label={how === 'lumpSum' ? 'The whole price' : 'Rate per square foot'}
+        label={how === 'lumpSum' ? 'Contract price' : 'Rate per square foot'}
         problem={whatIsWrong(positiveMoney, amount)}
       >
         <Line
@@ -145,7 +145,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
           }}
           inputMode="decimal"
           autoComplete="off"
-          aria-label={how === 'lumpSum' ? 'The whole price' : 'Rate per square foot'}
+          aria-label={how === 'lumpSum' ? 'Contract price' : 'Rate per square foot'}
         />
       </Field>
 
@@ -161,13 +161,13 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
         />
       </Field>
 
-      <Field label="Why it changed" problem={note === '' ? null : whatIsWrong(noteRule, note)}>
+      <Field label="Reason" problem={note === '' ? null : whatIsWrong(noteRule, note)}>
         <Lines
           value={note}
           onChange={(event) => {
             setNote(event.target.value)
           }}
-          aria-label="Why it changed"
+          aria-label="Reason"
         />
       </Field>
 
@@ -187,7 +187,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
         busy={saving}
         className="self-start py-2 text-sm"
       >
-        Correct it
+        Save changes
       </Button>
     </Form>
   )

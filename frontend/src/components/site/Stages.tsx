@@ -126,7 +126,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
         {/* Named on the box, because the question it answers is the row it is on. */}
         <Day look="beside" label={`When ${stage.description} was billed`} value={day} onPick={setDay} />
         <Button look="beside" busy={saving} className="px-3 py-1 text-sm" onClick={bill}>
-          Bill it
+          Bill
         </Button>
       </span>
       <StillSending busy={saving} />

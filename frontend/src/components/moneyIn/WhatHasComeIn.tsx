@@ -15,9 +15,9 @@ export type ComeIn = {
 
 // Said the way he would say it, and in the order money arrives on a house: the partners put in first, the client pays against his bill, and a sale comes last if it comes at all.
 const SPLIT = [
-  { why: 'partnerMoney' as const, label: 'Partners put in', is: 'Funding the house' },
-  { why: 'clientPayment' as const, label: 'The client paid', is: 'Brought in' },
-  { why: 'sale' as const, label: 'The house sold', is: 'Brought in' },
+  { why: 'partnerMoney' as const, label: 'Partner investment', is: 'Partner investment' },
+  { why: 'clientPayment' as const, label: 'Client payment', is: 'Client & sale' },
+  { why: 'sale' as const, label: 'Sale proceeds', is: 'Client & sale' },
 ]
 
 export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: ComeIn | null | undefined }) {

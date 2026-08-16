@@ -4,7 +4,7 @@ import { formatPaisa } from '~shared/money'
 
 import { Button } from '../form/Button'
 import { WayOut } from '../form/WayOut'
-import { Figure, SaidUnderneath } from '../shell/Page'
+import { Figure, NothingIsDeleted, SaidUnderneath } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
@@ -183,8 +183,8 @@ function Payment({
 
       {asking ? (
         <span className="flex shrink-0 items-baseline gap-3">
-          {/* Said plainly, because it is the truth and because somebody worried about losing a record should be able to read that they are not. */}
-          <span className="text-muted-foreground text-sm">Hide it?</span>
+          {/* The word `Hide` used to be the whole of this promise, and `NothingIsDeleted` is where it went: said where somebody is deciding rather than carried by a verb that then reads as a display switch. */}
+          <span className="text-muted-foreground text-sm">Remove this?</span>
           <Button
             look="removing"
             onClick={() => {
@@ -192,17 +192,18 @@ function Payment({
             }}
             disabled={takingOut}
           >
-            {takingOut ? 'Taking it out…' : 'Yes, take it out'}
+            {takingOut ? 'Removing…' : 'Yes, remove'}
           </Button>
-          <WayOut onClick={() => setAsking(false)}>Never mind</WayOut>
+          <WayOut onClick={() => setAsking(false)}>Cancel</WayOut>
+          <NothingIsDeleted />
         </span>
       ) : (
         <WayOut
           onClick={() => setAsking(true)}
-          aria-label={`Take out ${formatPaisa(went.amountPaisa)} paid to ${went.paidToName}`}
+          aria-label={`Remove ${formatPaisa(went.amountPaisa)} paid to ${went.paidToName}`}
           className="shrink-0"
         >
-          Take out
+          Remove
         </WayOut>
       )}
     </li>

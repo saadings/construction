@@ -12,7 +12,7 @@ function classesOn(look?: 'send' | 'beside' | 'another' | 'removing', className?
   cleanup()
   render(
     <Button look={look} className={className}>
-      Put them in
+      Save
     </Button>
   )
 
@@ -21,21 +21,21 @@ function classesOn(look?: 'send' | 'beside' | 'another' | 'removing', className?
 
 describe('a button that is sending something', () => {
   it('keeps saying what it says, so nothing moves under the finger still on it', () => {
-    const { rerender } = render(<Button>Put them in</Button>)
+    const { rerender } = render(<Button>Save</Button>)
     const idle = screen.getByRole('button').textContent
 
-    rerender(<Button busy>Put them in</Button>)
+    rerender(<Button busy>Save</Button>)
 
-    // "Put them in" becoming "Putting in…" is a different width, and the button resizes as it is pressed.
+    // "Save" becoming "Putting in…" is a different width, and the button resizes as it is pressed.
     expect(screen.getByRole('button').textContent).toBe(idle)
-    expect(idle).toBe('Put them in')
+    expect(idle).toBe('Save')
   })
 
   it('turns itself off, so one day sheet cannot go in twice', () => {
     const onClick = vi.fn()
     render(
       <Button busy onClick={onClick}>
-        Put them in
+        Save
       </Button>
     )
 
@@ -110,7 +110,7 @@ describe('what shadcn brings that this button does not want', () => {
   })
 
   it('leaves the padding to whoever writes it, rather than to a variant nothing can beat', () => {
-    // This is the one that cost a screen. shadcn sets padding behind `has-[>svg]:px-3` for a button with an icon in it, and `cn` does not merge a plain `px-3` written at a call site over a variant of it -- so "Bill it" on a stage row would have grown by 8px without anybody touching it. The padding this app writes is asked first, because "a call site wins" is also what nobody writing any padding at all looks like.
+    // This is the one that cost a screen. shadcn sets padding behind `has-[>svg]:px-3` for a button with an icon in it, and `cn` does not merge a plain `px-3` written at a call site over a variant of it -- so "Bill" on a stage row would have grown by 8px without anybody touching it. The padding this app writes is asked first, because "a call site wins" is also what nobody writing any padding at all looks like.
     expect(classesOn(), 'the button sets no padding of its own').toMatch(/(^|\s)px-5(\s|$)/)
 
     expect(classesOn(undefined, 'px-3 py-1')).toMatch(/(^|\s)px-3(\s|$)/)
@@ -124,7 +124,7 @@ describe('what shadcn brings that this button does not want', () => {
     render(
       <Button>
         <svg aria-hidden />
-        Put them in
+        Save
       </Button>
     )
 
@@ -147,20 +147,20 @@ describe('what shadcn brings that this button does not want', () => {
   it('says what it does, so the thing that measures does not have to guess', () => {
     // `yarn columns` finds these by asking the page for `[data-removes]`. A probe that worked out what a control is from its colour or its class list would agree with its own guess; this one asks the control.
     cleanup()
-    render(<Button look="removing">Yes, take it out</Button>)
+    render(<Button look="removing">Yes, remove</Button>)
     expect(screen.getByRole('button').hasAttribute('data-removes')).toBe(true)
 
     // And the other looks must not say it, or the measurement is of every button in the app and the floor stops being about the ones where a mis-tap costs a row.
     for (const look of ['send', 'beside', 'another'] as const) {
       cleanup()
-      render(<Button look={look}>Put them in</Button>)
+      render(<Button look={look}>Save</Button>)
       expect(screen.getByRole('button').hasAttribute('data-removes'), `${look} claims to remove something`).toBe(false)
     }
   })
 
   it('keeps the turning ring out of reach of that variant, which is why it is wrapped', () => {
     // The other half of the same fix, and the half a class list cannot show: `has-[>svg]` matches a *direct* child, so the ring has to not be one. Asked of the document, because a wrapper somebody removes as tidying would put the padding back and nothing above would notice.
-    render(<Button busy>Put them in</Button>)
+    render(<Button busy>Save</Button>)
 
     const button = screen.getByRole('button')
 

@@ -218,7 +218,7 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'Extra work',
     where: 'a house built for a client, down the screen',
     partOf: 'the house screen',
-    proves: 'Work outside the contract',
+    proves: 'Extra work',
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <ExtraWork
@@ -321,7 +321,7 @@ export const ON_SHOW: Array<OnShow> = [
     at: '/sites/$siteId/coming-in',
     name: 'Invested',
     where: 'a house, then money coming in',
-    proves: 'Money coming in',
+    proves: 'Invested',
     draw: () => (
       <ComingIn
         siteName={THE_HOUSE}
@@ -623,7 +623,7 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'What the client is paying',
     where: 'a house built for a client, before a contract is agreed',
     partOf: 'the house screen',
-    proves: 'Who it is for',
+    proves: 'Client',
     // Drawn by `Billing`, which reads Convex itself, so nothing had ever photographed this: two changes went through it without a picture being taken of either.
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
@@ -639,7 +639,7 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'a house with a contract, down the screen',
     partOf: 'the house screen',
     // What it proves has to be true of the state it is photographed in. `Change it` is the button that opens this, and tapping it is the first thing the harness does -- so the marker was gone by the time anything looked for it, and the check that now asks whether the proof is in the picture is what said so.
-    proves: 'Put the measurement in',
+    proves: 'Save measurement',
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <ChangeTheContract
@@ -839,9 +839,9 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'Taking a payment back out',
     where: 'a house, a trade opened, then the way out on a payment',
     partOf: 'the house screen',
-    proves: 'Yes, take it out',
+    proves: 'Yes, remove',
     // The same are-you-sure `WhoIsOnThisHouse` draws on a bill, word for word, so a picture of this row is a picture of that one. The label carries the figure and the name -- `Take out ₨26,50,000 paid to …` -- which is why what is tapped is part of a name rather than all of it.
-    tapFirst: ['Take out'],
+    tapFirst: ['Remove'],
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <SpentByTrade

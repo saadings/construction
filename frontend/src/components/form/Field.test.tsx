@@ -177,12 +177,12 @@ describe('a question asked as a group rather than wrapped in a label', () => {
     for (const [what, draw] of [
       ['Line', () => <Line value="" onChange={() => {}} />],
       ['Lines', () => <Lines />],
-      ['Pick', () => <Pick label="What for" chosen={null} choices={[]} onPick={() => {}} />],
-      ['Day', () => <Day label="What for" value="2026-07-16" onPick={() => {}} />],
+      ['Pick', () => <Pick label="Trade" chosen={null} choices={[]} onPick={() => {}} />],
+      ['Day', () => <Day label="Trade" value="2026-07-16" onPick={() => {}} />],
     ] as const) {
       cleanup()
       // `Pick` and `Day` bring their own `Field`, so they are drawn alone and the others are wrapped.
-      render(what === 'Pick' || what === 'Day' ? draw() : <Field label="What for">{draw()}</Field>)
+      render(what === 'Pick' || what === 'Day' ? draw() : <Field label="Trade">{draw()}</Field>)
 
       const label = document.querySelector<HTMLLabelElement>('label')
       const named = document.getElementById(label?.htmlFor ?? '')
@@ -270,11 +270,11 @@ describe('what shadcn brings that this app has to undo', () => {
   it('leaves no box this app draws smaller than a person can use, whichever draws it', () => {
     // Every component that puts a box on a screen, not only the two built on `Line`. `Pick` is the one that proves the point: it goes through shadcn's combobox rather than through a look, so nothing above covered it, and it was 14px on ten call sites at every width above `md`.
     for (const [what, draw] of [
-      ['Pick', () => <Pick label="What for" chosen={null} choices={[]} onPick={() => {}} />],
+      ['Pick', () => <Pick label="Trade" chosen={null} choices={[]} onPick={() => {}} />],
       [
         'Line',
         () => (
-          <Field label="What for">
+          <Field label="Trade">
             <Line value="" onChange={() => {}} />
           </Field>
         ),
@@ -282,14 +282,14 @@ describe('what shadcn brings that this app has to undo', () => {
       [
         'Lines',
         () => (
-          <Field label="What for">
+          <Field label="Trade">
             <Lines />
           </Field>
         ),
       ],
     ] as const) {
       render(draw())
-      const { onAPhone, onADesk } = whatSizeItComesTo(whatDecidesTheSizeOf(screen.getByLabelText('What for')))
+      const { onAPhone, onADesk } = whatSizeItComesTo(whatDecidesTheSizeOf(screen.getByLabelText('Trade')))
 
       expect(onAPhone, `${what} is ${onAPhone}px on a phone`).toBeGreaterThanOrEqual(NEVER_SMALLER_THAN)
       expect(onADesk, `${what} is ${onADesk}px on a desk`).toBeGreaterThanOrEqual(NEVER_SMALLER_THAN)

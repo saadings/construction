@@ -117,10 +117,10 @@ describe('one house, driven the way he would drive it', () => {
     const onAgree = vi.fn().mockResolvedValue(undefined)
     render(<AgreeAContract people={PEOPLE} onAgree={onAgree} />)
 
-    fireEvent.change(screen.getByLabelText('Who it is for'), { target: { value: 'p3' } })
-    fireEvent.change(screen.getByLabelText('The whole price'), { target: { value: CONTRACT_RUPEES } })
+    fireEvent.change(screen.getByLabelText('Client'), { target: { value: 'p3' } })
+    fireEvent.change(screen.getByLabelText('Contract price'), { target: { value: CONTRACT_RUPEES } })
     fireEvent.change(screen.getByLabelText('Area agreed'), { target: { value: '4975' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalled()
@@ -156,7 +156,7 @@ describe('one house, driven the way he would drive it', () => {
 
     fireEvent.change(screen.getByLabelText('What the work was'), { target: { value: 'Extra retaining wall' } })
     fireEvent.change(screen.getByLabelText('What it was on line 1'), { target: { value: 'Brickwork' } })
-    fireEvent.change(screen.getByLabelText('How much of it on line 1'), { target: { value: EXTRA_QUANTITY } })
+    fireEvent.change(screen.getByLabelText('Amount on line 1'), { target: { value: EXTRA_QUANTITY } })
     fireEvent.change(screen.getByLabelText('Measured in on line 1'), { target: { value: 'cft' } })
     fireEvent.change(screen.getByLabelText('Rate on line 1'), { target: { value: EXTRA_RATE } })
     fireEvent.click(screen.getByRole('button', { name: 'Raise the bill' }))
@@ -231,7 +231,7 @@ describe('the same money, read off two screens', () => {
     withRoutes(<WhatHasComeIn siteId="s1" totals={comeIn} />)
     await screen.findByText('Come in')
 
-    const onTheHouse = within(theRowFor('Partners put in')).getByText(formatPaisa(PARTNER_PUT_IN))
+    const onTheHouse = within(theRowFor('Partner investment')).getByText(formatPaisa(PARTNER_PUT_IN))
     expect(onTheHouse).toBeTruthy()
 
     cleanup()
@@ -246,7 +246,7 @@ describe('the same money, read off two screens', () => {
     withRoutes(<WhatHasComeIn siteId="s1" totals={comeIn} />)
     await screen.findByText('Come in')
 
-    // Come in altogether is both. Brought in is only the client's.
+    // Come in altogether is both. Client & sale is only the client's.
     expect(figuresOnScreen()).toContain(formatPaisa(PARTNER_PUT_IN + CLIENT_PAID))
 
     cleanup()
@@ -278,13 +278,13 @@ describe('the same money, read off two screens', () => {
       />
     )
 
-    await pick(user, 'What for', 'Steel')
+    await pick(user, 'Trade', 'Steel')
     // One control now, opened and chosen from. Answering "who" used to mean first deciding which of two boxes you meant.
-    await pick(user, 'Who was paid', 'A steel supplier')
-    await user.type(screen.getByLabelText('How much'), '500000')
+    await pick(user, 'Paid to', 'A steel supplier')
+    await user.type(screen.getByLabelText('Amount'), '500000')
     // A row of choices since it stopped being a picker, which is the fix that came out of the label defect.
     await user.click(screen.getByRole('radio', { name: 'Cash' }))
-    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onPutIn).toHaveBeenCalled()
