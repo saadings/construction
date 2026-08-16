@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from '../ui/combobox'
-import { Choices, Field } from './Field'
+import { Choices, Field, useWhatIsAsked } from './Field'
 
 // One way to pick anything in this app. Every list used to be a `<select>` and one was a `<datalist>`, and both are drawn by the browser: Nauman sent a screenshot of the datalist's popup in Chrome's mauve, sitting over the error text, and there is no CSS we can write that reaches it.
 
@@ -14,6 +14,25 @@ export const NOT_ON_THE_LIST = ''
 /** A row named by something other than `name`. A bank account is a `label`, because that is what somebody calls it out loud: "Bank 0000". */
 export function asChoices(rows: Array<{ _id: string; label: string }>): Array<Choice> {
   return rows.map((row) => ({ _id: row._id, name: row.label }))
+}
+
+// Its own component only so that it is inside the `Field` and can read what the field is asking. `Field` hands its control an id, a wrongness and what describes it, and until this existed nothing here took any of them: the label above every picker in the app pointed at an id no element had, so tapping the words -- which on a phone are a bigger target than the box -- did nothing at all. Nothing failed, because nothing asked.
+function TheBox({ label, placeholder }: { label: string; placeholder?: string }) {
+  const asked = useWhatIsAsked()
+
+  return (
+    <ComboboxInput
+      id={asked.id}
+      aria-invalid={asked.invalid || undefined}
+      aria-describedby={asked.describedBy}
+      placeholder={placeholder}
+      aria-label={label}
+      // Undoing shadcn's own `md:text-sm`, which is the trap the day picker fell into and this one had on ten call sites: measured in the gallery at 1280, every picker in the app was 14px while everything beside it was 16 to 44. Below `md` it was already 16, so a phone never shows it, which is what makes it the half nobody looks at.
+
+      // Said at the box rather than on it, because a `ComboboxInput` hands its `className` to the group it wraps and never to the input inside. A descendant selector is more specific than the utility it is undoing, so this reaches what a prop cannot.
+      className="[&_input]:md:text-base"
+    />
+  )
 }
 
 export function Pick({
@@ -68,10 +87,7 @@ export function Pick({
         open={open}
         onOpenChange={setOpen}
       >
-        {/* Undoing shadcn's own `md:text-sm`, which is the trap the day picker fell into and this one had it on ten call sites: measured in the gallery at 1280, every picker in the app was 14px while everything beside it was 16 to 44. Below `md` it was already 16, so a phone never shows it, which is what makes it the half nobody looks at. */}
-
-        {/* Said at the box rather than on it, because a `ComboboxInput` hands its `className` to the group it wraps and never to the input inside. A descendant selector is more specific than the utility it is undoing, so this reaches what a prop cannot. */}
-        <ComboboxInput placeholder={placeholder} aria-label={label} className="[&_input]:md:text-base" />
+        <TheBox label={label} placeholder={placeholder} />
 
         <ComboboxContent>
           {/* Said once. The offer to use a typed name lives below the list, where it is the same offer whether anything matched or not -- two of them appeared here the first time, one in this slot and one under the list, and two identical offers is a choice nobody asked to make. */}

@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
 
 import { Button } from '../form/Button'
+import { Day } from '../form/Day'
 import { Field, Line } from '../form/Field'
 import { NOBODY, PickAPerson, asAsked } from '../form/PickAPerson'
 import { PickATrade } from '../form/PickATrade'
@@ -344,9 +346,7 @@ function TheForm({
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Which day">
-            <Line value={day} onChange={(event) => setDay(event.target.value)} type="date" aria-label="Which day" />
-          </Field>
+          <Day label="Which day" value={day} onPick={setDay} />
 
           <Field label="Their bill number" hint="Leave it empty if there is none.">
             <Line
@@ -424,7 +424,7 @@ function Bill({
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-[0.9375rem]">{bill.personName}</p>
         <p className="text-muted-foreground truncate text-sm">
-          {bill.tradeName} · {bill.day}
+          {bill.tradeName} · {asDayHeWrites(bill.day)}
           {bill.reference === undefined ? '' : ` · ${bill.reference}`}
           {bill.description === undefined ? '' : ` · ${bill.description}`}
         </p>

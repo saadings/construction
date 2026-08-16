@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { Day } from './Day'
 import type { Look } from './Field'
 import { Choices, Field, Line, Lines, NEVER_SMALLER_THAN } from './Field'
 import { Pick } from './Pick'
@@ -167,6 +168,67 @@ describe('a question asked as a group rather than wrapped in a label', () => {
 
     expect(first.id).toBe(second.id)
     expect(document.getElementById(first.id)).toBe(first)
+  })
+
+  it('points at the control it names, whichever control that is', () => {
+    // The label is the biggest target on the screen -- on a phone "Who was paid" is wider and taller than the box under it -- and tapping it does nothing unless something carries the id it points at.
+
+    // `Field` hands that id through context and only `Line` and `Lines` were reading it. `Pick` never did, `Day` copied `Pick`, and between them that is every picker and every date in the app: ten-plus call sites where the obvious thing to touch is dead. Nothing failed, because nothing asked.
+    for (const [what, draw] of [
+      ['Line', () => <Line value="" onChange={() => {}} />],
+      ['Lines', () => <Lines />],
+      ['Pick', () => <Pick label="What for" chosen={null} choices={[]} onPick={() => {}} />],
+      ['Day', () => <Day label="What for" value="2026-07-16" onPick={() => {}} />],
+    ] as const) {
+      cleanup()
+      // `Pick` and `Day` bring their own `Field`, so they are drawn alone and the others are wrapped.
+      render(what === 'Pick' || what === 'Day' ? draw() : <Field label="What for">{draw()}</Field>)
+
+      const label = document.querySelector<HTMLLabelElement>('label')
+      const named = document.getElementById(label?.htmlFor ?? '')
+
+      expect(label, `${what} draws no label at all`).not.toBeNull()
+      expect(label?.htmlFor, `${what}'s label points at nothing`).not.toBe('')
+      expect(named, `${what}'s label points at an id no element has`).not.toBeNull()
+
+      // An id that matches a `<div>` satisfies everything above and does nothing under a thumb: only these four take a click from a label. Asked as the tag rather than as `label.control`, which jsdom does not implement.
+      expect(
+        ['input', 'textarea', 'select', 'button'],
+        `${what}'s label points at a <${named?.tagName.toLowerCase() ?? '?'}>, which cannot be labelled`
+      ).toContain(named?.tagName.toLowerCase())
+
+      // And it is the control this field is about, rather than something else that happens to be labelable -- a picker's own dropdown holds a button too.
+      expect(named, `${what}'s label points at something outside the control`).toBe(
+        screen.getByRole(what === 'Pick' ? 'combobox' : what === 'Day' ? 'button' : 'textbox')
+      )
+    }
+  })
+
+  it('puts the tap through to the control, which is what the pointing is for', () => {
+    // The wiring above is not the point; this is. A matching id is a fact about the document, and what a person does is put a thumb on the words. Asserted as the outcome -- the calendar opens -- so that an id which matches something that is not the control still fails.
+    render(<Day label="Agreed on" value="2026-07-16" onPick={() => {}} />)
+
+    expect(screen.queryByRole('grid')).toBeNull()
+
+    fireEvent.click(screen.getByText('Agreed on'))
+
+    expect(screen.getByRole('grid')).toBeTruthy()
+  })
+
+  it('marks the control itself as wrong, whichever control it is', () => {
+    // `Field` says what is wrong underneath; the control has to say it is the one being talked about, or a screen reader is read a complaint attached to nothing. Asserted for `Day` because nothing did: it has taken a `problem` since the day it shipped, handed it to `Field`, and never worn the answer.
+    render(<Day label="Agreed on" problem="Say which day it was." value="" onPick={() => {}} />)
+
+    const control = screen.getByRole('button', { name: 'Agreed on: no day chosen' })
+
+    expect(control.getAttribute('aria-invalid'), 'red before anybody has left it').toBeNull()
+
+    fireEvent.blur(control)
+
+    expect(control.getAttribute('aria-invalid')).toBe('true')
+    expect(document.getElementById(control.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      'Say which day it was.'
+    )
   })
 
   it('names a row of choices as a whole, since no one of them is the answer', () => {

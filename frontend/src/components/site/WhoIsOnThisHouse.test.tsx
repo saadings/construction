@@ -33,7 +33,7 @@ const ENGAGED: Array<Engaged> = [
 const CLAIMED: Array<Claimed> = [
   {
     _id: 'b1',
-    day: '2026-04-01',
+    day: '2026-04-21',
     amountPaisa: 340_000_00,
     personName: 'A mason',
     tradeName: 'Civil labour',
@@ -300,7 +300,8 @@ describe('a bill that should not have been raised', () => {
   it('reads a bill the way somebody would say it', () => {
     renderWith()
 
-    const bill = screen.getByText(/Civil labour · 2026-04-01/)
+    // The day first and the month second, on a day past the twelfth so both orders cannot be read into it.
+    const bill = screen.getByText(/Civil labour · 21\/04\/2026/)
     expect(bill.textContent).toContain('CH-12')
     expect(bill.textContent).toContain('Including the extra room')
   })
