@@ -32,6 +32,9 @@ const holding = (what: RegExp) => SOURCE.filter((file) => what.test(file.text)).
 // It was two until the sidebar landed: a phone had no chrome to carry it, so a screen under More did. The sheet carries it now, so the same footer answers every width and the screen that stood in for it is gone.
 const THE_SHELL = join(FRONTEND, 'components', 'shell', 'Shell.tsx')
 
+// The nav came out of the shell so something could measure it: the shell holds Clerk, Clerk needs its own provider, and the gallery has none -- so everything in that file was exempt from being looked at, and every nav row inside it stayed 32px on a phone until Nauman found them with a thumb. The footer is in this file now, and the shell hands it what goes in.
+const THE_NAV = join(FRONTEND, 'components', 'shell', 'TheNav.tsx')
+
 describe('where the chrome is allowed to live', () => {
   it('is the shell, and never a route', () => {
     // Swept rather than checked in the one corner it picked: a route pinning it bottom-left instead would be the same defect and would pass a check written about `top-5 right-5`.
@@ -65,17 +68,24 @@ describe('signing out', () => {
 
   // Deliberately absent: what the bands are is changing. The shell is being replaced with shadcn's Sidebar, the bar along the bottom goes, and navigation on a phone moves to the top corner -- so a guard naming three bands and reading each one out of the shape that carries it would be written to be deleted. A gap somebody knows about is better than a guard that has to be believed and then removed.
 
-  it('is in the footer, which is the one part of the shell every width shows', () => {
-    // The whole of it now: the column has a footer and the sheet is the same component, so there is no second answer for a phone and nothing to keep in step.
-    const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
-    const footer = shell.slice(shell.indexOf('<SidebarFooter'), shell.indexOf('</SidebarFooter>'))
+  it('is in the footer, which is the one part of the nav every width shows', () => {
+    // The whole of it: the column has a footer and the sheet is the same component, so there is no second answer for a phone and nothing to keep in step.
+
+    // Asked across the join now that the nav is its own file, and asked in both halves rather than one. Either half alone passes while signing out is unreachable: a footer holding `{footer}` says nothing about what is passed to it, and a shell passing a `<UserButton` says nothing about where it lands.
+    const nav = SOURCE.find((file) => file.path === THE_NAV)?.text ?? ''
+    const footer = nav.slice(nav.indexOf('<SidebarFooter'), nav.indexOf('</SidebarFooter>'))
 
     // The locate is the assertion: `indexOf` answers -1 for a footer that is gone, and a slice from -1 is not empty -- it is the tail of the file, which contains everything.
-    expect(shell).toContain('<SidebarFooter')
-    expect(shell.indexOf('<SidebarFooter')).toBeGreaterThan(0)
-    expect(shell.indexOf('</SidebarFooter>')).toBeGreaterThan(shell.indexOf('<SidebarFooter'))
+    expect(nav).toContain('<SidebarFooter')
+    expect(nav.indexOf('<SidebarFooter')).toBeGreaterThan(0)
+    expect(nav.indexOf('</SidebarFooter>')).toBeGreaterThan(nav.indexOf('<SidebarFooter'))
 
-    expect(footer).toContain('<UserButton')
+    expect(footer).toContain('{footer}')
+
+    // And the other end: the shell is what puts Clerk's control into it.
+    const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
+
+    expect(shell).toMatch(/<TheNav[\s\S]*footer={<UserButton/)
   })
 
   it('has nothing left over from when a phone had no chrome to carry it', () => {

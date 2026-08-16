@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
 import { Dashboard } from '../components/dashboard/Dashboard'
@@ -15,10 +16,12 @@ import { TheMenu } from '../components/settings/TheMenu'
 import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
 import { Page } from '../components/shell/Page'
+import { TheNav, TheWayIntoTheNav } from '../components/shell/TheNav'
 import { ExtraWork } from '../components/site/ExtraWork'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 import { Stages } from '../components/site/Stages'
 import { SitesList } from '../components/sites/SitesList'
+import { SidebarProvider, useSidebar } from '../components/ui/sidebar'
 import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
 
 // Every screen a route draws whole, with invented figures, so somebody can look at one without signing in.
@@ -37,6 +40,8 @@ export type OnShow = {
   at: string
   /** The screen this is one section of, when it is not a whole screen itself. The house screen composes its page out of several parts rather than drawing one component, so the gallery cannot reach it whole -- and four tables on it were unmeasured for exactly that reason. A part is drawn inside the same `Page` the route puts it in, so what is measured is the width it really has. */
   partOf?: string
+  /** Where this screen's markup ends up, when it is not inside the element the gallery draws screens into. Below 768 the nav is a sheet, and Radix puts a sheet in a portal on `body` -- outside `[data-testid="the-screen"]` entirely. Nothing was wrong with the marker or the timing: the camera was looking inside an element the screen had left. */
+  shownIn?: string
   /** Words this screen shows and no other does. A gallery that answered every address with the first screen would otherwise draw twelve pictures of one, and every one of them would look right. */
   proves: string
   draw: () => ReactNode
@@ -45,6 +50,17 @@ export type OnShow = {
 // Nothing here goes anywhere. The screens ask for callbacks and the gallery has no ledger behind it, so each one answers and does nothing -- which is why the page says out loud that it is scaffolding.
 const nothing = () => Promise.resolve()
 const nothingTrue = () => Promise.resolve(true)
+
+// The sheet, held open. Below 768 the nav is a sheet that starts closed, so a gallery that just drew it would photograph and measure an empty page -- and report a clean nothing about the only navigation a phone has. Opened here because that is the state somebody is in the moment they are trying to hit a row.
+function AsAThumbFindsIt() {
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  useEffect(() => {
+    if (isMobile) setOpenMobile(true)
+  }, [isMobile, setOpenMobile])
+
+  return null
+}
 
 export const ON_SHOW: Array<OnShow> = [
   {
@@ -518,6 +534,36 @@ export const ON_SHOW: Array<OnShow> = [
         onInvite={nothing}
         onTakeOff={nothing}
       />
+    ),
+  },
+  {
+    slug: 'the-nav',
+    at: '/dashboard',
+    // The sheet is a portal on `body` below 768 and an ordinary child above it, so the one selector that holds at every width is the nav itself.
+    shownIn: '[data-slot="sidebar"]',
+    name: 'The nav',
+    where: 'behind the hamburger on a phone, down the side from 768 up',
+    proves: 'Construction',
+    // Drawn at `/dashboard` so one row is the row you are on: an active row is a different height in some navs and the same in this one, which is worth being able to see rather than assume.
+    draw: () => (
+      <SidebarProvider>
+        <AsAThumbFindsIt />
+
+        {/* Where `Shell` puts it: in a bar that is gone from 768 up, which is why this is hidden there too rather than sitting over the column. */}
+        <div className="p-3 md:hidden">
+          <TheWayIntoTheNav />
+        </div>
+
+        {/* Clerk's `UserButton` in the app, and this in the gallery, because nothing here may reach a deployment. It is a stand-in for the control and not the control: what the sweep measures here is the room the nav keeps for it. */}
+        <TheNav
+          footer={
+            <span
+              aria-label="Where the sign-out avatar goes"
+              className="bg-muted block size-11 rounded-full md:size-8"
+            />
+          }
+        />
+      </SidebarProvider>
     ),
   },
   {

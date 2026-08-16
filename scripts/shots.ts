@@ -45,6 +45,32 @@ const TOO_SHORT_TO_BE_A_SCREEN = 200
 // Where the app's screen starts once the page has stopped moving, or where it still is when it has given up.
 
 // Scrolled, the screen's top goes negative by however far the page went -- so the same box that says a picture is a picture of a phone also says whether a second one would be a different picture.
+
+// A picture taken while something is still arriving is a picture of an arrival. The nav below 768 is a sheet that slides in, and Playwright calls it visible the moment it has a box -- so the first picture of it was 30px of sheet and a screenful of the overlay behind it, which reads as a broken nav rather than a photograph taken too early.
+
+// Waited on the position rather than on a duration: an animation length is a number that goes stale, and `waitForTimeout` long enough for the slowest machine is a tax on every screen that is not moving at all.
+async function onceItHasStoppedMoving(on: Page, shownIn: string): Promise<void> {
+  const givingUp = 40
+
+  let before = await on.locator(shownIn).boundingBox()
+
+  for (let waited = 0; waited < givingUp; waited += 1) {
+    await on.waitForTimeout(50)
+    const now = await on.locator(shownIn).boundingBox()
+
+    // Both boxes read, and equality asked of a pair that exists: a `null` on either side is a thing that is not on the page, and calling that "not moving" is the not-there-reading-as-a-value this whole file keeps finding.
+    if (before !== null && now !== null && before.x === now.x && before.y === now.y && before.width === now.width) {
+      return
+    }
+
+    before = now
+  }
+
+  throw new Error(
+    `${shownIn} was still moving after ${String(givingUp * 50)}ms, so any picture of it is a picture of an animation.`
+  )
+}
+
 async function theTopOnceItHasMoved(on: Page): Promise<{ y: number } | null> {
   const givingUp = 40
 
@@ -98,16 +124,16 @@ async function main(): Promise<void> {
         // Waited for by what the screen says rather than by a timer. A screenshot on a timeout is a picture of whatever had loaded, and it looks exactly like a screenshot.
 
         // Asked of the screen and not of the page: the words are on the gallery's own button for that screen too, so unscoped this waits for the picker and is satisfied before the screen has drawn a thing.
-        await on
-          .locator('[data-testid="the-screen"]')
-          .getByText(screen.proves, { exact: false })
-          .first()
-          .waitFor({ timeout: 15_000 })
+
+        // Where the screen says it drew, which is the gallery's own element for all but one of them. A sheet is portalled onto `body`, so scoping this to the element the gallery draws into waits fifteen seconds for a marker that is on the page and not in there -- and had it not timed out, the picture would have been of an element the screen had left.
+        await on.locator(screen.shownIn).getByText(screen.proves, { exact: false }).first().waitFor({ timeout: 15_000 })
 
         // The picture is only a picture of a phone if the app starts where a phone's screen starts. Hiding the gallery's furniture was not enough and was the second wrong answer: it left 287px of an 844px screen to the banner and the chips, and at that height the day sheet's amount box sat under its own footer. Anybody reading those images would have found a bug that is not there.
 
         // Asserted every time rather than checked once. Furniture creeps back, and when it does every picture silently becomes a third furniture again with nothing saying so.
-        const box = await on.locator('[data-testid="the-screen"]').boundingBox()
+        await onceItHasStoppedMoving(on, screen.shownIn)
+
+        const box = await on.locator(screen.shownIn).boundingBox()
 
         // `null` is not a position. It means the screen is not on the page at all, which would otherwise read as a top of zero and pass this perfectly.
         if (box === null) {
