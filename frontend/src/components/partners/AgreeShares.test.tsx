@@ -162,13 +162,39 @@ describe('agreeing what each partner takes', () => {
   it('takes somebody out who funded the house and takes none of it', async () => {
     const { onAgree } = renderWith()
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Take out' })[1])
+    // Named rather than the second of a list of identical buttons. Two rows both said "Take out", so this was `[1]` -- a positional guess that says nothing about which partner it removes, which is the whole of what this test is about. A screen reader had the same problem and no index to fall back on.
+    fireEvent.click(screen.getByRole('button', { name: 'Take The one who came in later out of the shares' }))
     fireEvent.change(screen.getByLabelText('The one who started it’s share'), { target: { value: '100' } })
     fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(expect.any(String), [{ personId: 'p1', share: '100' }])
     })
+  })
+
+  it('draws the way out as something to press rather than as text', () => {
+    // It was grey text with no border and no underline, on its own line between a share and a figure -- so at 390 it read as the caption for the figure under it. Nobody could see that until a screen was photographed.
+
+    // Underlined because an underline is an affordance, not because the app had settled on one: four of its nine ways out are underlined, four are plain text and one is red. jsdom applies no CSS, so this is the class and not the appearance; where it sits on the line is a fact about layout and is checked by the picture.
+    renderWith()
+
+    const out = screen.getByRole('button', { name: 'Take The one who started it out of the shares' })
+
+    expect(out.className).toContain('underline')
+  })
+
+  it('names who each way out is about, rather than leaving two of them alike', () => {
+    // Two rows both said "Take out". A test could reach the second by index; somebody listening could not, and neither could anybody scanning the two.
+    renderWith()
+
+    const named = screen
+      .getAllByRole('button', { name: /out of the shares$/ })
+      .map((one) => one.getAttribute('aria-label'))
+
+    expect(named).toEqual([
+      'Take The one who started it out of the shares',
+      'Take The one who came in later out of the shares',
+    ])
   })
 
   it('says what is wrong with one share once the eye has left it, and not before', () => {

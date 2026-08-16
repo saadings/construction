@@ -281,6 +281,8 @@ export function DaySheet({
       </main>
 
       {/* At the foot of the screen at every width. It used to sit a bar's height up on a phone; the bar went with the shell, and there is nothing under it now to clear. */}
+
+      {/* Pinned here and deliberately not on `ComingIn`, which puts the same kind of button at the foot of its form. A sitting is twenty payments and these two are pressed twenty times, so the tenth of the screen this costs is paid back on every one of them. A receipt is entered once, where the same cost would be paid on all seven of its questions to save a single scroll. */}
       <footer className="border-border bg-background/95 sticky bottom-0 z-10 border-t backdrop-blur-sm">
         <div className="flex flex-col gap-2 px-5 pt-3 pb-5 sm:px-7 lg:px-9">
           {(problem ?? refusal) ? (
