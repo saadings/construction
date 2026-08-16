@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
 
@@ -423,10 +423,22 @@ function Bill({
     <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3">
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-[0.9375rem]">{bill.personName}</p>
-        <p className="text-muted-foreground truncate text-sm">
-          {bill.tradeName} · {asDayHeWrites(bill.day)}
-          {bill.reference === undefined ? '' : ` · ${bill.reference}`}
-          {bill.description === undefined ? '' : ` · ${bill.description}`}
+        {/* Not truncated, unlike the name above it. At 390 this line held `Civil labour · 27/06/2026 · CH…` -- two characters of the cheque number, on the screen where somebody checks which cheque paid which bill, and the number appears nowhere else on it. A name cut short is still recognisable; a cheque number cut short is not a cheque number. Wrapped rather than reordered, because reordering only chooses which of the four gets cut. */}
+
+        {/* And each piece is held on one line of its own, which took a second picture to find: wrapping alone put `CH-114` across two lines as `CH-` and `114`, because a browser breaks at a hyphen. A cheque number in two halves is no better than a cheque number in two characters. */}
+        <p className="text-muted-foreground text-sm">
+          {[
+            bill.tradeName,
+            asDayHeWrites(bill.day),
+            ...(bill.reference === undefined ? [] : [bill.reference]),
+            ...(bill.description === undefined ? [] : [bill.description]),
+          ].map((said, at) => (
+            // The separator sits outside the span on purpose, so it is the one place the line may break -- and so each piece's own text is the piece, with nothing to strip off it before it can be read or asserted.
+            <Fragment key={said}>
+              {at === 0 ? '' : ' · '}
+              <span className="whitespace-nowrap">{said}</span>
+            </Fragment>
+          ))}
         </p>
       </div>
 
