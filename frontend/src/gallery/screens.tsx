@@ -482,7 +482,8 @@ export const ON_SHOW: Array<OnShow> = [
     slug: 'which-account',
     name: 'Which account',
     where: 'More, then which account',
-    proves: 'Accounts money leaves',
+    // The heading it used to prove itself by was an `<h2>` this screen wrote instead of rendering a `Page`. It has a real title now, so the words that are its alone are the promise underneath it.
+    proves: 'Only the last four figures are ever kept',
     draw: () => <BankAccounts accounts={BANK} onAdd={nothing} onTakeOff={nothing} />,
   },
   {
