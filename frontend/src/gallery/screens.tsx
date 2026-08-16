@@ -45,6 +45,8 @@ export type OnShow = {
   at: string
   /** The screen this is one section of, when it is not a whole screen itself. The house screen composes its page out of several parts rather than drawing one component, so the gallery cannot reach it whole -- and four tables on it were unmeasured for exactly that reason. A part is drawn inside the same `Page` the route puts it in, so what is measured is the width it really has. */
   partOf?: string
+  /** How long the words a screen proves take to arrive, for the two screens whose whole subject is a wait. A send that has not come back speaks after eight seconds and a reading that has not arrived after twelve -- the harness waited a second, which is the same "nothing there" this pair is about. */
+  provesAfter?: number
   /** What to tap before the picture is taken, when a screen keeps itself folded up until somebody asks for it. `Change it` is a button until it is pressed, and a photograph of a button is not a photograph of a screen -- the harness's own floor said so, in the words "that is not a short screen, it is a screen that did not draw". */
   tapFirst?: string
   /** Where this screen's markup ends up, when it is not inside the element the gallery draws screens into. Below 768 the nav is a sheet, and Radix puts a sheet in a portal on `body` -- outside `[data-testid="the-screen"]` entirely. Nothing was wrong with the marker or the timing: the camera was looking inside an element the screen had left. */
@@ -747,6 +749,41 @@ export const ON_SHOW: Array<OnShow> = [
         <HouseDetails saying="Start it" onSave={nothing} />
       </Page>
     ),
+  },
+  {
+    slug: 'a-send-that-has-not-come-back',
+    at: '/sites/$siteId/coming-in',
+    name: 'A send with no signal',
+    where: 'any screen, the moment the phone loses signal mid-send',
+    // The sentence itself, because it is the whole of what this screen is here to show. `shots` waits for what a screen proves, so the wait for it is the wait that was already there -- nothing in the harness had to learn about time.
+    proves: 'This has not gone in yet',
+    provesAfter: 8_000,
+    // Two states of this app existed only in tests: a send that never comes back and a reading that never arrives. Convex holds both open rather than failing them, so what they look like is what nothing looks like -- which is exactly the pair a photograph settles and a test cannot.
+
+    // Drawn with `saving` held true rather than with a promise that never settles: the screen is written against that flag, so this is the same state and there is nothing pending for the harness to hang on.
+    draw: () => (
+      <ComingIn
+        siteName={THE_HOUSE}
+        received={[]}
+        people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))}
+        accounts={BANK.map((account) => ({ _id: account._id, label: account.label }))}
+        saving
+        refusal={null}
+        onPutIn={nothingTrue}
+        onTakeBack={nothing}
+        onAddAccount={() => Promise.resolve('b9')}
+      />
+    ),
+  },
+  {
+    slug: 'a-reading-that-has-not-arrived',
+    at: '/owed',
+    name: 'A reading with no signal',
+    where: 'any screen still waiting for what it reads',
+    proves: 'This has not come through yet',
+    provesAfter: 12_000,
+    // `undefined` is a reading still on its way, which is what a phone with no signal leaves every screen holding. The bars keep the shape of what is coming and the sentence sits under them.
+    draw: () => <WhatWeOwe owed={undefined} />,
   },
   {
     slug: 'how-it-looks',
