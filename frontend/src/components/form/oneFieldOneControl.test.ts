@@ -74,7 +74,8 @@ describe('what one Field is allowed to hold', () => {
     const usingChoices = screens.filter(({ source }) => source.includes('<Choices')).map(({ path }) => path)
 
     expect(usingChoices).toContain('components/sites/HouseDetails.tsx')
-    expect(usingChoices).toContain('components/daySheet/DaySheet.tsx')
+    // The day sheet's own row of ways to pay until they moved into `HowItWasPaid`, which every screen that takes money now draws. The rule is the same and the file that holds it is one instead of three.
+    expect(usingChoices).toContain('components/form/HowItWasPaid.tsx')
     expect(usingChoices.length).toBeGreaterThan(3)
   })
 

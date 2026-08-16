@@ -59,6 +59,7 @@ export function saySharesDoNotAddUp(siteName: string, short: number): string {
 // The words themselves, once, so the screen asking the question and the server refusing the answer cannot say two different things about one rule.
 export const SAY_PAYOUT = {
   who: 'Say which partner this went to.',
+  nothing: 'Put in at least one way it went out.',
   amount: 'Put in how much went back to him.',
   reference: 'Add the cheque number.',
   bank: 'Say which account this left.',
@@ -83,3 +84,6 @@ export const payoutInput = z
     path: ['bankAccountId'],
     message: SAY_PAYOUT.bank,
   })
+
+// The same as money coming in, in the other direction: one payout settled two ways is two rows sharing a day and a partner, sent together so a refused half cannot leave the other half standing alone.
+export const payoutsGoingOut = z.array(payoutInput).min(1, { message: SAY_PAYOUT.nothing })

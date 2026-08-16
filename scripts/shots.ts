@@ -25,7 +25,7 @@ const SCREENS_READ_ON = [
 ]
 
 /** The day every picture is taken on, so two runs a week apart are the same picture. The same day the gallery's fixtures are written around. */
-const A_DAY = '2026-07-04'
+const A_DAY = '2026-07-23'
 
 /** How far down the app's screen may begin before the picture stops being a picture of a phone. Not zero, because a browser rounds a fractional layout; anything above this is furniture. */
 const TOP_OF_THE_SCREEN = 2

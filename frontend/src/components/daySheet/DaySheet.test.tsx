@@ -7,6 +7,7 @@ import { pick, useTheName } from '../../testing/pick'
 import type { Account, Named, Person } from './DaySheet'
 import { DaySheet } from './DaySheet'
 import type { Draft } from './sitting'
+import { asEntries } from './sitting'
 
 const trades = [
   { _id: 't1', name: 'Cement' },
@@ -242,6 +243,56 @@ describe('a day of payments', () => {
 
     expect(screen.getByText('Put in how much was paid.')).toBeTruthy()
     expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('splits one payment between two ways of paying, and sends a row for each', async () => {
+    // Nauman: "Sometimes we pay by cash and cheques so we need the ability to split between each." He was given the choice and took separate rows -- what he types once is shared, and each way is its own payment afterwards.
+    const user = userEvent.setup()
+    const { onPutIn } = aSheet()
+
+    await pick(user, 'What for', 'Cement')
+    await pick(user, 'Who was paid', 'A mason')
+    await user.type(screen.getByLabelText('How much'), '300000')
+
+    await user.click(screen.getByRole('button', { name: 'Pay it more than one way' }))
+    await user.type(screen.getByLabelText('How much of it, part 1'), '200000')
+    await user.type(screen.getByLabelText('Cheque number, part 1'), '4471')
+    // A cheque asks which account it left, and it asks that of the part rather than of the payment: the cash half has no account and never will.
+    await pick(user, 'Which account, part 1', 'Bank 0000')
+    // Scoped to the second part's own group: both parts draw the same four words, and what tells them apart is the group each sits in -- which is also what a screen reader announces.
+    await user.click(
+      within(screen.getByRole('radiogroup', { name: 'How paid, part 2' })).getByRole('radio', { name: 'Cash' })
+    )
+    await user.type(screen.getByLabelText('How much of it, part 2'), '100000')
+
+    // The arithmetic while he types, not a refusal at the end.
+    expect(screen.getByRole('status').textContent).toContain('all of it')
+
+    await user.click(screen.getByRole('button', { name: 'Put them in' }))
+
+    const [sent] = onPutIn.mock.calls[0]
+    expect(sent).toHaveLength(1)
+
+    // One line, two rows: the trade, the person and the day are shared because he typed them once, and each row carries what its own way of paying asks for.
+    const rows = asEntries(sent[0], '2025-10-07')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toMatchObject({ amount: '200,000', method: 'cheque', reference: '4471' })
+    expect(rows[1]).toMatchObject({ amount: '100,000', method: 'cash', reference: undefined })
+    expect(new Set(rows.map((row) => row.tradeId)).size).toBe(1)
+    expect(new Set(rows.map((row) => row.paidToId)).size).toBe(1)
+  })
+
+  it('says while he is typing that the parts do not come to the figure above them', async () => {
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.type(screen.getByLabelText('How much'), '300000')
+    await user.click(screen.getByRole('button', { name: 'Pay it more than one way' }))
+    await user.type(screen.getByLabelText('How much of it, part 1'), '200000')
+    await user.type(screen.getByLabelText('How much of it, part 2'), '40000')
+
+    expect(screen.getByRole('status').textContent).toContain('60,000')
+    expect(screen.getByRole('status').textContent).toContain('still to split')
   })
 
   it('names no screen that does not exist', () => {

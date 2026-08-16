@@ -1,14 +1,17 @@
 import { useState } from 'react'
+import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
 import type { HowPaid } from '~shared/validation/howMoneyMoved'
 import { asksForBank, asksForChequeNumber } from '~shared/validation/howMoneyMoved'
 import { SAY_PAYOUT } from '~shared/validation/profitShare'
 
 import { Button } from '../form/Button'
-import { Choices, Field, Line, Lines } from '../form/Field'
+import { Day } from '../form/Day'
+import { Field, Line, Lines } from '../form/Field'
+import type { Part } from '../form/HowItWasPaid'
+import { HowItWasPaid, onePart, whatEachPartIsWorth } from '../form/HowItWasPaid'
 import type { Choice as Pickable } from '../form/Pick'
 import { Pick } from '../form/Pick'
-import { PickAnAccount } from '../form/PickAnAccount'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
@@ -43,13 +46,6 @@ export type NewPayout = {
   note?: string
 }
 
-const HOW: Array<{ value: HowPaid; label: string }> = [
-  { value: 'cheque', label: 'Cheque' },
-  { value: 'cash', label: 'Cash' },
-  { value: 'transfer', label: 'Transfer' },
-  { value: 'payOrder', label: 'Pay order' },
-]
-
 const SAID: Record<HowPaid, string> = {
   cheque: 'Cheque',
   cash: 'Cash',
@@ -72,7 +68,7 @@ export function PayOut({
   paidOut: Array<PaidOut> | null | undefined
   accounts: Array<Account> | null | undefined
   // Throws what the server refused with, which this turns into the sentence under the button. It is not the route's `through`, because that one belongs to the shares form.
-  onPayOut: (payout: NewPayout) => Promise<void>
+  onPayOut: (payouts: Array<NewPayout>) => Promise<void>
   onTakeBack: (payoutId: string) => Promise<void>
   // The same offer as the day sheet's, and this screen had none at all: a payout that has already left the bank cannot be written down here if the account it left is not on the list.
   onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
@@ -101,7 +97,7 @@ function Paying({
 }: {
   partners: Array<Partner>
   accounts: Array<Account> | null | undefined
-  onPayOut: (payout: NewPayout) => Promise<void>
+  onPayOut: (payouts: Array<NewPayout>) => Promise<void>
   onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
 }) {
   // Anything added from the picker since this form opened, which the list it was picked from does not have yet.
@@ -110,9 +106,7 @@ function Paying({
   const [who, setWho] = useState<Partner | null>(null)
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10))
   const [amount, setAmount] = useState('')
-  const [method, setMethod] = useState<HowPaid>('cheque')
-  const [reference, setReference] = useState('')
-  const [account, setAccount] = useState<Pickable | null>(null)
+  const [parts, setParts] = useState<Array<Part>>(() => [onePart()])
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
@@ -122,23 +116,25 @@ function Paying({
   // Asked from the same rules the server refuses by, in the server's own words, so the screen and the schema cannot drift into disagreeing.
   const wrongWho = who === null ? SAY_PAYOUT.who : null
   const wrongAmount = amount.trim() === '' ? SAY_PAYOUT.amount : null
-  const wrongReference = asksForChequeNumber(method) && reference.trim() === '' ? SAY_PAYOUT.reference : null
-  const wrongBank = asksForBank(method) && account === null ? SAY_PAYOUT.bank : null
 
   async function pay() {
     setSaving(true)
     setRefusal(null)
 
     try {
-      await onPayOut({
-        personId: who?._id ?? '',
-        day,
-        amount,
-        method,
-        reference: asksForChequeNumber(method) ? reference.trim() : undefined,
-        bankAccountId: asksForBank(method) ? (account?._id ?? undefined) : undefined,
-        note: note.trim() === '' ? undefined : note,
-      })
+      const worth = whatEachPartIsWorth(amount, parts)
+
+      await onPayOut(
+        parts.map((part, at) => ({
+          personId: who?._id ?? '',
+          day,
+          amount: worth[at],
+          method: part.method,
+          reference: asksForChequeNumber(part.method) ? part.reference.trim() : undefined,
+          bankAccountId: (asksForBank(part.method) ? part.bankAccountId : '') || undefined,
+          note: note.trim() === '' ? undefined : note,
+        }))
+      )
     } catch (thrown) {
       setRefusal(whatWentWrong(thrown))
 
@@ -149,7 +145,8 @@ function Paying({
     }
 
     setAmount('')
-    setReference('')
+    // The ways it went stay, emptied of their figures: paying two partners out of the same account on the same day is the ordinary case.
+    setParts((was) => was.map((part) => ({ ...part, amount: '', reference: '' })))
     setNote('')
     setGoneOut((times) => times + 1)
   }
@@ -176,9 +173,8 @@ function Paying({
       />
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <Field label="Which day">
-          <Line value={day} onChange={(event) => setDay(event.target.value)} type="date" aria-label="Which day" />
-        </Field>
+        {/* The control this app draws rather than the OS one, which prints the browser's own order: a picture from CI showed `07/04/2026` where the app means the fourth of July. */}
+        <Day label="Which day" value={day} onPick={setDay} />
 
         <Field label="How much" problem={wrongAmount}>
           <Line
@@ -191,47 +187,26 @@ function Paying({
         </Field>
       </div>
 
-      <Choices label="How it went">
-        <div className="grid grid-cols-4 gap-2">
-          {HOW.map((one) => (
-            <Choice
-              key={one.value}
-              label={one.label}
-              chosen={method === one.value}
-              onChoose={() => setMethod(one.value)}
-            />
-          ))}
-        </div>
-      </Choices>
+      {/* Every way this one payout went: what is typed once -- who, the day, the amount -- is shared, each way carries its own cheque number or account, and the account picker is left without an add until the list is here, because a screen that does not know what is on the list cannot say whether the account being typed is already on it. */}
+      <HowItWasPaid
+        label="How it went"
+        parts={parts}
+        total={amount}
+        accounts={everyAccount.everything}
+        bankLabel="Which account it left"
+        bankPlaceholder={whileThereIsNoList(accounts)}
+        onChange={setParts}
+        onAddAccount={
+          Array.isArray(accounts)
+            ? async (label, lastFourDigits) => {
+                const _id = await onAddAccount(label, lastFourDigits)
+                everyAccount.remember({ _id, label })
 
-      {asksForChequeNumber(method) ? (
-        <Field label="Cheque number" problem={wrongReference}>
-          <Line value={reference} onChange={(event) => setReference(event.target.value)} aria-label="Cheque number" />
-        </Field>
-      ) : null}
-
-      {asksForBank(method) ? (
-        // Three different reasons there might be nothing to pick, and the first of them is not an empty list: a list still on its way says so, rather than showing the same nothing as a partnership that banks nowhere. `wrongBank` holds the button in all three, because nothing has been picked in any of them.
-        <PickAnAccount
-          label="Which account it left"
-          problem={wrongBank}
-          placeholder={whileThereIsNoList(accounts)}
-          chosen={account}
-          accounts={everyAccount.everything}
-          onPick={setAccount}
-          // Left out entirely until the list is here. A screen that does not yet know what is on the list cannot say whether the account he is typing is already on it, and the server does not refuse a second row with the same name.
-          onAdd={
-            Array.isArray(accounts)
-              ? async (label, lastFourDigits) => {
-                  const _id = await onAddAccount(label, lastFourDigits)
-                  everyAccount.remember({ _id, label })
-
-                  return _id
-                }
-              : undefined
-          }
-        />
-      ) : null}
+                return _id
+              }
+            : undefined
+        }
+      />
 
       <Field label="Note">
         <Lines value={note} onChange={(event) => setNote(event.target.value)} aria-label="Note" />
@@ -259,24 +234,6 @@ function whileThereIsNoList(accounts: Array<Account> | null | undefined): string
   if (accounts.length === 0) return 'No accounts written down yet'
 
   return 'Pick one'
-}
-
-function Choice({ label, chosen, onChoose }: { label: string; chosen: boolean; onChoose: () => void }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={chosen}
-      onClick={onChoose}
-      className={
-        chosen
-          ? 'border-primary bg-accent text-accent-foreground rounded-md border py-2.5 text-sm font-medium'
-          : 'border-border text-muted-foreground rounded-md border py-2.5 text-sm'
-      }
-    >
-      {label}
-    </button>
-  )
 }
 
 function AlreadyOut({
@@ -332,7 +289,7 @@ function OnePayout({ paidOut, onTakeBack }: { paidOut: PaidOut; onTakeBack: (pay
       <Figure className="text-brass text-right text-lg">{formatPaisa(paidOut.amountPaisa)}</Figure>
       <span className="text-muted-foreground col-span-2 flex flex-wrap items-baseline gap-x-3 text-sm">
         <span>
-          {SAID[paidOut.method]} · {paidOut.day}
+          {SAID[paidOut.method]} · {asDayHeWrites(paidOut.day)}
           {paidOut.reference === undefined ? '' : ` · ${paidOut.reference}`}
         </span>
         <WayOut onClick={takeBack} busy={saving}>

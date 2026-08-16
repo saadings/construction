@@ -60,17 +60,22 @@ async function aSiteThePartnerIsOn(ctx: MutationCtx): Promise<Site> {
   }
 }
 
+// One arrival, in the shape the mutation takes now: a list, because money can arrive one way or two. Everything here is one way; the split has its own tests below.
 function aCheque(site: Site, over: Record<string, unknown> = {}) {
   return {
     siteId: site.siteId,
-    day: '2025-10-07',
-    amount: '2,500,000',
-    fromId: site.client,
-    why: 'clientPayment' as const,
-    method: 'cheque' as const,
-    reference: '0001',
-    bankAccountId: site.bankAccountId,
-    ...over,
+    arrivals: [
+      {
+        day: '2025-10-07',
+        amount: '2,500,000',
+        fromId: site.client,
+        why: 'clientPayment' as const,
+        method: 'cheque' as const,
+        reference: '0001',
+        bankAccountId: site.bankAccountId,
+        ...over,
+      },
+    ],
   }
 }
 
@@ -96,7 +101,7 @@ describe('writing down money that came in', () => {
     const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
-    const receiptId = await signedIn.mutation(api.moneyIn.mutations.record, aCheque(site, { amount: '2,500,000.50' }))
+    const [receiptId] = await signedIn.mutation(api.moneyIn.mutations.record, aCheque(site, { amount: '2,500,000.50' }))
 
     const receipt = await t.run((ctx) => ctx.db.get('moneyIn', receiptId))
     expect(receipt?.amountPaisa).toBe(250000050)
@@ -123,7 +128,7 @@ describe('writing down money that came in', () => {
     const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
-    const receiptId = await signedIn.mutation(
+    const [receiptId] = await signedIn.mutation(
       api.moneyIn.mutations.record,
       aCheque(site, { method: 'cash', reference: undefined, bankAccountId: undefined })
     )
@@ -138,7 +143,7 @@ describe('writing down money that came in', () => {
     const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
-    const receiptId = await signedIn.mutation(
+    const [receiptId] = await signedIn.mutation(
       api.moneyIn.mutations.record,
       aCheque(site, { fromId: undefined, newPerson: '  Who   bought it ', why: 'sale' })
     )
@@ -192,7 +197,7 @@ describe('taking money back out of the ledger', () => {
     const site = await t.run(aSiteThePartnerIsOn)
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
-    const receiptId = await signedIn.mutation(api.moneyIn.mutations.record, aCheque(site))
+    const [receiptId] = await signedIn.mutation(api.moneyIn.mutations.record, aCheque(site))
     await signedIn.mutation(api.moneyIn.mutations.remove, { siteId: site.siteId, moneyInId: receiptId })
 
     const receipt = await t.run((ctx) => ctx.db.get('moneyIn', receiptId))
@@ -221,7 +226,7 @@ describe('taking money back out of the ledger', () => {
     })
 
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
-    const receiptId = await signedIn.mutation(api.moneyIn.mutations.record, aCheque(site))
+    const [receiptId] = await signedIn.mutation(api.moneyIn.mutations.record, aCheque(site))
 
     // The caller is a partner on both houses, so what refuses this is the receipt not being on the house named, not the door.
     const refusal = await refusalFrom(

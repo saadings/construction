@@ -280,10 +280,7 @@ describe('what has gone back to a partner', () => {
 
     await signedIn.mutation(api.profitPayouts.mutations.record, {
       siteId: house.siteId,
-      personId: house.one,
-      day: '2025-11-01',
-      amount: '20,000',
-      method: 'cash',
+      payouts: [{ personId: house.one, day: '2025-11-01', amount: '20,000', method: 'cash' as const }],
     })
 
     const read = await positionsOn(t, house.siteId)
@@ -303,10 +300,7 @@ describe('what has gone back to a partner', () => {
     const before = await positionsOn(t, house.siteId)
     await signedIn.mutation(api.profitPayouts.mutations.record, {
       siteId: house.siteId,
-      personId: house.one,
-      day: '2025-11-01',
-      amount: '20,000',
-      method: 'cash',
+      payouts: [{ personId: house.one, day: '2025-11-01', amount: '20,000', method: 'cash' as const }],
     })
     const after = await positionsOn(t, house.siteId)
 
@@ -319,12 +313,9 @@ describe('what has gone back to a partner', () => {
     const house = await t.run(aHouseTwoPartnersPutInto)
     const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
 
-    const payoutId = await signedIn.mutation(api.profitPayouts.mutations.record, {
+    const [payoutId] = await signedIn.mutation(api.profitPayouts.mutations.record, {
       siteId: house.siteId,
-      personId: house.one,
-      day: '2025-11-01',
-      amount: '20,000',
-      method: 'cash',
+      payouts: [{ personId: house.one, day: '2025-11-01', amount: '20,000', method: 'cash' as const }],
     })
     await signedIn.mutation(api.profitPayouts.mutations.remove, { siteId: house.siteId, payoutId })
 
@@ -414,10 +405,7 @@ describe('a house that has not been sold', () => {
 
     await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.profitPayouts.mutations.record, {
       siteId: house.siteId,
-      personId: house.one,
-      day: '2025-11-01',
-      amount: '20,000',
-      method: 'cash',
+      payouts: [{ personId: house.one, day: '2025-11-01', amount: '20,000', method: 'cash' as const }],
     })
 
     const [first] = (await positionsOn(t, house.siteId)).positions
@@ -441,10 +429,7 @@ describe('money that would otherwise leave the ledger', () => {
 
     await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.profitPayouts.mutations.record, {
       siteId: house.siteId,
-      personId: house.stranger,
-      day: '2025-11-01',
-      amount: '20,000',
-      method: 'cash',
+      payouts: [{ personId: house.stranger, day: '2025-11-01', amount: '20,000', method: 'cash' as const }],
     })
 
     const read = await positionsOn(t, house.siteId)
@@ -463,10 +448,7 @@ describe('money that would otherwise leave the ledger', () => {
 
     await t.withIdentity({ subject: SIGNED_IN_AS }).mutation(api.profitPayouts.mutations.record, {
       siteId: house.siteId,
-      personId: house.other,
-      day: '2025-11-01',
-      amount: '5,000',
-      method: 'cash',
+      payouts: [{ personId: house.other, day: '2025-11-01', amount: '5,000', method: 'cash' as const }],
     })
 
     await t.run(async (ctx) => {

@@ -11,6 +11,7 @@ export type WhyItCame = (typeof WHY_IT_CAME)[number]
 // The words themselves, once, so a refusal reads the same whether it was caught as it was typed or when it reached the server.
 export const SAY_IN = {
   from: 'Say who this came from.',
+  nothing: 'Put in at least one way it came in.',
   reference: 'Add the cheque number.',
   bank: 'Say which account this landed in.',
 } as const
@@ -42,3 +43,8 @@ export const receiptInput = z
     path: ['fromId'],
     message: SAY_IN.from,
   })
+
+// One arrival, settled more than one way: 200,000 by cheque and 100,000 in cash is two rows sharing a day, a person and a reason. Nauman was asked and chose it in these words -- "it saves as one line per method... correcting or removing one part leaves the other standing".
+
+// A list rather than a call each, so a half that is refused takes the other half with it. Two calls put the cheque in the ledger and lose the cash, with nothing on the screen saying which happened.
+export const moneyArriving = z.array(receiptInput).min(1, { message: SAY_IN.nothing })
