@@ -7,7 +7,7 @@ import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnSe
 
 // What the browser actually drew, measured rather than described. It began with one question -- whether a column of figures is a column -- and each one since was added the day something got past every check we had: a figure cut in half, a column squeezed to a letter a line, a trail pinned beside the heading that repeats it.
 
-// Four questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures.
+// Five questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures. The fifth is also the first that had to change the app to be askable at all -- the nav was inside the one component nothing here can draw.
 
 // `width.test.ts` asserts every figure goes through `<Figure>`, for the stated reason that it is what makes a column of amounts read as one. That guard passes, every figure is in the right face, and the grid moved the columns anyway. It is the one instrument here answering exactly the right question, truthfully, while the outcome it stands in for does not happen -- and nothing else in this repository could see the difference, because nothing else in it lays anything out.
 
@@ -28,6 +28,15 @@ const AT_LEAST_THIS_MANY_FIGURES = 100
 
 /** The same floor again. A selector that stopped finding cells reports the same clean nothing as an app where none is squeezed. */
 const AT_LEAST_THIS_MANY_CELLS = 100
+
+/** What a thumb needs, which Apple's guidance and WCAG 2.5.5 arrive at separately. The same bar that made the date input a defect in #96, asked here of the one navigation a phone has. */
+const A_THUMB_NEEDS = 44
+
+/** Below this the nav is a sheet and the rows are what a thumb hits; above it there is a column under a mouse and 32px rows are right. A phone-only rule, because one height cannot be correct at both ends. */
+const A_PHONE_IS_UNDER = 768
+
+/** The floor for it. Every other check here counts what it saw; this one saw nothing at all until this branch, which is exactly how the nav stayed 32px. */
+const AT_LEAST_THIS_MANY_TAPPED = 5
 
 /** And once more for the trails. Only the screens with something above them draw one, so this is well under what a full sweep sees -- but a `data-slot` renamed under us would report every trail unpinned across an app whose trails it never found. */
 const AT_LEAST_THIS_MANY_TRAILS = 20
@@ -157,6 +166,34 @@ const WHAT_IS_PINNED = `(() => {
   return { trails, pinned }
 })()`
 
+// The fifth question, and the only one whose answer nobody could have looked up. Nauman found it with a thumb: every row in the nav was 32px on his phone, 27% under the bar, on the only navigation there is at that width once the sidebar is behind a hamburger.
+
+// Nothing here had ever measured it and nothing could have. `Shell` holds Clerk's `UserButton`, Clerk will not render outside its own provider, and the gallery is kept clear of anything that could reach a deployment -- so the shell was exempt from the sweep, and the nav inside it went with it. The nav is its own file now for that reason alone.
+
+// Asked only below 768, and asked of the nav rather than of everything: a first pass over every control in the app at 390 found 104 of 151 under this bar, which is a real finding and a different piece of work. A guard that fails on a hundred things nobody is fixing today gets switched off.
+const WHAT_A_THUMB_CANNOT_HIT = `(() => {
+  const asked = '[data-sidebar="menu-button"], [data-sidebar="trigger"], [data-slot="sidebar-footer"] > div'
+
+  const small = []
+  let tapped = 0
+
+  for (const control of document.querySelectorAll(asked)) {
+    const box = control.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    tapped += 1
+
+    if (Math.round(box.height) < ${String(A_THUMB_NEEDS)}) {
+      small.push({
+        said: (control.textContent ?? '').trim().slice(0, 24) || control.getAttribute('aria-label') || 'the avatar',
+        high: Math.round(box.height),
+        wide: Math.round(box.width),
+      })
+    }
+  }
+
+  return { tapped, small }
+})()`
+
 type Moved = { cls: string; cell: number; xs: Array<number> }
 
 type Cut = { said: string; hidden: number; width: number }
@@ -164,6 +201,8 @@ type Cut = { said: string; hidden: number; width: number }
 type Crushed = { said: string; wide: number; tall: number }
 
 type Pinned = { said: string; how: string; held: string }
+
+type TooSmall = { said: string; high: number; wide: number }
 
 /** What came back from the page, checked rather than assumed: a bad shape here would read as a screen with nothing wrong on it. */
 function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
@@ -277,6 +316,34 @@ function whatIsPinned(said: unknown): { trails: number; pinned: Array<Pinned> } 
   }
 }
 
+/** The fifth measurement, checked the same way and for the same reason. */
+function whatIsTooSmall(said: unknown): { tapped: number; small: Array<TooSmall> } {
+  if (typeof said !== 'object' || said === null || !('tapped' in said) || !('small' in said)) {
+    throw new Error('The page answered something that is not a count of controls.')
+  }
+
+  const { tapped, small } = said
+  if (typeof tapped !== 'number' || !Array.isArray(small)) {
+    throw new Error('The page answered a count with no controls or no findings in it.')
+  }
+
+  return {
+    tapped,
+    small: small.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('high' in one) || !('wide' in one)) {
+        throw new Error('The page answered a control with nothing in it.')
+      }
+
+      const { said: text, high, wide } = one
+      if (typeof text !== 'string' || typeof high !== 'number' || typeof wide !== 'number') {
+        throw new Error('The page answered a control of the wrong shape.')
+      }
+
+      return { said: text, high, wide }
+    }),
+  }
+}
+
 async function main(): Promise<void> {
   if (!existsSync(join(GALLERY, 'gallery.html'))) {
     throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
@@ -289,6 +356,7 @@ async function main(): Promise<void> {
   let figuresSeen = 0
   let cellsSeen = 0
   let trailsSeen = 0
+  let tappedSeen = 0
 
   try {
     const page = await browser.newPage()
@@ -337,6 +405,17 @@ async function main(): Promise<void> {
         const trails = whatIsPinned(await page.evaluate(WHAT_IS_PINNED))
         trailsSeen += trails.trails
 
+        if (size.width < A_PHONE_IS_UNDER) {
+          const thumb = whatIsTooSmall(await page.evaluate(WHAT_A_THUMB_CANNOT_HIT))
+          tappedSeen += thumb.tapped
+
+          for (const small of thumb.small) {
+            wrong.push(
+              `${screen.slug} at ${String(size.width)}: ${small.said} is ${String(small.high)}px high and ${String(small.wide)} wide, under the ${String(A_THUMB_NEEDS)} a thumb needs`
+            )
+          }
+        }
+
         for (const pinned of trails.pinned) {
           wrong.push(
             `${screen.slug} at ${String(size.width)}: the trail \`${pinned.said}\` is held ${pinned.how} by ${pinned.held}, so it never scrolls away`
@@ -374,10 +453,16 @@ async function main(): Promise<void> {
     )
   }
 
+  if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
+    throw new Error(
+      `Only ${String(tappedSeen)} nav controls were measured on a phone, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
+    )
+  }
+
   if (wrong.length > 0) {
     console.error(`A column of figures does not read as one:\n\n${wrong.join('\n')}\n`)
     console.error(
-      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. A figure cut in half reads as a smaller figure rather than an incomplete one. A column squeezed to a letter a line is a column that should have left the row — give a phone fewer columns rather than narrower ones. And a trail inside a sticky header is a screen saying where you are twice at once: navigation scrolls off, identity stays.'
+      'A grid written once per row sizes a content-shaped track to that row alone: declare the tracks once on the list and give every row `grid-cols-subgrid`. A figure cut in half reads as a smaller figure rather than an incomplete one. A column squeezed to a letter a line is a column that should have left the row — give a phone fewer columns rather than narrower ones. A trail inside a sticky header is a screen saying where you are twice at once: navigation scrolls off, identity stays. And a nav row a thumb cannot hit is the whole navigation on a phone -- give the phone the taller rows and leave the desk its own.'
     )
     process.exitCode = 1
 
@@ -385,7 +470,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed and no trail is pinned, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells and ${String(trailsSeen)} trails at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, no trail is pinned and every nav control clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(trailsSeen)} trails and ${String(tappedSeen)} controls at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 
