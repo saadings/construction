@@ -64,6 +64,50 @@ const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell', 'WayIn'])
 /** The one screen that draws its own layout rather than sitting in a `Page`, and is right to: a day sheet is a sticky header over a form, so its padding is inside the header and inside the form rather than around both. */
 const ITS_OWN_LAYOUT = new Set(['DaySheet'])
 
+// The question above is asked of routes, and the app does not compose itself out of routes alone. `AgreeAContract` is drawn by `Billing`, which is drawn by a route -- so it sat one level below what anything asked about, and two changes went through it without a picture ever being taken. `ChangeTheContract`, `Positions`, `WhoIsOnThisHouse` and `HouseDetails` were in the same place: six screens, and the sweep that exists to stop exactly this reported clean on all of them.
+
+// So the same question, asked of what the app actually draws rather than of where it is mounted: anything holding a form or a table a person reads, wherever it hangs.
+const A_SCREEN = /<(Form|Page|Field|Choices|table)\b/
+
+/** Every component that draws something somebody reads and fills in. */
+function everythingWithAScreenInIt(): Array<string> {
+  return everyScreen()
+    .filter(({ path }) => path.startsWith('components/'))
+    .filter(({ path }) => !path.startsWith('components/ui/') && !path.startsWith('components/form/'))
+    .filter(({ source }) => A_SCREEN.test(source))
+    .map(({ path }) => path.split('/').pop()?.replace('.tsx', '') ?? '')
+}
+
+/** Everything the gallery draws, and everything those draw in turn: a picture of a screen is a picture of its parts. */
+function everythingAPictureReaches(): Set<string> {
+  const written = new Map(
+    everyScreen()
+      .filter(({ path }) => path.startsWith('components/'))
+      .map(({ path, source }) => [path.split('/').pop()?.replace('.tsx', '') ?? '', source])
+  )
+
+  const reached = new Set<string>()
+  const asking = [...SHOWN.matchAll(/<([A-Z]\w+)/g)].map((found) => found[1]).filter((name) => written.has(name))
+
+  while (asking.length > 0) {
+    const name = asking.pop()
+    if (name === undefined || reached.has(name)) continue
+    reached.add(name)
+
+    for (const drawn of (written.get(name) ?? '').matchAll(/<([A-Z]\w+)/g)) {
+      if (!reached.has(drawn[1]) && written.has(drawn[1])) asking.push(drawn[1])
+    }
+  }
+
+  return reached
+}
+
+/** Screens no picture can reach, each with the reason. A name here is a screen nobody will ever see photographed, so the reason has to be about the screen rather than about the effort. */
+const NO_PICTURE_CAN_REACH: Record<string, string> = {
+  Billing:
+    'reads Convex itself -- `useQuery` for the contract, the stages and the extra work -- and the gallery must hold nothing that could reach a deployment. What it draws is on show one piece at a time.',
+}
+
 describe('the gallery', () => {
   it('shows every screen a route draws whole', () => {
     const missing = whatTheRoutesDraw().filter(
@@ -114,6 +158,33 @@ describe('the gallery', () => {
     for (const [, from] of SHOWN.matchAll(/from '\.\.\/(components\/[\w./$-]+)'/g)) {
       expect(files.has(`${from}.tsx`), `the gallery draws ${from}, which this app does not have`).toBe(true)
     }
+  })
+
+  it('draws every screen in this app, wherever it hangs', () => {
+    // The rule the routes question could not ask. Six screens were below it, and the guard that exists to stop that reported a clean sweep on every one.
+    const unphotographed = everythingWithAScreenInIt().filter(
+      (name) =>
+        !everythingAPictureReaches().has(name) && !(name in NO_PICTURE_CAN_REACH) && !NOT_WITHOUT_A_SIGN_IN.has(name)
+    )
+
+    expect(unphotographed).toEqual([])
+  })
+
+  it('names nothing as unreachable that a picture could now reach', () => {
+    // The other end. An exemption that has stopped being true reads exactly like one still needed -- and this one is held to its own reason rather than to its name.
+    for (const [name, why] of Object.entries(NO_PICTURE_CAN_REACH)) {
+      const screen = everyScreen().find(({ path }) => path.endsWith(`/${name}.tsx`))
+
+      expect(screen, `${name} is exempted and is not a screen this app has`).toBeDefined()
+      expect(why).toContain('Convex')
+      expect(screen?.source, `${name} is exempted for reaching Convex and does not`).toMatch(/useQuery|useMutation/)
+    }
+  })
+
+  it('is reading a tree that really has screens in it', () => {
+    // The floor for both. A reader that stopped finding screens reports every one of nothing photographed.
+    expect(everythingWithAScreenInIt().length).toBeGreaterThan(20)
+    expect(everythingAPictureReaches().size).toBeGreaterThan(20)
   })
 
   it('is reading the gallery, rather than an empty string', () => {

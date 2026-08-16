@@ -92,6 +92,7 @@ function Chips({ showing, show }: { showing: OnShow; show: (slug: string) => voi
           data-slug={screen.slug}
           data-proves={screen.proves}
           data-shown-in={screen.shownIn}
+          data-tap-first={screen.tapFirst}
           className={
             screen.slug === showing.slug
               ? 'border-primary bg-accent text-accent-foreground rounded-md border px-2.5 py-1.5 text-sm font-medium'

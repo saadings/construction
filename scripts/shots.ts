@@ -130,6 +130,11 @@ async function main(): Promise<void> {
 
         // The picture is only a picture of a phone if the app starts where a phone's screen starts. Hiding the gallery's furniture was not enough and was the second wrong answer: it left 287px of an 844px screen to the banner and the chips, and at that height the day sheet's amount box sat under its own footer. Anybody reading those images would have found a bug that is not there.
 
+        // Tapped before anything is measured, for a screen that keeps itself folded up: what a person does to see it, done the way they do it.
+        if (screen.tapFirst !== null) {
+          await on.getByRole('button', { name: screen.tapFirst }).first().click()
+        }
+
         // Asserted every time rather than checked once. Furniture creeps back, and when it does every picture silently becomes a third furniture again with nothing saying so.
         await onceItHasStoppedMoving(on, screen.shownIn)
 
