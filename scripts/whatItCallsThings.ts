@@ -59,6 +59,13 @@ const HOW_IT_IS_SAID: Array<{ how: string; found: RegExp }> = [
   // Across lines and long, because prose wraps: "A house put away comes off the list. What was spent on it is still there…" is one sentence in four lines of source, and a pattern that stopped at a newline could not see any of the paragraphs this app explains itself with.
   { how: 'drawn', found: />\s*([A-Z][^<>{}]{1,240}?)\s*[<{]/g },
   { how: 'thrown', found: /(?:ConvexError|Error)\(\s*["'`]([^"'`]{4,120})["'`]/g },
+
+  // Everything else somebody wrote in quotes, because the three above all want a word in a naming position and a refusal is never in one.
+
+  // `SAY_PAYMENT = { paidTo: 'Say who was paid.' }` is a value under a key named after the field, and `{keeps ? 'What you have typed is kept, even if this closes.' : 'Keep this screen open until it does.'}` is a branch of a ternary. Between them that is every refusal in `shared/validation`, which is where the register is worst -- and the second clause of the sentence a send shows, which is the clause carrying the promise.
+
+  // Capitalised and quoted is the whole rule; `worthSaying` throws out the paths, identifiers and class lists that come with it.
+  { how: 'quoted', found: /["']([A-Z][^"'`\n]{3,200})["']/g },
 ]
 
 // Tests are counted apart rather than dropped. A label a guard names is a second place the word lives, and renaming it without them is a red suite -- but a word only a test says is not something the app says, and counting those together inflates every number in the table.

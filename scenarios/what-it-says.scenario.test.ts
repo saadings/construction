@@ -39,6 +39,21 @@ describe('what this app says', () => {
     expect([...everywhere].some((path) => path.startsWith('shared/'))).toBe(true)
   })
 
+  it('can see a refusal, which is where the register is worst', () => {
+    // The fourth hole, and the same shape as the third: every refusal is a value under a key named after the field -- `SAY_PAYMENT = { paidTo: 'Say who was paid.' }` -- or a branch of a ternary, and three matchers that wanted a word in a naming position could see none of them.
+
+    // Which put every sentence a person meets when they get something wrong outside the sweep, and those are the ones that read worst: `Put in how much came in`, `Say who this came from`.
+    const refusals = [...EVERYTHING.values()].filter((one) =>
+      [...one.drawn].some((path) => path.startsWith('shared/validation/'))
+    )
+
+    expect(
+      refusals.length,
+      'no refusal is in the sweep, so the worst-written sentences in the app are outside it'
+    ).toBeGreaterThan(20)
+    expect(SAID).toContain('A share cannot be more than the whole.')
+  })
+
   it('knows code from something said to somebody', () => {
     expect(worthSaying('Balance')).toBe(true)
     expect(worthSaying('Paid in advance')).toBe(true)
@@ -69,6 +84,11 @@ describe('the two silences', () => {
     expect(sending, 'the sentence a send shows is not in the app any more').toBeDefined()
     expect(sending).toContain('as soon as the phone has signal')
     expect(sending, 'a send does not fill itself in -- the queue is in memory').not.toContain('fill in')
+
+    // And the clause that carries the promise, which is a ternary branch on the next line rather than part of the sentence above. It is the reason the merged quote was dangerous rather than merely wrong: without it the sentence says a payment arrives on its own.
+    expect(SAID, 'the clause telling him what keeps the payment is not in the app any more').toContain(
+      'Keep this screen open until it does.'
+    )
   })
 
   it('says of a reading that it has not come through, and that it fills itself in', () => {
