@@ -291,7 +291,7 @@ export const ON_SHOW: Array<OnShow> = [
         accounts={BANK.map((account) => ({ _id: account._id as never, label: account.label }))}
         saving={false}
         refusal={null}
-        onPutIn={() => undefined}
+        onPutIn={nothingTrue}
         onAddAccount={() => Promise.resolve('b1' as never)}
         onAddTrade={() => Promise.resolve('t1' as never)}
       />

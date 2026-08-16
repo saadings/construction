@@ -52,6 +52,32 @@ if (typeof window !== 'undefined') {
     // Nothing to do: jsdom has no layout, so there is no viewport to bring anything into. What matters is that calling it is not an error.
   }
 
+  // The third thing jsdom leaves out, and the one a screen keeping a half-typed sitting needs. Given here rather than mocked per test: what is being tested is that the sitting survives, and a test that hands the screen its own fake store proves the fake works.
+
+  // A `Map` behind the real shape, because `Storage` is a real interface and a hand-made object literal satisfying it needs a cast. Values are strings, as they are in a browser: anything else would let a test pass on something the real store cannot hold.
+  if (typeof window.localStorage === 'undefined') {
+    const held = new Map<string, string>()
+
+    const store: Storage = {
+      get length() {
+        return held.size
+      },
+      key: (at: number) => [...held.keys()][at] ?? null,
+      getItem: (name: string) => held.get(name) ?? null,
+      setItem: (name: string, value: string) => {
+        held.set(name, String(value))
+      },
+      removeItem: (name: string) => {
+        held.delete(name)
+      },
+      clear: () => {
+        held.clear()
+      },
+    }
+
+    Object.defineProperty(window, 'localStorage', { value: store, configurable: true })
+  }
+
   // What a resize is, to anything watching. A test sets `window.innerWidth` and dispatches one; nothing here polls, so without this a width set after mount is a width nobody hears about.
   window.addEventListener('resize', () => {
     for (const query of asked) {

@@ -57,6 +57,24 @@ describe('a send that has not come back', () => {
     expect(said).not.toMatch(/failed|error|wrong|try again/i)
   })
 
+  it('says what is true of the screen it is on, and not what used to be true of all of them', () => {
+    // `Keep this screen open` was true everywhere when it was written. The day sheet keeps its sitting on the device now, so there it understates what the app does and asks him for something a phone does not let him promise -- while it is still the whole truth on every screen that keeps nothing.
+    vi.useFakeTimers()
+    const { rerender } = render(<StillSending busy />)
+    act(() => {
+      vi.advanceTimersByTime(9_000)
+    })
+
+    expect(screen.getByText(SAYS_SO).textContent).toContain('Keep this screen open')
+
+    rerender(<StillSending busy keeps />)
+
+    const said = screen.getByText(SAYS_SO).textContent
+
+    expect(said).toContain('What you have typed is kept')
+    expect(said).not.toContain('Keep this screen open')
+  })
+
   it('takes it back the moment the send comes back', () => {
     vi.useFakeTimers()
     const { rerender } = render(<StillSending busy />)
