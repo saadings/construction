@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { todayOnThisDevice } from '~shared/calendarDate'
+import { asDayHeWrites, todayOnThisDevice } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 import { milestoneInput } from '~shared/validation/milestone'
 import { percent as percentRule, whatIsWrong } from '~shared/validation/primitives'
@@ -66,7 +66,7 @@ export function Stages({
                     {stage.billedOn === undefined ? (
                       <BillIt stage={stage} onBill={onBill} />
                     ) : (
-                      <span className="text-muted-foreground text-sm">Billed {stage.billedOn}</span>
+                      <span className="text-muted-foreground text-sm">Billed {asDayHeWrites(stage.billedOn)}</span>
                     )}
                   </TableCell>
                 </TableRow>

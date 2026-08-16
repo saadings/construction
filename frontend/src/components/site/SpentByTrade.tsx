@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 
 import { WayOut } from '../form/WayOut'
@@ -178,7 +179,7 @@ function Payment({
       <div className="min-w-0 flex-1">
         <p className="text-foreground truncate text-[0.9375rem]">{went.paidToName}</p>
         <p className="text-muted-foreground truncate text-sm">
-          {went.day} · {SAID[went.method]}
+          {asDayHeWrites(went.day)} · {SAID[went.method]}
           {went.reference === undefined ? '' : ` · ${went.reference}`}
           {went.note === undefined ? '' : ` · ${went.note}`}
         </p>

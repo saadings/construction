@@ -17,7 +17,7 @@ afterEach(() => {
 const WHILE_THE_PLINTH_WAS_BEING_BILLED = new Date(2026, 4, 20, 11, 0)
 
 const THREE: Array<StageRow> = [
-  { _id: 'm1', description: 'On signing', percent: 20, amountPaisa: 250_000_00, billedOn: '2026-04-01' },
+  { _id: 'm1', description: 'On signing', percent: 20, amountPaisa: 250_000_00, billedOn: '2026-04-21' },
   { _id: 'm2', description: 'At plinth level', percent: 30, amountPaisa: 375_000_00 },
   { _id: 'm3', description: 'At grey structure', percent: 35, amountPaisa: 437_500_00 },
 ]
@@ -84,7 +84,8 @@ describe('the stages a contract is billed in', () => {
 
     // Two of the three are unbilled, and the first is not one of them.
     expect(screen.getAllByRole('button', { name: 'Bill it' })).toHaveLength(2)
-    expect(screen.getByText('Billed 2026-04-01')).toBeTruthy()
+    // The day first and the month second, and the twenty-first on purpose: on the first of April both orders read 01/04 and 04/01, and an assertion that cannot tell them apart is one about nothing.
+    expect(screen.getByText('Billed 21/04/2026')).toBeTruthy()
 
     // Asked the way the control really names itself, which is the label with the day it is holding on the end. Asked by the label alone it would find nothing whether the control were there or not, and an assertion that cannot fail is worse than none: the other two dates below are what proves this one is looking at anything.
     const asked = (label: string) => screen.queryAllByRole('button', { name: (name) => name.startsWith(`${label}: `) })
