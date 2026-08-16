@@ -72,18 +72,17 @@ describe('everything at once', () => {
   it('says how much of what came in is his own money, under the figure it is part of', async () => {
     // The one line I would not let a reviewer cut. Without it the biggest number on the screen reads as profit, and a house is not profitable the moment somebody funds it.
     renderIt(BUSY)
-    await screen.findByText('Come in')
 
-    expect(screen.getByText('1,240,000 of it is your own money.')).toBeTruthy()
+    // Waited for by the sentence this test is about rather than by the tile's label. `Come in` names the tile and now also names a column of the houses table, and a wait that matches two things is a wait that stops meaning one of them.
+    expect(await screen.findByText('1,240,000 of it is your own money.')).toBeTruthy()
     // Said beside the total rather than taken out of it: it did come in.
     expect(screen.getByText('12,000,000')).toBeTruthy()
   })
 
   it('says so plainly when none of it is his own', async () => {
     renderIt({ ...BUSY, comeIn: { receivedPaisa: 12_000_000_00, ownMoneyPaisa: 0 } })
-    await screen.findByText('Come in')
 
-    expect(screen.getByText('None of it is your own money.')).toBeTruthy()
+    expect(await screen.findByText('None of it is your own money.')).toBeTruthy()
   })
 
   it('never nets an advance into what is owed', async () => {

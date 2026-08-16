@@ -1,62 +1,15 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
+import { CHOSEN_DARK, FAR_ENOUGH, FOLLOWING_THE_PHONE, LIGHT, asAColour, contrast, toldApart } from './testing/colour'
 import { everyScreen } from './testing/screens'
 
 // Nauman asked why a section had no contrast. It had none because the text was painted in a background colour -- `--color-muted` is the alternating row tint, so `text-muted` was the same colour as the page at 1.04:1, in both modes.
 
 // Nothing here could see it. Every other instrument reads what the source says; this one does the arithmetic a renderer would do, which is the only way text that is present and unreadable ever gets found without somebody opening the page.
-const STYLES = readFileSync(join(dirname(new URL(import.meta.url).pathname), 'styles.css'), 'utf8')
 
 /** What the standard asks of body text. Large text is allowed 3, and none of these labels are large: the uppercase ones are 12px. */
 const READABLE = 4.5
-
-function tokensIn(selector: string): Record<string, string> {
-  const rule = new RegExp(`^\\s*${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{`, 'm')
-  const found = rule.exec(STYLES)
-  expect(found, `${selector} is not a rule in the stylesheet`).not.toBeNull()
-
-  const start = found?.index ?? 0
-  const block = STYLES.slice(STYLES.indexOf('{', start) + 1, STYLES.indexOf('}', start))
-  const declared: Record<string, string> = {}
-
-  for (const [, name, value] of block.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
-    declared[name] = value.trim()
-  }
-
-  return declared
-}
-
-/** A token said as a colour, following `var(--x)` until it reaches one. A palette that aliases is still a palette. */
-export function asAColour(name: string, palette: Record<string, string>, depth = 0): string | null {
-  // An alias that points at itself, or at something not in this palette, stops here rather than going round forever.
-  if (!(name in palette) || depth > 5) {
-    return null
-  }
-
-  const said = palette[name]
-
-  const alias = /^var\((--[\w-]+)\)$/.exec(said)
-
-  return alias === null ? (/^#[\da-f]{6}$/i.test(said) ? said : null) : asAColour(alias[1], palette, depth + 1)
-}
-
-/** How light a colour is, the way the standard defines it rather than the way it looks. */
-export function howLight(hex: string): number {
-  const channels = [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16) / 255)
-  const [red, green, blue] = channels.map((c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)))
-
-  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
-}
-
-export function contrast(one: string, other: string): number {
-  const [lighter, darker] = [howLight(one), howLight(other)].sort((a, b) => b - a)
-
-  return (lighter + 0.05) / (darker + 0.05)
-}
 
 // Every colour words are set in, and every surface words sit on. Paired rather than measured against one assumed background, because `--faint` on the panel is a different sum from `--faint` on the page -- and it was the panel that failed while the page passed.
 const WORDS = ['--ink', '--muted-ink', '--faint', '--brass', '--green', '--refusal']
@@ -82,10 +35,6 @@ function whatCannotBeRead(palette: Record<string, string>): Array<string> {
 
   return failing
 }
-
-const LIGHT = tokensIn(':root')
-const FOLLOWING_THE_PHONE = { ...LIGHT, ...tokensIn(":root:not([data-theme='light'])") }
-const CHOSEN_DARK = { ...LIGHT, ...tokensIn(":root[data-theme='dark']") }
 
 describe('words a person can actually read', () => {
   it('is every colour words are set in, on every surface they sit on, in light', () => {
@@ -124,6 +73,66 @@ describe('words a person can actually read', () => {
     expect(whatCannotBeRead(asShipped)).toContain('--muted-ink on --hairline is 3.20:1')
     expect(whatCannotBeRead(asShipped)).toContain('--faint on --hairline is 2.43:1')
     expect(whatCannotBeRead(asShipped)).toHaveLength(8)
+  })
+})
+
+// Every colour in this palette that means something, and what it means. A colour carrying a meaning has to be told apart from every other one carrying a different meaning, or the meaning is not carried at all.
+const MEANS_SOMETHING = {
+  '--brass': 'money going out',
+  '--green': 'money owed to him',
+  '--refusal': 'this removes something',
+}
+
+function whatCannotBeToldApart(palette: Record<string, string>): Array<string> {
+  const named = Object.keys(MEANS_SOMETHING)
+
+  return named.flatMap((one, at) =>
+    named.slice(at + 1).flatMap((other) => {
+      const first = asAColour(one, palette)
+      const second = asAColour(other, palette)
+      if (first === null || second === null) return []
+
+      const apart = toldApart(first, second)
+
+      return apart < FAR_ENOUGH ? [`${one} and ${other} are ${apart.toFixed(1)} apart`] : []
+    })
+  )
+}
+
+describe('two colours that mean different things', () => {
+  it('are far enough apart to be told apart, in light', () => {
+    expect(whatCannotBeToldApart(LIGHT)).toEqual([])
+  })
+
+  it('and in dark, where the same three are lighter and could close up', () => {
+    expect(whatCannotBeToldApart(FOLLOWING_THE_PHONE)).toEqual([])
+    expect(whatCannotBeToldApart(CHOSEN_DARK)).toEqual([])
+  })
+
+  it('would notice the refusal that shipped, which no contrast sum could', () => {
+    // Planted in the palette rather than in the sum. Both directions of the point in one test: the ratio passes this and the distance does not.
+    const asShipped = { ...LIGHT, '--refusal': '#8f3521' }
+
+    expect(whatCannotBeToldApart(asShipped)).toEqual(['--brass and --refusal are 17.9 apart'])
+    expect(whatCannotBeRead(asShipped)).toEqual([])
+  })
+
+  it('measures distance the way the eye does, not the way a ratio does', () => {
+    // The controls, at both ends of the scale.
+    expect(toldApart('#000000', '#ffffff')).toBeCloseTo(100, 0)
+    expect(toldApart('#8a5a1e', '#8a5a1e')).toBeCloseTo(0, 5)
+
+    // And the pair this app has always told apart, which a contrast ratio calls identical. Both numbers, so neither can be read as the other.
+    expect(toldApart('#8a5a1e', '#4a6b52')).toBeGreaterThan(FAR_ENOUGH)
+    expect(contrast('#8a5a1e', '#4a6b52')).toBeLessThan(1.1)
+  })
+
+  it('is asked of colours that are really in the stylesheet', () => {
+    // The floor. A palette read as an empty object has nothing in it that means anything, and reports every pair as far enough apart.
+    for (const name of Object.keys(MEANS_SOMETHING)) {
+      expect(asAColour(name, LIGHT), `${name} means something and is not in the palette`).toMatch(/^#[\da-f]{6}$/i)
+      expect(asAColour(name, CHOSEN_DARK), `${name} means something and has no dark value`).toMatch(/^#[\da-f]{6}$/i)
+    }
   })
 })
 

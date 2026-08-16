@@ -10,9 +10,12 @@ import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartToo
 // The two are never stacked into one bar. A single bar holding both says a house is doing well the moment somebody funds it, which is the mistake the whole profit split is built to avoid.
 export type Month = { month: string; ownMoneyPaisa: number; broughtInPaisa: number }
 
-const HOW_IT_IS_DRAWN = {
+// Both of these are money coming in. `ownMoney` was brass, which is the colour this app uses for money going out -- so half the bars on a chart headed `What came in` were painted as money leaving, on the screen he opens first.
+
+// The difference between them is not a direction, so it is not carried by a second colour. It is the same green at 45% over the page, which is 29.6 apart from the solid one by CIEDE2000 -- as far apart as brass and green are, which is the pair this app already tells apart. Read from the config by the bars and by the legend alike, so the swatch cannot drift from what it labels.
+export const HOW_IT_IS_DRAWN = {
   broughtIn: { label: 'Brought in', color: 'var(--green)' },
-  ownMoney: { label: 'Your own money', color: 'var(--brass)' },
+  ownMoney: { label: 'Your own money', color: 'color-mix(in srgb, var(--green) 45%, var(--ground))' },
 } satisfies ChartConfig
 
 /** `2026-04` said the way somebody says it, without building a date to find out. */
