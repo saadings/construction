@@ -6,6 +6,7 @@ import { note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation
 import { Button } from '../form/Button'
 import { Field, Line, Lines } from '../form/Field'
 import { StillSending } from '../form/StillSending'
+import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 import type { Priced } from './AgreeAContract'
@@ -35,15 +36,15 @@ export function ChangeTheContract({
 
   if (!open) {
     return (
-      <button
-        type="button"
+      <Button
+        look="another"
+        className="self-start"
         onClick={() => {
           setOpen(true)
         }}
-        className="text-primary self-start text-sm font-medium"
       >
         Change it
-      </button>
+      </Button>
     )
   }
 
@@ -53,15 +54,14 @@ export function ChangeTheContract({
       <Revise contract={contract} onRevise={onRevise} />
       <Cancel onCancel={onCancel} />
 
-      <button
-        type="button"
+      <WayOut
+        className="self-start"
         onClick={() => {
           setOpen(false)
         }}
-        className="text-muted-foreground self-start text-sm underline underline-offset-4"
       >
         Leave it as it is
-      </button>
+      </WayOut>
     </div>
   )
 }
@@ -225,26 +225,23 @@ function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
           <Button look="beside" onClick={() => send(onCancel)} busy={saving} className="py-2 text-sm">
             Yes, cancel it
           </Button>
-          <button
-            type="button"
+          <WayOut
             onClick={() => {
               setSure(false)
             }}
-            className="text-muted-foreground text-sm underline underline-offset-4"
           >
             Keep it
-          </button>
+          </WayOut>
         </div>
       ) : (
-        <button
-          type="button"
+        <WayOut
+          className="self-start"
           onClick={() => {
             setSure(true)
           }}
-          className="text-destructive self-start text-sm font-medium"
         >
           Cancel this contract
-        </button>
+        </WayOut>
       )}
     </div>
   )

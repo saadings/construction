@@ -219,15 +219,15 @@ function RaiseOne({ onRaise }: { onRaise: (bill: RaisedBill) => Promise<void> })
         ))}
       </ol>
 
-      <button
-        type="button"
+      <Button
+        look="another"
+        className="self-start"
         onClick={() => {
           setLines((before) => [...before, anEmptyLine()])
         }}
-        className="text-primary self-start text-sm font-medium"
       >
         Add a line
-      </button>
+      </Button>
 
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <span className="text-faint text-sm">

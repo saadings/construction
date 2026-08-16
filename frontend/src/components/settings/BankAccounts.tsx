@@ -5,6 +5,7 @@ import { whatIsWrong } from '~shared/validation/primitives'
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { StillSending } from '../form/StillSending'
+import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -78,8 +79,8 @@ function OneAccount({
       <span className="flex items-baseline gap-4">
         {/* Drawn as it is stored. There is no whole number anywhere to mask. */}
         <span className="text-muted-foreground font-mono text-sm tabular-nums">••••{account.lastFourDigits}</span>
-        <button
-          type="button"
+        <WayOut
+          className="shrink-0"
           onClick={() => {
             setSaving(true)
             setRefusal(null)
@@ -91,10 +92,9 @@ function OneAccount({
                 setSaving(false)
               })
           }}
-          className="text-muted-foreground hover:text-foreground shrink-0 text-sm underline underline-offset-4"
         >
           {saving ? 'Taking it off…' : 'Take it off'}
-        </button>
+        </WayOut>
       </span>
       <StillSending busy={saving} />
       {refusal === null ? null : (

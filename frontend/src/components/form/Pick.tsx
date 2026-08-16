@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from '../ui/combobox'
+import { Button } from './Button'
 import { Choices, Field, useWhatIsAsked } from './Field'
 
 // One way to pick anything in this app. Every list used to be a `<select>` and one was a `<datalist>`, and both are drawn by the browser: Nauman sent a screenshot of the datalist's popup in Chrome's mauve, sitting over the error text, and there is no CSS we can write that reaches it.
@@ -105,8 +106,9 @@ export function Pick({
 
           {/* Offered alongside the matches too, not only when nothing matches. He may type a name that is the beginning of one already on the list, and hiding the offer then is the case that would send him looking for a second box again. */}
           {(canUseANewName || onUseANewName !== undefined) && wanted !== '' && !alreadyThere ? (
-            <button
-              type="button"
+            <Button
+              look="another"
+              className="border-border w-full border-t px-2 py-1.5 text-left"
               onClick={() => {
                 // Closed either way, because taking the offer is a choice made: a list left hanging over what happens next covers the question a trade opens underneath, and on a form with two pickers it covers the next question entirely -- and Radix hides the rest of the page from the accessibility tree while a popup is open, so what it covers is not only visual.
                 setOpen(false)
@@ -118,10 +120,9 @@ export function Pick({
                   onUseANewName(wanted)
                 }
               }}
-              className="text-primary border-border w-full border-t px-2 py-1.5 text-left text-sm font-medium"
             >
               Use “{wanted}”
-            </button>
+            </Button>
           ) : null}
         </ComboboxContent>
       </Combobox>

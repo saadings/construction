@@ -4,6 +4,7 @@ import { HOW_PAID, asksForBank, asksForChequeNumber } from '~shared/validation/h
 
 import { cn } from '../../lib/utils'
 import { Figure } from '../shell/Page'
+import { Button } from './Button'
 import { Choices, Field, Line } from './Field'
 import { asChoices } from './Pick'
 import type { Account } from './PickAnAccount'
@@ -215,13 +216,14 @@ export function HowItWasPaid({
         </p>
       )}
 
-      <button
-        type="button"
+      {/* This shipped as a bare `<button>` at `text-sm` with no padding at all -- a tap target the height of its own text, about 20px, opening the primary new thing on the day sheet. It merged under 997 passing tests, hours after every button in the app became shadcn's underneath, because nothing made a call site use one. */}
+      <Button
+        look="another"
+        className="self-start"
         onClick={() => onChange([...parts, onePart(parts.some((part) => part.method === 'cash') ? 'cheque' : 'cash')])}
-        className="text-primary self-start text-sm font-medium"
       >
         {split ? 'Add another way' : 'Pay it more than one way'}
-      </button>
+      </Button>
     </div>
   )
 }

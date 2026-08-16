@@ -6,6 +6,7 @@ import { Field, Line } from './Field'
 import type { Choice } from './Pick'
 import { Pick, asChoices } from './Pick'
 import { StillSending } from './StillSending'
+import { WayOut } from './WayOut'
 import { whatWentWrong } from './whatWentWrong'
 
 // Which account money left or landed in, and a way to add one without leaving the sitting.
@@ -120,17 +121,15 @@ export function PickAnAccount({
               Put it on the list
             </Button>
 
-            <button
-              type="button"
+            <WayOut
               onClick={() => {
                 setNaming(null)
                 setNumber('')
                 setRefusal(null)
               }}
-              className="text-muted-foreground text-sm underline underline-offset-4"
             >
               Never mind
-            </button>
+            </WayOut>
           </div>
         </div>
       )}

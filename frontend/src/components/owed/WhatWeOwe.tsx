@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 
+import { WayOut } from '../form/WayOut'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Figure, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -122,15 +123,14 @@ function OnePerson({ person }: { person: Standing }) {
         </Link>
 
         {person.onHouses.length < 2 ? null : (
-          <button
-            type="button"
+          <WayOut
+            className="shrink-0"
             onClick={() => setOpen(!open)}
             aria-expanded={open}
             aria-label={`Which houses ${person.name} is owed on`}
-            className="text-muted-foreground shrink-0 text-sm"
           >
             {person.onHouses.length} houses
-          </button>
+          </WayOut>
         )}
       </span>
 

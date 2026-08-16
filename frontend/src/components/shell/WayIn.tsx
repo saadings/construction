@@ -1,5 +1,7 @@
 import { SignInButton } from '@clerk/tanstack-react-start'
 
+import { Button } from '../form/Button'
+
 // The one screen there is signed out. It lives here rather than on the home route because the root renders it in place of whatever was asked for: every other screen is a form nobody signed in can send, over a reading that will never come back.
 export function WayIn() {
   return (
@@ -8,7 +10,7 @@ export function WayIn() {
       <p className="text-muted-foreground">Sites, spending and what everyone is owed.</p>
 
       <SignInButton mode="modal">
-        <button className="bg-primary text-primary-foreground mt-2 rounded-md px-6 py-3 font-medium">Sign in</button>
+        <Button className="mt-2">Sign in</Button>
       </SignInButton>
     </main>
   )

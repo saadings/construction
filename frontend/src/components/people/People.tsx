@@ -5,6 +5,7 @@ import { pakistaniMobile, personName, whatIsWrong } from '~shared/validation/pri
 import { Button } from '../form/Button'
 import { Field, Line, Lines } from '../form/Field'
 import { StillSending } from '../form/StillSending'
+import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Form, Page } from '../shell/Page'
@@ -137,15 +138,15 @@ function OnePerson({
         </span>
         <span className="flex items-baseline justify-between gap-3">
           <span className="text-muted-foreground hidden min-w-0 truncate text-sm sm:block">{person.notes ?? ''}</span>
-          <button
-            type="button"
+          <Button
+            look="another"
+            className="shrink-0"
             onClick={() => {
               setChanging(true)
             }}
-            className="text-primary shrink-0 text-sm font-medium"
           >
             Change
-          </button>
+          </Button>
         </span>
         <StillSending busy={saving} />
         {refusal === null ? null : (
@@ -217,26 +218,20 @@ function OnePerson({
         >
           Save it
         </Button>
-        <button
-          type="button"
+        <WayOut
           onClick={() => {
             setName(person.name)
             setPhone(person.phone ?? '')
             setNotes(person.notes ?? '')
             setChanging(false)
           }}
-          className="text-muted-foreground text-sm underline underline-offset-4"
         >
           Never mind
-        </button>
+        </WayOut>
         {/* Hidden rather than deleted, because payments point at a person forever. */}
-        <button
-          type="button"
-          onClick={() => send(async () => await onHide(person._id))}
-          className="text-destructive ml-auto text-sm"
-        >
+        <Button look="removing" className="ml-auto" onClick={() => send(async () => await onHide(person._id))}>
           Take off the list
-        </button>
+        </Button>
       </div>
     </li>
   )
