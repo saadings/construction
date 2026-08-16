@@ -98,8 +98,10 @@ function Waiting({ waiting, onTakeOff }: { waiting: Array<Invited> | null; onTak
   }
 
   // Said out loud rather than left blank, because an empty space reads as something that has not loaded.
+
+  // Only what an empty list can support. It used to add "Everyone invited has signed in", which is a claim about invitations that were sent -- and it said it just as readily on an instance where nobody has ever been invited, which is where Nauman read it while working out why inviting did not work. This component holds `waiting` and nothing else, so no wording it could carry would know the difference; the fact is not on this screen and does not belong on it.
   if (waiting.length === 0) {
-    return <p className="text-muted-foreground text-sm">Nobody is waiting. Everyone invited has signed in.</p>
+    return <p className="text-muted-foreground text-sm">Nobody is waiting.</p>
   }
 
   return (
