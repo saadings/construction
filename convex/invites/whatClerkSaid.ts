@@ -28,6 +28,13 @@ export function whatClerkSaid(status: number, body: unknown): string {
     return SAY_CLERK.already
   }
 
+  // The one that was actually stopping him, found by asking Clerk rather than by guessing: a 400 saying invitations are only supported on instances that accept email addresses. Nobody could have read it off the screen, and both of our guesses -- a duplicate, a rate limit -- were wrong.
+
+  // Read as a code rather than as a 400, because 400 is what Clerk says to a dozen unrelated things and the code is the part that means this.
+  if (codes.includes('invitations_not_supported')) {
+    return SAY_CLERK.noEmailSignIn
+  }
+
   if (status === 429) {
     return SAY_CLERK.tooMany
   }
