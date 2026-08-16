@@ -26,6 +26,7 @@
     "shadcn:add": "npx shadcn@latest add",
     "setup:cloudflare": "tsx scripts/setupCloudflareProject.ts",
     "columns": "tsx scripts/columns.ts",
+    "what-nothing-watches": "tsx scripts/whatNothingWatches.ts",
     "gate": "yarn format:check && yarn lint:check && yarn typecheck && yarn build && yarn test && yarn test:scenario && yarn gallery:build && yarn shots && yarn columns"
   },
   "dependencies": {
