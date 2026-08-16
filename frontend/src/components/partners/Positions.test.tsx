@@ -162,7 +162,7 @@ describe('what each partner is owed', () => {
     render(<Positions what={TWO_PARTNERS} />)
 
     const rows = await screen.findAllByRole('listitem')
-    for (const label of ['Put in', 'Share', 'Due', 'Paid', 'Left']) {
+    for (const label of ['Put in', 'Share', 'Due', 'Paid', 'Remaining']) {
       expect(within(rows[0]).getAllByText(label).length).toBeGreaterThan(0)
     }
   })
@@ -181,7 +181,7 @@ describe('a house that has not been sold', () => {
 
     const rows = await screen.findAllByRole('listitem')
 
-    // Two dashes and not one. `Left` is due minus paid, so on a house that has not sold it is the negative of whatever he has drawn -- a figure under a heading that reads as the partnership owing him, when he is the one who has had money early.
+    // Two dashes and not one. `Remaining` is due minus paid, so on a house that has not sold it is the negative of whatever he has drawn -- a figure under a heading that reads as the partnership owing him, when he is the one who has had money early.
     expect(within(rows[0]).getAllByText('—').length).toBe(2)
 
     // Said the other way round as well, because the count above would still be two if the dash landed in the wrong column and the figure moved.

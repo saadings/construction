@@ -91,7 +91,7 @@ export function TheirAccount({ answer }: { answer: { account: Account | null } |
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
             <span>Day</span>
-            <span>What for</span>
+            <span>Trade</span>
             <span className="text-right">Billed</span>
             <span className="text-right">Paid</span>
             <span className="text-right">Balance</span>

@@ -88,7 +88,7 @@ describe('the people in the ledger', () => {
     await screen.findByLabelText('Name')
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A steel supplier' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add them' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
       expect(onAdd).toHaveBeenCalledWith({ name: 'A steel supplier', phone: undefined, notes: undefined })
@@ -101,7 +101,7 @@ describe('the people in the ledger', () => {
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A mason' } })
     fireEvent.change(screen.getByLabelText('Number'), { target: { value: '0300-0000000' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add them' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
       expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('')
@@ -116,7 +116,7 @@ describe('the people in the ledger', () => {
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A steel supplier' } })
     fireEvent.blur(screen.getByLabelText('Name'))
-    fireEvent.click(screen.getByRole('button', { name: 'Add them' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     await waitFor(() => {
       expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('')
@@ -129,7 +129,7 @@ describe('the people in the ledger', () => {
     await screen.findByLabelText('Name')
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'A' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add them' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('Put in a name. A person, a shop or a company.')
     expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('A')
@@ -176,7 +176,7 @@ describe('the people in the ledger', () => {
     const rows = await screen.findAllByRole('listitem')
     fireEvent.click(within(rows[0]).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What A mason is called'), { target: { value: 'A senior mason' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onEdit).toHaveBeenCalledWith('p1', {
@@ -193,7 +193,7 @@ describe('the people in the ledger', () => {
     const rows = await screen.findAllByRole('listitem')
     fireEvent.click(within(rows[0]).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What A mason is called'), { target: { value: 'Somebody else' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Never mind' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(screen.getAllByRole('listitem')[0].textContent).toContain('A mason')
     expect(onEdit).not.toHaveBeenCalled()
@@ -210,7 +210,7 @@ describe('the people in the ledger', () => {
     const rows = await screen.findAllByRole('listitem')
     fireEvent.click(within(rows[0]).getByRole('button', { name: 'Change' }))
     fireEvent.change(screen.getByLabelText('What A mason is called'), { target: { value: 'A steel supplier' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('There is already somebody called A steel supplier.')
     expect(screen.getByLabelText<HTMLInputElement>('What A mason is called').value).toBe('A steel supplier')

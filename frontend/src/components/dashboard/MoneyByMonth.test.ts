@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { CHOSEN_DARK, FAR_ENOUGH, LIGHT, asAColour, asAMixedColour, toldApart } from '../../testing/colour'
 import { HOW_IT_IS_DRAWN } from './MoneyByMonth'
 
-// What came in, in two series, on the screen he opens first. `Your own money` was drawn in brass -- the colour this app uses for money going out -- so half the bars under a heading saying `What came in` were painted as money leaving.
+// What came in, in two series, on the screen he opens first. `Own funds` was drawn in brass -- the colour this app uses for money going out -- so half the bars under a heading saying `Invested` were painted as money leaving.
 
 // Nothing could see it. The palette was measured for readability and every colour passed; a colour can be perfectly readable and still say the wrong thing.
 

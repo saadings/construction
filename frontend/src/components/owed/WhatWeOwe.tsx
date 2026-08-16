@@ -34,7 +34,7 @@ export type WhatIsOwed = {
 
 // Across every house on purpose. A steel supplier delivering to two of them is owed one figure, and two half-balances on two houses is the 487-R mistake in a new place -- nobody adds them up and the pair disagree by the time anybody tries.
 
-// One grid for the whole list, and every row takes its columns from it. Written per row, the phone's `auto` track sized to whatever was in that row: three people put `Standing` at 346 and one put it at 355, because the figures beside it were a different width. The tracks are declared once and the widest content in the column decides them for everybody.
+// One grid for the whole list, and every row takes its columns from it. Written per row, the phone's `auto` track sized to whatever was in that row: three people put `Outstanding` at 346 and one put it at 355, because the figures beside it were a different width. The tracks are declared once and the widest content in the column decides them for everybody.
 const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]'
 
 /** A row, or anything between the grid and a row: it takes the columns above rather than declaring any. */
@@ -74,7 +74,7 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
             <span>Who</span>
             <span className="text-right">Billed</span>
             <span className="text-right">Paid</span>
-            <span className="text-right">Standing</span>
+            <span className="text-right">Outstanding</span>
           </div>
 
           <ul className={`${ROW} divide-hairline gap-y-0 divide-y`}>
@@ -99,7 +99,7 @@ function BothWays({ payablePaisa, advancedPaisa }: { payablePaisa: number; advan
       </div>
 
       <div>
-        <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Held in advance</p>
+        <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Paid in advance</p>
         <Figure className="text-foreground text-xl">{formatPaisa(advancedPaisa)}</Figure>
       </div>
     </section>
@@ -139,7 +139,7 @@ function OnePerson({ person }: { person: Standing }) {
       <Cell label="Paid" tone="text-brass">
         {formatPaisa(person.paidPaisa)}
       </Cell>
-      <Cell label="Standing" tone={holding ? 'text-foreground' : 'text-green'}>
+      <Cell label="Outstanding" tone={holding ? 'text-foreground' : 'text-green'}>
         {holding ? `${formatPaisa(-person.outstandingPaisa)} adv` : formatPaisa(person.outstandingPaisa)}
       </Cell>
 

@@ -70,6 +70,6 @@ describe('the way back up', () => {
   it('falls back to what the step is called when nobody passed a name', () => {
     // A screen that forgets to pass one shows a readable word rather than a `$siteId`, and the gallery is where that is noticed.
     expect(saidAs('/sites/$siteId', {})).toBe('The house')
-    expect(saidAs('/more/which-account', {})).toBe('Which account')
+    expect(saidAs('/more/which-account', {})).toBe('Account')
   })
 })

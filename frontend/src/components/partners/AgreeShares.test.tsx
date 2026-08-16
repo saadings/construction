@@ -118,7 +118,7 @@ describe('agreeing what each partner takes', () => {
 
     fireEvent.change(screen.getByLabelText('The one who started it’s share'), { target: { value: '33.33' } })
     fireEvent.change(screen.getByLabelText('The one who came in later’s share'), { target: { value: '66.67' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree shares' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(expect.any(String), [
@@ -133,11 +133,11 @@ describe('agreeing what each partner takes', () => {
     const { onAgree } = renderWith()
 
     // Who funded a house and who takes the profit are not always the same people.
-    await pick(user, 'Somebody else takes a share', 'The one who put nothing in')
+    await pick(user, 'Add partner', 'The one who put nothing in')
 
     const put = await screen.findByLabelText('The one who put nothing in’s share')
     fireEvent.change(put, { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree shares' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(
@@ -152,11 +152,11 @@ describe('agreeing what each partner takes', () => {
     const user = userEvent.setup()
     const { onAgree } = renderWith()
 
-    await useTheName(user, 'Somebody else takes a share', 'His brother')
+    await useTheName(user, 'Add partner', 'His brother')
 
     const put = await screen.findByLabelText('His brother’s share')
     fireEvent.change(put, { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree shares' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(
@@ -174,16 +174,13 @@ describe('agreeing what each partner takes', () => {
     // Spaced wrong rather than merely mis-cased: the control offers nothing at all for a name it can see is on the list, so the case worth testing is the one where it does offer -- and the answer still has to be the man himself.
 
     // Clicked by pattern rather than through `useTheName`, because an accessible name has its whitespace collapsed: the button really does read `Use “The one who  put nothing in”` and is found under one space, which would make a matcher built from what was typed miss a button that is there.
-    await user.click(screen.getByRole('combobox', { name: 'Somebody else takes a share' }))
-    await user.type(
-      screen.getByRole('combobox', { name: 'Somebody else takes a share' }),
-      'The one who  put nothing in'
-    )
+    await user.click(screen.getByRole('combobox', { name: 'Add partner' }))
+    await user.type(screen.getByRole('combobox', { name: 'Add partner' }), 'The one who  put nothing in')
     await user.click(await screen.findByRole('button', { name: /^Use/ }, { timeout: 5_000 }))
 
     const put = await screen.findByLabelText('The one who put nothing in’s share')
     fireEvent.change(put, { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree shares' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(
@@ -198,7 +195,7 @@ describe('agreeing what each partner takes', () => {
     const user = userEvent.setup()
     renderWith()
 
-    await user.click(screen.getByRole('combobox', { name: 'Somebody else takes a share' }))
+    await user.click(screen.getByRole('combobox', { name: 'Add partner' }))
 
     const offered = screen.getAllByRole('option').map((one) => one.textContent)
     expect(offered).not.toContain('The one who started it')
@@ -208,10 +205,10 @@ describe('agreeing what each partner takes', () => {
   it('takes somebody out who funded the house and takes none of it', async () => {
     const { onAgree } = renderWith()
 
-    // Named rather than the second of a list of identical buttons. Two rows both said "Take out", so this was `[1]` -- a positional guess that says nothing about which partner it removes, which is the whole of what this test is about. A screen reader had the same problem and no index to fall back on.
+    // Named rather than the second of a list of identical buttons. Two rows both said "Remove", so this was `[1]` -- a positional guess that says nothing about which partner it removes, which is the whole of what this test is about. A screen reader had the same problem and no index to fall back on.
     fireEvent.click(screen.getByRole('button', { name: 'Take The one who came in later out of the shares' }))
     fireEvent.change(screen.getByLabelText('The one who started it’s share'), { target: { value: '100' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Agree these shares' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree shares' }))
 
     await waitFor(() => {
       expect(onAgree).toHaveBeenCalledWith(expect.any(String), [{ personId: 'p1', share: '100' }])
@@ -230,7 +227,7 @@ describe('agreeing what each partner takes', () => {
   })
 
   it('names who each way out is about, rather than leaving two of them alike', () => {
-    // Two rows both said "Take out". A test could reach the second by index; somebody listening could not, and neither could anybody scanning the two.
+    // Two rows both said "Remove". A test could reach the second by index; somebody listening could not, and neither could anybody scanning the two.
     renderWith()
 
     const named = screen
@@ -265,17 +262,17 @@ describe('agreeing what each partner takes', () => {
 
   it('offers the way back only where there is something to go back from', () => {
     renderWith()
-    expect(screen.queryByRole('button', { name: 'Go back to what they put in' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Reset' })).toBeNull()
 
     cleanup()
     renderWith({ what: houseWhere({ sharesAgreed: true }) })
-    expect(screen.getByRole('button', { name: 'Go back to what they put in' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeTruthy()
   })
 
   it('puts a house back to shares that follow the money', async () => {
     const { onFollowTheMoney } = renderWith({ what: houseWhere({ sharesAgreed: true }) })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Go back to what they put in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }))
 
     await waitFor(() => {
       expect(onFollowTheMoney).toHaveBeenCalled()
@@ -291,7 +288,7 @@ describe('agreeing what each partner takes', () => {
   it('turns the button off while it is sending and says so', () => {
     renderWith({ saving: true })
 
-    const button = screen.getByRole('button', { name: 'Agree these shares' })
+    const button = screen.getByRole('button', { name: 'Agree shares' })
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.getAttribute('aria-busy')).toBe('true')
   })
@@ -308,25 +305,25 @@ describe('agreeing what each partner takes', () => {
 
   it('draws what belongs under it, and hands over the reading it is drawn from', () => {
     // What goes underneath is the payout form, and nothing else on this screen would notice it missing: it is reached by the route, its own tests render it directly, and the guard that checks a mutation is reachable reads the source rather than the screen. So this is where a deleted line would be caught.
-    const beneath = vi.fn<(what: WhatThePartnersHave) => ReactNode>(() => <p>What has gone back to them</p>)
+    const beneath = vi.fn<(what: WhatThePartnersHave) => ReactNode>(() => <p>Paid out</p>)
 
     renderWith({ beneath })
 
-    expect(screen.getByText('What has gone back to them')).toBeTruthy()
+    expect(screen.getByText('Paid out')).toBeTruthy()
     // Handed the reading itself, rather than the screen flattening it into a list first. That is the difference between a house with no partners and one whose partners have not arrived.
     expect(beneath.mock.calls[0]?.[0].positions).toEqual(TWO)
   })
 
   it('draws nothing underneath while the reading is still coming, or where there is no house', () => {
     // The control. Drawn regardless, the payout form would offer to pay partners nobody has read yet.
-    const beneath = vi.fn<(what: WhatThePartnersHave) => ReactNode>(() => <p>What has gone back to them</p>)
+    const beneath = vi.fn<(what: WhatThePartnersHave) => ReactNode>(() => <p>Paid out</p>)
 
     renderWith({ what: undefined, beneath })
-    expect(screen.queryByText('What has gone back to them')).toBeNull()
+    expect(screen.queryByText('Paid out')).toBeNull()
 
     cleanup()
     renderWith({ what: null, beneath })
-    expect(screen.queryByText('What has gone back to them')).toBeNull()
+    expect(screen.queryByText('Paid out')).toBeNull()
 
     expect(beneath).not.toHaveBeenCalled()
   })

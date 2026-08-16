@@ -84,7 +84,7 @@ describe('the gallery in front of a camera', () => {
     window.location.hash = 'day-sheet'
     render(<Gallery />)
 
-    expect(screen.queryByRole('button', { name: 'What each partner takes' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Partner shares' })).toBeNull()
     expect(screen.queryByText('a house, then the day sheet')).toBeNull()
   })
 
@@ -110,7 +110,7 @@ describe('the gallery in front of a camera', () => {
     window.location.hash = 'day-sheet'
     render(<Gallery />)
 
-    expect(screen.getByRole('button', { name: 'What each partner takes' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Partner shares' })).toBeTruthy()
     expect(screen.getByText('a house, then the day sheet')).toBeTruthy()
   })
 })

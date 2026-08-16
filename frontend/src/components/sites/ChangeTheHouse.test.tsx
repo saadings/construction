@@ -29,7 +29,7 @@ function renderIt(house: HouseAsTyped = AS_MADE, handlers = {}) {
 }
 
 function open() {
-  fireEvent.click(screen.getByRole('button', { name: 'Change this house' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Edit house' }))
 }
 
 describe('correcting a house already started', () => {
@@ -58,7 +58,7 @@ describe('correcting a house already started', () => {
     open()
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '1-A, Phase 0' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith({
@@ -75,7 +75,7 @@ describe('correcting a house already started', () => {
     open()
 
     fireEvent.change(screen.getByLabelText('Covered area'), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ coveredAreaSqft: undefined }))
@@ -86,10 +86,10 @@ describe('correcting a house already started', () => {
     const { onPutAway } = renderIt()
     open()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put this house away' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
     expect(onPutAway).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Yes, put it away' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, archive' }))
 
     await waitFor(() => {
       expect(onPutAway).toHaveBeenCalled()
@@ -100,10 +100,10 @@ describe('correcting a house already started', () => {
     const { onPutAway } = renderIt()
     open()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put this house away' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(screen.queryByRole('button', { name: 'Yes, put it away' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Yes, archive' })).toBeNull()
     expect(onPutAway).not.toHaveBeenCalled()
   })
 
@@ -119,7 +119,7 @@ describe('correcting a house already started', () => {
     open()
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'x' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     expect((await screen.findByRole('alert')).textContent).toBe('Give this site a name.')
     expect(screen.getByLabelText<HTMLInputElement>('Name').value).toBe('x')
@@ -130,11 +130,11 @@ describe('correcting a house already started', () => {
     open()
 
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '1-A, Phase 0' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save it' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => {
       expect(screen.queryByLabelText('Name')).toBeNull()
     })
-    expect(screen.getByRole('button', { name: 'Change this house' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Edit house' })).toBeTruthy()
   })
 })

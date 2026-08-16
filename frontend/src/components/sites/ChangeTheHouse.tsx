@@ -9,6 +9,7 @@ import { HouseDetails } from './HouseDetails'
 
 // Nauman's one house in production is called "Test Site", made while somebody was diagnosing a spinner. Without this his real first house sits under a test one forever.
 
+// Two ways out on one screen, and `Cancel` on both would mean opposite things: one abandons the edit, the other keeps a house that was about to be archived. The contract screen was ruled the same way -- the form's back-out is `Discard` and the confirmation's is `Cancel` -- and this screen has the same pair.
 export function ChangeTheHouse({
   house,
   onSave,
@@ -29,7 +30,7 @@ export function ChangeTheHouse({
           setOpen(true)
         }}
       >
-        Change this house
+        Edit house
       </Button>
     )
   }
@@ -40,7 +41,7 @@ export function ChangeTheHouse({
         // Keyed on what it opened holding, so a house corrected elsewhere is not shown stale under somebody's hands.
         key={house.name}
         house={house}
-        saying="Save it"
+        saying="Save"
         onSave={async (corrected) => {
           await onSave(corrected)
           setOpen(false)
@@ -54,7 +55,7 @@ export function ChangeTheHouse({
           setOpen(false)
         }}
       >
-        Leave it as it is
+        Discard
       </WayOut>
     </div>
   )
@@ -95,14 +96,14 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
       {sure ? (
         <div className="flex flex-wrap items-center gap-3">
           <Button look="beside" onClick={putAway} busy={saving} className="py-2 text-sm">
-            Yes, put it away
+            Yes, archive
           </Button>
           <WayOut
             onClick={() => {
               setSure(false)
             }}
           >
-            Keep it
+            Cancel
           </WayOut>
         </div>
       ) : (
@@ -112,7 +113,7 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
             setSure(true)
           }}
         >
-          Put this house away
+          Archive
         </WayOut>
       )}
     </div>

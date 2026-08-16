@@ -58,6 +58,23 @@ export function Figure({ className, children }: { className?: string; children: 
   return <span className={cn('font-mono tabular-nums', className)}>{children}</span>
 }
 
+// What the word `Hide` used to carry on its own. Five screens take a row off a list and every one of them is a signed soft hide -- `removed: true` with who and when -- so nothing is destroyed and the record answers for itself forever.
+
+// Nobody was told that. Grepped for the copy expecting to find it: it is a **comment** on five screens of six, and a comment ships to nobody. The one above the old `Hide it?` even called that label *said plainly*, which is the author doing the job in the only place then available.
+
+// So renaming to `Remove` without this would have taken the only reassurance out of the product and left it true in source, where the person worried about losing a payment cannot read it -- worse than the folksy label it replaced.
+
+// `record` is not in it, and that is not a stylistic choice: two screens hold a rule refusing the words that are the machine showing through, and `record` is on that list. A sentence written to reassure him that fails the app's own no-jargon rule is the wrong sentence.
+
+/** Said at the moment somebody is deciding, which is when they need it, rather than carried permanently by a word. */
+export function NothingIsDeleted({ className }: { className?: string }) {
+  return (
+    <span data-nothing-is-deleted="" className={cn('text-muted-foreground block text-sm', className)}>
+      It comes off this screen. What was entered stays, with who removed it and when.
+    </span>
+  )
+}
+
 // The quiet line under a name: a day, how it was paid, a cheque number, a note. Written once because it was written twice and only one of the two could be read.
 
 // At 390 the other one rendered `27/06/2026 · CH…` -- two characters of the cheque number, on the screen where somebody checks which cheque paid which bill, and the number appears nowhere else on it. A name cut short is still recognisable; a cheque number cut short is not a cheque number.

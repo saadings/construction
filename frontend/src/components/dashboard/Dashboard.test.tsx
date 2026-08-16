@@ -73,7 +73,7 @@ describe('everything at once', () => {
     // The one line I would not let a reviewer cut. Without it the biggest number on the screen reads as profit, and a house is not profitable the moment somebody funds it.
     renderIt(BUSY)
 
-    // Waited for by the sentence this test is about rather than by the tile's label. `Come in` names the tile and now also names a column of the houses table, and a wait that matches two things is a wait that stops meaning one of them.
+    // Waited for by the sentence this test is about rather than by the tile's label. `Invested` names the tile and now also names a column of the houses table, and a wait that matches two things is a wait that stops meaning one of them.
     expect(await screen.findByText('1,240,000 of it is your own money.')).toBeTruthy()
     // Said beside the total rather than taken out of it: it did come in.
     expect(screen.getByText('12,000,000')).toBeTruthy()
@@ -88,7 +88,7 @@ describe('everything at once', () => {
   it('never nets an advance into what is owed', async () => {
     // An advance held by the tile man is not money available to pay the steel man, so the two are two sentences and never one figure.
     renderIt(BUSY)
-    await screen.findByText('Owed right now')
+    await screen.findByText('Outstanding')
 
     expect(screen.getByText('763,701')).toBeTruthy()
     expect(screen.getByText('150,000 is held in advance, which is not money to pay anybody with.')).toBeTruthy()
@@ -98,7 +98,7 @@ describe('everything at once', () => {
 
   it('draws where the money went against the largest of them, and names the tail', async () => {
     renderIt(BUSY)
-    const bars = await screen.findByRole('list', { name: 'Where it went' })
+    const bars = await screen.findByRole('list', { name: 'Spent by trade' })
 
     // The gathered tail is a row like any other, so nothing is dropped off the end of the chart.
     expect(within(bars).getByText('Everything else (12)')).toBeTruthy()
@@ -107,7 +107,7 @@ describe('everything at once', () => {
 
   it('lists the houses, each one a way into it', async () => {
     renderIt(BUSY)
-    await screen.findByText('The houses')
+    await screen.findByText('Sites')
 
     const goingThere = screen.getByRole('link', { name: '1-A, Phase 0' })
     expect(goingThere.getAttribute('href')).toBe('/sites/s1')
@@ -128,8 +128,8 @@ describe('the screen he sees first', () => {
     renderIt(HIS_FIRST_DAY)
     await screen.findByText('Nothing has gone in yet.')
 
-    expect(screen.queryByText('Owed right now')).toBeNull()
-    expect(screen.queryByRole('list', { name: 'Where it went' })).toBeNull()
+    expect(screen.queryByText('Outstanding')).toBeNull()
+    expect(screen.queryByRole('list', { name: 'Spent by trade' })).toBeNull()
     expect(screen.queryByText('0')).toBeNull()
   })
 
@@ -137,7 +137,7 @@ describe('the screen he sees first', () => {
     renderIt(HIS_FIRST_DAY)
 
     expect(await screen.findByText(/One house is down and nothing has been entered against it yet/)).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Go to the houses' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Back to sites' })).toBeTruthy()
   })
 
   it('says something else again when there is no house at all', async () => {

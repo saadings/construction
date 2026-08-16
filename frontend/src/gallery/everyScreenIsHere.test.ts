@@ -145,11 +145,9 @@ describe('an are-you-sure', () => {
 
   it('would notice one drawn either way this app draws them', () => {
     // Both shapes, verbatim: a label written in the markup, and one chosen between two strings while a send is in flight.
-    expect(everyAreYouSure('<Button look="removing">Yes, put it away</Button>')).toEqual(['Yes, put it away'])
-    expect(everyAreYouSure("<Button>{takingOut ? 'Taking it out…' : 'Yes, take it out'}</Button>")).toEqual([
-      'Yes, take it out',
-    ])
-    expect(everyAreYouSure('<Button>Take out</Button>')).toEqual([])
+    expect(everyAreYouSure('<Button look="removing">Yes, archive</Button>')).toEqual(['Yes, archive'])
+    expect(everyAreYouSure("<Button>{takingOut ? 'Removing…' : 'Yes, remove'}</Button>")).toEqual(['Yes, remove'])
+    expect(everyAreYouSure('<Button>Remove</Button>')).toEqual([])
   })
 
   it('is read against gallery entries this really split apart', () => {

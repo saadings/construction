@@ -46,7 +46,7 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
             <span>House</span>
-            <span>Where it has got to</span>
+            <span>Stage</span>
             <span>Whose</span>
             <span className="text-right">Spent</span>
           </div>

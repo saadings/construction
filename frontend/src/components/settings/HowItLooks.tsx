@@ -18,7 +18,7 @@ export function HowItLooks() {
   const { chosen, choose } = useHowItLooks()
 
   return (
-    <Page title="How it looks">
+    <Page title="Appearance">
       <p className="text-muted-foreground max-w-prose text-sm">
         Following the phone is usually right. Change it when you are outside and the screen is hard to read.
       </p>
@@ -27,9 +27,9 @@ export function HowItLooks() {
 
       {/* What it cost: 36px boxes, eight under the floor a thumb needs, on the screen somebody opens because the screen is already hard to read outside. */}
 
-      {/* Spoken rather than drawn, because the page is titled `How it looks` and a second copy of the question over the boxes is the same words twice. */}
+      {/* Spoken rather than drawn, because the page is titled `Appearance` and a second copy of the question over the boxes is the same words twice. */}
       <Choices
-        label="How it looks"
+        label="Appearance"
         onlySpoken
         className="max-w-md"
         chosen={chosen}
