@@ -48,9 +48,10 @@ const SUBJECTS: Array<Subject> = [
   },
   {
     what: 'a row of choices',
-    asked: 'nobodyPressesAButtonByHand, the RadioGroup countdown',
+    asked: 'nobodyPressesAButtonByHand, which now refuses one written by hand',
     onThePage: '[role="radio"]',
-    inTheSource: /role="radio"/g,
+    // `<Choices` and not `role="radio"`: the role is Radix's now and is written in no file this app owns. Asked the old way this would read zero written against thirteen drawn, which is the shape of a subject that has vanished rather than one that has moved -- and the only thing that fails here is a subject nothing draws, so it would have printed a wrong number quietly forever.
+    inTheSource: /<Choices\b/g,
   },
   {
     what: 'a trail',
