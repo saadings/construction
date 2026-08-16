@@ -20,6 +20,25 @@ describe('what somebody is told when Clerk refuses', () => {
     expect(whatClerkSaid(422, saying('form_identifier_exists'))).toBe(SAY_CLERK.already)
   })
 
+  it('says email sign-in has to be turned on, which is what was actually stopping him', () => {
+    // The real cause, and neither guess was close: not a duplicate -- the instance has zero invitations and zero users at that address -- but a setting. Sign-in offers Google and nothing else, so there is no email sign-in for an invitation to invite anybody to, and Clerk refuses to create one.
+
+    // A 400, which is why this is read as a code: 400 is what Clerk says to a dozen unrelated things, and keying on the status would have named the wrong ones.
+    expect(whatClerkSaid(400, saying('invitations_not_supported'))).toBe(SAY_CLERK.noEmailSignIn)
+  })
+
+  it('does not say it to every other 400, which is most of what Clerk refuses with', () => {
+    // The half I had missed. Keying this on the status instead of the code passed every test I had written -- and would tell somebody to turn on email sign-in for a malformed address, a bad parameter, anything. A wrong sentence somebody can act on is worse than the generic one, because he goes and changes a setting for nothing.
+    expect(whatClerkSaid(400, saying('form_param_format_invalid'))).toBe(SAY_CLERK.unknown)
+    expect(whatClerkSaid(400, undefined)).toBe(SAY_CLERK.unknown)
+  })
+
+  it('does not send him looking at the key for a problem that is not the key', () => {
+    // The control on the sentence rather than on the code. Grouping this with 401 and 403 would have been true -- somebody has to change a setting and it is not him -- and would have pointed at the one thing that is already correct.
+    expect(SAY_CLERK.noEmailSignIn).not.toBe(SAY_CLERK.notSwitchedOn)
+    expect(SAY_CLERK.noEmailSignIn).toMatch(/email/i)
+  })
+
   it('says to wait when there have been too many', () => {
     expect(whatClerkSaid(429, undefined)).toBe(SAY_CLERK.tooMany)
   })
