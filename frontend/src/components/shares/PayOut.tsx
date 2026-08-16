@@ -7,8 +7,10 @@ import { SAY_PAYOUT } from '~shared/validation/profitShare'
 import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import type { Choice as Pickable } from '../form/Pick'
-import { Pick, asChoices } from '../form/Pick'
+import { Pick } from '../form/Pick'
+import { PickAnAccount } from '../form/PickAnAccount'
 import { WayOut } from '../form/WayOut'
+import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
@@ -62,6 +64,7 @@ export function PayOut({
   accounts,
   onPayOut,
   onTakeBack,
+  onAddAccount,
 }: {
   // Who is on this house, which the reading above already worked out. Everybody in the address book would offer to pay somebody who has nothing to do with it.
   partners: Array<Partner>
@@ -71,6 +74,8 @@ export function PayOut({
   // Throws what the server refused with, which this turns into the sentence under the button. It is not the route's `through`, because that one belongs to the shares form.
   onPayOut: (payout: NewPayout) => Promise<void>
   onTakeBack: (payoutId: string) => Promise<void>
+  // The same offer as the day sheet's, and this screen had none at all: a payout that has already left the bank cannot be written down here if the account it left is not on the list.
+  onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
 }) {
   return (
     <section className="flex flex-col gap-6 border-t pt-8">
@@ -81,7 +86,7 @@ export function PayOut({
         </p>
       </div>
 
-      <Paying partners={partners} accounts={accounts} onPayOut={onPayOut} />
+      <Paying partners={partners} accounts={accounts} onPayOut={onPayOut} onAddAccount={onAddAccount} />
 
       <AlreadyOut paidOut={paidOut} onTakeBack={onTakeBack} />
     </section>
@@ -92,11 +97,16 @@ function Paying({
   partners,
   accounts,
   onPayOut,
+  onAddAccount,
 }: {
   partners: Array<Partner>
   accounts: Array<Account> | null | undefined
   onPayOut: (payout: NewPayout) => Promise<void>
+  onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
 }) {
+  // Anything added from the picker since this form opened, which the list it was picked from does not have yet.
+  const everyAccount = useWhatWasAdded(accounts ?? [])
+
   const [who, setWho] = useState<Partner | null>(null)
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10))
   const [amount, setAmount] = useState('')
@@ -202,13 +212,24 @@ function Paying({
 
       {asksForBank(method) ? (
         // Three different reasons there might be nothing to pick, and the first of them is not an empty list: a list still on its way says so, rather than showing the same nothing as a partnership that banks nowhere. `wrongBank` holds the button in all three, because nothing has been picked in any of them.
-        <Pick
+        <PickAnAccount
           label="Which account it left"
           problem={wrongBank}
           placeholder={whileThereIsNoList(accounts)}
           chosen={account}
-          choices={asChoices(accounts ?? [])}
+          accounts={everyAccount.everything}
           onPick={setAccount}
+          // Left out entirely until the list is here. A screen that does not yet know what is on the list cannot say whether the account he is typing is already on it, and the server does not refuse a second row with the same name.
+          onAdd={
+            Array.isArray(accounts)
+              ? async (label, lastFourDigits) => {
+                  const _id = await onAddAccount(label, lastFourDigits)
+                  everyAccount.remember({ _id, label })
+
+                  return _id
+                }
+              : undefined
+          }
         />
       ) : null}
 

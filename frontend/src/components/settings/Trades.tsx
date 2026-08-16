@@ -14,8 +14,8 @@ export type TradeRow = { _id: string; name: string; countsAsBuildingCost: boolea
 export type NewTrade = { name: string; countsAsBuildingCost: boolean }
 
 // The words he uses, not the field name. `countsAsBuildingCost` decides what a house cost: buying the land is money spent and is not building.
-const BUILDING = 'Part of what the house cost'
-const NOT_BUILDING = 'Land, taxes and commission'
+export const BUILDING = 'Part of what the house cost'
+export const NOT_BUILDING = 'Land, taxes and commission'
 
 export function Trades({
   trades,
@@ -278,7 +278,9 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
 }
 
 // Two named choices rather than a tick nobody can read. "Counts as building cost" is the field; what he is being asked is whether the house cost this or whether the land did.
-function WhatItIsFor({
+
+// Exported because the day sheet asks the same question now: a trade added while entering a payment needs answering too, and asking it in different words in the two places is two questions about one field.
+export function WhatItIsFor({
   building,
   onChange,
   label,

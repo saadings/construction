@@ -273,6 +273,7 @@ describe('the same money, read off two screens', () => {
         saving={false}
         refusal={null}
         onPutIn={onPutIn}
+        onAddTrade={vi.fn(async () => 't9' as never)}
         onAddAccount={vi.fn()}
       />
     )

@@ -23,6 +23,7 @@ function ADayOnSite() {
   const accounts = useQuery(api.bankAccounts.queries.list, {})
   const record = useMutation(api.payments.mutations.record)
   const addAccount = useMutation(api.bankAccounts.mutations.add)
+  const addTrade = useMutation(api.trades.mutations.add)
   const router = useRouter()
 
   const [day, setDay] = useState(todayOnThisDevice)
@@ -65,6 +66,7 @@ function ADayOnSite() {
       refusal={refusal}
       onPutIn={putThemIn}
       onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}
+      onAddTrade={async (trade) => await addTrade(trade)}
     />
   )
 }

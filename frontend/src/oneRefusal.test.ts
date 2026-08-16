@@ -30,7 +30,9 @@ const THEY_EACH_HELD_ONE = [
   'components/settings/Trades.tsx',
   'components/settings/BankAccounts.tsx',
   'components/moneyIn/ComingIn.tsx',
-  'components/daySheet/AddAnAccount.tsx',
+  // `AddAnAccount.tsx` until the picker took the job over, and now two files rather than one: adding a trade refuses the same way adding an account does.
+  'components/form/PickAnAccount.tsx',
+  'components/form/PickATrade.tsx',
   'components/sites/HouseDetails.tsx',
   'components/sites/ChangeTheHouse.tsx',
   'components/site/ChangeTheContract.tsx',

@@ -8,7 +8,9 @@ import { SAY_IN } from '~shared/validation/moneyIn'
 import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick, asChoices } from '../form/Pick'
+import { PickAnAccount } from '../form/PickAnAccount'
 import { WayOut } from '../form/WayOut'
+import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
@@ -61,6 +63,7 @@ export function ComingIn({
   refusal,
   onPutIn,
   onTakeBack,
+  onAddAccount,
 }: {
   siteName: string
   received: Array<Received> | null | undefined
@@ -72,11 +75,20 @@ export function ComingIn({
   onPutIn: (receipt: NewReceipt) => Promise<boolean>
   // Money going out could be taken back from the first day and money coming in could not. A partner's capital entered wrong was permanent, and capital is what the whole profit split is worked out from.
   onTakeBack: (moneyInId: string) => Promise<void>
+  // The same offer the day sheet has, for the same reason: the picker is where somebody is looking when they find the account missing, and money coming in had no way to add one at all.
+  onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
 }) {
   return (
     // No house name beside the title any more: the trail above says it and links back to it.
     <Page title="Money coming in" named={{ siteId: siteName }}>
-      <Taking people={people ?? []} accounts={accounts ?? []} saving={saving} refusal={refusal} onPutIn={onPutIn} />
+      <Taking
+        people={people ?? []}
+        accounts={accounts ?? []}
+        saving={saving}
+        refusal={refusal}
+        onPutIn={onPutIn}
+        onAddAccount={onAddAccount}
+      />
 
       <AlreadyIn received={received} onTakeBack={onTakeBack} />
     </Page>
@@ -89,13 +101,18 @@ function Taking({
   saving,
   refusal,
   onPutIn,
+  onAddAccount,
 }: {
   people: Array<Person>
   accounts: Array<Account>
   saving: boolean
   refusal: string | null
   onPutIn: (receipt: NewReceipt) => Promise<boolean>
+  onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
 }) {
+  // The list as read, plus anything added from the picker since this form opened.
+  const everyAccount = useWhatWasAdded(accounts)
+
   const [day, setDay] = useState(() => new Date().toISOString().slice(0, 10))
   const [amount, setAmount] = useState('')
   const [fromId, setFromId] = useState('')
@@ -193,14 +210,19 @@ function Taking({
       ) : null}
 
       {asksForBank(method) ? (
-        <Pick
+        <PickAnAccount
           label="Which account it landed in"
           problem={wrongBank}
-          placeholder="Pick one"
-          chosen={asChoices(accounts).find((account) => account._id === bankAccountId) ?? null}
-          choices={asChoices(accounts)}
+          chosen={asChoices(everyAccount.everything).find((account) => account._id === bankAccountId) ?? null}
+          accounts={everyAccount.everything}
           onPick={(picked) => {
-            setBankAccountId(picked === null ? '' : pickedFrom(accounts, picked._id))
+            setBankAccountId(picked === null ? '' : everyAccount.pickedFromThese(picked._id))
+          }}
+          onAdd={async (label, lastFourDigits) => {
+            const _id = await onAddAccount(label, lastFourDigits)
+            everyAccount.remember({ _id, label })
+
+            return _id
           }}
         />
       ) : null}

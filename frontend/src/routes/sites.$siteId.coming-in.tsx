@@ -20,6 +20,7 @@ function WhatCameIn() {
   const accounts = useQuery(api.bankAccounts.queries.list, {})
   const record = useMutation(api.moneyIn.mutations.record)
   const takeBack = useMutation(api.moneyIn.mutations.remove)
+  const addAccount = useMutation(api.bankAccounts.mutations.add)
 
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
@@ -33,6 +34,7 @@ function WhatCameIn() {
       accounts={accounts}
       saving={saving}
       refusal={refusal}
+      onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}
       onTakeBack={async (moneyInId) => {
         // Looked up in the list it came from rather than cast, and waiting is not refused even here: `received ?? []` would say the receipt is gone when the read had simply not come back.
         if (received === undefined) {

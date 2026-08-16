@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { pick } from '../../testing/pick'
+import { pick, useTheName } from '../../testing/pick'
 import type { Account, NewReceipt, Person, Received } from './ComingIn'
 import { ComingIn } from './ComingIn'
 
@@ -26,6 +26,7 @@ const ALREADY: Array<Received> = [
 function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
   const onPutIn = vi.fn<(receipt: NewReceipt) => Promise<boolean>>(() => Promise.resolve(true))
   const onTakeBack = vi.fn<(moneyInId: string) => Promise<void>>(() => Promise.resolve())
+  const onAddAccount = vi.fn<(label: string, lastFourDigits: string) => Promise<string>>(() => Promise.resolve('b9'))
 
   const root = createRootRoute({
     component: () => (
@@ -38,6 +39,7 @@ function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
         refusal={null}
         onPutIn={onPutIn}
         onTakeBack={onTakeBack}
+        onAddAccount={onAddAccount}
         {...over}
       />
     ),
@@ -46,7 +48,7 @@ function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
 
   render(<RouterProvider router={router} />)
 
-  return { onPutIn, onTakeBack }
+  return { onPutIn, onTakeBack, onAddAccount }
 }
 
 describe('money coming in', () => {
@@ -102,6 +104,21 @@ describe('money coming in', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Cash' }))
     expect(screen.queryByLabelText('Cheque number')).toBeNull()
     expect(screen.queryByLabelText('Which account it landed in')).toBeNull()
+  })
+
+  it('lets an account be added from the picker, on a screen that had no way to add one at all', async () => {
+    // Money coming in never had one: an account missing from the list stopped the receipt, and the way out was another screen and a retyped form.
+    const user = userEvent.setup()
+    const { onAddAccount } = renderWith()
+
+    await user.click(await screen.findByRole('radio', { name: 'Transfer' }))
+    await useTheName(user, 'Which account it landed in', 'Bank 7788')
+    await user.type(screen.getByLabelText('The account number for Bank 7788'), '11112222337788')
+    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+
+    // Only the last four were handed on: the rest never crosses the wire.
+    expect(onAddAccount).toHaveBeenCalledWith('Bank 7788', '7788')
+    expect(JSON.stringify(onAddAccount.mock.calls)).not.toContain('1111')
   })
 
   it('says what is missing beside the question, once the eye has left it', async () => {

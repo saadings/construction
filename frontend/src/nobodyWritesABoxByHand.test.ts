@@ -25,7 +25,8 @@ const THEIR_LABEL = 'components/ui/label.tsx'
 const THEY_USED_TO_WRITE_ONE = [
   'components/daySheet/MoneyLine.tsx',
   'components/daySheet/DaySheet.tsx',
-  'components/daySheet/AddAnAccount.tsx',
+  // `AddAnAccount.tsx` until the picker took the job over: adding an account is asked inside the control that found it missing, so the file that used to write this box is the one below.
+  'components/form/PickAnAccount.tsx',
   'components/site/Stages.tsx',
   'components/form/Field.tsx',
 ]
