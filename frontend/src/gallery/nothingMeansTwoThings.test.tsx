@@ -40,14 +40,15 @@ function figuresOnScreen(): Array<string> {
     .filter((said) => /\d/.test(said))
 }
 
-async function draw(slug: string, proves: string, nudge: number): Promise<Array<string>> {
+// The two screens whose subject is a wait say what they prove after eight and twelve seconds. Asked for in a second, they answer with the same nothing they are drawn to show.
+async function draw(slug: string, proves: string, nudge: number, provesAfter = 0): Promise<Array<string>> {
   window.location.hash = slug
   asked = 0
   nudgeAt = nudge
 
   const { Gallery } = await import('./Gallery')
   render(<Gallery />)
-  await screen.findAllByText(proves, { exact: false })
+  await screen.findAllByText(proves, { exact: false }, { timeout: provesAfter + 4_000 })
 
   const figures = figuresOnScreen()
   cleanup()
@@ -103,13 +104,13 @@ describe('what a figure on a gallery screen means', () => {
     let figuresSeen = 0
 
     for (const showing of ON_SHOW) {
-      const before = await draw(showing.slug, showing.proves, -1)
+      const before = await draw(showing.slug, showing.proves, -1, showing.provesAfter)
       figuresSeen += before.length
       if (before.length < 2) continue
 
       const rounds: Array<Array<string>> = []
       for (let nudge = 0; nudge < asked; nudge += 1) {
-        rounds.push(await draw(showing.slug, showing.proves, nudge))
+        rounds.push(await draw(showing.slug, showing.proves, nudge, showing.provesAfter))
       }
 
       for (const collision of whatMeansTwoThings(before, rounds)) {
@@ -120,5 +121,5 @@ describe('what a figure on a gallery screen means', () => {
     // The floor, set just under what this really counts rather than at a round number nobody measured: 67 figures across the gallery under jsdom, which draws no CSS and so shows fewer than a browser does. A selector that stopped finding figures reports the same clean nothing as a gallery where none of them collide.
     expect(figuresSeen).toBeGreaterThan(50)
     expect(said).toEqual([])
-  }, 120_000)
+  }, 180_000)
 })

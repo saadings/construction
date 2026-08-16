@@ -17,13 +17,22 @@ function drawn(): HTMLElement {
 }
 
 describe('every screen in the gallery', () => {
-  it('draws something, rather than throwing on the one nobody clicked', async () => {
+  // Long enough for the two screens whose subject is a wait: they speak after eight and twelve seconds, and the whole loop runs inside one test.
+  it('draws something, rather than throwing on the one nobody clicked', { timeout: 60_000 }, async () => {
     for (const showing of ON_SHOW) {
       window.location.hash = showing.slug
       render(<Gallery />)
 
       // Words that screen shows and no other does, so this is not satisfied by a gallery that answers every address with the first screen. Awaited, because the router matches before it draws, and a screen read too early is empty for a reason that has nothing to do with it.
-      const showed = await within(drawn()).findAllByText(showing.proves, { exact: false })
+
+      // Waited for as long as the screen says its words take: two of them are about a wait, and asking those to prove themselves within a second is asking them to be the thing they are drawn to show.
+      const showed = await within(drawn()).findAllByText(
+        showing.proves,
+        {
+          exact: false,
+        },
+        { timeout: (showing.provesAfter ?? 0) + 4_000 }
+      )
 
       expect(showed.length, `${showing.slug} never drew "${showing.proves}"`).toBeGreaterThan(0)
 
