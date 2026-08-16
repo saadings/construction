@@ -4,7 +4,7 @@ import { formatPaisa } from '~shared/money'
 import { Figure, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { Card } from '../ui/card'
-import { Table, TableBody, TableCell, TableRow } from '../ui/table'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { MoneyByMonth } from './MoneyByMonth'
 import { WhereItWent } from './WhereItWent'
 
@@ -110,6 +110,24 @@ function Houses({ houses }: { houses: WhatIsHappening['houses'] }) {
 
         // And no minimum width, because at 390 a 26rem table left `9,310,000` rendering as `9,3` under the edge of its own scroller. A name cut with an ellipsis reads as incomplete and somebody swipes; a figure cut in half reads as a different, smaller figure, and nothing on the screen says otherwise. So a phone gets fewer columns rather than narrower ones, and the money is what survives.
         <Table className="text-base">
+          {/* Two money columns with nothing naming them, on the screen he opens first. Every other table in this app says what its columns are -- a header row on a desk, the label on each figure on a phone -- and this one said it in colour alone: brass for what went out, green for what came in. A person who cannot separate those two hues reads two figures per house and no way to tell which is which. */}
+
+          {/* Kept at every width rather than hidden below `sm` like the others, because this table has three columns on a phone and its rows do not wrap: there is room to say it once at the top, and a label beside each figure would be more words than the figures. */}
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="text-faint py-2 pr-4 text-[0.6875rem] tracking-[0.06em] uppercase">House</TableHead>
+              <TableHead className="text-faint hidden py-2 pr-4 text-[0.6875rem] tracking-[0.06em] uppercase sm:table-cell">
+                Stage
+              </TableHead>
+              <TableHead className="text-faint py-2 pr-4 text-right text-[0.6875rem] tracking-[0.06em] uppercase">
+                Gone out
+              </TableHead>
+              <TableHead className="text-faint py-2 text-right text-[0.6875rem] tracking-[0.06em] uppercase">
+                Come in
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
           <TableBody>
             {houses.map((house) => (
               <TableRow key={house.siteId}>

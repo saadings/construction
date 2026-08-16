@@ -48,18 +48,37 @@ const TOO_SHORT_TO_BE_A_SCREEN = 200
 
 // A picture taken while something is still arriving is a picture of an arrival. The nav below 768 is a sheet that slides in, and Playwright calls it visible the moment it has a box -- so the first picture of it was 30px of sheet and a screenful of the overlay behind it, which reads as a broken nav rather than a photograph taken too early.
 
+// The box is not the whole of what moves. A bar chart grows its bars from nothing over about half a second while its own box is still from the first frame -- so the dashboard was photographed with every bar a few pixels high, and the picture said the houses had brought in almost nothing.
+
+// It had been passing on luck rather than on a wait: the same picture taken minutes earlier caught the animation finished. A machine with a second gate running on it is enough to change which frame lands.
+
+/** What is drawn, as one string: where the screen is, and how tall each bar in it has grown. */
+async function asItStands(on: Page, shownIn: string): Promise<string | null> {
+  const box = await on.locator(shownIn).boundingBox()
+
+  if (box === null) {
+    return null
+  }
+
+  const bars: string = await on.evaluate(
+    `[...document.querySelectorAll('.recharts-bar-rectangle path')].map((bar) => Math.round(bar.getBoundingClientRect().height)).join(',')`
+  )
+
+  return `${String(box.x)},${String(box.y)},${String(box.width)}|${bars}`
+}
+
 // Waited on the position rather than on a duration: an animation length is a number that goes stale, and `waitForTimeout` long enough for the slowest machine is a tax on every screen that is not moving at all.
 async function onceItHasStoppedMoving(on: Page, shownIn: string): Promise<void> {
   const givingUp = 40
 
-  let before = await on.locator(shownIn).boundingBox()
+  let before = await asItStands(on, shownIn)
 
   for (let waited = 0; waited < givingUp; waited += 1) {
     await on.waitForTimeout(50)
-    const now = await on.locator(shownIn).boundingBox()
+    const now = await asItStands(on, shownIn)
 
-    // Both boxes read, and equality asked of a pair that exists: a `null` on either side is a thing that is not on the page, and calling that "not moving" is the not-there-reading-as-a-value this whole file keeps finding.
-    if (before !== null && now !== null && before.x === now.x && before.y === now.y && before.width === now.width) {
+    // Both read, and equality asked of a pair that exists: a `null` on either side is a thing that is not on the page, and calling that "not moving" is the not-there-reading-as-a-value this whole file keeps finding.
+    if (before !== null && now !== null && before === now) {
       return
     }
 
