@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { WayOut } from '../form/WayOut'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Invited = { id: string; email: string; askedOn: number }
@@ -100,15 +101,14 @@ function Waiting({ waiting, onTakeOff }: { waiting: Array<Invited> | null; onTak
       {waiting.map((invited) => (
         <li key={invited.id} className="flex items-center justify-between gap-3 px-4 py-3">
           <span className="text-foreground text-sm break-all">{invited.email}</span>
-          <button
-            type="button"
+          <WayOut
             onClick={() => {
               void onTakeOff(invited.id)
             }}
-            className="text-muted-foreground hover:text-foreground shrink-0 text-sm underline underline-offset-4"
+            className="shrink-0"
           >
             Take them off
-          </button>
+          </WayOut>
         </li>
       ))}
     </ul>

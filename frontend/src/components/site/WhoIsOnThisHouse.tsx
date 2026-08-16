@@ -4,6 +4,7 @@ import { formatPaisa, groupWhileTyping } from '~shared/money'
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { Pick } from '../form/Pick'
+import { WayOut } from '../form/WayOut'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -441,14 +442,13 @@ function Bill({
           </button>
         </span>
       ) : (
-        <button
-          type="button"
+        <WayOut
           onClick={() => setAsking(true)}
           aria-label={`Take out ${formatPaisa(bill.amountPaisa)} billed by ${bill.personName}`}
-          className="text-muted-foreground shrink-0 text-sm"
+          className="shrink-0"
         >
           Take out
-        </button>
+        </WayOut>
       )}
     </li>
   )

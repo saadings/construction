@@ -6,6 +6,7 @@ import { percentAsBasisPoints, saySharesDoNotAddUp, shortOfTheWhole } from '~sha
 import { Button } from '../form/Button'
 import { Field, Line, useSaidOnceLeft } from '../form/Field'
 import { Pick } from '../form/Pick'
+import { WayOut } from '../form/WayOut'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import type { Position, WhatThePartnersHave } from './Positions'
@@ -265,14 +266,13 @@ function Share({
       {/* Underlined, because an underline is an affordance and grey text is not. Without it this was text with no border and no underline, on its own line between a share and a figure, where it read as the caption for the figure under it rather than as something to press. */}
 
       {/* Not because the app had settled on it: of nine ways out, four are underlined like this one -- a receipt out of what has come in, a payout taken back, an invitation off the list -- four are plain text, and one is red. There is no answer here to copy, so copy the reason instead. Picking one and converting all nine waits on the table sweep reaching the two that remove real rows. */}
-      <button
-        type="button"
+      <WayOut
         onClick={() => onTakeOut(row.personId)}
         aria-label={`Take ${row.name} out of the shares`}
-        className="text-muted-foreground hover:text-foreground order-4 justify-self-end text-sm underline underline-offset-4 sm:order-none"
+        className="order-4 justify-self-end sm:order-none"
       >
         Take out
-      </button>
+      </WayOut>
 
       {showing ? (
         <span id={said} role="alert" className="text-destructive col-span-2 text-sm sm:col-span-4 sm:text-right">

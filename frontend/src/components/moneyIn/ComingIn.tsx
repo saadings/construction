@@ -8,6 +8,7 @@ import { SAY_IN } from '~shared/validation/moneyIn'
 import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick, asChoices } from '../form/Pick'
+import { WayOut } from '../form/WayOut'
 import { Figure, Form, Page } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
@@ -316,13 +317,9 @@ function OneReceipt({
           {SAID[received.why]} · {received.day}
           {received.reference === undefined ? '' : ` · ${received.reference}`}
         </span>
-        <button
-          type="button"
-          onClick={takeBack}
-          className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-4"
-        >
+        <WayOut onClick={takeBack} busy={saving}>
           {saving ? 'Taking it back…' : 'Take it back'}
-        </button>
+        </WayOut>
       </span>
       {refusal === null ? null : (
         <span role="alert" className="text-destructive col-span-2 text-sm">
