@@ -4,6 +4,7 @@ import { tradeName } from '~shared/validation/trade'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -157,6 +158,7 @@ function OneTrade({
         >
           Change
         </button>
+        <StillSending busy={saving} />
         {refusal === null ? null : (
           <span role="alert" className="text-destructive w-full text-sm">
             {refusal}

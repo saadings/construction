@@ -5,6 +5,7 @@ import { note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation
 
 import { Button } from '../form/Button'
 import { Field, Line, Lines } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form } from '../shell/Page'
 import type { Priced } from './AgreeAContract'
@@ -93,6 +94,7 @@ function Measure({ contract, onMeasure }: { contract: StandingContract; onMeasur
       </Field>
 
       <Said refusal={refusal} />
+      <StillSending busy={saving} />
       <Button
         onClick={() => send(async () => await onMeasure(measured))}
         busy={saving}
@@ -184,6 +186,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
       </Field>
 
       <Said refusal={refusal} />
+      <StillSending busy={saving} />
       <Button
         onClick={() =>
           send(
@@ -216,6 +219,7 @@ function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
         again.
       </p>
       <Said refusal={refusal} />
+      <StillSending busy={saving} />
       {sure ? (
         <div className="flex flex-wrap gap-3">
           <Button look="beside" onClick={() => send(onCancel)} busy={saving} className="py-2 text-sm">

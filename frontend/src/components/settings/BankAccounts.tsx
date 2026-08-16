@@ -4,6 +4,7 @@ import { whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Form, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -95,6 +96,7 @@ function OneAccount({
           {saving ? 'Taking it off…' : 'Take it off'}
         </button>
       </span>
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <span role="alert" className="text-destructive w-full text-sm">
           {refusal}

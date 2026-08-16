@@ -4,6 +4,7 @@ import { pakistaniMobile, personName, whatIsWrong } from '~shared/validation/pri
 
 import { Button } from '../form/Button'
 import { Field, Line, Lines } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Form, Page } from '../shell/Page'
@@ -146,6 +147,7 @@ function OnePerson({
             Change
           </button>
         </span>
+        <StillSending busy={saving} />
         {refusal === null ? null : (
           <span role="alert" className="text-destructive col-span-full text-sm">
             {refusal}

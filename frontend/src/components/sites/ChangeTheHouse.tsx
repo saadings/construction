@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { Button } from '../form/Button'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import type { HouseAsSent, HouseAsTyped } from './HouseDetails'
 import { HouseDetails } from './HouseDetails'
@@ -84,6 +85,7 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
         A house put away comes off the list. What was spent on it is still there, and every payment still points at it.
       </p>
 
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <p role="alert" className="text-destructive text-sm">
           {refusal}

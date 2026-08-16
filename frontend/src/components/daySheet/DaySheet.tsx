@@ -9,6 +9,7 @@ import { Day } from '../form/Day'
 import { Field, Lines } from '../form/Field'
 import { HowItWasPaid } from '../form/HowItWasPaid'
 import { PickATrade } from '../form/PickATrade'
+import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { Figure } from '../shell/Page'
@@ -257,6 +258,7 @@ export function DaySheet({
       {/* Pinned here and deliberately not on `ComingIn`, which puts the same kind of button at the foot of its form. A sitting is twenty payments and these two are pressed twenty times, so the tenth of the screen this costs is paid back on every one of them. A receipt is entered once, where the same cost would be paid on all seven of its questions to save a single scroll. */}
       <footer className="border-border bg-background/95 sticky bottom-0 z-10 border-t backdrop-blur-sm">
         <div className="flex flex-col gap-2 px-5 pt-3 pb-5 sm:px-7 lg:px-9">
+          <StillSending busy={saving} />
           {(problem ?? refusal) ? (
             <p className="text-destructive text-sm" role="alert">
               {problem ?? refusal}

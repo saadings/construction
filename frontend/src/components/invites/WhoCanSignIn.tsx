@@ -3,6 +3,7 @@ import { SAY_CLERK } from '~shared/validation/invite'
 
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Page } from '../shell/Page'
@@ -69,6 +70,8 @@ export function WhoCanSignIn({
           Invite someone
         </Button>
       </div>
+
+      <StillSending busy={sending} />
 
       {problem === null ? null : (
         <p className="text-destructive text-sm" role="alert">

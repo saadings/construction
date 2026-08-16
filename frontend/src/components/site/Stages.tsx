@@ -7,6 +7,7 @@ import { percent as percentRule, whatIsWrong } from '~shared/validation/primitiv
 import { Button } from '../form/Button'
 import { Day } from '../form/Day'
 import { Field, Line } from '../form/Field'
+import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form } from '../shell/Page'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
@@ -128,6 +129,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
           Bill it
         </Button>
       </span>
+      <StillSending busy={saving} />
       {refusal === null ? null : (
         <span role="alert" className="text-destructive text-sm">
           {refusal}
