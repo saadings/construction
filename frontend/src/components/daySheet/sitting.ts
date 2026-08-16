@@ -1,4 +1,4 @@
-import { rupeesToPaisa } from '~shared/money'
+import { readRupees } from '~shared/money'
 import type { HowPaid } from '~shared/validation/howMoneyMoved'
 import { asksForBank, asksForChequeNumber } from '~shared/validation/howMoneyMoved'
 import type { BeingTyped } from '~shared/validation/payment'
@@ -45,16 +45,32 @@ export const HOW_PAID: Array<{ value: HowPaid; label: string }> = [
   { value: 'payOrder', label: 'Pay order' },
 ]
 
-export function paisaIn(draft: Draft): number {
-  try {
-    return rupeesToPaisa(draft.amount)
-  } catch {
-    return 0
-  }
+// `null` and never `0`. Nauman typed `111,111,111,111` and `This sitting` read `0` with his figure still in the box: this caught the refusal `readRupees` had already worked out and handed back a number instead.
+
+// `money.ts` says it itself -- "whoever asks decides what to say about each, because 'that is not a number' is a lie told to somebody who typed one" -- and this was the caller that decided not to. A zero in a total is a figure people trust; it must mean nothing was paid, never "I could not read this".
+export function paisaIn(draft: Draft): number | null {
+  const read = readRupees(draft.amount)
+
+  return read.ok ? read.paisa : null
 }
 
-export function sittingTotalPaisa(drafts: Array<Draft>): number {
-  return drafts.reduce((total, draft) => total + paisaIn(draft), 0)
+/** What a sitting comes to, and how many lines of it could not be read. Two facts rather than one, because a total that quietly leaves a line out is the same total as one where that line was nothing. */
+export function sittingTotalPaisa(drafts: Array<Draft>): { paisa: number; unreadable: number } {
+  return drafts.reduce(
+    (running, draft) => {
+      // Nothing typed is not something that could not be read. Counted as unreadable, an untouched sheet opens saying it holds a figure it cannot add -- which its own test caught before anybody saw it.
+      if (draft.amount.trim() === '') {
+        return running
+      }
+
+      const paisa = paisaIn(draft)
+
+      return paisa === null
+        ? { paisa: running.paisa, unreadable: running.unreadable + 1 }
+        : { paisa: running.paisa + paisa, unreadable: running.unreadable }
+    },
+    { paisa: 0, unreadable: 0 }
+  )
 }
 
 // Only what the server takes. Anything a way of paying does not ask for is left off rather than sent empty.

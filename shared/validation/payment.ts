@@ -70,7 +70,7 @@ export function whatIsWrongWith(asked: Asked, typed: BeingTyped): string | null 
     case 'paidTo':
       return typed.paidToId || typed.newPerson.trim() ? null : SAY.paidTo
     case 'amount':
-      return isAnAmount(typed.amount) ? null : SAY.amount
+      return whatIsWrongWithTheAmount(typed.amount)
     case 'reference':
       return !asksForChequeNumber(typed.method) || typed.reference.trim() ? null : SAY.reference
     case 'bank':
@@ -94,6 +94,15 @@ export function whatIsMissing(typed: BeingTyped): string | null {
   return null
 }
 
-function isAnAmount(typed: string): boolean {
-  return money.safeParse(typed).success
+// The schema's own words rather than one sentence for every way an amount can be wrong. `money` already separates them -- a figure larger than this keeps track of is not "not a number", and telling somebody who typed 111,111,111,111 that it is not a number is the lie that module was written to avoid.
+
+// Nothing typed is the exception, and it is the one case the schema cannot phrase better than the question: an empty box is a question unanswered rather than an answer that is wrong.
+function whatIsWrongWithTheAmount(typed: string): string | null {
+  if (typed.trim() === '') {
+    return SAY.amount
+  }
+
+  const read = money.safeParse(typed)
+
+  return read.success ? null : (read.error.issues[0]?.message ?? SAY.amount)
 }

@@ -56,6 +56,13 @@ function niceDay(day: string): string {
   })
 }
 
+/** What a line already put down is worth, or the words he typed when that cannot be read. Never a zero standing in for either. */
+function whatItSays(draft: Draft): string {
+  const paisa = paisaIn(draft)
+
+  return paisa === null ? draft.amount : formatPaisa(paisa)
+}
+
 function nameOf(rows: Array<{ _id: string; name: string }>, id: string): string | undefined {
   return rows.find((row) => row._id === id)?.name
 }
@@ -109,7 +116,8 @@ export function DaySheet({
   }
 
   function putThemIn() {
-    const started = paisaIn(draft) > 0 || draft.tradeId !== ''
+    // Anything typed at all, rather than a figure that came out above zero: a line whose amount cannot be read is a line he has started, and treating it as untouched sent the sitting in without it.
+    const started = draft.amount.trim() !== '' || draft.tradeId !== ''
     if (started) {
       const missing = whatIsMissing(draft)
       if (missing) {
@@ -158,13 +166,22 @@ export function DaySheet({
                 This sitting
               </p>
               <Figure className="text-brass -mt-1 block text-[2.5rem] leading-none">
-                {runningTotal === 0 ? '0' : formatPaisa(runningTotal)}
+                {runningTotal.paisa === 0 ? '0' : formatPaisa(runningTotal.paisa)}
               </Figure>
             </div>
             <p className="text-muted-foreground pb-1 text-sm">
               {done.length === 0 ? niceDay(day) : `${done.length} put down · ${niceDay(day)}`}
             </p>
           </div>
+
+          {/* Said at the total rather than only under the box: the figure above it is what he watches while he types, and a line it could not read is a line missing from it -- `111,111,111,111` in the box and `0` here, with the reason thrown away in between. Under the row rather than inside its left half, because beside the figure it squeezed the day out of its corner and broke `Sat 4 Jul` over two lines. */}
+          {runningTotal.unreadable > 0 ? (
+            <p className="text-destructive text-sm" role="status">
+              {runningTotal.unreadable === 1
+                ? 'A figure here is not one this can add, so it is not in the total.'
+                : `${String(runningTotal.unreadable)} figures here are not ones this can add, so they are not in the total.`}
+            </p>
+          ) : null}
         </div>
       </header>
 
@@ -184,12 +201,12 @@ export function DaySheet({
                       {nameOf(people, each.paidToId) ?? each.newPerson}
                     </p>
                   </div>
-                  <Figure className="text-brass shrink-0 text-lg">{formatPaisa(paisaIn(each))}</Figure>
+                  <Figure className="text-brass shrink-0 text-lg">{whatItSays(each)}</Figure>
 
                   {/* Nothing here has gone in yet, so this takes a row back out of the sitting rather than out of the ledger. Without it a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards. */}
                   <WayOut
                     onClick={() => takeOut(index)}
-                    aria-label={`Take out ${formatPaisa(paisaIn(each))} to ${nameOf(people, each.paidToId) ?? each.newPerson}`}
+                    aria-label={`Take out ${whatItSays(each)} to ${nameOf(people, each.paidToId) ?? each.newPerson}`}
                     className="shrink-0"
                   >
                     Take out
