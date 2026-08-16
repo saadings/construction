@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { groupWhileTyping } from '~shared/money'
 import { areaSqft } from '~shared/validation/contract'
 import { note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
@@ -196,7 +196,15 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
 // Cancelled, never erased. Asked twice, because it takes the whole billing side of a house off the screen.
 function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
   const [sure, setSure] = useState(false)
+  const asked = useRef<HTMLDivElement>(null)
   const { saving, refusal, send } = useWhileSending()
+
+  // Brought onto the screen rather than left where it was drawn, the same as the question `PickATrade` opens under its field. This one asks whether to take the whole billing side of a house away, and it replaces a line of text with a row of two controls that is taller -- so at 390, on a page already near its bottom, tapping the destructive control put the confirmation five pixels under the fold and nothing appeared to happen.
+
+  // `center` rather than `nearest`, which is what the question under a field uses. Nearest moves by the least it can, and the least it can here left the button's last half-pixel on the fold: a confirmation that is technically in frame is not one somebody has been shown. This is the last thing on the page, so centring it is the page scrolling to its end, which is where he is trying to get.
+  useEffect(() => {
+    if (sure) asked.current?.scrollIntoView({ block: 'center' })
+  }, [sure])
 
   return (
     <div className="border-hairline flex flex-col gap-2 border-t pt-5">
@@ -207,7 +215,7 @@ function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
       <Said refusal={refusal} />
       <StillSending busy={saving} />
       {sure ? (
-        <div className="flex flex-wrap gap-3">
+        <div ref={asked} className="flex flex-wrap gap-3">
           <Button look="beside" onClick={() => send(onCancel)} busy={saving} className="py-2 text-sm">
             Yes, cancel it
           </Button>
