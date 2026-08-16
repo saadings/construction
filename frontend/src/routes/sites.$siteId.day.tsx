@@ -7,7 +7,7 @@ import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import type { Draft } from '../components/daySheet/sitting'
-import { asAnEntry } from '../components/daySheet/sitting'
+import { asEntries } from '../components/daySheet/sitting'
 import { whatWentWrong } from '../components/form/whatWentWrong'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 
@@ -44,7 +44,8 @@ function ADayOnSite() {
     setRefusal(null)
 
     try {
-      await record({ ...forSite, entries: drafts.map((draft) => asAnEntry(draft, day)) })
+      // One line can be more than one row: a payment settled by cheque and cash is two entries sharing the trade, the person and the day. They go in one call, so a refused half cannot leave the other in the ledger.
+      await record({ ...forSite, entries: drafts.flatMap((draft) => asEntries(draft, day)) })
       // Back to the site itself, not the list: the number he has just moved is that house's, and watching it move is the whole reason the day was entered.
       await router.navigate({ to: '/sites/$siteId', params: { siteId } })
     } catch (thrown) {

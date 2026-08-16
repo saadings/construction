@@ -172,7 +172,7 @@ export const ON_SHOW: Array<OnShow> = [
               description: 'On signing',
               percent: 20,
               amountPaisa: paisa(3_640_000),
-              billedOn: '2026-04-11',
+              billedOn: '2026-04-23',
             },
             { _id: 'm2', description: 'Grey structure complete', percent: 35, amountPaisa: paisa(6_370_000) },
             { _id: 'm3', description: 'Finishing complete', percent: 30, amountPaisa: paisa(5_460_000) },
@@ -197,7 +197,7 @@ export const ON_SHOW: Array<OnShow> = [
           bills={[
             {
               _id: 'b1',
-              raisedOn: '2026-06-02',
+              raisedOn: '2026-06-17',
               description: 'Boundary wall raised by three feet',
               totalPaisa: paisa(487_350),
               lines: [

@@ -100,3 +100,18 @@ export function notInTheFuture(day: string, now: Date = new Date()): boolean {
   const furthest = new Date(now.getTime() + FURTHEST_ANY_DEVICE_RUNS_AHEAD_MS)
   return day <= assemble(furthest.getUTCFullYear(), furthest.getUTCMonth() + 1, furthest.getUTCDate())
 }
+
+// The day sheet's own header, which says `Sat 4 Jul` rather than a date: a sitting is entered against a day of the week -- the Tuesday of a cheque run -- and the month is there so nobody has to work out which Saturday.
+
+// Not `asDayHeWrites`, and deliberately not. A weekday and a written date are two different things to say, and this one cannot be misread in either order. It lives here because "how this app writes a day" should be one file to open, and it spent its life in `daySheet/` where nobody looking for it would find it.
+export function asAWeekday(day: string): string {
+  const [year, month, date] = day.split('-').map(Number)
+  if (!year || !month || !date) return day
+
+  return new Date(Date.UTC(year, month - 1, date)).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}

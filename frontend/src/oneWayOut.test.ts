@@ -74,7 +74,8 @@ describe('a way out written by hand', () => {
     for (const { path, source } of screens) {
       if (!source.includes('<WayOut')) continue
 
-      expect(source, `${path} draws a WayOut and never imports one`).toContain("from '../form/WayOut'")
+      // Either path to the same file: a screen reaches into `form/`, and a control that lives in `form/` reaches next door. What the rule is about is that nobody writes a second one.
+      expect(source, `${path} draws a WayOut and never imports one`).toMatch(/from '(\.\.\/form|\.)\/WayOut'/)
     }
 
     expect(screens.filter(({ source }) => source.includes('<WayOut')).length).toBeGreaterThan(7)

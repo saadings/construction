@@ -24,7 +24,7 @@ const ALREADY: Array<Received> = [
 ]
 
 function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
-  const onPutIn = vi.fn<(receipt: NewReceipt) => Promise<boolean>>(() => Promise.resolve(true))
+  const onPutIn = vi.fn<(arrivals: Array<NewReceipt>) => Promise<boolean>>(() => Promise.resolve(true))
   const onTakeBack = vi.fn<(moneyInId: string) => Promise<void>>(() => Promise.resolve())
   const onAddAccount = vi.fn<(label: string, lastFourDigits: string) => Promise<string>>(() => Promise.resolve('b9'))
 
@@ -83,9 +83,10 @@ describe('money coming in', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
-      expect(onPutIn).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: '2,500,000', fromId: 'p1', why: 'sale', method: 'cash' })
-      )
+      // A list of one: an arrival that came in one way is one row, and money split between two ways is two.
+      expect(onPutIn).toHaveBeenCalledWith([
+        expect.objectContaining({ amount: '2,500,000', fromId: 'p1', why: 'sale', method: 'cash' }),
+      ])
     })
   })
 

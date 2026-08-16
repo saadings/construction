@@ -75,11 +75,9 @@ const EVERY_DOOR = [
       door: api.moneyIn.mutations.record,
       asked: {
         siteId: house.siteId,
-        day: '2026-04-02',
-        amount: '250,000',
-        newPerson,
-        why: 'partnerMoney' as const,
-        method: 'cash' as const,
+        arrivals: [
+          { day: '2026-04-02', amount: '250,000', newPerson, why: 'partnerMoney' as const, method: 'cash' as const },
+        ],
       },
     }),
   },

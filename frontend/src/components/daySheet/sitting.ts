@@ -5,16 +5,37 @@ import type { BeingTyped } from '~shared/validation/payment'
 import { whatIsMissing } from '~shared/validation/payment'
 
 import type { Id } from '../../../../convex/_generated/dataModel'
+import type { Part } from '../form/HowItWasPaid'
+import { onePart, whatEachPartIsWorth } from '../form/HowItWasPaid'
 
 // Which questions each way of paying asks, and the words for what is missing, come from the files the server refuses by. Restating either here is how two copies of one rule drift into disagreeing.
 export { asksForBank, asksForChequeNumber, whatIsMissing }
 export type { HowPaid }
 
-// The same shape those rules read, with ids that keep the table they belong to so a picker cannot hand a person's id to the question asking for a trade.
-export type Draft = BeingTyped & {
+// What a line of a sitting holds while it is being typed. The ids keep the table they belong to, so a picker cannot hand a person's id to the question asking for a trade.
+
+// One line, more than one way of paying: Nauman asked to split a payment between cash and cheques, and chose separate rows sharing what he typed once. So the trade, the person, the amount and the note live here, and everything a way of paying asks for lives in the parts.
+export type Draft = {
   tradeId: Id<'trades'> | ''
   paidToId: Id<'people'> | ''
-  bankAccountId: Id<'bankAccounts'> | ''
+  newPerson: string
+  amount: string
+  note: string
+  parts: Array<Part>
+}
+
+/** One part, in the shape the rules read. What is missing from a payment is asked of this, so a split is checked the same way a single payment always was. */
+export function asTyped(draft: Draft, part: Part, amount = part.amount): BeingTyped {
+  return {
+    tradeId: draft.tradeId,
+    paidToId: draft.paidToId,
+    newPerson: draft.newPerson,
+    amount,
+    method: part.method,
+    reference: part.reference,
+    bankAccountId: part.bankAccountId,
+    note: draft.note,
+  }
 }
 
 // A picker hands back plain text, so the answer is looked up in the list it was drawn from rather than trusted to be an id: nothing unknown gets through, which asserting a type would not promise.
@@ -29,10 +50,8 @@ export function anEmptyDraft(keeping: Partial<Draft> = {}): Draft {
     paidToId: '',
     newPerson: '',
     amount: '',
-    method: 'cheque',
-    reference: '',
-    bankAccountId: '',
     note: '',
+    parts: [onePart()],
     ...keeping,
   }
 }
@@ -73,22 +92,42 @@ export function sittingTotalPaisa(drafts: Array<Draft>): { paisa: number; unread
   )
 }
 
-// Only what the server takes. Anything a way of paying does not ask for is left off rather than sent empty.
-export function asAnEntry(draft: Draft, day: string) {
+// Only what the server takes, and one of these per way it was paid. Anything a way of paying does not ask for is left off rather than sent empty.
+
+// Nothing here says the rows belong together, because he chose that they do not: they share a trade, a person and a day because he typed those once, and after that each is an ordinary payment that can be taken back out on its own.
+export function asEntries(draft: Draft, day: string) {
   if (draft.tradeId === '') {
     // Cannot be reached: `whatIsMissing` refuses this first. Named out loud rather than asserted away, so the type stays honest about what a half-filled draft holds.
     throw new Error('a payment was sent before it was finished')
   }
 
-  return {
-    tradeId: draft.tradeId,
+  const tradeId = draft.tradeId
+  const worth = whatEachPartIsWorth(draft.amount, draft.parts)
+
+  return draft.parts.map((part, at) => ({
+    tradeId,
     day,
-    amount: draft.amount,
+    amount: worth[at],
     paidToId: draft.paidToId || undefined,
     newPerson: draft.paidToId ? undefined : draft.newPerson.trim(),
-    method: draft.method,
-    reference: asksForChequeNumber(draft.method) ? draft.reference.trim() : undefined,
-    bankAccountId: (asksForBank(draft.method) ? draft.bankAccountId : '') || undefined,
+    method: part.method,
+    reference: asksForChequeNumber(part.method) ? part.reference.trim() : undefined,
+    // Named rather than asserted about: `HowItWasPaid` looks a picked account up in the list it drew, so this is the id of a row that was on the screen. The type is the only thing being said here.
+    bankAccountId: ((asksForBank(part.method) ? part.bankAccountId : '') || undefined) as
+      | Id<'bankAccounts'>
+      | undefined,
     note: draft.note.trim() || undefined,
+  }))
+}
+
+/** The first thing missing anywhere in a line, parts included. Never more than one: eight problems at once reads as the app being broken rather than as a question unanswered. */
+export function whatIsMissingFromTheLine(draft: Draft): string | null {
+  const worth = whatEachPartIsWorth(draft.amount, draft.parts)
+
+  for (const [at, part] of draft.parts.entries()) {
+    const missing = whatIsMissing(asTyped(draft, part, worth[at]))
+    if (missing !== null) return missing
   }
+
+  return null
 }

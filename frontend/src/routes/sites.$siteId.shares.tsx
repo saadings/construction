@@ -65,16 +65,19 @@ function WhoTakesWhat() {
           partners={arrived.positions.map((position) => ({ _id: position.personId, name: position.name }))}
           paidOut={paidOut}
           accounts={accounts}
-          onPayOut={async (payout) => {
+          onPayOut={async (payouts) => {
+            // One call for however many ways it went out, so a refused half cannot leave the other standing in the ledger.
             await payOut({
               ...forSite,
-              personId: payout.personId as Id<'people'>,
-              day: payout.day,
-              amount: payout.amount,
-              method: payout.method,
-              reference: payout.reference,
-              bankAccountId: payout.bankAccountId as Id<'bankAccounts'> | undefined,
-              note: payout.note,
+              payouts: payouts.map((payout) => ({
+                personId: payout.personId as Id<'people'>,
+                day: payout.day,
+                amount: payout.amount,
+                method: payout.method,
+                reference: payout.reference,
+                bankAccountId: payout.bankAccountId as Id<'bankAccounts'> | undefined,
+                note: payout.note,
+              })),
             })
           }}
           onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}

@@ -1,13 +1,14 @@
 import { useState } from 'react'
+import { asAWeekday } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 import { whatIsWrongWith } from '~shared/validation/payment'
 
-import { cn } from '../../lib/utils'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { Button } from '../form/Button'
-import { Choices, Field, Line, Lines } from '../form/Field'
-import { asChoices } from '../form/Pick'
+import { Day } from '../form/Day'
+import { Field, Lines } from '../form/Field'
+import { HowItWasPaid } from '../form/HowItWasPaid'
 import { PickATrade } from '../form/PickATrade'
-import { PickAnAccount } from '../form/PickAnAccount'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { Figure } from '../shell/Page'
@@ -15,20 +16,11 @@ import { Trail } from '../shell/Trail'
 import { MoneyLine } from './MoneyLine'
 import { WhoWasPaid } from './WhoWasPaid'
 import type { Draft } from './sitting'
-import {
-  HOW_PAID,
-  anEmptyDraft,
-  asksForBank,
-  asksForChequeNumber,
-  paisaIn,
-  pickedFrom,
-  sittingTotalPaisa,
-  whatIsMissing,
-} from './sitting'
+import { anEmptyDraft, asTyped, paisaIn, pickedFrom, sittingTotalPaisa, whatIsMissingFromTheLine } from './sitting'
 
 export type Named = { _id: Draft['tradeId'] & string; name: string }
 export type Person = { _id: Draft['paidToId'] & string; name: string }
-export type Account = { _id: Draft['bankAccountId'] & string; label: string }
+export type Account = { _id: Id<'bankAccounts'>; label: string }
 
 export type DaySheetProps = {
   siteName: string
@@ -42,18 +34,6 @@ export type DaySheetProps = {
   onPutIn: (drafts: Array<Draft>) => void
   onAddAccount: (label: string, lastFourDigits: string) => Promise<Account['_id']>
   onAddTrade: (trade: { name: string; countsAsBuildingCost: boolean }) => Promise<Named['_id']>
-}
-
-function niceDay(day: string): string {
-  const [year, month, date] = day.split('-').map(Number)
-  if (!year || !month || !date) return day
-
-  return new Date(Date.UTC(year, month - 1, date)).toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  })
 }
 
 /** What a line already put down is worth, or the words he typed when that cannot be read. Never a zero standing in for either. */
@@ -92,18 +72,17 @@ export function DaySheet({
   const change = (part: Partial<Draft>) => setDraft((was) => ({ ...was, ...part }))
 
   function keepAndStartAnother() {
-    const missing = whatIsMissing(draft)
+    const missing = whatIsMissingFromTheLine(draft)
     if (missing) {
       setProblem(missing)
       return
     }
 
     setDone((was) => [...was, draft])
-    // What carries from one payment to the next in a real cheque run: the same account, the same money, the same person more often than not.
+    // What carries from one payment to the next in a real cheque run: the ways it was paid, emptied of their figures, which is the same account and the same cheque book.
     setDraft(
       anEmptyDraft({
-        method: draft.method,
-        bankAccountId: draft.bankAccountId,
+        parts: draft.parts.map((part) => ({ ...part, amount: '', reference: '' })),
       })
     )
     setProblem(null)
@@ -119,7 +98,7 @@ export function DaySheet({
     // Anything typed at all, rather than a figure that came out above zero: a line whose amount cannot be read is a line he has started, and treating it as untouched sent the sitting in without it.
     const started = draft.amount.trim() !== '' || draft.tradeId !== ''
     if (started) {
-      const missing = whatIsMissing(draft)
+      const missing = whatIsMissingFromTheLine(draft)
       if (missing) {
         setProblem(missing)
         return
@@ -149,15 +128,8 @@ export function DaySheet({
           {/* The house is the heading here: this screen has no `Page` and no title, so taking it out left nothing saying what the day sheet was. It is not a duplicate of the trail once the trail is not pinned beside it. */}
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
-            {/* Named on the box rather than beside it: this sits in the header of a sitting, where an upper-case question over it would be a second heading. */}
-            <Line
-              look="beside"
-              type="date"
-              value={day}
-              onChange={(event) => onChangeDay(event.target.value)}
-              aria-label="Which day"
-              className="text-muted-foreground w-auto shrink-0 text-right"
-            />
+            {/* The control this app draws, rather than the OS one. In a CI picture it read `07/04/2026` beside `Sat 4 Jul` fifteen pixels below: the native control prints the browser's locale, which was July 4 in American order, and this app writes a day the other way round. Two dates from one variable, disagreeing, on the screen where he records what money went out that day. */}
+            <Day look="beside" label="Which day" value={day} onPick={onChangeDay} />
           </div>
 
           <div className="flex items-end justify-between gap-4">
@@ -170,7 +142,7 @@ export function DaySheet({
               </Figure>
             </div>
             <p className="text-muted-foreground pb-1 text-sm">
-              {done.length === 0 ? niceDay(day) : `${done.length} put down · ${niceDay(day)}`}
+              {done.length === 0 ? asAWeekday(day) : `${done.length} put down · ${asAWeekday(day)}`}
             </p>
           </div>
 
@@ -222,7 +194,7 @@ export function DaySheet({
         <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
           <PickATrade
             label="What for"
-            problem={whatIsWrongWith('trade', draft)}
+            problem={whatIsWrongWith('trade', asTyped(draft, draft.parts[0]))}
             placeholder="Pick one"
             chosen={everyTrade.everything.find((trade) => trade._id === draft.tradeId) ?? null}
             trades={everyTrade.everything}
@@ -240,7 +212,7 @@ export function DaySheet({
           <WhoWasPaid
             who={{ paidToId: draft.paidToId, newPerson: draft.newPerson }}
             people={people}
-            problem={whatIsWrongWith('paidTo', draft)}
+            problem={whatIsWrongWith('paidTo', asTyped(draft, draft.parts[0]))}
             onChange={(who) => {
               // Looked up in the list it was drawn from rather than trusted, the same as every other picked answer here.
               change({ paidToId: pickedFrom(people, who.paidToId), newPerson: who.newPerson })
@@ -250,61 +222,24 @@ export function DaySheet({
           <MoneyLine
             value={draft.amount}
             onChange={(amount) => change({ amount })}
-            problem={whatIsWrongWith('amount', draft)}
+            problem={whatIsWrongWith('amount', asTyped(draft, draft.parts[0], draft.amount))}
           />
 
-          {/* `Choices` rather than `Field`: a label points at one control, and the first button inside one takes the label's words as its own name -- so "Cheque" announced itself as "How paid How paid" and could be found by nothing, screen reader included. */}
-          <Choices label="How paid">
-            <div className="grid grid-cols-4 gap-2">
-              {HOW_PAID.map((how) => (
-                <button
-                  key={how.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.method === how.value}
-                  onClick={() => change({ method: how.value })}
-                  className={cn(
-                    'rounded-md border py-2.5 text-sm transition-colors',
-                    draft.method === how.value
-                      ? 'border-primary bg-accent text-accent-foreground font-medium'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  {how.label}
-                </button>
-              ))}
-            </div>
-          </Choices>
+          {/* Every way this one payment was settled. He asked to split between cash and cheques, and chose separate rows: what he types once -- the trade, the person, the amount, the day -- is shared, and each way of paying carries its own cheque number or account. */}
+          <HowItWasPaid
+            label="How paid"
+            parts={draft.parts}
+            total={draft.amount}
+            accounts={everyAccount.everything}
+            bankLabel="Which account"
+            onChange={(parts) => change({ parts })}
+            onAddAccount={async (label, lastFourDigits) => {
+              const _id = await onAddAccount(label, lastFourDigits)
+              everyAccount.remember({ _id, label })
 
-          {asksForChequeNumber(draft.method) ? (
-            <Field label="Cheque number" problem={whatIsWrongWith('reference', draft)}>
-              <Line
-                value={draft.reference}
-                onChange={(event) => change({ reference: event.target.value })}
-                inputMode="numeric"
-                autoComplete="off"
-                aria-label="Cheque number"
-              />
-            </Field>
-          ) : null}
-
-          {asksForBank(draft.method) ? (
-            <PickAnAccount
-              label="Which account"
-              problem={whatIsWrongWith('bank', draft)}
-              chosen={asChoices(everyAccount.everything).find((account) => account._id === draft.bankAccountId) ?? null}
-              accounts={everyAccount.everything}
-              onPick={(picked) => {
-                change({ bankAccountId: picked === null ? '' : everyAccount.pickedFromThese(picked._id) })
-              }}
-              onAdd={async (label, lastFourDigits) => {
-                const _id = await onAddAccount(label, lastFourDigits)
-                everyAccount.remember({ _id, label })
-
-                return _id
-              }}
-            />
-          ) : null}
+              return _id
+            }}
+          />
 
           <Field label="Note">
             <Lines

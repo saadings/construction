@@ -35,15 +35,10 @@ const DRAWN_BY_THE_BROWSER_TOO = [
 // shadcn's own, copied in by their CLI. What they use inside themselves is theirs; what this repository writes is what this is about. Said as a path relative to `src`, which is how `everyScreen` names them; the sweep it replaced named them absolutely, and a leading slash left here would have quietly stopped filtering anything.
 const THEIRS = 'components/ui/'
 
-// The four screens that still carry a date input, listed by name and not by a count, because a count is satisfied by any four. They are in const-2's picker work and converting them from here would collide; they come out of this list as that lands.
+// One left of the four, listed by name and not by a count, because a count is satisfied by any four. The day sheet, money coming in and paying out came out of this list in the branch that split a payment between cash and cheques -- the three were being rewritten there, and a picture from CI had shown what the browser's own control does with a day: `07/04/2026` beside `Sat 4 Jul`, from one variable, disagreeing by fifteen pixels.
 
-// Listed rather than skipped, so a ninth screen reaching for a browser-drawn control fails here on the day it is written rather than passing over a gap somebody already knew about.
-const STILL_TO_CONVERT = [
-  'components/daySheet/DaySheet.tsx',
-  'components/moneyIn/ComingIn.tsx',
-  'components/shares/PayOut.tsx',
-  'components/site/WhoIsOnThisHouse.tsx',
-]
+// Listed rather than skipped, so a screen reaching for a browser-drawn control fails here on the day it is written rather than passing over a gap somebody already knew about.
+const STILL_TO_CONVERT = ['components/site/WhoIsOnThisHouse.tsx']
 
 /** Every place a screen opens a control the browser will draw. */
 export function drawnByTheBrowserIn(written: string): Array<string> {
@@ -63,7 +58,7 @@ describe('a control the browser draws', () => {
     expect(drawn).toEqual([])
   })
 
-  it('still names the four, so the exemption cannot outlive them', () => {
+  it('still names what is left, so the exemption cannot outlive it', () => {
     // The other end. An exemption that stops being true reads exactly like an exemption that is still needed, and this is the assertion that tells them apart: each of these must still have something to convert.
     for (const path of STILL_TO_CONVERT) {
       const screen = screens.find((one) => one.path === path)

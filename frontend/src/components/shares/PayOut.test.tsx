@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { chooseTheDay } from '../../testing/day'
 import { pick, useTheName } from '../../testing/pick'
 import type { Account, NewPayout, PaidOut, Partner } from './PayOut'
 import { PayOut } from './PayOut'
@@ -32,7 +33,7 @@ const GONE_BACK: Array<PaidOut> = [
 ]
 
 function renderWith(over: Partial<Parameters<typeof PayOut>[0]> = {}) {
-  const onPayOut = vi.fn<(payout: NewPayout) => Promise<void>>(() => Promise.resolve())
+  const onPayOut = vi.fn<(payouts: Array<NewPayout>) => Promise<void>>(() => Promise.resolve())
   const onTakeBack = vi.fn<(payoutId: string) => Promise<void>>(() => Promise.resolve())
   const onAddAccount = vi.fn<(label: string, lastFourDigits: string) => Promise<string>>(() => Promise.resolve('b9'))
 
@@ -58,22 +59,25 @@ describe('writing down what has gone back to a partner', () => {
     const { onPayOut } = renderWith()
 
     await pick(user, 'Who it went to', 'The one who came in later')
-    fireEvent.change(screen.getByLabelText('Which day'), { target: { value: '2026-08-01' } })
+    await chooseTheDay(user, 'Which day', '2026-08-01')
     fireEvent.change(screen.getByLabelText('How much'), { target: { value: '150000' } })
     fireEvent.change(screen.getByLabelText('Cheque number'), { target: { value: '882200' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
-      expect(onPayOut).toHaveBeenCalledWith({
-        personId: 'p2',
-        day: '2026-08-01',
-        amount: '150,000',
-        method: 'cheque',
-        reference: '882200',
-        bankAccountId: undefined,
-        note: undefined,
-      })
+      // A list of one: a payout that went one way is one row, and one split between two is two.
+      expect(onPayOut).toHaveBeenCalledWith([
+        {
+          personId: 'p2',
+          day: '2026-08-01',
+          amount: '150,000',
+          method: 'cheque',
+          reference: '882200',
+          bankAccountId: undefined,
+          note: undefined,
+        },
+      ])
     })
   })
 
@@ -95,7 +99,8 @@ describe('writing down what has gone back to a partner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
-      expect(onPayOut.mock.calls[0]?.[0].personId).toBe('p2')
+      // One way of paying is one row, and it is the first of the list a payout is sent as now.
+      expect(onPayOut.mock.calls[0]?.[0][0]?.personId).toBe('p2')
     })
   })
 
@@ -117,7 +122,7 @@ describe('writing down what has gone back to a partner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Put it in' }))
 
     await waitFor(() => {
-      expect(onPayOut.mock.calls[0]?.[0]).toMatchObject({
+      expect(onPayOut.mock.calls[0]?.[0][0]).toMatchObject({
         method: 'transfer',
         bankAccountId: 'b2',
         reference: undefined,
@@ -216,7 +221,7 @@ describe('what has already gone back to them', () => {
     const row = screen.getByRole('listitem')
     expect(within(row).getByText('The one who started it')).toBeTruthy()
     expect(within(row).getByText('20,000')).toBeTruthy()
-    expect(within(row).getByText(/Cheque · 2026-07-04 · 774411/)).toBeTruthy()
+    expect(within(row).getByText(/Cheque · 04\/07\/2026 · 774411/)).toBeTruthy()
   })
 
   it('takes one back by its own id, so the right one goes', async () => {

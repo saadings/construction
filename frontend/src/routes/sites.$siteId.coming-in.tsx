@@ -52,21 +52,24 @@ function WhatCameIn() {
 
         await takeBack({ ...forSite, moneyInId: one._id })
       }}
-      onPutIn={async (receipt) => {
+      onPutIn={async (arrivals) => {
         setSaving(true)
         setRefusal(null)
 
         try {
+          // One call for however many ways it came. Sent one at a time, a refused half would leave the other in the ledger -- a 300,000 arrival sitting as 200,000, indistinguishable from a 200,000 he really had.
           await record({
             ...forSite,
-            day: receipt.day,
-            amount: receipt.amount,
-            fromId: receipt.fromId as Id<'people'>,
-            why: receipt.why,
-            method: receipt.method,
-            reference: receipt.reference,
-            bankAccountId: receipt.bankAccountId as Id<'bankAccounts'> | undefined,
-            note: receipt.note,
+            arrivals: arrivals.map((receipt) => ({
+              day: receipt.day,
+              amount: receipt.amount,
+              fromId: receipt.fromId as Id<'people'>,
+              why: receipt.why,
+              method: receipt.method,
+              reference: receipt.reference,
+              bankAccountId: receipt.bankAccountId as Id<'bankAccounts'> | undefined,
+              note: receipt.note,
+            })),
           })
 
           return true

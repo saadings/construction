@@ -13,14 +13,10 @@ import { withoutComments } from './testing/source'
 /** The fields that hold a `YYYY-MM-DD` day. Every one of them is stored the way the ledger stores a day and read by somebody who does not. */
 const A_DAY = ['day', 'raisedOn', 'billedOn', 'agreedOn', 'paidOn', 'receivedOn', 'takenOn']
 
-// The four screens that still put one on the page raw. Three are const-2's picker work and converting them from here would collide; the fourth is the day sheet's own header, which draws `Sun 16 Aug` through `niceDay` -- unambiguous, deliberate, and a weekday rather than a date.
+// One left of the three. Money coming in and paying out came out of this list in the branch that split a payment between cash and cheques -- both were being rewritten there anyway, and a picture from CI had already shown what the native control does: `07/04/2026` beside `Sat 4 Jul`, from one variable, disagreeing.
 
 // Listed rather than skipped, so a screen that starts showing a day tomorrow fails here on the day it is written rather than passing over a gap somebody already knew about.
-const STILL_TO_CONVERT = [
-  'components/moneyIn/ComingIn.tsx',
-  'components/shares/PayOut.tsx',
-  'components/site/WhoIsOnThisHouse.tsx',
-]
+const STILL_TO_CONVERT = ['components/site/WhoIsOnThisHouse.tsx']
 
 /** Every place a screen puts a stored day straight onto the page. */
 export function aDayWrittenRaw(written: string): Array<string> {
@@ -31,7 +27,7 @@ export function aDayWrittenRaw(written: string): Array<string> {
     // A brace holding the field, with what comes before the name so `holiday` and `birthday` are not days, and what comes after so `dayOfWeek` is not one either.
     for (const at of source.matchAll(new RegExp(`\\{[^{}]*?(?<![\\w.])[\\w.]*\\.${field}\\b(?!\\w)[^{}]*\\}`, 'g'))) {
       const said = at[0]
-      if (said.includes('asDayHeWrites') || said.includes('niceDay')) continue
+      if (said.includes('asDayHeWrites') || said.includes('asAWeekday')) continue
 
       // A brace straight after an `=` is a prop, and a day handed to something else is that thing's business: it goes into a control that shows what it likes, or into a component that will decide for itself. A brace anywhere else in JSX is text somebody reads, and that is what this is about. One character, and it is the whole distinction -- an earlier version tried to work out which props were controls and could not tell `Billed {stage.billedOn}` from one.
       if (source[at.index - 1] === '=') continue
@@ -49,7 +45,7 @@ export function aDayWrittenRaw(written: string): Array<string> {
 describe('a day put on the page the way it is stored', () => {
   const screens = everyScreen()
 
-  it('is on none of our screens, but the three still waiting on the picker work', () => {
+  it('is on none of our screens, but the one still waiting on the picker work', () => {
     const raw = screens
       .filter(({ path }) => !STILL_TO_CONVERT.includes(path))
       .flatMap(({ path, source }) =>
@@ -59,7 +55,7 @@ describe('a day put on the page the way it is stored', () => {
     expect(raw).toEqual([])
   })
 
-  it('still names the three, so the exemption cannot outlive them', () => {
+  it('still names what is left, so the exemption cannot outlive it', () => {
     // The other end. An exemption that has stopped being true reads exactly like one that is still needed.
     for (const path of STILL_TO_CONVERT) {
       const screen = screens.find((one) => one.path === path)
@@ -105,7 +101,7 @@ describe('a day put on the page the way it is stored', () => {
     expect(aDayWrittenRaw('<span>Billed {asDayHeWrites(stage.billedOn)}</span>')).toEqual([])
     expect(aDayWrittenRaw('<p>{asDayHeWrites(went.day)} · {SAID[went.method]}</p>')).toEqual([])
     // And the day sheet's own header, which says a weekday rather than a date and is unambiguous either way.
-    expect(aDayWrittenRaw('<span>{niceDay(day)}</span>')).toEqual([])
+    expect(aDayWrittenRaw('<span>{asAWeekday(day)}</span>')).toEqual([])
   })
 
   it('reads the code and not what is written about it', () => {

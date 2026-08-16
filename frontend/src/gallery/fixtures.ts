@@ -29,8 +29,10 @@ export const BANK = [
 
 export const THE_HOUSE = '1-A, Phase 0'
 
+// After the twelfth on purpose: `2026-07-04` reads as the fourth of July in one order and the seventh of April in the other, so a picture of the app writing days his way and a picture of it writing them the other way are the same picture -- and a screenshot that cannot tell two states apart is not evidence, it is a reassuring image.
+
 /** A day in the middle of the work, fixed rather than today's, so two screenshots a week apart are the same picture. */
-export const A_DAY = '2026-07-04'
+export const A_DAY = '2026-07-23'
 
 export const paisa = rupeesToPaisa
 
