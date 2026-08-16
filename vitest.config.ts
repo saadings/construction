@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => {
             name: 'frontend',
             include: ['frontend/**/*.test.{ts,tsx}'],
             environment: 'jsdom',
+            // The other wait nobody chose. Raising `pick`'s patience alone would move the same failures from one unconsidered bound to another: of the four that went in one run, three ran out of vitest's own 5000ms and one ran out of testing-library's 1000ms. A `fillOne` opens three lists, so a test has to be able to outlast three of those waits and still report which list never came, rather than reporting that the test was slow.
+            testTimeout: 20_000,
             // What jsdom does not implement and shadcn's components ask for. Given to every jsdom test rather than to the one that noticed it.
             setupFiles: ['./frontend/src/testing/jsdom.ts'],
           },
