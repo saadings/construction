@@ -24,7 +24,8 @@
     "postinstall": "husky",
     "shadcn:add": "npx shadcn@latest add",
     "setup:cloudflare": "tsx scripts/setupCloudflareProject.ts",
-    "columns": "tsx scripts/columns.ts"
+    "columns": "tsx scripts/columns.ts",
+    "gate": "yarn format:check && yarn lint:check && yarn typecheck && yarn build && yarn test && yarn test:scenario && yarn gallery:build && yarn shots && yarn columns"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
