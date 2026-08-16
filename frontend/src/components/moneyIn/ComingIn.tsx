@@ -74,7 +74,8 @@ export function ComingIn({
   onTakeBack: (moneyInId: string) => Promise<void>
 }) {
   return (
-    <Page title="Money coming in" beside={<span className="text-muted-foreground text-sm">{siteName}</span>}>
+    // No house name beside the title any more: the trail above says it and links back to it.
+    <Page title="Money coming in" named={{ siteId: siteName }}>
       <Taking people={people ?? []} accounts={accounts ?? []} saving={saving} refusal={refusal} onPutIn={onPutIn} />
 
       <AlreadyIn received={received} onTakeBack={onTakeBack} />

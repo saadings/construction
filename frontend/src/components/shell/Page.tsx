@@ -1,15 +1,34 @@
 import type { ReactNode } from 'react'
 
 import { cn } from '../../lib/utils'
+import type { Named } from './Trail'
+import { Trail } from './Trail'
 
 // What every screen sits in. The padding is here so six screens cannot each invent their own, and there is no width cap: a table of payments is the reason a desk is wider than a phone.
-export function Page({ title, beside, children }: { title: string; beside?: ReactNode; children: ReactNode }) {
+
+// The trail is here for the same reason, and it is why a screen drawing its own layout has to ask for one: on a phone the nav is behind a hamburger, so without this there is nothing on the screen saying where you are or how to get back.
+export function Page({
+  title,
+  beside,
+  named,
+  children,
+}: {
+  title: string
+  beside?: ReactNode
+  // What a `$param` in this screen's address is really called. The router knows there is a house; only the screen knows it is `1-A, Phase 0`.
+  named?: Named
+  children: ReactNode
+}) {
   return (
     <div className="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:px-9">
-      <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-foreground text-[2rem] leading-none sm:text-[2.5rem]">{title}</h1>
-        {beside}
-      </header>
+      <div className="flex flex-col gap-2">
+        <Trail named={named} />
+
+        <header className="flex flex-wrap items-baseline justify-between gap-3">
+          <h1 className="font-display text-foreground text-[2rem] leading-none sm:text-[2.5rem]">{title}</h1>
+          {beside}
+        </header>
+      </div>
       {children}
     </div>
   )
