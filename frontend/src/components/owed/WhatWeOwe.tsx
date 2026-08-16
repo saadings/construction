@@ -32,8 +32,12 @@ export type WhatIsOwed = {
 // The `MARKET PAYABLES` sheet: what is owed altogether and to whom, in one look rather than one man at a time.
 
 // Across every house on purpose. A steel supplier delivering to two of them is owed one figure, and two half-balances on two houses is the 487-R mistake in a new place -- nobody adds them up and the pair disagree by the time anybody tries.
-const ROW =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]'
+
+// One grid for the whole list, and every row takes its columns from it. Written per row, the phone's `auto` track sized to whatever was in that row: three people put `Standing` at 346 and one put it at 355, because the figures beside it were a different width. The tracks are declared once and the widest content in the column decides them for everybody.
+const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]'
+
+/** A row, or anything between the grid and a row: it takes the columns above rather than declaring any. */
+const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
 
 export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
   if (owed === undefined) {
@@ -62,7 +66,7 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
           Nothing is owed to anybody yet. What somebody bills lands here, and what has been paid to them comes off it.
         </p>
       ) : (
-        <div className="flex flex-col">
+        <div className={GRID}>
           <div
             className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
           >
@@ -72,7 +76,7 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
             <span className="text-right">Standing</span>
           </div>
 
-          <ul className="divide-hairline flex flex-col divide-y">
+          <ul className={`${ROW} divide-hairline gap-y-0 divide-y`}>
             {owed.everyone.map((person) => (
               <OnePerson key={person.personId} person={person} />
             ))}

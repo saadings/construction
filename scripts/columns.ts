@@ -1,0 +1,153 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { chromium } from 'playwright'
+
+import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnServer'
+
+// Whether a column of figures is a column, measured rather than described.
+
+// `width.test.ts` asserts every figure goes through `<Figure>`, for the stated reason that it is what makes a column of amounts read as one. That guard passes, every figure is in the right face, and the grid moved the columns anyway. It is the one instrument here answering exactly the right question, truthfully, while the outcome it stands in for does not happen -- and nothing else in this repository could see the difference, because nothing else in it lays anything out.
+
+// The defect it is here to stop: a grid written once per row sizes a content-shaped track to that row's own content, so the column lands wherever that row happens to need it. Four screens had it, and the three that did not were not defended against it -- their last cell simply happened to be the same width every time.
+
+/** The same widths the pictures are taken at: a phone, the width the sidebar changes at, and a desk. */
+const SCREENS_READ_ON = [
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1280, height: 800 },
+]
+
+/** The floor. A run that measured nothing reports the same clean nothing as an app whose columns all line up. */
+const AT_LEAST_THIS_MANY_ROWS = 20
+
+// Handed to the browser as text rather than as a function, so this file stays a Node script with no DOM types in it -- the same reason the pictures are taken through the locator API. What comes back is checked below rather than trusted, because a string evaluated in a page can return anything at all.
+
+// Two things it is careful about. A class worn by one element is not a column of anything, so only a row written once and drawn many times is compared. And a cell that is not drawn has no position while a browser still answers 0 for it: counted as a column at x=0, every row with an optional cell reads as broken -- `their-account` shows `Billed` or `Paid` and never both, and reading that absence as a position is the instrument inventing the defect it went looking for.
+const WHERE_THE_COLUMNS_ARE = `(() => {
+  const grids = [...document.querySelectorAll('*')].filter((el) => getComputedStyle(el).display === 'grid')
+
+  const byClass = new Map()
+  for (const el of grids) {
+    const key = el.className.toString()
+    byClass.set(key, [...(byClass.get(key) ?? []), el])
+  }
+
+  const moved = []
+  let rows = 0
+
+  for (const [cls, drawn] of byClass) {
+    if (drawn.length < 2) continue
+    rows += drawn.length
+
+    const lefts = drawn.map((row) =>
+      [...row.children].map((cell) => {
+        const box = cell.getBoundingClientRect()
+        return box.width === 0 && box.height === 0 ? null : Math.round(box.left)
+      })
+    )
+
+    const widest = Math.max(...lefts.map((row) => row.length))
+
+    for (let cell = 0; cell < widest; cell += 1) {
+      const xs = [...new Set(lefts.map((row) => row[cell]).filter((x) => x !== null && x !== undefined))]
+      if (xs.length > 1) moved.push({ cls: cls.slice(0, 70), cell, xs })
+    }
+  }
+
+  return { rows, moved }
+})()`
+
+type Moved = { cls: string; cell: number; xs: Array<number> }
+
+/** What came back from the page, checked rather than assumed: a bad shape here would read as a screen with nothing wrong on it. */
+function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
+  if (typeof said !== 'object' || said === null || !('rows' in said) || !('moved' in said)) {
+    throw new Error('The page answered something that is not a measurement.')
+  }
+
+  const { rows, moved } = said
+  if (typeof rows !== 'number' || !Array.isArray(moved)) {
+    throw new Error('The page answered a measurement with no rows or no findings in it.')
+  }
+
+  return {
+    rows,
+    moved: moved.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('cls' in one) || !('cell' in one) || !('xs' in one)) {
+        throw new Error('The page answered a finding with nothing in it.')
+      }
+
+      const { cls, cell, xs } = one
+      if (typeof cls !== 'string' || typeof cell !== 'number' || !Array.isArray(xs)) {
+        throw new Error('The page answered a finding of the wrong shape.')
+      }
+
+      return { cls, cell, xs: xs.map(Number) }
+    }),
+  }
+}
+
+async function main(): Promise<void> {
+  if (!existsSync(join(GALLERY, 'gallery.html'))) {
+    throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
+  }
+
+  const server = await serveTheGallery()
+  const browser = await chromium.launch()
+  const wrong: Array<string> = []
+  let rowsSeen = 0
+
+  try {
+    const page = await browser.newPage()
+    await page.goto(server.at)
+
+    const screens = await everyScreenItShows(page)
+    if (screens.length === 0) {
+      throw new Error('The gallery showed no screens, so nothing was measured.')
+    }
+
+    for (const size of SCREENS_READ_ON) {
+      await page.setViewportSize(size)
+
+      for (const screen of screens) {
+        await page.goto(`${server.at}/gallery.html#${screen.slug}`)
+        // Waited for by what the screen says rather than by a timer, the same way the pictures are.
+        await page.getByText(screen.proves, { exact: false }).first().waitFor({ timeout: 15_000 })
+
+        const measured = whatItMeasured(await page.evaluate(WHERE_THE_COLUMNS_ARE))
+        rowsSeen += measured.rows
+
+        for (const moved of measured.moved) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: cell ${String(moved.cell)} sits at ${moved.xs.join(', ')} — ${moved.cls}`
+          )
+        }
+      }
+    }
+  } finally {
+    await browser.close()
+    await server.stop()
+  }
+
+  // Counted from both ends. A run that found no rows to compare reports the same clean nothing as a run where every column held.
+  if (rowsSeen < AT_LEAST_THIS_MANY_ROWS) {
+    throw new Error(
+      `Only ${String(rowsSeen)} repeated rows were measured across every screen, which is too few to have looked.`
+    )
+  }
+
+  if (wrong.length > 0) {
+    console.error(`A column moves between rows of the same list:\n\n${wrong.join('\n')}\n`)
+    console.error(
+      'A grid written once per row sizes a content-shaped track to that row alone. Declare the tracks once on the list and give every row `grid-cols-subgrid`.'
+    )
+    process.exitCode = 1
+
+    return
+  }
+
+  console.log(`Every column holds, across ${String(rowsSeen)} rows at ${String(SCREENS_READ_ON.length)} widths.`)
+}
+
+await main()

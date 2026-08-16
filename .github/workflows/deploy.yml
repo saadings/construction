@@ -137,6 +137,10 @@ jobs:
       - name: Take a picture of every screen
         run: yarn shots
 
+      # The pictures show what a screen looks like; this asks one question about them that nobody reliably sees by looking. A grid written once per row sizes a content-shaped track to that row alone, so a column of figures lands wherever each row happens to need it — four screens had it and three more were one differently-worded row away. Nothing else here lays anything out, so nothing else can be asked.
+      - name: Every column of figures is a column
+        run: yarn columns
+
       # Three UI changes merged carrying "not observed at any width" and nothing else. This is what replaces that sentence.
       - name: Keep the pictures
         uses: actions/upload-artifact@v4
