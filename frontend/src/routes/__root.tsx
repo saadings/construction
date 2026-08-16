@@ -1,10 +1,11 @@
-import { ClerkProvider, Show, useAuth } from '@clerk/tanstack-react-start'
+import { ClerkProvider, Show, SignInButton, useAuth } from '@clerk/tanstack-react-start'
 import { dark } from '@clerk/themes'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useMutation } from 'convex/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
+import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 
 import { api } from '../../../convex/_generated/api'
@@ -56,7 +57,7 @@ function RootComponent() {
       <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
         {/* Signed out there is one screen, whatever was asked for. Rendering the outlet here put every other route in front of somebody with no session: a form nobody can send, over a reading that never comes back. */}
         <Show when="signed-out">
-          <WayIn />
+          <WayIn opens={TheSignIn} />
         </Show>
         <Show when="signed-in">
           <RememberThisSignIn />
@@ -67,6 +68,11 @@ function RootComponent() {
       </ConvexProviderWithClerk>
     </ClerkProvider>
   )
+}
+
+// Clerk's own, and the only part of the way in that the gallery cannot draw. Declared here rather than written inline in the tree above, because a component type made fresh on every render is a different component every time and remounts everything under it.
+function TheSignIn({ children }: { children: ReactNode }) {
+  return <SignInButton mode="modal">{children}</SignInButton>
 }
 
 // Every read refuses a sign-in the ledger has never seen, and a query cannot write itself in. This is the one call that can, made once when somebody signs in.

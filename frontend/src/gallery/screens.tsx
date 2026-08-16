@@ -18,6 +18,7 @@ import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
 import { Page } from '../components/shell/Page'
 import { TheNav, TheWayIntoTheNav } from '../components/shell/TheNav'
+import { WayIn } from '../components/shell/WayIn'
 import { AgreeAContract } from '../components/site/AgreeAContract'
 import { ChangeTheContract } from '../components/site/ChangeTheContract'
 import { ExtraWork } from '../components/site/ExtraWork'
@@ -72,7 +73,22 @@ function AsAThumbFindsIt() {
   return null
 }
 
+// Clerk's `SignInButton` in the app and this in the gallery, because nothing here may reach a deployment. It stands in for the wrapper and not for the button: Clerk's own hangs an `onClick` on whatever is inside it and draws no box, so what is measured here is the button the app ships rather than a copy of it kept in step by hand.
+function AsClerkWouldOpenIt({ children }: { children: ReactNode }) {
+  return children
+}
+
 export const ON_SHOW: Array<OnShow> = [
+  {
+    slug: 'the-way-in',
+    // No trail and no nav: this is drawn in place of the whole app, whatever address was asked for.
+    at: '/',
+    name: 'The way in',
+    where: 'the first screen anybody sees, before they have signed in',
+    proves: 'Sign in',
+    // The screen every other picture assumes somebody has got past. It was drawn by nothing and photographed at no width, because Clerk will not render outside its own provider -- so the exemption that was about a wrapper covered a whole screen, and the one screen he cannot get past if it is wrong was the one nothing had looked at.
+    draw: () => <WayIn opens={AsClerkWouldOpenIt} />,
+  },
   {
     slug: 'dashboard',
     at: '/dashboard',
