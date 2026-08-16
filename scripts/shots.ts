@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, readdir, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
+import type { Page } from 'playwright'
 import { chromium } from 'playwright'
 
 import { GALLERY, everyScreenItShows, serveTheGallery } from './theGallerysOwnServer'
@@ -29,6 +30,34 @@ const A_DAY = '2026-07-04'
 /** How far down the app's screen may begin before the picture stops being a picture of a phone. Not zero, because a browser rounds a fractional layout; anything above this is furniture. */
 const TOP_OF_THE_SCREEN = 2
 
+// A screen taller than the viewport gets a second picture, scrolled to the bottom. The Dashboard is the first screen in this app that one viewport cannot hold, and its picture ends on the `What came in` heading with the chart entirely below the fold -- looking finished, because a viewport shot always does.
+
+// Two viewport shots rather than one `fullPage`: full page distorts anything sticky, and it photographs the Dashboard's chart blank, because resizing the viewport makes recharts re-measure and the shot lands mid-remeasure. Each capture here stays a true viewport; only the scroll differs.
+
+/** How much taller than the viewport a screen has to be before a second picture is a different picture. */
+const WORTH_A_SECOND_PICTURE = 24
+
+// A screen that drew nothing is not a short screen, and the two answer the same way: a page with no body is not taller than the viewport, so it gets one picture and is counted as having fitted. The marker wait above proves one string is visible; it does not prove a screen has body.
+
+/** Shorter than this and it did not draw. The shortest real screen here is `How it looks`, at 344px on a phone. */
+const TOO_SHORT_TO_BE_A_SCREEN = 200
+
+// Where the app's screen starts once the page has stopped moving, or where it still is when it has given up.
+
+// Scrolled, the screen's top goes negative by however far the page went -- so the same box that says a picture is a picture of a phone also says whether a second one would be a different picture.
+async function theTopOnceItHasMoved(on: Page): Promise<{ y: number } | null> {
+  const givingUp = 40
+
+  let box = await on.locator('[data-testid="the-screen"]').boundingBox()
+
+  for (let waited = 0; waited < givingUp && box !== null && box.y > -WORTH_A_SECOND_PICTURE; waited += 1) {
+    await on.waitForTimeout(50)
+    box = await on.locator('[data-testid="the-screen"]').boundingBox()
+  }
+
+  return box
+}
+
 async function main(): Promise<void> {
   if (!existsSync(join(GALLERY, 'gallery.html'))) {
     throw new Error(`No gallery built at ${GALLERY}. Run \`yarn gallery:build\` first.`)
@@ -52,6 +81,9 @@ async function main(): Promise<void> {
     }
 
     await page.close()
+
+    /** Every lower half this run decided was owed, named when the measurement said so rather than when a file was written. */
+    const tooTall: Array<string> = []
 
     for (const size of SCREENS_READ_ON) {
       const on = await browser.newPage({ viewport: size })
@@ -90,24 +122,69 @@ async function main(): Promise<void> {
           )
         }
 
+        // A screen with no body in it. Asked separately from the marker above, because that one proves a string rendered and this one proves a screen did -- and without it a page that drew nothing is simply a page that fits.
+        if (box.height < TOO_SHORT_TO_BE_A_SCREEN) {
+          throw new Error(
+            `${screen.slug} at ${String(size.width)} is ${String(Math.round(box.height))}px tall. ` +
+              `That is not a short screen, it is a screen that did not draw.`
+          )
+        }
+
         // The screen and not the whole page. `fullPage` expands the viewport and leaves anything `sticky` pinned to where the bottom used to be -- the day sheet's footer came out in the middle of its own form, which reads as a broken screen and is a broken photograph. What somebody holds is a screen, so that is what this is a picture of.
         await on.screenshot({ path: join(SHOTS, `${screen.slug}-${String(size.width)}.png`) })
+
+        if (box.height <= size.height + WORTH_A_SECOND_PICTURE) continue
+
+        // Written down from the measurement, before anything is taken. Counting as the pictures are taken makes one decision answer for both, and the tally then agrees with whatever the run did -- deleting the screenshot below and the count together left thirty-nine pictures and a cheerful "0 of them too tall", which is precisely the defect this count exists to catch.
+        const lowerHalf = `${screen.slug}-${String(size.width)}-lower.png`
+        tooTall.push(lowerHalf)
+
+        // Moved onto the page first: a wheel is delivered to whatever is under the pointer, and the pointer starts at 0,0 where nothing scrollable is.
+        await on.mouse.move(size.width / 2, size.height / 2)
+        await on.mouse.wheel(0, box.height)
+
+        // Waited for by the thing that has to be true, not by a sleep. `mouse.wheel` returns when the event is dispatched rather than when the page has moved, so reading the position straight afterwards reports zero on a page that is about to scroll -- which it did, on a different screen each run, which is what a race looks like.
+        const after = await theTopOnceItHasMoved(on)
+
+        if (after === null || after.y > -WORTH_A_SECOND_PICTURE) {
+          throw new Error(
+            `${screen.slug} at ${String(size.width)} is ${String(Math.round(box.height))}px tall and did not scroll ` +
+              `(its top is at ${after === null ? 'no box' : String(Math.round(after.y))}). ` +
+              `The second picture would be the first one again.`
+          )
+        }
+
+        // The pointer taken back off the content before the picture is taken. Left in the middle where the wheel needed it, it lands on whatever scrolled up under it -- on the Dashboard that is the chart, which opened a hover tooltip over its own bars and photographed it. An instrument that changes what it is measuring, which is the fault this whole exercise exists to catch.
+        await on.mouse.move(size.width - 2, 2)
+        await on.waitForTimeout(100)
+
+        await on.screenshot({ path: join(SHOTS, lowerHalf) })
       }
 
       await on.close()
     }
 
-    const written = await readdir(SHOTS)
-    const wanted = screens.length * SCREENS_READ_ON.length
+    const written = new Set(await readdir(SHOTS))
 
-    // Counted from both ends. The loop above throws on a screen it cannot photograph, but a screenshot silently written nowhere leaves a run that reports success and uploads an empty artifact.
-    if (written.length !== wanted) {
-      throw new Error(`Wrote ${String(written.length)} pictures, expected ${String(wanted)}.`)
+    // Asked of the disk, against a list the measurement wrote. Two facts rather than one: this screen did not fit, and a picture of its lower half is there. A count kept alongside the taking answers for both and agrees with itself.
+    const owed = tooTall.filter((name) => !written.has(name))
+
+    if (owed.length > 0) {
+      throw new Error(`${String(owed.length)} screens did not fit and have no lower half: ${owed.join(', ')}`)
+    }
+
+    const wanted = screens.length * SCREENS_READ_ON.length + tooTall.length
+
+    // And the other end, which catches a picture written that nothing asked for.
+    if (written.size !== wanted) {
+      throw new Error(`Wrote ${String(written.size)} pictures, expected ${String(wanted)}.`)
     }
 
     const sizes = SCREENS_READ_ON.map((size) => `${String(size.width)}×${String(size.height)}`).join(', ')
-
-    console.log(`${String(written.length)} pictures in shots/ — ${String(screens.length)} screens at ${sizes}`)
+    console.log(
+      `${String(written.size)} pictures in shots/ — ${String(screens.length)} screens at ${sizes}, ` +
+        `${String(tooTall.length)} of them too tall for the screen they are on and photographed twice`
+    )
   } finally {
     await browser.close()
     await server.stop()
