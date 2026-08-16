@@ -102,9 +102,9 @@ export async function everyScreenItShows(page: {
     count: () => Promise<number>
     nth: (at: number) => { getAttribute: (name: string) => Promise<string | null> }
   }
-}): Promise<Array<{ slug: string; proves: string; shownIn: string }>> {
+}): Promise<Array<{ slug: string; proves: string; shownIn: string; tapFirst: string | null }>> {
   const buttons = page.locator('[data-slug]')
-  const screens: Array<{ slug: string; proves: string; shownIn: string }> = []
+  const screens: Array<{ slug: string; proves: string; shownIn: string; tapFirst: string | null }> = []
 
   for (let at = 0; at < (await buttons.count()); at += 1) {
     const button = buttons.nth(at)
@@ -114,6 +114,8 @@ export async function everyScreenItShows(page: {
       proves: (await button.getAttribute('data-proves')) ?? '',
       // Where the screen really drew, for the screens that leave the element the gallery draws them into. Almost none do, so the element is the answer unless the screen says otherwise.
       shownIn: (await button.getAttribute('data-shown-in')) ?? THE_SCREEN,
+      // What somebody taps to see it, for the screens that fold themselves away until asked. `null` is every other screen.
+      tapFirst: await button.getAttribute('data-tap-first'),
     })
   }
 

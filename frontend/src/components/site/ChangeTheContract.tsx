@@ -77,7 +77,8 @@ function Measure({ contract, onMeasure }: { contract: StandingContract; onMeasur
     <Form className="max-w-md gap-3">
       <Field
         label="Area measured"
-        hint={`Agreed at ${contract.agreedAreaSqft.toLocaleString()} sq ft. A rate contract follows this the day it is put in.`}
+        // Read off the first picture ever taken of this screen: "A rate contract follows this the day it is put in" parses two ways and says neither of them plainly. What it means is that `areaThatCounts` prefers a measured area over an agreed one from the moment there is one.
+        hint={`Agreed at ${contract.agreedAreaSqft.toLocaleString()} sq ft. Once this is in, a rate contract is worked out from it instead.`}
         problem={measured === '' ? null : whatIsWrong(areaSqft, measured)}
       >
         <Line

@@ -8,6 +8,7 @@ import { ComingIn } from '../components/moneyIn/ComingIn'
 import { WhatHasComeIn } from '../components/moneyIn/WhatHasComeIn'
 import { WhatWeOwe } from '../components/owed/WhatWeOwe'
 import { AgreeShares } from '../components/partners/AgreeShares'
+import { Positions } from '../components/partners/Positions'
 import { People } from '../components/people/People'
 import { TheirAccount } from '../components/people/TheirAccount'
 import { BankAccounts } from '../components/settings/BankAccounts'
@@ -17,9 +18,13 @@ import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
 import { Page } from '../components/shell/Page'
 import { TheNav, TheWayIntoTheNav } from '../components/shell/TheNav'
+import { AgreeAContract } from '../components/site/AgreeAContract'
+import { ChangeTheContract } from '../components/site/ChangeTheContract'
 import { ExtraWork } from '../components/site/ExtraWork'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 import { Stages } from '../components/site/Stages'
+import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
+import { HouseDetails } from '../components/sites/HouseDetails'
 import { SitesList } from '../components/sites/SitesList'
 import { SidebarProvider, useSidebar } from '../components/ui/sidebar'
 import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
@@ -40,6 +45,8 @@ export type OnShow = {
   at: string
   /** The screen this is one section of, when it is not a whole screen itself. The house screen composes its page out of several parts rather than drawing one component, so the gallery cannot reach it whole -- and four tables on it were unmeasured for exactly that reason. A part is drawn inside the same `Page` the route puts it in, so what is measured is the width it really has. */
   partOf?: string
+  /** What to tap before the picture is taken, when a screen keeps itself folded up until somebody asks for it. `Change it` is a button until it is pressed, and a photograph of a button is not a photograph of a screen -- the harness's own floor said so, in the words "that is not a short screen, it is a screen that did not draw". */
+  tapFirst?: string
   /** Where this screen's markup ends up, when it is not inside the element the gallery draws screens into. Below 768 the nav is a sheet, and Radix puts a sheet in a portal on `body` -- outside `[data-testid="the-screen"]` entirely. Nothing was wrong with the marker or the timing: the camera was looking inside an element the screen had left. */
   shownIn?: string
   /** Words this screen shows and no other does. A gallery that answered every address with the first screen would otherwise draw twelve pictures of one, and every one of them would look right. */
@@ -567,6 +574,148 @@ export const ON_SHOW: Array<OnShow> = [
           }
         />
       </SidebarProvider>
+    ),
+  },
+  {
+    slug: 'agree-a-contract',
+    at: '/sites/$siteId',
+    name: 'What the client is paying',
+    where: 'a house built for a client, before a contract is agreed',
+    partOf: 'the house screen',
+    proves: 'Who it is for',
+    // Drawn by `Billing`, which reads Convex itself, so nothing had ever photographed this: two changes went through it without a picture being taken of either.
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <AgreeAContract people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))} onAgree={nothing} />
+      </Page>
+    ),
+  },
+  {
+    slug: 'change-the-contract',
+    at: '/sites/$siteId',
+    tapFirst: 'Change it',
+    name: 'Correcting what was agreed',
+    where: 'a house with a contract, down the screen',
+    partOf: 'the house screen',
+    proves: 'Change it',
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <ChangeTheContract
+          contract={{ priced: { how: 'ratePerSqft', ratePerSqftPaisa: paisa(2_400) }, agreedAreaSqft: 5_000 }}
+          onMeasure={nothing}
+          onRevise={nothing}
+          onCancel={nothing}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'who-is-on-this-house',
+    at: '/sites/$siteId',
+    name: 'People on this house',
+    where: 'a house, down the screen',
+    partOf: 'the house screen',
+    proves: 'People on this house',
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <WhoIsOnThisHouse
+          engaged={[
+            {
+              engagementId: 'e1',
+              personName: 'The mason',
+              tradeName: 'Civil labour',
+              agreedPaisa: paisa(1_300_000),
+              ratePaisa: undefined,
+              unit: undefined,
+              billedPaisa: paisa(1_465_000),
+              paidPaisa: paisa(1_100_000),
+            },
+            {
+              engagementId: 'e2',
+              personName: 'The tile shop',
+              tradeName: 'Tiles',
+              agreedPaisa: undefined,
+              ratePaisa: paisa(310),
+              unit: 'sq ft',
+              billedPaisa: paisa(742_000),
+              paidPaisa: paisa(742_000),
+            },
+          ]}
+          claimed={[
+            {
+              _id: 'b1',
+              personName: 'The mason',
+              tradeName: 'Civil labour',
+              day: '2026-06-27',
+              amountPaisa: paisa(165_000),
+              reference: 'CH-114',
+            },
+          ]}
+          people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))}
+          trades={TRADES.map((trade) => ({ _id: trade._id, name: trade.name }))}
+          saving={false}
+          refusal={null}
+          takingOut={null}
+          onAgree={nothingTrue}
+          onRaise={nothingTrue}
+          onTakeOut={nothingTrue}
+          onAddTrade={() => Promise.resolve('t9')}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'what-each-partner-is-owed',
+    at: '/sites/$siteId',
+    name: 'What each partner is owed',
+    where: 'a house, down the screen',
+    partOf: 'the house screen',
+    proves: 'What each partner is owed',
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <Positions
+          what={{
+            positions: [
+              {
+                personId: 'p1',
+                name: 'The one who started it',
+                capitalPaisa: paisa(7_400_000),
+                basisPoints: 6_000,
+                duePaisa: paisa(2_625_000),
+                paidPaisa: paisa(1_000_000),
+                balancePaisa: paisa(1_625_000),
+              },
+              {
+                personId: 'p2',
+                name: 'The one who came in later',
+                capitalPaisa: paisa(4_930_000),
+                basisPoints: 4_000,
+                duePaisa: paisa(1_750_000),
+                paidPaisa: paisa(1_750_000),
+                balancePaisa: 0,
+              },
+            ],
+            broughtInPaisa: paisa(12_330_000),
+            spentPaisa: paisa(8_955_000),
+            profitPaisa: paisa(4_375_000),
+            sold: true,
+            sharesAgreed: true,
+            ifItSoldToday: null,
+          }}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'start-a-house',
+    at: '/sites/new',
+    name: 'Start a house',
+    where: 'the houses, then start one',
+    proves: 'Covered area',
+    draw: () => (
+      <Page title="Start a house">
+        <HouseDetails saying="Start it" onSave={nothing} />
+      </Page>
     ),
   },
   {
