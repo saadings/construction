@@ -19,7 +19,7 @@ const WHILE_THE_WALL_WAS_BEING_BILLED = new Date(2026, 4, 12, 11, 0)
 const ONE_BILL: Array<BillRow> = [
   {
     _id: 'b1',
-    raisedOn: '2026-05-01',
+    raisedOn: '2026-05-19',
     description: 'Extra retaining wall at the back',
     totalPaisa: 164_010_00,
     lines: [
@@ -138,7 +138,8 @@ describe('billing work that was outside the contract', () => {
     const raised = within(screen.getByRole('list', { name: 'Bills already raised' })).getByRole('listitem')
     expect(within(raised).getByText('Brickwork')).toBeTruthy()
     expect(within(raised).getByText("39.75' x 0.375' x 11'")).toBeTruthy()
-    expect(within(raised).getByText('Raised 2026-05-01')).toBeTruthy()
+    // The day first and the month second, on a day past the twelfth so the two orders cannot both be read into it.
+    expect(within(raised).getByText('Raised 19/05/2026')).toBeTruthy()
   })
 
   it('takes a bill back, which is what a client disagreeing about extra work needs', async () => {

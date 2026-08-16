@@ -82,9 +82,9 @@ describe('the one way this app asks for a day', () => {
   it('is never set smaller than a phone can be tapped on, in either look', () => {
     // The half no sweep of the screens can see: `Day` carries its own size, so a screen that hands it nothing is the normal case and there is no class list on any screen to read. shadcn's button is `text-sm`, which is the 14px this control was measured at.
     for (const look of ['asked', 'beside'] as const) {
-      render(<Day look={look} label="Agreed on" value="2026-07-04" onPick={() => {}} />)
+      render(<Day look={look} label="Agreed on" value="2026-07-16" onPick={() => {}} />)
 
-      const control = screen.getByRole('button', { name: 'Agreed on: 4 Jul 2026' })
+      const control = screen.getByRole('button', { name: 'Agreed on: 16/07/2026' })
       const { onAPhone, onADesk } = whatSizeItComesTo(whatDecidesTheSizeOf(control))
 
       expect(onAPhone, `as ${look} it sets no size at all`).not.toBeNull()
@@ -95,10 +95,11 @@ describe('the one way this app asks for a day', () => {
     }
   })
 
-  it('says which day it is holding, in words rather than in the way it is stored', () => {
-    render(<Day label="Raised on" value="2026-07-04" onPick={() => {}} />)
+  it('says which day it is holding, the day first and the month second', () => {
+    // Nauman: "Date should be in this: DD/MM/YYYY". The sixteenth on purpose -- on the sixth of July both orders read plausibly and this could not tell them apart. The whole string, for the same reason.
+    render(<Day label="Raised on" value="2026-07-16" onPick={() => {}} />)
 
-    expect(screen.getByRole('button', { name: 'Raised on: 4 Jul 2026' }).textContent).toContain('4 Jul 2026')
+    expect(screen.getByRole('button', { name: 'Raised on: 16/07/2026' }).textContent).toBe('16/07/2026')
   })
 
   it('says so when no day has been chosen, rather than showing an empty box', () => {
@@ -109,9 +110,9 @@ describe('the one way this app asks for a day', () => {
 
   it('carries its label into its name where nothing above it says one', () => {
     // A stage's date sits in a row whose visible words belong to the stage. Without this a screen reader is handed a date with nothing saying which stage it is on -- and `beside` draws no label of its own.
-    render(<Day look="beside" label="When the roof was billed" value="2026-07-04" onPick={() => {}} />)
+    render(<Day look="beside" label="When the roof was billed" value="2026-07-16" onPick={() => {}} />)
 
-    expect(screen.getByRole('button', { name: 'When the roof was billed: 4 Jul 2026' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'When the roof was billed: 16/07/2026' })).toBeTruthy()
     expect(screen.queryByText('When the roof was billed')).toBeNull()
   })
 
@@ -125,9 +126,9 @@ describe('the one way this app asks for a day', () => {
   it('hands back the day that was tapped, written the way the ledger writes one', async () => {
     const picked: Array<string> = []
 
-    render(<Day label="Agreed on" value="2026-07-04" onPick={(day) => picked.push(day)} />)
+    render(<Day label="Agreed on" value="2026-07-16" onPick={(day) => picked.push(day)} />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 4 Jul 2026' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 16/07/2026' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Saturday, July 11th, 2026' }))
 
     expect(picked).toEqual(['2026-07-11'])
@@ -137,18 +138,18 @@ describe('the one way this app asks for a day', () => {
     // A July calendar draws the last days of June in the same grid, and they are tapped by somebody entering a payment made at the end of the month. A control that read the month off the page rather than off the day would put every one of them five weeks out.
     const picked: Array<string> = []
 
-    render(<Day label="Agreed on" value="2026-07-04" onPick={(day) => picked.push(day)} />)
+    render(<Day label="Agreed on" value="2026-07-16" onPick={(day) => picked.push(day)} />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 4 Jul 2026' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 16/07/2026' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Sunday, June 28th, 2026' }))
 
     expect(picked).toEqual(['2026-06-28'])
   })
 
   it('closes behind the day that was tapped', async () => {
-    render(<Day label="Agreed on" value="2026-07-04" onPick={() => {}} />)
+    render(<Day label="Agreed on" value="2026-07-16" onPick={() => {}} />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 4 Jul 2026' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 16/07/2026' }))
     expect(screen.getByRole('grid')).toBeTruthy()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Saturday, July 11th, 2026' }))
@@ -161,9 +162,9 @@ describe('the one way this app asks for a day', () => {
     // A payment made in March entered in July. Nothing in the tests of the screens pages, because the helper they use refuses to -- so if the arrows stopped working this is the only place it would show.
     const picked: Array<string> = []
 
-    render(<Day label="Agreed on" value="2026-07-04" onPick={(day) => picked.push(day)} />)
+    render(<Day label="Agreed on" value="2026-07-16" onPick={(day) => picked.push(day)} />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 4 Jul 2026' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 16/07/2026' }))
     await userEvent.click(screen.getByRole('button', { name: 'Go to the Previous Month' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Tuesday, June 16th, 2026' }))
 
@@ -174,7 +175,7 @@ describe('the one way this app asks for a day', () => {
     // A stage billed last March is edited from last March. Opening on today makes somebody page backwards to a month the control already knew.
     render(<Day label="Agreed on" value="2025-03-09" onPick={() => {}} />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 9 Mar 2025' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Agreed on: 09/03/2025' }))
 
     expect(screen.getByRole('grid').getAttribute('aria-label')).toContain('March 2025')
   })

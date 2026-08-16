@@ -82,6 +82,19 @@ export function todayOnThisDevice(now: Date = new Date()): string {
   return asCalendarDate(now)
 }
 
+// Nauman, having been shown a date: "Date should be in this: DD/MM/YYYY". The one he was looking at said 08/16/2026, which is the OS drawing an American order in a control we had not replaced yet -- but nothing here was writing it his way either. Seven screens showed the stored 2026-06-02 and the day picker said 16 Aug 2026, which is three orders for one thing.
+
+// Written here rather than at each of them, and rather than through `Intl`: a locale is a guess about the reader, and this is not a guess -- it is the order he asked for. `toLocaleDateString('en-GB')` gives the same answer today and is one browser default away from not doing.
+
+// No `Date` anywhere in it on purpose. This is `YYYY-MM-DD` rearranged, so there is no midnight to be on the wrong side of, and the timezone trap that `asCalendarDate` exists for cannot reach it.
+
+/** A day written the way he writes one: `16/08/2026`. Anything that is not a day comes back as it was, because a screen showing a stored value it cannot read must not show an empty space where a date should be. */
+export function asDayHeWrites(day: string): string {
+  const written = ISO_DAY.exec(day)
+
+  return written === null ? day : `${written[3]}/${written[2]}/${written[1]}`
+}
+
 // Server side. Exact enforcement would need the entering person's zone, and carrying a zone is what the design forbids.
 export function notInTheFuture(day: string, now: Date = new Date()): boolean {
   const furthest = new Date(now.getTime() + FURTHEST_ANY_DEVICE_RUNS_AHEAD_MS)

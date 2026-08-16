@@ -1,7 +1,6 @@
-import { format } from 'date-fns'
 import { CalendarDays } from 'lucide-react'
 import { useState } from 'react'
-import { asCalendarDate, isCalendarDate } from '~shared/calendarDate'
+import { asCalendarDate, asDayHeWrites, isCalendarDate } from '~shared/calendarDate'
 
 import { cn } from '../../lib/utils'
 import { Button } from '../ui/button'
@@ -27,11 +26,9 @@ export function theDayIn(value: string): Date | undefined {
   return new Date(year, month - 1, day)
 }
 
-// What is shown on the button when a day is chosen. Written the way somebody says it rather than the way it is stored, since the stored form is for the ledger and this is for reading.
+// What is shown on the button when a day is chosen. Written the way he writes one rather than the way it is stored, and `asDayHeWrites` rather than a format string here: this said `16 Aug 2026` for one day and seven screens said `2026-06-02`, which is three orders for one thing across an app whose whole job is that the figures agree.
 function asWords(value: string): string | undefined {
-  const date = theDayIn(value)
-
-  return date === undefined ? undefined : format(date, 'd MMM yyyy')
+  return isCalendarDate(value) ? asDayHeWrites(value) : undefined
 }
 
 // What is always undone, whichever look it wears, and each of these is one of shadcn's button defaults: `h-auto` because theirs is a fixed 36px that clips at this size, and `font-normal` because an answer is not a command. The size is not here -- it is in each look, the way `Field` keeps its own, because the two looks are set to two different sizes and both have to be written down rather than left to shadcn's `text-sm`.

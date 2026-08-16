@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { todayOnThisDevice } from '~shared/calendarDate'
+import { asDayHeWrites, todayOnThisDevice } from '~shared/calendarDate'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
 import { extraWorkBillInput, extraWorkLineInput, lineAmountPaisa } from '~shared/validation/extraWork'
 import { calendarDay, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
@@ -118,7 +118,7 @@ function Bill({ bill, onTakeBack }: { bill: BillRow; onTakeBack: (billId: string
       </Table>
 
       <div className="flex items-baseline gap-4">
-        <span className="text-faint text-sm">Raised {bill.raisedOn}</span>
+        <span className="text-faint text-sm">Raised {asDayHeWrites(bill.raisedOn)}</span>
         <WayOut
           busy={saving}
           onClick={() => {

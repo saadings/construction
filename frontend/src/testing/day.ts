@@ -7,7 +7,7 @@ import { isCalendarDate } from '~shared/calendarDate'
 
 // Written once for the same reason `pick` is: a dozen tests across the screens do it, and copies of it drift the day the control changes again.
 
-// The control names itself with the day it is holding on the end -- "Agreed on: 4 Jul 2026" -- so it cannot be found by the label alone. Matched on the words before the colon, which is the part a screen chose.
+// The control names itself with the day it is holding on the end -- "Agreed on: 16/07/2026" -- so it cannot be found by the label alone. Matched on the words before the colon, which is the part a screen chose.
 
 // How long to wait for the calendar after the control is opened, chosen the way `pick` chooses its own: a timeout is only paid when the wait fails, so being generous costs a passing suite nothing and costs a stuck one a few seconds of patience. This machine runs two sessions at once.
 const LONG_ENOUGH_TO_BE_ABOUT_THE_CALENDAR = 5_000

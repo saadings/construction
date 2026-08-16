@@ -1,3 +1,4 @@
+import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 
 import { NotKnownHere } from '../shell/NotKnownHere'
@@ -141,7 +142,7 @@ function AccountRow({ line }: { line: AccountLine }) {
   return (
     <li className={`${ROW} py-3.5`}>
       <span className="text-muted-foreground order-last col-span-2 text-sm sm:order-none sm:col-span-1">
-        {line.day}
+        {asDayHeWrites(line.day)}
       </span>
 
       <span className="min-w-0">
