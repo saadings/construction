@@ -19,8 +19,21 @@ export function useStillSending(busy: boolean, after: number = LONG_ENOUGH_TO_BE
   return useLongerThan(busy, after)
 }
 
+// What the second half may say depends on the screen, and it is the half about his money. `Keep this screen open` was true everywhere when it was written and is no longer true of the day sheet: a sitting is kept on the device now and survives the tab being discarded, so telling him to keep it open there understates what the app does and asks him for something a phone does not let him promise.
+
+// Said by the screen rather than worked out here, because only the screen knows whether what is typed into it is kept.
+
 /** Said beside the button that is still sending, in the place a refusal would go. Nothing at all while a send is ordinary. */
-export function StillSending({ busy, after }: { busy: boolean; after?: number }) {
+export function StillSending({
+  busy,
+  after,
+  keeps = false,
+}: {
+  busy: boolean
+  after?: number
+  /** Whether what is typed on this screen survives the app closing. */
+  keeps?: boolean
+}) {
   const stuck = useStillSending(busy, after)
 
   if (!stuck) {
@@ -30,7 +43,8 @@ export function StillSending({ busy, after }: { busy: boolean; after?: number })
   return (
     // `status` rather than `alert`: nothing has gone wrong, and an alert interrupts what a screen reader is saying to announce that things are fine.
     <p className="text-muted-foreground text-sm" role="status">
-      This has not gone in yet — it will as soon as the phone has signal. Keep this screen open until it does.
+      This has not gone in yet — it will as soon as the phone has signal.{' '}
+      {keeps ? 'What you have typed is kept, even if this closes.' : 'Keep this screen open until it does.'}
     </p>
   )
 }

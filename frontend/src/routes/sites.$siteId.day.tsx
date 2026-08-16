@@ -8,6 +8,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import type { Draft } from '../components/daySheet/sitting'
 import { asEntries } from '../components/daySheet/sitting'
+import { whereASittingIsKept } from '../components/daySheet/theSittingKept'
 import { whatWentWrong } from '../components/form/whatWentWrong'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 
@@ -39,7 +40,7 @@ function ADayOnSite() {
     return <NotYours />
   }
 
-  async function putThemIn(drafts: Array<Draft>) {
+  async function putThemIn(drafts: Array<Draft>): Promise<boolean> {
     setSaving(true)
     setRefusal(null)
 
@@ -48,8 +49,13 @@ function ADayOnSite() {
       await record({ ...forSite, entries: drafts.flatMap((draft) => asEntries(draft, day)) })
       // Back to the site itself, not the list: the number he has just moved is that house's, and watching it move is the whole reason the day was entered.
       await router.navigate({ to: '/sites/$siteId', params: { siteId } })
+
+      // Said back to the sheet, which forgets what it was keeping on the device only once it is really in the ledger.
+      return true
     } catch (thrown) {
       setRefusal(whatWentWrong(thrown))
+
+      return false
     } finally {
       setSaving(false)
     }
@@ -66,6 +72,8 @@ function ADayOnSite() {
       saving={saving}
       refusal={refusal}
       onPutIn={putThemIn}
+      // Where this sitting is kept while it is typed: this house, this day. Another house never shows this one's half-typed payment, and yesterday's sheet never shows today's.
+      keptUnder={whereASittingIsKept(siteId, day)}
       onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}
       onAddTrade={async (trade) => await addTrade(trade)}
     />
