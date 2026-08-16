@@ -215,10 +215,21 @@ describe('the markers themselves', () => {
     const attached = everything.filter((way) => way.excuse !== undefined)
 
     expect(written).toBe(attached.length)
-    // And the count is of something, so this cannot pass by both ends being zero. Both of them are counted with `MARKED`, so a regex that stopped matching would zero the pair and the equality above would agree with itself.
 
-    // Four are left, all `not-from-a-screen`, so this floor is one below what the tree holds. Closing another one legitimately fails here, and the answer then is to lower it by hand rather than to go looking for a broken sweep -- what it is guarding is the counter, not the number.
-    expect(written).toBeGreaterThan(3)
+    // And the count is of something, so this cannot pass by both ends being zero: both are counted with `MARKED`, so a regex that stopped matching would zero the pair and the equality above would agree with itself.
+
+    // Named rather than counted. This was `toBeGreaterThan(3)` against exactly four markers, which meant every legitimate closure failed here reading as a broken sweep, and the way out was to lower the floor by hand -- a number that has to be edited on every improvement is a number that gets edited without anybody asking why.
+
+    // A count of four is satisfied by any four. These are satisfied only by the sweep still finding the things it is about, which is the job the floor was doing badly.
+    expect(attached.map(named).sort()).toEqual([
+      // The app itself, on the way in, so a sign-in is known before anything is asked of it.
+      'accounts.rememberThisSignIn',
+      // The Clerk webhook, both ways round: a sign-in deleted at their end, and one mirrored from their record.
+      'accounts.remove',
+      'accounts.upsert',
+      // The list of trades a deployment starts with, written once when it is empty.
+      'trades.seed',
+    ])
   })
 
   it('says something, rather than being a bare word standing in for a reason', () => {
