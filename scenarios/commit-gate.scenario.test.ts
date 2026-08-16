@@ -154,6 +154,32 @@ describe('what a scenario is allowed to write', () => {
     })
   }
 
+  /** The directories `tsconfig.node.json` pulls into its program, which is what makes a file written there a file the typecheck will try to read. */
+  const TYPECHECKED = ['scenarios', 'scripts', 'eslint-rules']
+
+  /** Where each of those writes actually lands, as a path from the repository root. */
+  function whereEachWriteLands(): Array<{ path: string; directory: string }> {
+    return intoTheTree().flatMap((said) => {
+      const segments = [...said.matchAll(/'([^']+)'/g)].map((found) => found[1])
+
+      return segments.length === 0 ? [] : [{ path: segments.join('/'), directory: segments[0] }]
+    })
+  }
+
+  /** What the typecheck has been told to leave out. Read as text with its comments stripped, because the file carries them and `JSON.parse` will not. */
+  function excludedFromTheTypecheck(): Array<string> {
+    const said = readFileSync(join(repoRoot, 'tsconfig.node.json'), 'utf8').replaceAll(/\/\*[\s\S]*?\*\//g, ' ')
+    const config: unknown = JSON.parse(said)
+
+    if (typeof config !== 'object' || config === null || !('exclude' in config)) {
+      return []
+    }
+
+    const { exclude } = config
+
+    return Array.isArray(exclude) ? exclude.map(String) : []
+  }
+
   /** Every scenario write that lands somewhere the lint, typecheck and test runs are reading. */
   function intoTheTree(): Array<string> {
     return readdirSync(join(repoRoot, 'scenarios'))
@@ -171,6 +197,26 @@ describe('what a scenario is allowed to write', () => {
       "pipeline-contract.scenario.test.ts writes canary = join(repoRoot, 'convex', 'typecheckCanary.ts')",
       "repository-hygiene.scenario.test.ts writes control = join(repoRoot, 'scenarios', 'control.scenario.test.ts')",
     ])
+  })
+
+  it('leaves nothing written into a directory the typecheck reads, unless it is meant to be read', () => {
+    // A probe written into the tree is either meant to be compiled or must be kept out of the compilation, and nothing said which for the control. `pipeline-contract` shells out to `tsc` while `repository-hygiene` is holding `scenarios/control.scenario.test.ts` open, `tsconfig.node.json` globs `scenarios/**/*.ts`, and the file is deleted before `tsc` reads it: `TS6053: File not found`, in whichever pull request happens to be running.
+
+    // Both halves were already written down and never met. This file has recorded the write since it was written, and the tsconfig has globbed the directory for longer -- a known write and a known glob, in two files, and the collision between them in neither.
+    const kept = whereEachWriteLands().filter(({ directory }) => TYPECHECKED.includes(directory))
+
+    for (const { path } of kept) {
+      expect(excludedFromTheTypecheck(), `${path} is written into a directory the typecheck globs`).toContain(path)
+    }
+
+    // The floor, so a parser that stopped finding paths reports the same clean nothing as a repository with nothing written into one.
+    expect(kept.map(({ path }) => path)).toEqual(['scenarios/control.scenario.test.ts'])
+  })
+
+  it('leaves the canary alone, because that one is written to be compiled', () => {
+    // The other write in the list, and the opposite case: `pipeline-contract` puts a deliberate error in `convex/` so `tsc` will report it. Excluding that one would make the check it exists for pass over nothing at all.
+    expect(whereEachWriteLands().map(({ path }) => path)).toContain('convex/typecheckCanary.ts')
+    expect(excludedFromTheTypecheck()).not.toContain('convex/typecheckCanary.ts')
   })
 
   it('reads a target through the name it was assigned to, so an unreadable one cannot pass as harmless', () => {
