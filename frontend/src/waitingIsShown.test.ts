@@ -62,6 +62,10 @@ export function sendsWithoutTheSpinner(source: string): Array<string> {
 
 // A bare local compared to `undefined` is the shape of a reading, and it is also the shape of an optional prop. The sweep cannot tell them apart, so the ones that are not readings are named here with the reason -- the same way a function that is deliberately global is named rather than quietly skipped.
 const NOT_WAITING_ON_ANYTHING: Record<string, string> = {
+  'components/form/Pick.tsx':
+    'onUseANewName === undefined asks whether the kind being picked needs more than a name before it can be added, which is a question about a prop; this control reads nothing at all',
+  'components/form/PickAnAccount.tsx':
+    'onAdd === undefined asks whether the screen using it can add an account yet, which is a question about a prop -- a list still arriving cannot say whether the account is already on it',
   'components/site/ExtraWork.tsx':
     'onTakeOff === undefined asks whether the caller passed a way to take a line off, which is a question about a prop; every figure on this screen is handed to it already read',
 }

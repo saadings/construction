@@ -45,6 +45,13 @@ if (typeof window !== 'undefined') {
     return query
   }
 
+  // The other one jsdom leaves out, and it leaves it out entirely rather than stubbing it: the type says every element has it, the linter agrees, and a call to it throws here. A picker that opens a question underneath itself scrolls that question into view, because on a phone it opens under the keyboard.
+
+  // Assigned rather than guarded at the call site for the same reason as `matchMedia` above: a `?.` there is dead code to the linter, which is right about the browser and wrong about this room.
+  Element.prototype.scrollIntoView = function scrollIntoView() {
+    // Nothing to do: jsdom has no layout, so there is no viewport to bring anything into. What matters is that calling it is not an error.
+  }
+
   // What a resize is, to anything watching. A test sets `window.innerWidth` and dispatches one; nothing here polls, so without this a width set after mount is a width nobody hears about.
   window.addEventListener('resize', () => {
     for (const query of asked) {

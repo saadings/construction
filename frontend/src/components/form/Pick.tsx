@@ -25,6 +25,8 @@ export function Pick({
   choices,
   onPick,
   canUseANewName = false,
+  onUseANewName,
+  theSame = (one, other) => one.toLocaleLowerCase() === other.toLocaleLowerCase(),
 }: {
   label: string
   hint?: string
@@ -33,14 +35,23 @@ export function Pick({
   chosen: Choice | null
   choices: Array<Choice>
   onPick: (choice: Choice | null) => void
-  // Off unless a screen says otherwise. A trade or a bank account has to be one of the ones there; a person does not.
+  // Off unless a screen says otherwise. A name alone is a whole person, and it is not a whole trade or a whole account.
   canUseANewName?: boolean
+  // For the kinds a name does not finish. Handed the typed name instead of completing the pick, so the screen can ask the one thing left and add it itself.
+
+  // A trade carries whether it is part of what the house cost, and a bank account carries the four figures he tells it apart by. Guessing either is a wrong figure or an unpickable row, and neither would ever be flagged.
+  onUseANewName?: (name: string) => void
+  // What counts as the same name. The default is what a person reads as the same word; the ledger's own rules also ignore spacing, and the offer must never appear for something already on the list -- a second `Cement` is the two-rows-for-one-thing that `personAlreadyCalled` exists to stop, arriving on a side that has no such guard.
+  theSame?: (one: string, other: string) => boolean
 }) {
   const [typed, setTyped] = useState('')
 
+  // Held here rather than left to the control, for one reason: taking up the offer opens a question underneath, and a list still hanging over that question covers the thing it just asked. Measured at 390 -- the popup ended at y=360 and the question began at 311.
+  const [open, setOpen] = useState(false)
+
   // Said as what will happen rather than as "no results". The ledger has no one-off: a payment has to point at somebody, so the honest offer is to use the name.
   const wanted = typed.trim()
-  const alreadyThere = choices.some((choice) => choice.name.toLocaleLowerCase() === wanted.toLocaleLowerCase())
+  const alreadyThere = choices.some((choice) => theSame(choice.name, wanted))
 
   return (
     <Field label={label} hint={hint} problem={problem}>
@@ -54,6 +65,8 @@ export function Pick({
         itemToStringLabel={(choice: Choice) => choice.name}
         itemToStringValue={(choice: Choice) => choice.name}
         onInputValueChange={setTyped}
+        open={open}
+        onOpenChange={setOpen}
       >
         {/* Undoing shadcn's own `md:text-sm`, which is the trap the day picker fell into and this one had it on ten call sites: measured in the gallery at 1280, every picker in the app was 14px while everything beside it was 16 to 44. Below `md` it was already 16, so a phone never shows it, which is what makes it the half nobody looks at. */}
 
@@ -75,11 +88,17 @@ export function Pick({
           </ComboboxList>
 
           {/* Offered alongside the matches too, not only when nothing matches. He may type a name that is the beginning of one already on the list, and hiding the offer then is the case that would send him looking for a second box again. */}
-          {canUseANewName && wanted !== '' && !alreadyThere ? (
+          {(canUseANewName || onUseANewName !== undefined) && wanted !== '' && !alreadyThere ? (
             <button
               type="button"
               onClick={() => {
-                onPick({ _id: NOT_ON_THE_LIST, name: wanted })
+                // Handed on rather than picked, when the screen has something left to ask. A person is finished at this point and a trade is not.
+                if (onUseANewName === undefined) {
+                  onPick({ _id: NOT_ON_THE_LIST, name: wanted })
+                } else {
+                  setOpen(false)
+                  onUseANewName(wanted)
+                }
               }}
               className="text-primary border-border w-full border-t px-2 py-1.5 text-left text-sm font-medium"
             >

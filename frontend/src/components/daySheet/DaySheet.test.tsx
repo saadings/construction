@@ -3,14 +3,15 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { pick } from '../../testing/pick'
+import { pick, useTheName } from '../../testing/pick'
 import type { Account, Named, Person } from './DaySheet'
 import { DaySheet } from './DaySheet'
 import type { Draft } from './sitting'
 
 const trades = [
   { _id: 't1', name: 'Cement' },
-  { _id: 't2', name: 'Bricks' },
+  // Two words on purpose: what the ledger counts as the same trade ignores spacing as well as case, and a one-word name cannot tell the two rules apart.
+  { _id: 't2', name: 'Grey structure' },
 ] as unknown as Array<Named>
 
 const people = [
@@ -25,6 +26,7 @@ afterEach(cleanup)
 function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
   const onPutIn = vi.fn()
   const onAddAccount = vi.fn(async () => 'b2' as Account['_id'])
+  const onAddTrade = vi.fn(async () => 't9' as Named['_id'])
 
   render(
     <DaySheet
@@ -38,11 +40,12 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
       refusal={null}
       onPutIn={onPutIn}
       onAddAccount={onAddAccount}
+      onAddTrade={onAddTrade}
       {...over}
     />
   )
 
-  return { onPutIn, onAddAccount }
+  return { onPutIn, onAddAccount, onAddTrade }
 }
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
@@ -160,18 +163,19 @@ describe('a day of payments', () => {
     expect(screen.queryByLabelText('Which account')).toBeNull()
   })
 
-  it('lets an account be added without leaving the sitting', async () => {
+  it('lets an account be added from the picker, without leaving the sitting', async () => {
     // Cheque is the default and a cheque asks which account it left. With no accounts and no way to add one here, the first day sheet anyone opens is a dead end.
+
+    // Asked of the picker rather than of a second control beside it: `Add an account` under the field was the workaround, and Nauman asked for the thing itself.
     const user = userEvent.setup()
     const { onAddAccount } = aSheet({ accounts: [] })
 
     await pick(user, 'What for', 'Cement')
     await user.type(screen.getByLabelText('How much'), '25000')
 
-    await user.click(screen.getByRole('button', { name: 'Add an account' }))
-    await user.type(screen.getByLabelText('What you call it'), 'Bank 0000')
-    await user.type(screen.getByLabelText('Account number'), '55555555550000')
-    await user.click(screen.getByRole('button', { name: 'Save it' }))
+    await useTheName(user, 'Which account', 'Bank 0000')
+    await user.type(screen.getByLabelText('The account number for Bank 0000'), '55555555550000')
+    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
 
     // The whole number was typed; only its last four digits were handed on, so the rest never crosses the wire.
     expect(onAddAccount).toHaveBeenCalledWith('Bank 0000', '0000')
@@ -181,12 +185,45 @@ describe('a day of payments', () => {
     expect(screen.getByLabelText<HTMLInputElement>('How much').value).toBe('25,000')
   })
 
+  it('asks what kind of cost a new trade is, and never guesses it', async () => {
+    // The reason `What for` had no add at all. A trade carries whether it is part of what the house cost, and a guess there moves money between two totals on two screens with nothing saying it was guessed.
+    const user = userEvent.setup()
+    const { onAddTrade } = aSheet()
+
+    await useTheName(user, 'What for', 'Scaffolding')
+
+    // Nothing has been added yet: the offer opens the question rather than answering it.
+    expect(onAddTrade).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('radio', { name: 'Land, taxes and commission' }))
+    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+
+    expect(onAddTrade).toHaveBeenCalledWith({ name: 'Scaffolding', countsAsBuildingCost: false })
+    // Added and picked. Adding a trade and leaving the field empty is the same walk again.
+    expect(screen.getByLabelText<HTMLInputElement>('What for').value).toBe('Scaffolding')
+  })
+
+  it('offers nothing to add for a trade already on the list, however it is spelt or spaced', async () => {
+    // Two rows for one trade is the failure `personAlreadyCalled` exists to stop on the people side, arriving on a side with no such guard: every figure about `Cement` split across both, quietly.
+
+    // Spaced rather than merely mis-cased, because the picker's own default already ignores case and trims the ends -- so a one-word name proves nothing about whether this control is using the ledger's rule. `sameTrade` is what the server refuses duplicates by, and this is the difference between the two.
+    const user = userEvent.setup()
+    aSheet()
+
+    await user.click(screen.getByRole('combobox', { name: 'What for' }))
+    await user.type(screen.getByRole('combobox', { name: 'What for' }), ' grey  STRUCTURE ')
+
+    expect(screen.queryByRole('button', { name: /^Use/ })).toBeNull()
+  })
+
   it('names no screen that does not exist', () => {
     aSheet({ accounts: [] })
 
     // The hint used to send him to a More tab that was never built, which is copy promising something the app does not have.
     expect(document.body.textContent).not.toContain('More')
-    expect(screen.getByRole('button', { name: 'Add an account' })).toBeTruthy()
+
+    // What replaced the promise: the account is added from the picker itself, so the way to add one is where he is already looking rather than on another screen.
+    expect(screen.getByRole('combobox', { name: 'Which account' }).getAttribute('placeholder')).toBe('No accounts yet')
   })
 
   it('sends the whole sitting in one go', async () => {
@@ -195,7 +232,7 @@ describe('a day of payments', () => {
 
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
-    await pick(user, 'What for', 'Bricks')
+    await pick(user, 'What for', 'Grey structure')
     await pick(user, 'Who was paid', 'A mason')
     await user.type(screen.getByLabelText('How much'), '10000')
     await user.type(screen.getByLabelText('Cheque number'), '0002')

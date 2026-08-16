@@ -284,6 +284,7 @@ export const ON_SHOW: Array<OnShow> = [
         refusal={null}
         onPutIn={() => undefined}
         onAddAccount={() => Promise.resolve('b1' as never)}
+        onAddTrade={() => Promise.resolve('t1' as never)}
       />
     ),
   },
@@ -313,6 +314,7 @@ export const ON_SHOW: Array<OnShow> = [
         refusal={null}
         onPutIn={nothingTrue}
         onTakeBack={nothing}
+        onAddAccount={() => Promise.resolve('b9')}
       />
     ),
   },
@@ -385,6 +387,7 @@ export const ON_SHOW: Array<OnShow> = [
               accounts={BANK.map((account) => ({ _id: account._id, label: account.label }))}
               onPayOut={nothing}
               onTakeBack={nothing}
+              onAddAccount={() => Promise.resolve('b9')}
             />
           )}
         />

@@ -206,6 +206,7 @@ function WhoIsOnIt({ siteId }: { siteId: Id<'sites'> }) {
   const agree = useMutation(api.engagements.mutations.agree)
   const raise = useMutation(api.bills.mutations.raise)
   const takeOut = useMutation(api.bills.mutations.remove)
+  const addTrade = useMutation(api.trades.mutations.add)
 
   const [saving, setSaving] = useState(false)
   const [takingOut, setTakingOut] = useState<string | null>(null)
@@ -235,6 +236,7 @@ function WhoIsOnIt({ siteId }: { siteId: Id<'sites'> }) {
       saving={saving}
       refusal={refusal}
       takingOut={takingOut}
+      onAddTrade={async (trade) => await addTrade(trade)}
       onAgree={async (engagement) => {
         setSaving(true)
 

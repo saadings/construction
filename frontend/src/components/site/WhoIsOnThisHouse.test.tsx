@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { pick } from '../../testing/pick'
+import { pick, useTheName } from '../../testing/pick'
 import type { Claimed, Engaged, Named, NewBill, NewEngagement } from './WhoIsOnThisHouse'
 import { WhoIsOnThisHouse } from './WhoIsOnThisHouse'
 
@@ -56,6 +56,9 @@ function renderWith(over: Partial<Parameters<typeof WhoIsOnThisHouse>[0]> = {}) 
   const onAgree = vi.fn<(engagement: NewEngagement) => Promise<boolean>>(() => Promise.resolve(true))
   const onRaise = vi.fn<(bill: NewBill) => Promise<boolean>>(() => Promise.resolve(true))
   const onTakeOut = vi.fn<(billId: string) => Promise<boolean>>(() => Promise.resolve(true))
+  const onAddTrade = vi.fn<(trade: { name: string; countsAsBuildingCost: boolean }) => Promise<string>>(() =>
+    Promise.resolve('t9')
+  )
 
   render(
     <WhoIsOnThisHouse
@@ -69,11 +72,12 @@ function renderWith(over: Partial<Parameters<typeof WhoIsOnThisHouse>[0]> = {}) 
       onAgree={onAgree}
       onRaise={onRaise}
       onTakeOut={onTakeOut}
+      onAddTrade={onAddTrade}
       {...over}
     />
   )
 
-  return { onAgree, onRaise, onTakeOut }
+  return { onAgree, onRaise, onTakeOut, onAddTrade }
 }
 
 describe('who is on a house', () => {
@@ -142,6 +146,22 @@ describe('who is on a house', () => {
         unit: 'square foot',
       })
     })
+  })
+
+  it('lets a trade be added while somebody is being put on one, and asks what kind of cost it is', async () => {
+    // The same picker as the day sheet's `What for`, reading the same list. A trade missing from it stops this form too, and the answer must be his rather than a default: the true ones added together are what the house cost.
+    const user = userEvent.setup()
+    const { onAddTrade } = renderWith()
+
+    await user.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    await useTheName(user, 'What for', 'Waterproofing')
+
+    expect(onAddTrade).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+
+    // Part of what the house cost is the answer it opens on, and it is the one he taps past rather than the one it assumes: nothing is sent until he sends it.
+    expect(onAddTrade).toHaveBeenCalledWith({ name: 'Waterproofing', countsAsBuildingCost: true })
   })
 
   it('says nothing is missing about the figure once a rate has been put in instead', () => {

@@ -4,7 +4,9 @@ import { formatPaisa, groupWhileTyping } from '~shared/money'
 import { Button } from '../form/Button'
 import { Field, Line } from '../form/Field'
 import { Pick } from '../form/Pick'
+import { PickATrade } from '../form/PickATrade'
 import { WayOut } from '../form/WayOut'
+import { useWhatWasAdded } from '../form/whatWasAdded'
 import { Figure } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -59,6 +61,7 @@ export function WhoIsOnThisHouse({
   onAgree,
   onRaise,
   onTakeOut,
+  onAddTrade,
 }: {
   // Handed over as they came. `undefined` is a reading on its way; `null` is a house that is not there.
   engaged: Array<Engaged> | null | undefined
@@ -71,6 +74,8 @@ export function WhoIsOnThisHouse({
   onAgree: (engagement: NewEngagement) => Promise<boolean>
   onRaise: (bill: NewBill) => Promise<boolean>
   onTakeOut: (billId: string) => Promise<boolean>
+  // The same offer the day sheet has. `What for` here picks from the same list, and a trade missing from it stops the same work.
+  onAddTrade: (trade: { name: string; countsAsBuildingCost: boolean }) => Promise<string>
 }) {
   return (
     <section className="flex flex-col gap-5">
@@ -85,6 +90,7 @@ export function WhoIsOnThisHouse({
         refusal={refusal}
         onAgree={onAgree}
         onRaise={onRaise}
+        onAddTrade={onAddTrade}
       />
 
       <WhatIsClaimed claimed={claimed} takingOut={takingOut} onTakeOut={onTakeOut} />
@@ -174,6 +180,7 @@ function PutSomebodyOn({
   refusal,
   onAgree,
   onRaise,
+  onAddTrade,
 }: {
   people: Array<Named>
   trades: Array<Named>
@@ -181,6 +188,7 @@ function PutSomebodyOn({
   refusal: string | null
   onAgree: (engagement: NewEngagement) => Promise<boolean>
   onRaise: (bill: NewBill) => Promise<boolean>
+  onAddTrade: (trade: { name: string; countsAsBuildingCost: boolean }) => Promise<string>
 }) {
   const [open, setOpen] = useState<Doing | null>(null)
 
@@ -207,6 +215,7 @@ function PutSomebodyOn({
       onDone={() => setOpen(null)}
       onAgree={onAgree}
       onRaise={onRaise}
+      onAddTrade={onAddTrade}
     />
   )
 }
@@ -220,6 +229,7 @@ function TheForm({
   onDone,
   onAgree,
   onRaise,
+  onAddTrade,
 }: {
   doing: Doing
   people: Array<Named>
@@ -229,7 +239,11 @@ function TheForm({
   onDone: () => void
   onAgree: (engagement: NewEngagement) => Promise<boolean>
   onRaise: (bill: NewBill) => Promise<boolean>
+  onAddTrade: (trade: { name: string; countsAsBuildingCost: boolean }) => Promise<string>
 }) {
+  // Anything added from the picker since this form opened, which the list it was picked from does not have yet.
+  const everyTrade = useWhatWasAdded(trades)
+
   const [personId, setPersonId] = useState('')
   const [tradeId, setTradeId] = useState('')
   const [amount, setAmount] = useState('')
@@ -286,14 +300,20 @@ function TheForm({
           }}
         />
 
-        <Pick
+        <PickATrade
           label="What for"
           problem={wrongTrade}
           placeholder="Pick one"
-          chosen={trades.find((trade) => trade._id === tradeId) ?? null}
-          choices={trades}
+          chosen={everyTrade.everything.find((trade) => trade._id === tradeId) ?? null}
+          trades={everyTrade.everything}
           onPick={(picked) => {
-            setTradeId(picked === null ? '' : pickedFrom(trades, picked._id))
+            setTradeId(picked === null ? '' : everyTrade.pickedFromThese(picked._id))
+          }}
+          onAdd={async (trade) => {
+            const _id = await onAddTrade(trade)
+            everyTrade.remember({ _id, name: trade.name })
+
+            return _id
           }}
         />
       </div>

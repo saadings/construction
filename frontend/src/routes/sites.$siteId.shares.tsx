@@ -24,6 +24,7 @@ function WhoTakesWhat() {
   const followTheMoney = useMutation(api.profitShares.mutations.followTheMoney)
   const payOut = useMutation(api.profitPayouts.mutations.record)
   const takeBack = useMutation(api.profitPayouts.mutations.remove)
+  const addAccount = useMutation(api.bankAccounts.mutations.add)
 
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
@@ -76,6 +77,7 @@ function WhoTakesWhat() {
               note: payout.note,
             })
           }}
+          onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}
           onTakeBack={async (payoutId) => {
             // Looked up in the list it came from rather than cast, and waiting is not refused: `paidOut ?? []` would say the payout is gone when the read had simply not come back.
             if (paidOut === undefined) {

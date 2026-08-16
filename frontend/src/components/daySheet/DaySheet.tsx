@@ -5,11 +5,13 @@ import { whatIsWrongWith } from '~shared/validation/payment'
 import { cn } from '../../lib/utils'
 import { Button } from '../form/Button'
 import { Choices, Field, Line, Lines } from '../form/Field'
-import { Pick, asChoices } from '../form/Pick'
+import { asChoices } from '../form/Pick'
+import { PickATrade } from '../form/PickATrade'
+import { PickAnAccount } from '../form/PickAnAccount'
 import { WayOut } from '../form/WayOut'
+import { useWhatWasAdded } from '../form/whatWasAdded'
 import { Figure } from '../shell/Page'
 import { Trail } from '../shell/Trail'
-import { AddAnAccount } from './AddAnAccount'
 import { MoneyLine } from './MoneyLine'
 import { WhoWasPaid } from './WhoWasPaid'
 import type { Draft } from './sitting'
@@ -39,6 +41,7 @@ export type DaySheetProps = {
   refusal: string | null
   onPutIn: (drafts: Array<Draft>) => void
   onAddAccount: (label: string, lastFourDigits: string) => Promise<Account['_id']>
+  onAddTrade: (trade: { name: string; countsAsBuildingCost: boolean }) => Promise<Named['_id']>
 }
 
 function niceDay(day: string): string {
@@ -68,7 +71,12 @@ export function DaySheet({
   refusal,
   onPutIn,
   onAddAccount,
+  onAddTrade,
 }: DaySheetProps) {
+  // The lists as read, plus anything added from a picker since this sheet opened. A row created mid-sitting is not in the query's answer yet, and every picked id here is checked against the list it was drawn from -- so without this the field goes blank the moment it is added.
+  const everyTrade = useWhatWasAdded(trades)
+  const everyAccount = useWhatWasAdded(accounts)
+
   const [done, setDone] = useState<Array<Draft>>([])
   const [draft, setDraft] = useState<Draft>(anEmptyDraft())
   const [problem, setProblem] = useState<string | null>(null)
@@ -170,7 +178,7 @@ export function DaySheet({
                 <li key={index} className="flex items-baseline justify-between gap-4 py-3">
                   <div className="min-w-0">
                     <p className="text-foreground truncate text-[0.9375rem]">
-                      {nameOf(trades, each.tradeId) ?? 'Something else'}
+                      {nameOf(everyTrade.everything, each.tradeId) ?? 'Something else'}
                     </p>
                     <p className="text-muted-foreground truncate text-sm">
                       {nameOf(people, each.paidToId) ?? each.newPerson}
@@ -195,14 +203,20 @@ export function DaySheet({
         </section>
 
         <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
-          <Pick
+          <PickATrade
             label="What for"
             problem={whatIsWrongWith('trade', draft)}
             placeholder="Pick one"
-            chosen={trades.find((trade) => trade._id === draft.tradeId) ?? null}
-            choices={trades}
+            chosen={everyTrade.everything.find((trade) => trade._id === draft.tradeId) ?? null}
+            trades={everyTrade.everything}
             onPick={(picked) => {
-              change({ tradeId: picked === null ? '' : pickedFrom(trades, picked._id) })
+              change({ tradeId: picked === null ? '' : everyTrade.pickedFromThese(picked._id) })
+            }}
+            onAdd={async (trade) => {
+              const _id = await onAddTrade(trade)
+              everyTrade.remember({ _id, name: trade.name })
+
+              return _id
             }}
           />
 
@@ -258,24 +272,21 @@ export function DaySheet({
           ) : null}
 
           {asksForBank(draft.method) ? (
-            <>
-              <Pick
-                label="Which account"
-                problem={whatIsWrongWith('bank', draft)}
-                placeholder={accounts.length === 0 ? 'No accounts yet' : 'Pick one'}
-                chosen={asChoices(accounts).find((account) => account._id === draft.bankAccountId) ?? null}
-                choices={asChoices(accounts)}
-                onPick={(picked) => {
-                  change({ bankAccountId: picked === null ? '' : pickedFrom(accounts, picked._id) })
-                }}
-              />
-              {/* Offered here rather than named somewhere else, so a half-typed sitting survives adding one. */}
-              <AddAnAccount
-                onAdd={async (label, lastFourDigits) => {
-                  change({ bankAccountId: await onAddAccount(label, lastFourDigits) })
-                }}
-              />
-            </>
+            <PickAnAccount
+              label="Which account"
+              problem={whatIsWrongWith('bank', draft)}
+              chosen={asChoices(everyAccount.everything).find((account) => account._id === draft.bankAccountId) ?? null}
+              accounts={everyAccount.everything}
+              onPick={(picked) => {
+                change({ bankAccountId: picked === null ? '' : everyAccount.pickedFromThese(picked._id) })
+              }}
+              onAdd={async (label, lastFourDigits) => {
+                const _id = await onAddAccount(label, lastFourDigits)
+                everyAccount.remember({ _id, label })
+
+                return _id
+              }}
+            />
           ) : null}
 
           <Field label="Note">

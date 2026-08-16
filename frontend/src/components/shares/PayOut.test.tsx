@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { pick } from '../../testing/pick'
+import { pick, useTheName } from '../../testing/pick'
 import type { Account, NewPayout, PaidOut, Partner } from './PayOut'
 import { PayOut } from './PayOut'
 
@@ -34,6 +34,7 @@ const GONE_BACK: Array<PaidOut> = [
 function renderWith(over: Partial<Parameters<typeof PayOut>[0]> = {}) {
   const onPayOut = vi.fn<(payout: NewPayout) => Promise<void>>(() => Promise.resolve())
   const onTakeBack = vi.fn<(payoutId: string) => Promise<void>>(() => Promise.resolve())
+  const onAddAccount = vi.fn<(label: string, lastFourDigits: string) => Promise<string>>(() => Promise.resolve('b9'))
 
   render(
     <PayOut
@@ -42,11 +43,12 @@ function renderWith(over: Partial<Parameters<typeof PayOut>[0]> = {}) {
       accounts={ACCOUNTS}
       onPayOut={onPayOut}
       onTakeBack={onTakeBack}
+      onAddAccount={onAddAccount}
       {...over}
     />
   )
 
-  return { onPayOut, onTakeBack }
+  return { onPayOut, onTakeBack, onAddAccount }
 }
 
 describe('writing down what has gone back to a partner', () => {
@@ -139,6 +141,28 @@ describe('writing down what has gone back to a partner', () => {
     expect(screen.getByRole('combobox', { name: 'Which account it left' }).getAttribute('placeholder')).toBe(
       'No accounts written down yet'
     )
+  })
+
+  it('offers to add an account, and offers nothing while the list is still coming', async () => {
+    // Two states that look identical in a picker and are not: a partnership that banks nowhere, and a list that has not arrived. Offering to add one in the second is offering him a second row of an account he already has -- the server does not refuse a duplicate label, so nothing downstream would catch it.
+    const user = userEvent.setup()
+    const { onAddAccount } = renderWith({ accounts: [] })
+
+    await user.click(screen.getByRole('radio', { name: 'Transfer' }))
+    await useTheName(user, 'Which account it left', 'Bank 3311')
+    await user.type(screen.getByLabelText('The account number for Bank 3311'), '3311')
+    await user.click(screen.getByRole('button', { name: 'Put it on the list' }))
+
+    expect(onAddAccount).toHaveBeenCalledWith('Bank 3311', '3311')
+
+    cleanup()
+    renderWith({ accounts: undefined })
+
+    await user.click(screen.getByRole('radio', { name: 'Transfer' }))
+    await user.click(screen.getByRole('combobox', { name: 'Which account it left' }))
+    await user.type(screen.getByRole('combobox', { name: 'Which account it left' }), 'Bank 3311')
+
+    expect(screen.queryByRole('button', { name: /^Use/ })).toBeNull()
   })
 
   it('empties the boxes once it has gone in, and keeps whoever it went to', async () => {
