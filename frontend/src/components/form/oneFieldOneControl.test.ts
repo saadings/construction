@@ -117,7 +117,9 @@ describe('what one Field is allowed to hold', () => {
     // And a component whose name merely begins with one of theirs is not one of them. `Picker` used to be in the list itself, which is how a plant written in its shape went on passing after the thing was deleted.
     expect(whatIsWrongWithTheField('<Field label="Where it has got to"><Picker value={stage} /></Field>')).toBeNull()
     // And a row of choices outside a `Field` is the fix, so the sweep does not pick it up at all.
-    expect(fieldsIn('<Choices label="Whose house"><button role="radio">Ours to sell</button></Choices>')).toEqual([])
+    expect(fieldsIn('<Choices label="Whose house" chosen={forAClient} choices={WHOSE} onChoose={setWhose} />')).toEqual(
+      []
+    )
     // Nor does a component whose name only begins the same way.
     expect(fieldsIn('<Fieldwork value={x} />')).toEqual([])
   })

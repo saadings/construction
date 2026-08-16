@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from '../ui/combobox'
 import { Button } from './Button'
-import { Choices, Field, useWhatIsAsked } from './Field'
+import { Field, useWhatIsAsked } from './Field'
 
 // One way to pick anything in this app. Every list used to be a `<select>` and one was a `<datalist>`, and both are drawn by the browser: Nauman sent a screenshot of the datalist's popup in Chrome's mauve, sitting over the error text, and there is no CSS we can write that reaches it.
 
@@ -129,5 +129,3 @@ export function Pick({
     </Field>
   )
 }
-
-export { Choices }

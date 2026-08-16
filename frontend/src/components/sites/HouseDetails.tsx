@@ -3,7 +3,8 @@ import { whatIsWrong } from '~shared/validation/primitives'
 import { areaWhileTyping, coveredArea, siteName } from '~shared/validation/site'
 
 import { Button } from '../form/Button'
-import { Choices, Field, Line } from '../form/Field'
+import { Choices } from '../form/Choices'
+import { Field, Line } from '../form/Field'
 import { Pick } from '../form/Pick'
 import { StillSending } from '../form/StillSending'
 import { whatWentWrong } from '../form/whatWentWrong'
@@ -124,31 +125,15 @@ export function HouseDetails({
       />
 
       {/* Not a `Field`: a label points at one control, and the first choice inside one takes the label's words as its own name. "Ours to sell" announced itself as "Whose house". */}
-      <Choices label="Whose house">
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { forAClient: false, label: 'Ours to sell' },
-            { forAClient: true, label: 'For a client' },
-          ].map((choice) => (
-            <button
-              key={choice.label}
-              type="button"
-              role="radio"
-              aria-checked={builtForAClient === choice.forAClient}
-              onClick={() => {
-                setForAClient(choice.forAClient)
-              }}
-              className={
-                builtForAClient === choice.forAClient
-                  ? 'border-primary bg-accent text-accent-foreground rounded-md border py-2.5 text-sm font-medium'
-                  : 'border-border text-muted-foreground rounded-md border py-2.5 text-sm'
-              }
-            >
-              {choice.label}
-            </button>
-          ))}
-        </div>
-      </Choices>
+      <Choices
+        label="Whose house"
+        chosen={builtForAClient}
+        choices={[
+          { is: false, said: 'Ours to sell' },
+          { is: true, said: 'For a client' },
+        ]}
+        onChoose={setForAClient}
+      />
 
       <StillSending busy={saving} />
       {refusal === null ? null : (

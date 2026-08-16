@@ -4,6 +4,7 @@ import { areaSqft } from '~shared/validation/contract'
 import { note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
+import { Choices } from '../form/Choices'
 import { Field, Line, Lines } from '../form/Field'
 import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
@@ -122,31 +123,16 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
 
   return (
     <Form className="max-w-md gap-3">
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="How it is priced">
-        {(
-          [
-            { how: 'lumpSum', label: 'One agreed price' },
-            { how: 'ratePerSqft', label: 'A rate per square foot' },
-          ] as const
-        ).map((choice) => (
-          <button
-            key={choice.how}
-            type="button"
-            role="radio"
-            aria-checked={how === choice.how}
-            onClick={() => {
-              setHow(choice.how)
-            }}
-            className={
-              how === choice.how
-                ? 'border-primary bg-accent text-accent-foreground rounded-md border py-2 text-sm font-medium'
-                : 'border-border text-muted-foreground rounded-md border py-2 text-sm'
-            }
-          >
-            {choice.label}
-          </button>
-        ))}
-      </div>
+      {/* The question is now written above the row rather than only spoken to a screen reader: this was the one row in the app named by `aria-label` alone, so the two boxes sat over "The whole price" with nothing saying what they were choosing between. */}
+      <Choices
+        label="How it is priced"
+        chosen={how}
+        choices={[
+          { is: 'lumpSum', said: 'One agreed price' },
+          { is: 'ratePerSqft', said: 'A rate per square foot' },
+        ]}
+        onChoose={setHow}
+      />
 
       <Field
         label={how === 'lumpSum' ? 'The whole price' : 'Rate per square foot'}
