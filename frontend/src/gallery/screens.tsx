@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import { WhoCanSignIn } from '../components/invites/WhoCanSignIn'
 import { ComingIn } from '../components/moneyIn/ComingIn'
@@ -37,6 +38,53 @@ const nothing = () => Promise.resolve()
 const nothingTrue = () => Promise.resolve(true)
 
 export const ON_SHOW: Array<OnShow> = [
+  {
+    slug: 'dashboard',
+    name: 'Dashboard',
+    where: 'the first row of the nav',
+    proves: 'Owed right now',
+    // Every figure below is a different number on purpose. Two that happen to match make a wiring bug look like a working screen -- a tile reading the wrong field, a house's column drawn from the total -- and this has been caught twice already in fixtures that were not this careful.
+    draw: () => (
+      <Dashboard
+        what={{
+          owed: { payablePaisa: paisa(3_412_500), advancedPaisa: paisa(265_000) },
+          goneOutPaisa: paisa(19_938_452),
+          comeIn: { receivedPaisa: paisa(22_150_000), ownMoneyPaisa: paisa(6_540_000) },
+          whereItWent: [
+            { tradeId: 't1', name: 'Grey structure', paisa: paisa(8_120_000) },
+            { tradeId: 't2', name: 'Steel', paisa: paisa(4_755_000) },
+            { tradeId: 't3', name: 'Tiles', paisa: paisa(2_310_000) },
+            { tradeId: 't4', name: 'Electrical', paisa: paisa(1_845_500) },
+            { tradeId: null, name: 'Everything else', paisa: paisa(2_907_952) },
+          ],
+          whatCameIn: [
+            { month: '2026-04', ownMoneyPaisa: paisa(2_100_000), broughtInPaisa: paisa(0) },
+            { month: '2026-05', ownMoneyPaisa: paisa(1_240_000), broughtInPaisa: paisa(4_800_000) },
+            { month: '2026-06', ownMoneyPaisa: paisa(3_200_000), broughtInPaisa: paisa(6_150_000) },
+            { month: '2026-07', ownMoneyPaisa: paisa(0), broughtInPaisa: paisa(4_660_000) },
+          ],
+          houses: [
+            {
+              siteId: 's1',
+              name: THE_HOUSE,
+              stage: 'building',
+              goneOutPaisa: paisa(11_798_452),
+              comeInPaisa: paisa(9_310_000),
+            },
+            {
+              siteId: 's2',
+              name: '204-C, Phase 6',
+              stage: 'sold',
+              goneOutPaisa: paisa(8_140_000),
+              comeInPaisa: paisa(12_840_000),
+            },
+            { siteId: 's3', name: '12-B, Phase 3', stage: 'planning', goneOutPaisa: 0, comeInPaisa: 0 },
+          ],
+          nothingYet: false,
+        }}
+      />
+    ),
+  },
   {
     slug: 'sites',
     name: 'Sites',
