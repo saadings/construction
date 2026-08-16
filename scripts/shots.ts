@@ -218,6 +218,14 @@ async function main(): Promise<void> {
       `${String(written.size)} pictures in shots/ — ${String(screens.length)} screens at ${sizes}, ` +
         `${String(tooTall.length)} of them too tall for the screen they are on and photographed twice`
     )
+
+    // Said here as well as in `what-moved`, because this is the file somebody would look in. The second picture of a tall screen is not reproducible: the page is scrolled before it is taken and where that scroll lands is not the same twice, so two runs of *identical* code differ on four of these by up to 2.8% of the picture.
+
+    // Which makes them evidence of what a screen looks like and not evidence of whether it changed. Everything above asserts the geometry of every picture; nothing above asserts that the same app produces the same picture, and a fifth of what we photograph had never been asked. Recording it is the smaller of the two answers -- making them settle would be the better one.
+    console.log(
+      `${String(tooTall.length)} of those are the scrolled second picture and are not reproducible run to run, ` +
+        'so `yarn what-moved` leaves them out.'
+    )
   } finally {
     await browser.close()
     await server.stop()
