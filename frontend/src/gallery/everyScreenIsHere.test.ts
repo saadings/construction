@@ -46,7 +46,6 @@ const PIECES = new Set([
   'TheCountWaiting',
   'NotKnownHere',
   'Shell',
-  'WayIn',
   'Positions',
   'WhatHasComeIn',
   'Billing',
@@ -58,11 +57,11 @@ const PIECES = new Set([
   'PayOut',
 ])
 
-/** Drawn by a route, but not from the gallery: `WayIn` and the shell are the sign-in itself, and Clerk will not render outside its own provider. */
-const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell', 'WayIn'])
+/** Drawn by a route, but not from the gallery: the shell holds Clerk's own control, and Clerk will not render outside its own provider. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again. */
+const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell'])
 
-/** The one screen that draws its own layout rather than sitting in a `Page`, and is right to: a day sheet is a sticky header over a form, so its padding is inside the header and inside the form rather than around both. */
-const ITS_OWN_LAYOUT = new Set(['DaySheet'])
+/** The screens that draw their own layout rather than sitting in a `Page`, and are right to: a day sheet is a sticky header over a form, so its padding is inside the header and inside the form rather than around both, and the way in is one name and one button centred in a whole screen with no nav and no trail above it. */
+const ITS_OWN_LAYOUT = new Set(['DaySheet', 'WayIn'])
 
 // The question above is asked of routes, and the app does not compose itself out of routes alone. `AgreeAContract` is drawn by `Billing`, which is drawn by a route -- so it sat one level below what anything asked about, and two changes went through it without a picture ever being taken. `ChangeTheContract`, `Positions`, `WhoIsOnThisHouse` and `HouseDetails` were in the same place: six screens, and the sweep that exists to stop exactly this reported clean on all of them.
 
@@ -165,8 +164,9 @@ describe('an are-you-sure', () => {
 
 describe('the gallery', () => {
   it('shows every screen a route draws whole', () => {
+    // Asked of what the gallery draws and not of what it imports. This was the import alone, which is a weaker question than its own name: a screen imported and never put in `ON_SHOW` passed it, and the entry is the half that makes a picture. Found by planting the removal of an entry and watching this stay green.
     const missing = whatTheRoutesDraw().filter(
-      (name) => !NOT_WITHOUT_A_SIGN_IN.has(name) && !SHOWN.includes(`import { ${name} }`)
+      (name) => !NOT_WITHOUT_A_SIGN_IN.has(name) && !SHOWN.includes(`<${name}`)
     )
 
     expect(missing).toEqual([])
