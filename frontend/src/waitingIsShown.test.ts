@@ -68,6 +68,8 @@ const NOT_WAITING_ON_ANYTHING: Record<string, string> = {
     'onAdd === undefined asks whether the screen using it can add an account yet, which is a question about a prop -- a list still arriving cannot say whether the account is already on it',
   'components/site/ExtraWork.tsx':
     'onTakeOff === undefined asks whether the caller passed a way to take a line off, which is a question about a prop; every figure on this screen is handed to it already read',
+  'components/form/Day.tsx':
+    'date, said and picked === undefined each ask whether a string is a day on the calendar or whether the calendar handed one back; all three are worked out in this file and none of them is an answer in flight',
 }
 
 describe('what a screen shows while it is waiting', () => {

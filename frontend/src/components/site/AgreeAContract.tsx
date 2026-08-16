@@ -5,6 +5,7 @@ import { areaSqft } from '~shared/validation/contract'
 import { calendarDay, note as noteRule, positiveMoney, whatIsWrong } from '~shared/validation/primitives'
 
 import { Button } from '../form/Button'
+import { Day } from '../form/Day'
 import { Choices, Field, Line, Lines } from '../form/Field'
 import { Pick } from '../form/Pick'
 import { whatWentWrong } from '../form/whatWentWrong'
@@ -84,16 +85,7 @@ export function AgreeAContract({
           }}
         />
 
-        <Field label="Agreed on" problem={whatIsWrong(calendarDay, agreedOn)}>
-          <Line
-            value={agreedOn}
-            onChange={(event) => {
-              setAgreedOn(event.target.value)
-            }}
-            type="date"
-            aria-label="Agreed on"
-          />
-        </Field>
+        <Day label="Agreed on" problem={whatIsWrong(calendarDay, agreedOn)} value={agreedOn} onPick={setAgreedOn} />
       </div>
 
       {/* Not a `Field`: the first choice inside a label takes the label's words as its own name, so "One agreed price" announced itself as "How it is priced". */}

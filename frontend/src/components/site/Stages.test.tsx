@@ -1,12 +1,20 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { chooseTheDay } from '../../testing/day'
 import type { StageRow } from './Stages'
 import { Stages } from './Stages'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
+
+// The calendar opens on the month the control is holding, and a stage's starts on today. Frozen so "billed on the 2nd of May" is a day this test can reach without paging, and so it is the same day on every machine and in every month.
+const WHILE_THE_PLINTH_WAS_BEING_BILLED = new Date(2026, 4, 20, 11, 0)
 
 const THREE: Array<StageRow> = [
   { _id: 'm1', description: 'On signing', percent: 20, amountPaisa: 250_000_00, billedOn: '2026-04-01' },
@@ -60,9 +68,10 @@ describe('the stages a contract is billed in', () => {
 
   it('bills a stage on the day it went out, not on the day it was typed in', async () => {
     // A bill sent last week and entered today is billed last week, or the ledger stops matching the paperwork.
+    vi.setSystemTime(WHILE_THE_PLINTH_WAS_BEING_BILLED)
     const { onBill } = renderIt()
 
-    fireEvent.change(screen.getByLabelText('When At plinth level was billed'), { target: { value: '2026-05-02' } })
+    await chooseTheDay(userEvent.setup(), 'When At plinth level was billed', '2026-05-02')
     fireEvent.click(screen.getAllByRole('button', { name: 'Bill it' })[0])
 
     await waitFor(() => {
@@ -76,7 +85,13 @@ describe('the stages a contract is billed in', () => {
     // Two of the three are unbilled, and the first is not one of them.
     expect(screen.getAllByRole('button', { name: 'Bill it' })).toHaveLength(2)
     expect(screen.getByText('Billed 2026-04-01')).toBeTruthy()
-    expect(screen.queryByLabelText('When On signing was billed')).toBeNull()
+
+    // Asked the way the control really names itself, which is the label with the day it is holding on the end. Asked by the label alone it would find nothing whether the control were there or not, and an assertion that cannot fail is worse than none: the other two dates below are what proves this one is looking at anything.
+    const asked = (label: string) => screen.queryAllByRole('button', { name: (name) => name.startsWith(`${label}: `) })
+
+    expect(asked('When On signing was billed')).toEqual([])
+    expect(asked('When At plinth level was billed')).toHaveLength(1)
+    expect(asked('When At grey structure was billed')).toHaveLength(1)
   })
 
   it('says what the server said when a stage will not bill', async () => {

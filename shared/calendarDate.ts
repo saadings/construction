@@ -72,9 +72,14 @@ export function parseCalendarDate(input: string): string {
   return read.day
 }
 
+// A moment read as the day it falls on where the reader is standing, rather than converted into one. `toISOString()` is the wrong instrument and is the one everybody reaches for: it answers in UTC, so a local midnight in Lahore comes back as the day before and a payment files itself a day early.
+export function asCalendarDate(moment: Date): string {
+  return assemble(moment.getFullYear(), moment.getMonth() + 1, moment.getDate())
+}
+
 // The date the person's own device shows, read rather than converted.
 export function todayOnThisDevice(now: Date = new Date()): string {
-  return assemble(now.getFullYear(), now.getMonth() + 1, now.getDate())
+  return asCalendarDate(now)
 }
 
 // Server side. Exact enforcement would need the entering person's zone, and carrying a zone is what the design forbids.

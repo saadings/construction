@@ -9,8 +9,10 @@ import { everyScreen } from '../../testing/screens'
 
 // `Picker` was in this list until const measured it: it was a `<select>`, #89 deleted it, and `Pick` that replaced it was never added. So the matcher was blind to this app's primary picker on ten call sites, and two `Pick`s in one `Field` -- the exact defect this exists to prevent -- reported nothing at all. The floor above had already been re-anchored off `Picker`; the list underneath it had not, which is the same rot one level down.
 
+// `Day` is in this list for the reason `Pick` is: it is a question this app asks, on four screens today and on the four still to convert, and a list of names that does not have it is blind to the defect this exists to catch. Put in by the change that created it, because the gap `Pick` left open was never that somebody took it out -- it was that nobody put it in.
+
 /** Everything a `Field` would try to name, which is every element a person can put an answer into. */
-const A_CONTROL = /<(Line|Lines|Pick|MoneyLine|input|select|textarea|button)\b/g
+const A_CONTROL = /<(Line|Lines|Pick|Day|MoneyLine|input|select|textarea|button)\b/g
 
 /** Each `<Field …>` block, from its opening tag to the `</Field>` that closes it. `Field` never nests inside `Field`, so the first close is the right one. */
 export function fieldsIn(source: string): Array<string> {

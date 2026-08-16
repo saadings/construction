@@ -4,10 +4,17 @@ import userEvent from '@testing-library/user-event'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { chooseTheDay } from '../../testing/day'
 import { pick } from '../../testing/pick'
 import { AgreeAContract } from './AgreeAContract'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
+
+// The calendar opens on the month the control is holding, and the control starts on today. Frozen so "agreed on the 1st of April" is a day this test can reach without paging, and so the day it settles on is the same one on every machine and in every month.
+const WHILE_THE_HOUSE_WAS_BEING_AGREED = new Date(2026, 3, 15, 11, 0)
 
 const PEOPLE = [
   { _id: 'p1', name: 'The one it is built for' },
@@ -29,11 +36,13 @@ function fillIn(fields: Record<string, string>) {
 describe('agreeing what a client is paying', () => {
   it('sends a lump sum as one agreed price, with nothing about a rate on it', async () => {
     // A lump sum carrying a rate is how one of the two gets left behind holding an old figure the day the other changes.
+    vi.setSystemTime(WHILE_THE_HOUSE_WAS_BEING_AGREED)
     const { onAgree } = renderIt()
+    const user = userEvent.setup()
 
-    await pick(userEvent.setup(), 'Who it is for', 'The one it is built for')
+    await pick(user, 'Who it is for', 'The one it is built for')
+    await chooseTheDay(user, 'Agreed on', '2026-04-01')
     fillIn({
-      'Agreed on': '2026-04-01',
       'The whole price': '12,500,000',
       'Area agreed': '2,250',
     })

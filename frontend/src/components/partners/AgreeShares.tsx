@@ -4,7 +4,8 @@ import { formatPaisa } from '~shared/money'
 import { percentAsBasisPoints, saySharesDoNotAddUp, shortOfTheWhole } from '~shared/validation/profitShare'
 
 import { Button } from '../form/Button'
-import { Field, Line, useSaidOnceLeft } from '../form/Field'
+import { Day } from '../form/Day'
+import { Line, useSaidOnceLeft } from '../form/Field'
 import { Pick } from '../form/Pick'
 import { WayOut } from '../form/WayOut'
 import { Figure, Form, Page } from '../shell/Page'
@@ -178,14 +179,7 @@ function Setting({
         />
       )}
 
-      <Field label="Agreed on">
-        <Line
-          value={agreedOn}
-          onChange={(event) => setAgreedOn(event.target.value)}
-          type="date"
-          aria-label="Agreed on"
-        />
-      </Field>
+      <Day label="Agreed on" value={agreedOn} onPick={setAgreedOn} />
 
       {refusal === null ? null : (
         <p className="text-destructive text-sm" role="alert">
