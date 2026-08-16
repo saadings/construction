@@ -64,10 +64,13 @@ function withoutComments(source: string): string {
   return source.replaceAll(/\/\*[\s\S]*?\*\//g, ' ').replaceAll(/\/\/[^\n]*/g, ' ')
 }
 
-function everyFileUnder(dir: string): Array<string> {
+function everyFileUnder(dir: string, ends = 'DRAWN'): Array<string> {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name)
-    if (entry.isDirectory()) return everyFileUnder(path)
+    if (entry.isDirectory()) return everyFileUnder(path, ends)
+
+    // The default is what the rest of this asks for: a component, which is a `.tsx` that is not a test. Anything else is asked for by suffix.
+    if (ends !== 'DRAWN') return path.endsWith(ends) ? [path] : []
 
     return path.endsWith('.tsx') && !path.endsWith('.test.tsx') ? [path] : []
   })
@@ -160,6 +163,27 @@ function whatItCompilesWith(): Array<{ what: string; compiler: boolean; config: 
   }))
 }
 
+// Whether this map is current about itself, which is the first thing it has to be.
+
+// Everything above is computed, and the *lists* of what to compute over were typed -- three builds, five subjects. That is the same shape as an exemption list, and one of those went stale in forty minutes tonight. The hour this was written, two new instruments landed with the hooks crash: a `rules-of-hooks` lint rule and a scenario test asserting that vitest does not run the compiler. **Neither appeared here, because neither was in a list somebody had edited.**
+
+// So the instruments are counted off the tree, and what this file describes is counted off this file, and the difference is printed. It does not name what is missing -- it cannot, without knowing what a new instrument is for -- but it can say that the number has moved, which is the only thing needed to send somebody looking.
+function everyInstrumentThereIs(): { suites: number; scenarios: number; sweeps: number; rules: number } {
+  const root = resolve(import.meta.dirname, '..')
+
+  const under = (dir: string, ends: string): Array<string> =>
+    everyFileUnder(dir, ends).filter((path) => !path.includes('node_modules'))
+
+  const eslint = readFileSync(join(root, 'eslint.config.ts'), 'utf8')
+
+  return {
+    suites: under(join(root, 'frontend'), '.test.tsx').length + under(join(root, 'frontend'), '.test.ts').length,
+    scenarios: under(join(root, 'scenarios'), '.scenario.test.ts').length,
+    sweeps: under(join(root, 'scripts'), '.ts').length,
+    rules: [...withoutComments(eslint).matchAll(/'[\w-]+\/[\w-]+':\s*'(error|warn)'/g)].length,
+  }
+}
+
 async function main(): Promise<void> {
   const routed = whatARouteDraws()
   const written = whatThisAppWrites()
@@ -173,6 +197,19 @@ async function main(): Promise<void> {
 
   console.log(
     '\n  A check that does not run the shipped compiler is checking a different program. The pictures are the only\n  instrument here compiled the way the app is.\n'
+  )
+
+  // How many instruments there are, against how many this file has anything to say about. The first version of this map described three builds and five subjects and knew nothing of the lint rule and scenario test that landed the same hour -- because both lists were typed, which is the failure the whole map exists to name.
+  const there = everyInstrumentThereIs()
+  const described = BUILDS.length + SUBJECTS.length
+
+  console.log(
+    `Instruments on this project: ${String(there.suites)} unit suites, ${String(there.scenarios)} scenarios, ` +
+      `${String(there.sweeps)} scripts, ${String(there.rules)} lint rules turned on.`
+  )
+  console.log(
+    `  This map describes ${String(described)} of them. It cannot say which of the rest are uncovered -- only that\n` +
+      '  the number is what it is, which is enough to send somebody looking when it moves.\n'
   )
 
   const server = await serveTheGallery()
