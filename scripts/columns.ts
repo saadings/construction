@@ -7,7 +7,7 @@ import { GALLERY, everyScreenItShows, serveTheGallery, unfoldIt } from './theGal
 
 // What the browser actually drew, measured rather than described. It began with one question -- whether a column of figures is a column -- and each one since was added the day something got past every check we had: a figure cut in half, a column squeezed to a letter a line, a trail pinned beside the heading that repeats it.
 
-// Seven questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures. Two of them had to change the app to be askable at all: the nav was inside the one component nothing here can draw, and no measurement can tell a name that may be cut from a cheque number that may not -- so the page says which is which.
+// Eight questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures. Two of them had to change the app to be askable at all: the nav was inside the one component nothing here can draw, and no measurement can tell a name that may be cut from a cheque number that may not -- so the page says which is which.
 
 // `width.test.ts` asserts every figure goes through `<Figure>`, for the stated reason that it is what makes a column of amounts read as one. That guard passes, every figure is in the right face, and the grid moved the columns anyway. It is the one instrument here answering exactly the right question, truthfully, while the outcome it stands in for does not happen -- and nothing else in this repository could see the difference, because nothing else in it lays anything out.
 
@@ -257,12 +257,41 @@ const WHAT_REMOVES_SOMETHING = `(() => {
   return { tapped, small }
 })()`
 
-// What this cannot reach, said here rather than left as a number nobody questions. Thirteen controls are measured and all thirteen are a `WayOut`. The other four -- `Button look="removing"`, the press that actually takes the row out -- sit behind an are-you-sure, and every screen here is photographed in its resting state, so the confirming step is never on the page when this runs.
+// What this could not reach, and no longer cannot. Thirteen controls were measured and all thirteen were a `WayOut`: the other four -- `Button look="removing"`, the press that actually takes the row out -- sit behind an are-you-sure, and every screen was photographed at rest, so the confirming step was never on the page while this ran.
 
-// So the guard covers the openers and not the confirmations, which are the more destructive half. `Button.test.tsx` asserts their padding off the merged class list instead; that is a weaker instrument -- it reads what was written rather than what was drawn -- and it is what there is until something draws a screen mid-confirmation.
+// The gallery taps its way in now, so the confirmations are drawn and measured with the rest: twenty-one, against thirteen. What was left to `Button.test.tsx` reading a merged class list is measured on the page.
 
-/** The floor for it. Thirteen were found the day this was written, across seven screens; a selector that stopped matching would report the same clean nothing as an app where every one of them is big enough. */
+/** The floor for it. Thirteen were found the day this was written and twenty-one once the confirmations could be reached; a selector that stopped matching would report the same clean nothing as an app where every one of them is big enough. */
 const AT_LEAST_THIS_MANY_REMOVE = 10
+
+// The eighth question. A row of labelled boxes is the control a day sheet is tapped on four times per entry, and until the six hand-written rows became one component they were 36px and 40px -- under the floor every nav control and every way out is held to.
+
+// The component sets `min-h-11` and nothing checked it, which is how the seventh row stayed 36px: `HowItLooks` drew shadcn's `ToggleGroup` itself, so the rule that refuses `role="radio"` written by hand had nothing to say about it -- Radix writes the role there. A measured claim with no instrument behind it is a paragraph somebody has to remember.
+
+// Asked of `[role="radio"]`, which is what a person taps, wherever the role came from.
+const WHAT_IS_CHOSEN_FROM = `(() => {
+  const small = []
+  let tapped = 0
+
+  for (const choice of document.querySelectorAll('[role="radio"]')) {
+    const box = choice.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    tapped += 1
+
+    if (Math.round(box.height) < ${String(A_THUMB_NEEDS)}) {
+      small.push({
+        said: (choice.textContent ?? '').trim().slice(0, 24) || choice.getAttribute('aria-label') || 'a choice',
+        high: Math.round(box.height),
+        wide: Math.round(box.width),
+      })
+    }
+  }
+
+  return { tapped, small }
+})()`
+
+/** The floor for it. Thirty-two were drawn at 390 the day this was written, across seven screens. */
+const AT_LEAST_THIS_MANY_CHOICES = 20
 
 type Moved = { cls: string; cell: number; xs: Array<number> }
 
@@ -456,6 +485,7 @@ async function main(): Promise<void> {
   let trailsSeen = 0
   let tappedSeen = 0
   let removesSeen = 0
+  let choicesSeen = 0
   let linesSeen = 0
 
   try {
@@ -526,6 +556,15 @@ async function main(): Promise<void> {
             )
           }
 
+          const choices = whatIsTooSmall(await page.evaluate(WHAT_IS_CHOSEN_FROM))
+          choicesSeen += choices.tapped
+
+          for (const small of choices.small) {
+            wrong.push(
+              `${screen.slug} at ${String(size.width)}: "${small.said}" is a choice ${String(small.high)}px high, under the ${String(A_THUMB_NEEDS)} a thumb needs`
+            )
+          }
+
           const removes = whatIsTooSmall(await page.evaluate(WHAT_REMOVES_SOMETHING))
           removesSeen += removes.tapped
 
@@ -586,6 +625,12 @@ async function main(): Promise<void> {
     )
   }
 
+  if (choicesSeen < AT_LEAST_THIS_MANY_CHOICES) {
+    throw new Error(
+      `Only ${String(choicesSeen)} choices were measured on a phone, which is too few to have looked -- there were thirty-two the day this was written, and a row of them is the control a day sheet is tapped on four times per entry.`
+    )
+  }
+
   if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
     throw new Error(
       `Only ${String(tappedSeen)} nav controls were measured on a phone, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
@@ -603,7 +648,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control and every way out clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls and ${String(removesSeen)} controls that remove something, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control, every way out and every choice clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls, ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 
