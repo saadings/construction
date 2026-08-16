@@ -114,3 +114,43 @@ describe('signing out', () => {
     }
   })
 })
+
+// The way in is the same shape as the footer and needs the same question asked of it. Clerk will not render outside its own provider and the gallery holds nothing that could reach a deployment, so what opens the sign-in is handed to `WayIn` as a prop and the gallery hands it a stand-in.
+
+// Which means the picture is of the real button in a fake wrapper. TypeScript stops the prop being dropped -- it is required -- and stops nothing about what is passed, so the app could hand it the same do-nothing wrapper the gallery does and the screen would photograph perfectly while signing in did nothing at all.
+describe('signing in', () => {
+  const THE_WAY_IN = join(FRONTEND, 'components', 'shell', 'WayIn.tsx')
+  const THE_ROOT = join(FRONTEND, 'routes', '__root.tsx')
+
+  it('is opened by Clerk’s own control, followed by name rather than assumed', () => {
+    const root = SOURCE.find((file) => file.path === THE_ROOT)?.text ?? ''
+
+    // Which wrapper the root hands over, read off the call rather than guessed at: a test naming `TheSignIn` passes the day somebody renames it and stops meaning anything the day somebody replaces it.
+    const handed = /<WayIn\s+opens=\{(\w+)\}/.exec(root)
+
+    // The locate is the assertion. `null` here is a root that no longer draws the way in at all, which every check below would otherwise read as nothing to complain about.
+    expect(handed, 'the root does not hand `WayIn` anything to open the sign-in with').not.toBeNull()
+
+    const named = handed?.[1] ?? ''
+    const wrapper = root.slice(root.indexOf(`function ${named}(`))
+
+    expect(root, `${named} is handed to the way in and is not defined in the root`).toContain(`function ${named}(`)
+    expect(wrapper.slice(0, 400), `${named} does not open Clerk’s sign-in`).toContain('<SignInButton mode="modal">')
+    expect(wrapper.slice(0, 400), `${named} does not put the button inside it`).toContain('{children}')
+  })
+
+  it('is where the button lands, which is the other half', () => {
+    // A root passing Clerk's own says nothing about the screen drawing it: `WayIn` could stop rendering the wrapper entirely and there would be a sign-in button on the screen that opens nothing.
+    const wayIn = SOURCE.find((file) => file.path === THE_WAY_IN)?.text ?? ''
+
+    expect(wayIn, 'the way in draws no sign-in at all').toContain('Sign in')
+    expect(wayIn, 'the way in does not put its button inside what it was handed').toMatch(
+      /<Opens>[\s\S]*<Button[\s\S]*<\/Opens>/
+    )
+  })
+
+  it('is the one screen Clerk is allowed to be drawn on', () => {
+    // The sweep the footer has: `<SignInButton` anywhere else is a second way in, drifting from the first, and the gallery must hold none at all.
+    expect(holding(/<SignInButton/)).toEqual([THE_ROOT])
+  })
+})
