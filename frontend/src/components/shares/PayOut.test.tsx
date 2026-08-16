@@ -221,7 +221,11 @@ describe('what has already gone back to them', () => {
     const row = screen.getByRole('listitem')
     expect(within(row).getByText('The one who started it')).toBeTruthy()
     expect(within(row).getByText('20,000')).toBeTruthy()
-    expect(within(row).getByText(/Cheque · 04\/07\/2026 · 774411/)).toBeTruthy()
+
+    // Each piece asked for on its own, because each is now held on a line of its own. That is the fix rather than an accident of it: a browser breaks `CH-114` at its own hyphen, and a cheque number in two halves is no better than a cheque number cut short.
+    for (const piece of ['Cheque', '04/07/2026', '774411']) {
+      expect(within(row).getByText(piece), `${piece} is not on the row`).toBeTruthy()
+    }
   })
 
   it('takes one back by its own id, so the right one goes', async () => {

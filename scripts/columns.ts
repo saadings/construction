@@ -7,7 +7,7 @@ import { GALLERY, everyScreenItShows, serveTheGallery, unfoldIt } from './theGal
 
 // What the browser actually drew, measured rather than described. It began with one question -- whether a column of figures is a column -- and each one since was added the day something got past every check we had: a figure cut in half, a column squeezed to a letter a line, a trail pinned beside the heading that repeats it.
 
-// Five questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures. The fifth is also the first that had to change the app to be askable at all -- the nav was inside the one component nothing here can draw.
+// Seven questions now, and still not *is this usable*. Say which were asked when quoting a clean run; a passing sweep is a reason people stop opening the pictures. Two of them had to change the app to be askable at all: the nav was inside the one component nothing here can draw, and no measurement can tell a name that may be cut from a cheque number that may not -- so the page says which is which.
 
 // `width.test.ts` asserts every figure goes through `<Figure>`, for the stated reason that it is what makes a column of amounts read as one. That guard passes, every figure is in the right face, and the grid moved the columns anyway. It is the one instrument here answering exactly the right question, truthfully, while the outcome it stands in for does not happen -- and nothing else in this repository could see the difference, because nothing else in it lays anything out.
 
@@ -40,6 +40,9 @@ const AT_LEAST_THIS_MANY_TAPPED = 5
 
 /** And once more for the trails. Only the screens with something above them draw one, so this is well under what a full sweep sees -- but a `data-slot` renamed under us would report every trail unpinned across an app whose trails it never found. */
 const AT_LEAST_THIS_MANY_TRAILS = 20
+
+/** The floor for the seventh question. `data-must-be-read` is an attribute one component puts on itself, and an attribute nobody renders any more reports exactly what an app that cuts nothing off reports. */
+const AT_LEAST_THIS_MANY_LINES = 4
 
 // Handed to the browser as text rather than as a function, so this file stays a Node script with no DOM types in it -- the same reason the pictures are taken through the locator API. What comes back is checked below rather than trusted, because a string evaluated in a page can return anything at all.
 
@@ -173,6 +176,31 @@ const WHAT_IS_PINNED = `(() => {
   return { trails, pinned }
 })()`
 
+// The seventh question, and the one a picture found rather than a check. At 390 the payment list read `23/07/2026 · Chequ…` -- the cheque number gone entirely, on the screen where somebody goes to find out which cheque paid what.
+
+// Nothing here could have caught it. `truncate` is exactly how a name is meant to behave, and the sweep for cut figures is about a box clipping a figure, not about an ellipsis doing what it was asked to do. The two lines are the same markup and one of them was right.
+
+// Which is why the page says so rather than this guessing: a name may be cut and a cheque number may not, and no measurement can tell those apart. `SaidUnderneath` marks itself, the way a way out marks itself as removing something.
+const WHAT_IS_CUT_OFF = `(() => {
+  const cut = []
+  let lines = 0
+
+  for (const line of document.querySelectorAll('[data-must-be-read]')) {
+    const box = line.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    lines += 1
+
+    // Rounded, because a browser lays text out in fractions and a line that fits exactly is off by half a pixel about as often as not.
+    const hidden = Math.round(line.scrollWidth - line.clientWidth)
+
+    if (hidden > 1) {
+      cut.push({ said: line.textContent.trim().slice(0, 40), hidden, width: Math.round(box.width) })
+    }
+  }
+
+  return { lines, cut }
+})()`
+
 // The fifth question, and the only one whose answer nobody could have looked up. Nauman found it with a thumb: every row in the nav was 32px on his phone, 27% under the bar, on the only navigation there is at that width once the sidebar is behind a hamburger.
 
 // Nothing here had ever measured it and nothing could have. `Shell` holds Clerk's `UserButton`, Clerk will not render outside its own provider, and the gallery is kept clear of anything that could reach a deployment -- so the shell was exempt from the sweep, and the nav inside it went with it. The nav is its own file now for that reason alone.
@@ -302,6 +330,34 @@ function whatIsCut(said: unknown): { figures: number; cut: Array<Cut> } {
   }
 }
 
+/** The seventh, checked the same way and for the same reason: a string evaluated in a page can return anything at all. */
+function whatIsCutOff(said: unknown): { lines: number; cut: Array<Cut> } {
+  if (typeof said !== 'object' || said === null || !('lines' in said) || !('cut' in said)) {
+    throw new Error('The page answered something that is not a count of lines.')
+  }
+
+  const { lines, cut } = said
+  if (typeof lines !== 'number' || !Array.isArray(cut)) {
+    throw new Error('The page answered a count with no lines or no findings in it.')
+  }
+
+  return {
+    lines,
+    cut: cut.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('hidden' in one) || !('width' in one)) {
+        throw new Error('The page answered a cut line with nothing in it.')
+      }
+
+      const { said: text, hidden, width } = one
+      if (typeof text !== 'string' || typeof hidden !== 'number' || typeof width !== 'number') {
+        throw new Error('The page answered a cut line of the wrong shape.')
+      }
+
+      return { said: text, hidden, width }
+    }),
+  }
+}
+
 /** The third measurement, checked the same way and for the same reason. */
 function whatIsCrushed(said: unknown): { cells: number; crushed: Array<Crushed> } {
   if (typeof said !== 'object' || said === null || !('cells' in said) || !('crushed' in said)) {
@@ -400,6 +456,7 @@ async function main(): Promise<void> {
   let trailsSeen = 0
   let tappedSeen = 0
   let removesSeen = 0
+  let linesSeen = 0
 
   try {
     const page = await browser.newPage()
@@ -435,6 +492,15 @@ async function main(): Promise<void> {
         for (const cut of figures.cut) {
           wrong.push(
             `${screen.slug} at ${String(size.width)}: ${cut.said} is cut in half — ${String(cut.hidden)}px of ${String(cut.width)} is outside what holds it`
+          )
+        }
+
+        const lines = whatIsCutOff(await page.evaluate(WHAT_IS_CUT_OFF))
+        linesSeen += lines.lines
+
+        for (const cut of lines.cut) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: "${cut.said}" must be read and ${String(cut.hidden)}px of it is cut off — a name cut short is still a name, a cheque number cut short is not a cheque number`
           )
         }
 
@@ -514,6 +580,12 @@ async function main(): Promise<void> {
     )
   }
 
+  if (linesSeen < AT_LEAST_THIS_MANY_LINES) {
+    throw new Error(
+      `Only ${String(linesSeen)} lines that must be read were measured across every screen, which is too few to have looked -- a component that stopped marking itself reports exactly what an app that cuts nothing off reports.`
+    )
+  }
+
   if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
     throw new Error(
       `Only ${String(tappedSeen)} nav controls were measured on a phone, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
@@ -531,7 +603,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, no trail is pinned and every nav control and every way out clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls and ${String(removesSeen)} controls that remove something, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control and every way out clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls and ${String(removesSeen)} controls that remove something, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 

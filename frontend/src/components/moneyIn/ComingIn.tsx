@@ -17,7 +17,7 @@ import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
-import { Figure, Form, Page } from '../shell/Page'
+import { Figure, Form, Page, SaidUnderneath } from '../shell/Page'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
 export type Received = {
@@ -292,10 +292,8 @@ function OneReceipt({
       {/* Green, because it is money coming to the partnership rather than leaving it. */}
       <Figure className="text-green text-right text-lg">{formatPaisa(received.amountPaisa)}</Figure>
       <span className="text-muted-foreground col-span-2 flex flex-wrap items-baseline gap-x-3 text-sm">
-        <span>
-          {SAID[received.why]} · {asDayHeWrites(received.day)}
-          {received.reference === undefined ? '' : ` · ${received.reference}`}
-        </span>
+        {/* The fourth place this line was written by hand. This one loses no reference outright -- it is not truncated -- but a browser breaks `CH-114` at its own hyphen, and a receipt number in two halves is no better than one cut short. */}
+        <SaidUnderneath pieces={[SAID[received.why], asDayHeWrites(received.day), received.reference]} />
         <WayOut onClick={takeBack} busy={saving}>
           {saving ? 'Taking it back…' : 'Take it back'}
         </WayOut>
