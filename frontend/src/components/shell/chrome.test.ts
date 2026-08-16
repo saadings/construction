@@ -35,6 +35,9 @@ const THE_SHELL = join(FRONTEND, 'components', 'shell', 'Shell.tsx')
 // The nav came out of the shell so something could measure it: the shell holds Clerk, Clerk needs its own provider, and the gallery has none -- so everything in that file was exempt from being looked at, and every nav row inside it stayed 32px on a phone until Nauman found them with a thumb. The footer is in this file now, and the shell hands it what goes in.
 const THE_NAV = join(FRONTEND, 'components', 'shell', 'TheNav.tsx')
 
+// The way in was exempt for the same reason the nav was, and the exemption was the same size as the screen rather than the size of its reason: one wrapper around one button. It takes that wrapper as a prop now, so the gallery draws it -- and what the app hands it is what the rule below is about.
+const THE_WAY_IN = join(FRONTEND, 'components', 'shell', 'WayIn.tsx')
+
 describe('where the chrome is allowed to live', () => {
   it('is the shell, and never a route', () => {
     // Swept rather than checked in the one corner it picked: a route pinning it bottom-left instead would be the same defect and would pass a check written about `top-5 right-5`.
@@ -86,6 +89,20 @@ describe('signing out', () => {
     const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
 
     expect(shell).toMatch(/<TheNav[\s\S]*footer={<UserButton/)
+  })
+
+  it('is opened by Clerk on the way in, and not by a stand-in', () => {
+    // The same shape as the footer above and the same risk. `WayIn` takes what opens the sign-in as a prop so the gallery can draw the screen at last, and the gallery passes something that opens nothing -- which is right there and catastrophic in the app.
+
+    // TypeScript stops the prop being dropped, because it is required. It does not stop the app passing something that is not Clerk's, and that is the case this exists for.
+
+    // Both halves again, and either alone passes while signing in is unreachable: a root passing `opens={TheSignIn}` says nothing about the screen using it, and a screen rendering `<Opens>` says nothing about what it was given.
+    const root = SOURCE.find((file) => file.path === join(FRONTEND, 'routes', '__root.tsx'))?.text ?? ''
+    const wayIn = SOURCE.find((file) => file.path === THE_WAY_IN)?.text ?? ''
+
+    expect(root).toMatch(/<WayIn[\s\S]*opens={/)
+    expect(root).toContain('SignInButton mode="modal"')
+    expect(wayIn).toContain('<Opens>')
   })
 
   it('has nothing left over from when a phone had no chrome to carry it', () => {
