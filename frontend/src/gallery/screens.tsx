@@ -407,30 +407,44 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'Owed',
     where: 'the second place in the nav',
     proves: 'Owed',
-    draw: () => (
-      <WhatWeOwe
-        owed={{
-          payablePaisa: paisa(1_591_701),
-          advancedPaisa: paisa(58_000),
-          everyone: STILL_OWED.map((row, at) => ({
-            personId: `p${at + 3}`,
-            name: NOBODY[at + 2]?.name ?? 'Somebody else',
-            billedPaisa: paisa(row.rupees + 120_000),
-            paidPaisa: paisa(120_000),
-            outstandingPaisa: paisa(row.rupees),
-            onHouses: [
-              {
-                siteId: 's1',
-                name: THE_HOUSE,
-                billedPaisa: paisa(row.rupees + 120_000),
-                paidPaisa: paisa(120_000),
-                outstandingPaisa: paisa(row.rupees),
-              },
-            ],
-          })),
-        }}
-      />
-    ),
+    // What is chosen and what is worked out, kept apart. `58,000` was the advance held against one supplier and also, by arithmetic, what the kitchen people were left standing -- two ideas, one string, and either could have been broken with both tests still green.
+
+    // Every payment was also `120,000`, so an assertion about one supplier's payment matched all three rows.
+    draw: () => {
+      // What each of them has been paid: three figures nobody can confuse for each other or for a total.
+      const paidToEach = [120_000, 96_500, 73_400]
+
+      return (
+        <WhatWeOwe
+          owed={{
+            payablePaisa: paisa(STILL_OWED.reduce((running, row) => running + row.rupees, 0)),
+            // Chosen rather than derived, and chosen not to land on anything: an advance is money held against a supplier and has nothing to do with what any of them is owed.
+            advancedPaisa: paisa(41_250),
+            everyone: STILL_OWED.map((row, at) => {
+              const paid = paisa(paidToEach[at] ?? 0)
+              const outstanding = paisa(row.rupees)
+
+              return {
+                personId: `p${at + 3}`,
+                name: NOBODY[at + 2]?.name ?? 'Somebody else',
+                billedPaisa: outstanding + paid,
+                paidPaisa: paid,
+                outstandingPaisa: outstanding,
+                onHouses: [
+                  {
+                    siteId: 's1',
+                    name: THE_HOUSE,
+                    billedPaisa: outstanding + paid,
+                    paidPaisa: paid,
+                    outstandingPaisa: outstanding,
+                  },
+                ],
+              }
+            }),
+          }}
+        />
+      )
+    },
   },
   {
     slug: 'people',
@@ -454,36 +468,42 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'People, then one of them',
     // The screen is titled with the person's own name once it has one, so this is what says it drew rather than the words above an empty one.
     proves: 'The tile shop',
-    draw: () => (
-      <TheirAccount
-        answer={{
-          account: {
-            name: NOBODY[3].name,
-            lines: [
-              {
-                what: 'billed',
-                day: '2026-05-30',
-                amountPaisa: paisa(883_701),
-                id: 'l1',
-                balancePaisa: paisa(883_701),
-                onWhichHouse: THE_HOUSE,
-                said: 'Tiles for the first floor',
-              },
-              {
-                what: 'paid',
-                day: A_DAY,
-                amountPaisa: paisa(120_000),
-                id: 'l2',
-                balancePaisa: paisa(763_701),
-                onWhichHouse: THE_HOUSE,
-              },
-            ],
-            billedPaisa: paisa(883_701),
-            paidPaisa: paisa(120_000),
-          },
-        }}
-      />
-    ),
+    // Two figures are chosen here and everything else is worked out from them, which is what the app does with the same numbers. Written out four times over, a running balance and a total are four figures that agree by hand -- and `nothingMeansTwoThings` reads that as three ideas rendering one string, because that is exactly what it is.
+    draw: () => {
+      const billed = paisa(883_701)
+      const paid = paisa(120_000)
+
+      return (
+        <TheirAccount
+          answer={{
+            account: {
+              name: NOBODY[3].name,
+              lines: [
+                {
+                  what: 'billed',
+                  day: '2026-05-30',
+                  amountPaisa: billed,
+                  id: 'l1',
+                  balancePaisa: billed,
+                  onWhichHouse: THE_HOUSE,
+                  said: 'Tiles for the first floor',
+                },
+                {
+                  what: 'paid',
+                  day: A_DAY,
+                  amountPaisa: paid,
+                  id: 'l2',
+                  balancePaisa: billed - paid,
+                  onWhichHouse: THE_HOUSE,
+                },
+              ],
+              billedPaisa: billed,
+              paidPaisa: paid,
+            },
+          }}
+        />
+      )
+    },
   },
   {
     slug: 'more',
@@ -616,53 +636,58 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'a house, down the screen',
     partOf: 'the house screen',
     proves: 'People on this house',
-    draw: () => (
-      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
-        <WhoIsOnThisHouse
-          engaged={[
-            {
-              engagementId: 'e1',
-              personName: 'The mason',
-              tradeName: 'Civil labour',
-              agreedPaisa: paisa(1_300_000),
-              ratePaisa: undefined,
-              unit: undefined,
-              billedPaisa: paisa(1_465_000),
-              paidPaisa: paisa(1_100_000),
-            },
-            {
-              engagementId: 'e2',
-              personName: 'The tile shop',
-              tradeName: 'Tiles',
-              agreedPaisa: undefined,
-              ratePaisa: paisa(310),
-              unit: 'sq ft',
-              billedPaisa: paisa(742_000),
-              paidPaisa: paisa(742_000),
-            },
-          ]}
-          claimed={[
-            {
-              _id: 'b1',
-              personName: 'The mason',
-              tradeName: 'Civil labour',
-              day: '2026-06-27',
-              amountPaisa: paisa(165_000),
-              reference: 'CH-114',
-            },
-          ]}
-          people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))}
-          trades={TRADES.map((trade) => ({ _id: trade._id, name: trade.name }))}
-          saving={false}
-          refusal={null}
-          takingOut={null}
-          onAgree={nothingTrue}
-          onRaise={nothingTrue}
-          onTakeOut={nothingTrue}
-          onAddTrade={() => Promise.resolve('t9')}
-        />
-      </Page>
-    ),
+    // Paid in full is `paid == billed`, so it is written as one figure used twice rather than as two that happen to agree. Typed separately they are two ideas rendering one string, and an assertion about what the tile shop was billed matches what it was paid.
+    draw: () => {
+      const billedToTheTileShop = paisa(742_000)
+
+      return (
+        <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+          <WhoIsOnThisHouse
+            engaged={[
+              {
+                engagementId: 'e1',
+                personName: 'The mason',
+                tradeName: 'Civil labour',
+                agreedPaisa: paisa(1_300_000),
+                ratePaisa: undefined,
+                unit: undefined,
+                billedPaisa: paisa(1_465_000),
+                paidPaisa: paisa(1_100_000),
+              },
+              {
+                engagementId: 'e2',
+                personName: 'The tile shop',
+                tradeName: 'Tiles',
+                agreedPaisa: undefined,
+                ratePaisa: paisa(310),
+                unit: 'sq ft',
+                billedPaisa: billedToTheTileShop,
+                paidPaisa: billedToTheTileShop,
+              },
+            ]}
+            claimed={[
+              {
+                _id: 'b1',
+                personName: 'The mason',
+                tradeName: 'Civil labour',
+                day: '2026-06-27',
+                amountPaisa: paisa(165_000),
+                reference: 'CH-114',
+              },
+            ]}
+            people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))}
+            trades={TRADES.map((trade) => ({ _id: trade._id, name: trade.name }))}
+            saving={false}
+            refusal={null}
+            takingOut={null}
+            onAgree={nothingTrue}
+            onRaise={nothingTrue}
+            onTakeOut={nothingTrue}
+            onAddTrade={() => Promise.resolve('t9')}
+          />
+        </Page>
+      )
+    },
   },
   {
     slug: 'what-each-partner-is-owed',
@@ -671,40 +696,45 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'a house, down the screen',
     partOf: 'the house screen',
     proves: 'What each partner is owed',
-    draw: () => (
-      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
-        <Positions
-          what={{
-            positions: [
-              {
-                personId: 'p1',
-                name: 'The one who started it',
-                capitalPaisa: paisa(7_400_000),
-                basisPoints: 6_000,
-                duePaisa: paisa(2_625_000),
-                paidPaisa: paisa(1_000_000),
-                balancePaisa: paisa(1_625_000),
-              },
-              {
-                personId: 'p2',
-                name: 'The one who came in later',
-                capitalPaisa: paisa(4_930_000),
-                basisPoints: 4_000,
-                duePaisa: paisa(1_750_000),
-                paidPaisa: paisa(1_750_000),
-                balancePaisa: 0,
-              },
-            ],
-            broughtInPaisa: paisa(12_330_000),
-            spentPaisa: paisa(8_955_000),
-            profitPaisa: paisa(4_375_000),
-            sold: true,
-            sharesAgreed: true,
-            ifItSoldToday: null,
-          }}
-        />
-      </Page>
-    ),
+    // A partner who has had everything shows `due` and `paid` as one figure, because that is what a zero balance is. One call used twice rather than two that agree by hand: the equality is the point, and it should survive somebody changing what he is owed.
+    draw: () => {
+      const dueToTheOneWhoCameLater = paisa(1_750_000)
+
+      return (
+        <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+          <Positions
+            what={{
+              positions: [
+                {
+                  personId: 'p1',
+                  name: 'The one who started it',
+                  capitalPaisa: paisa(7_400_000),
+                  basisPoints: 6_000,
+                  duePaisa: paisa(2_625_000),
+                  paidPaisa: paisa(1_000_000),
+                  balancePaisa: paisa(1_625_000),
+                },
+                {
+                  personId: 'p2',
+                  name: 'The one who came in later',
+                  capitalPaisa: paisa(4_930_000),
+                  basisPoints: 4_000,
+                  duePaisa: dueToTheOneWhoCameLater,
+                  paidPaisa: dueToTheOneWhoCameLater,
+                  balancePaisa: 0,
+                },
+              ],
+              broughtInPaisa: paisa(12_330_000),
+              spentPaisa: paisa(8_955_000),
+              profitPaisa: paisa(4_375_000),
+              sold: true,
+              sharesAgreed: true,
+              ifItSoldToday: null,
+            }}
+          />
+        </Page>
+      )
+    },
   },
   {
     slug: 'start-a-house',
