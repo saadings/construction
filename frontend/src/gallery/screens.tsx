@@ -32,7 +32,7 @@ import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
 import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import { HouseDetails } from '../components/sites/HouseDetails'
 import { SitesList } from '../components/sites/SitesList'
-import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
+import { A_DAY, BANK, EVERYTHING_AT_ONCE, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
 
 // Every screen a route draws whole, with invented figures, so somebody can look at one without signing in.
 
@@ -136,49 +136,7 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'the first row of the nav',
     proves: 'Outstanding',
     // Every figure below is a different number on purpose. Two that happen to match make a wiring bug look like a working screen -- a tile reading the wrong field, a house's column drawn from the total -- and this has been caught twice already in fixtures that were not this careful.
-    draw: () => (
-      <Dashboard
-        what={{
-          owed: { payablePaisa: paisa(3_412_500), advancedPaisa: paisa(265_000) },
-          goneOutPaisa: paisa(19_938_452),
-          comeIn: { receivedPaisa: paisa(22_150_000), ownMoneyPaisa: paisa(6_540_000) },
-          whereItWent: [
-            { tradeId: 't1', name: 'Grey structure', paisa: paisa(8_120_000) },
-            { tradeId: 't2', name: 'Steel', paisa: paisa(4_755_000) },
-            { tradeId: 't3', name: 'Tiles', paisa: paisa(2_310_000) },
-            { tradeId: 't4', name: 'Electrical', paisa: paisa(1_845_500) },
-            { tradeId: null, name: 'Everything else', paisa: paisa(2_907_952) },
-          ],
-          // These are drawn as figures now rather than as bar heights behind a hover tooltip, so they are in the sweep above for the first time -- and it found what the comment at the top of this fixture asks for and the months had stopped doing. Two of them held a nought.
-
-          // The nought that stays is `12-B, Phase 3` below, a house started with nothing entered against it, because that is the state he is in on his first day and a picture of it is worth having. An empty bar is not worth a second one: what a bar of nothing looks like is a unit test on `across`, and the sweep cannot tell two noughts apart no matter which two they are.
-          whatCameIn: [
-            { month: '2026-04', ownMoneyPaisa: paisa(2_100_000), broughtInPaisa: paisa(1_375_000) },
-            { month: '2026-05', ownMoneyPaisa: paisa(1_240_000), broughtInPaisa: paisa(4_800_000) },
-            { month: '2026-06', ownMoneyPaisa: paisa(3_200_000), broughtInPaisa: paisa(6_150_000) },
-            { month: '2026-07', ownMoneyPaisa: paisa(985_000), broughtInPaisa: paisa(4_660_000) },
-          ],
-          houses: [
-            {
-              siteId: 's1',
-              name: THE_HOUSE,
-              stage: 'building',
-              goneOutPaisa: paisa(11_798_452),
-              comeInPaisa: paisa(9_310_000),
-            },
-            {
-              siteId: 's2',
-              name: '204-C, Phase 6',
-              stage: 'sold',
-              goneOutPaisa: paisa(8_140_000),
-              comeInPaisa: paisa(12_840_000),
-            },
-            { siteId: 's3', name: '12-B, Phase 3', stage: 'planning', goneOutPaisa: 0, comeInPaisa: 0 },
-          ],
-          nothingYet: false,
-        }}
-      />
-    ),
+    draw: () => <Dashboard what={EVERYTHING_AT_ONCE} />,
   },
   {
     slug: 'spent-by-trade',
@@ -584,8 +542,13 @@ export const ON_SHOW: Array<OnShow> = [
     draw: () => (
       <Reports
         what={{
-          spending: { trades: 7, goneOutPaisa: paisa(19_938_452), ownMoneyPaisa: paisa(6_540_000) },
-          owed: { people: 3, payablePaisa: paisa(3_412_500) },
+          // Read from the Dashboard's own fixture rather than written again. These two are the same money on two screens, and it had `6,540,000` of its own -- the same figure, stale in the same way, and two screens hand-writing one number is exactly how they come to disagree while both look right.
+          spending: {
+            trades: 7,
+            goneOutPaisa: EVERYTHING_AT_ONCE.goneOutPaisa,
+            ownMoneyPaisa: EVERYTHING_AT_ONCE.comeIn.ownMoneyPaisa,
+          },
+          owed: { people: 3, payablePaisa: EVERYTHING_AT_ONCE.owed.payablePaisa },
         }}
       />
     ),
