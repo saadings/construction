@@ -585,9 +585,9 @@ export const ON_SHOW: Array<OnShow> = [
     proves: 'Dashboard',
     // Drawn at `/dashboard` so one row is the row you are on: an active row is a different height in some navs and the same in this one, which is worth being able to see rather than assume.
 
-    // Both shapes at once, because they are two elements now rather than one that changes: the rail is hidden below 768 and the strip above it, so a picture at 390 holds the strip and a picture at 1280 holds the rail, and neither has to be tapped open first. The hamburger and the sheet are gone with the design.
+    // The rail on its own, drawn at every width rather than hidden below 768, because a component that carries its own breakpoint cannot be photographed at the width it hides at.
     draw: () => (
-      <div className="flex min-h-dvh flex-col md:flex-row">
+      <div className="flex min-h-dvh">
         {/* Clerk's `UserButton` in the app, and this in the gallery, because nothing here may reach a deployment. It is a stand-in for the control and not the control: what the sweep measures here is the room the nav keeps for it. */}
         <TheNav
           footer={
@@ -597,9 +597,24 @@ export const ON_SHOW: Array<OnShow> = [
             />
           }
         />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TheNavOnAPhone />
-        </div>
+      </div>
+    ),
+  },
+  {
+    slug: 'the-nav-opened',
+    at: '/dashboard',
+    // The sheet is a portal on `body`, outside the element the gallery draws screens into.
+    shownIn: '[data-slot="sheet-content"]',
+    name: 'The nav, opened on a phone',
+    where: 'the corner of every screen below 768',
+    proves: 'Ledgers',
+    // Opened, because a sheet that starts closed photographs an empty page and reports a clean nothing -- which is exactly how this nav went 889 tests, 17 screens and four measurements without one instrument ever drawing it, until he found 32px rows with his thumb.
+
+    // The closed state is not a second entry. It is one 44px button with an icon in it and no words, so there is nothing it could prove -- and the button is still in the document once the sheet is open, which is where `columns` measures it.
+    tapFirst: ['Sections'],
+    draw: () => (
+      <div className="p-3">
+        <TheNavOnAPhone />
       </div>
     ),
   },

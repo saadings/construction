@@ -13,9 +13,14 @@ import { GALLERY, everyScreenItShows, serveTheGallery, unfoldIt } from './theGal
 
 // The defect it is here to stop: a grid written once per row sizes a content-shaped track to that row's own content, so the column lands wherever that row happens to need it. Four screens had it, and the three that did not were not defended against it -- their last cell simply happened to be the same width every time.
 
-/** The same widths the pictures are taken at: a phone, the width the sidebar changes at, and a desk. */
+// A width list is a claim about which devices exist, and it needs the same scepticism as a selector. This one said phone, breakpoint, desk -- and it had never rendered the state his own phone is in when he turns it sideways to read a column of figures, which is 852 CSS px and lands above every breakpoint the app has.
+
+// Nothing here found that. It was found by somebody measuring the built app at a width the list did not contain, which is the one thing a list cannot do for itself.
+
+/** A phone, the same phone turned sideways, the width the rail appears at, and a desk. */
 const SCREENS_READ_ON = [
   { width: 390, height: 844 },
+  { width: 852, height: 393 },
   { width: 768, height: 1024 },
   { width: 1280, height: 800 },
 ]
@@ -32,11 +37,16 @@ const AT_LEAST_THIS_MANY_CELLS = 100
 /** What a thumb needs, which Apple's guidance and WCAG 2.5.5 arrive at separately. The same bar that made the date input a defect in #96, asked here of the one navigation a phone has. */
 const A_THUMB_NEEDS = 44
 
-/** Below this the nav is a sheet and the rows are what a thumb hits; above it there is a column under a mouse and 32px rows are right. A phone-only rule, because one height cannot be correct at both ends. */
-const A_PHONE_IS_UNDER = 768
+// This was `A_PHONE_IS_UNDER = 768`, and the sentence under it described a shell that no longer exists: below it a sheet, above it a column under a mouse. There is no sheet, and above 768 the rail is the only navigation there is -- so every touch device from a tablet up was getting rows the sweep never asked about, at a width it never ran at.
 
-/** The floor for it. Every other check here counts what it saw; this one saw nothing at all until this branch, which is exactly how the nav stayed 32px. */
-const AT_LEAST_THIS_MANY_TAPPED = 5
+// The widths were a premise rather than a measurement, inherited from a shape that was deleted. So the question is asked of the pointer instead, at every width, in a context that reports a coarse one -- which is what the app's own rule now keys on.
+
+// The floor for it. Every other check here counts what it saw; this one saw nothing at all until it was written, which is exactly how the nav stayed 32px.
+
+// Its subject has moved twice and the number did not, which is the failure a floor is itself vulnerable to. It was five when the sheet held five rows; it stayed five when the sheet was deleted and a strip held five; and with the sheet back it would be satisfied by a sweep that opened nothing and found the hamburger alone. So it is set from what the nav actually contains: six rows and a sign-out in the rail, the same again in the sheet, and the button that opens it -- at four widths.
+
+/** Well under what a full sweep sees, and far above what one that never opened the sheet would. */
+const AT_LEAST_THIS_MANY_TAPPED = 40
 
 /** And once more for the trails. Only the screens with something above them draw one, so this is well under what a full sweep sees -- but a `data-slot` renamed under us would report every trail unpinned across an app whose trails it never found. */
 const AT_LEAST_THIS_MANY_TRAILS = 20
@@ -491,7 +501,7 @@ async function main(): Promise<void> {
   let linesSeen = 0
 
   try {
-    const page = await browser.newPage()
+    const page = await browser.newPage({ hasTouch: true })
     await page.goto(server.at)
 
     const screens = await everyScreenItShows(page)
@@ -548,7 +558,7 @@ async function main(): Promise<void> {
         const trails = whatIsPinned(await page.evaluate(WHAT_IS_PINNED))
         trailsSeen += trails.trails
 
-        if (size.width < A_PHONE_IS_UNDER) {
+        {
           const thumb = whatIsTooSmall(await page.evaluate(WHAT_A_THUMB_CANNOT_HIT))
           tappedSeen += thumb.tapped
 
@@ -635,7 +645,7 @@ async function main(): Promise<void> {
 
   if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
     throw new Error(
-      `Only ${String(tappedSeen)} nav controls were measured on a phone, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
+      `Only ${String(tappedSeen)} nav controls were measured under a thumb, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
     )
   }
 
@@ -650,7 +660,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control, every way out and every choice clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls, ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control, every way out and every choice clears ${String(A_THUMB_NEEDS)}px under a thumb, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls, ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 

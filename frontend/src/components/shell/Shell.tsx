@@ -3,26 +3,35 @@ import type { ReactNode } from 'react'
 
 import { TheNav, TheNavOnAPhone } from './TheNav'
 
-// The shell he drew: a dark rail down the side of a desk, a header that stays, and a strip a phone scrolls sideways where the rail cannot fit.
+// The shell he drew, with the one thing he asked back: "I need sidebar on the mobile view as well like it was before."
 
-// It was shadcn's `Sidebar` -- a column above 768 and a sheet behind a hamburger below it. The design has no hamburger and no sheet, which is his decision to make; what it also had was a 34px strip, and that is the defect he reported when the rows were 32px. So the arrangement is his and the height is the app's.
+// So below 768 the rail is a sheet opened from the corner, and above it the rail is simply there. It is the same component in both -- relocated rather than reimplemented -- because two navigations for one list is how a destination comes to exist in one and not the other.
+
+// The design's horizontal strip is gone with it. Two navigations for five destinations is duplication, and a scroller hides its tail: `Daybook`, `Receipts`, `Reports` and `Partners` are four rows nobody would know were there.
 export function Shell({ children }: { children: ReactNode }) {
+  // Clerk's own button, sized through the only handle it gives: a class on the avatar box. Reasoned rather than measured -- nothing draws this without a sign-in, so the wrapper around it is what the sweep can see and this is what it cannot.
+  const signOut = <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-8' } }} />
+
   return (
     <div className="bg-background text-foreground flex min-h-dvh w-full">
-      {/* Clerk's own button, sized through the only handle it gives: a class on the avatar box. Reasoned rather than measured -- nothing draws this without a sign-in, so the wrapper around it is what the sweep can see and this is what it cannot. */}
       <div className="hidden md:flex">
-        <TheNav footer={<UserButton appearance={{ elements: { userButtonAvatarBox: 'size-8' } }} />} />
+        <TheNav footer={signOut} />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* The one bar over the content at every width. It is where the trail is on a desk and where the way out of a screen is on a phone, and it scrolls with nothing because it is sticky. */}
-        <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b px-6 backdrop-blur-sm">
-          <span className="font-display text-foreground text-lg leading-none md:hidden">Construction</span>
-        </header>
+        {/* The one bar over the content at every width, and on a phone it is the whole way into the nav. It scrolls with nothing because it is sticky, which is the fault the sidebar had before this. */}
+        <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-sm md:px-6">
+          <div className="md:hidden">
+            <TheNavOnAPhone />
+          </div>
 
-        <div className="md:hidden">
-          <TheNavOnAPhone />
-        </div>
+          <span className="font-display text-foreground text-lg leading-none md:hidden">Construction</span>
+
+          {/* The corner, on a phone, on every screen. Signing out is not a thing somebody strolls to -- it is what they reach for on a shared phone or the wrong account, and they look for their own face rather than for a menu. It is out of the sheet entirely: two places to sign out is worse than either one. */}
+          <div className="ml-auto flex size-11 items-center justify-center md:hidden">
+            <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-11' } }} />
+          </div>
+        </header>
 
         <main className="min-w-0 flex-1">{children}</main>
       </div>

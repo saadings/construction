@@ -12,9 +12,13 @@ afterEach(cleanup)
 
 // jsdom applies no CSS, so this says nothing about how any of it looks. That is the whole reason the gallery exists; what this proves is only that there is something there to photograph.
 
-function drawn(): HTMLElement {
+function drawn(shownIn?: string): HTMLElement {
   // Everything below the gallery's own chrome: the note, the row of buttons and the line saying where a screen lives are not the screen.
-  return screen.getByTestId('the-screen')
+
+  // Unless the screen says otherwise. A sheet is a portal on `body` and is not inside the element the gallery draws into -- so a screen whose subject is a sheet is read where it actually landed, which is the same `shownIn` the camera is given. Without this, the words are on the page and this looks in the one place they are not.
+  return shownIn === undefined
+    ? screen.getByTestId('the-screen')
+    : (document.querySelector<HTMLElement>(shownIn) ?? screen.getByTestId('the-screen'))
 }
 
 describe('every screen in the gallery', () => {
@@ -30,7 +34,7 @@ describe('every screen in the gallery', () => {
       // Words that screen shows and no other does, so this is not satisfied by a gallery that answers every address with the first screen. Awaited, because the router matches before it draws, and a screen read too early is empty for a reason that has nothing to do with it.
 
       // Waited for as long as the screen says its words take: two of them are about a wait, and asking those to prove themselves within a second is asking them to be the thing they are drawn to show.
-      const showed = await within(drawn()).findAllByText(
+      const showed = await within(drawn(showing.shownIn)).findAllByText(
         showing.proves,
         {
           exact: false,
