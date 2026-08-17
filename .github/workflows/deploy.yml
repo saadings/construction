@@ -19,7 +19,23 @@ env:
 jobs:
   # One runner for every check, because Actions bills per job rounded up to the minute: seven jobs of 31-51 seconds were seven billed minutes for under four minutes of work, and each of them paid the same 23 seconds of checkout, corepack and install. The step order below is the dependency graph those seven jobs expressed as `needs:`, and it is asserted as an order rather than left to be read.
   checks:
-    # A pull request tests the merge commit, so the same checks on the push that follows cannot prevent anything -- they report that `main` is broken after it already is. Every merge here is rebuilt against current `main` and re-run before it is merged, which is the thing the push run would otherwise be a slower second copy of.
+    # A pull request tests the merge commit, so the same checks on the push that follows cannot prevent anything -- they report that `main` is broken after it already is.
+
+    # The sentence that used to be here said every merge is rebuilt against current `main` and re-run before it lands. That was a **hope** when it was written, and for one half hour on 2026-08-17 it was false: #154 and #155 merged 104 seconds apart, each green against a base the other had moved, and `main` was red until the next branch cut from it failed on its first test run.
+
+    # It is now a fact the platform enforces, and three things enforce it -- all of them, together, and each named here because none is visible from this file.
+
+    # `checks` is a **required** status on a protected `main`.
+
+    # `strict: true`, so a branch behind `main` cannot merge at all. That is what makes the required check a check of the tree that lands rather than of a tree that once existed, which is the exact gap #154 and #155 fell through.
+
+    # `enforce_admins: true`, without which the rule is advisory for exactly the people it needed to apply to.
+
+    # Verified rather than assumed: `gh api repos/saadings/construction/branches/main/protection`.
+
+    # So do **not** add `push` to this job's trigger. It would spend a full billed job on every merge -- Actions bills per job rounded up to the minute -- to learn something the pull-request run already knows about the same tree, and it would learn it after the fact either way.
+
+    # And `deploy` below needs no `needs: checks`, which looks wrong in isolation and is the reason this is written here: **nothing untested can reach `main`, so a deploy triggered by a push to `main` can only ever receive a tested tree.** That argument rests entirely on the three above. Drop any one of them -- `enforce_admins` most quietly -- and it collapses without a single line of this file changing.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -152,6 +168,9 @@ jobs:
 
   # One runner for the whole of a push, for the same reason the checks are one: four jobs of well under a minute were four billed minutes, and three of them paid the same checkout and install. The two deploys were deliberately beside each other rather than in sequence, which accepted new UI going live before the backend caught up; in one job the backend goes first, which is the safer order and costs nothing.
   deploy:
+    # No `needs: checks`, and that is deliberate rather than an omission -- see the long comment on `checks` above for what makes it safe. In one line: `checks` is a required status on a protected `main` with `strict: true` and `enforce_admins: true`, so the only tree that can arrive here is one that was tested in the exact form it landed.
+
+    # This job runs nothing that asks whether the app is correct: install, detect what changed, sync secrets, generate types, build, ship. **Its whole safety is upstream of it**, which is why the reasoning is recorded rather than left to be worked out from a settings page nobody reads while editing a workflow.
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
