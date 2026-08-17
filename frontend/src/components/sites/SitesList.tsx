@@ -122,14 +122,14 @@ function StartOne({ className, short = false }: { className?: string; short?: bo
   return (
     <Link
       to="/sites/new"
-      aria-label="Start a house"
+      aria-label="Add a site"
       className={cn(
         'bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-md px-4 py-2.5 font-medium',
         className
       )}
     >
       <Plus className="size-5" aria-hidden />
-      {short ? null : 'Start a house'}
+      {short ? null : 'Add a site'}
     </Link>
   )
 }

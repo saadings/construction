@@ -278,7 +278,7 @@ describe('the same money, read off two screens', () => {
       />
     )
 
-    await pick(user, 'Trade', 'Steel')
+    await pick(user, 'Category', 'Steel')
     // One control now, opened and chosen from. Answering "who" used to mean first deciding which of two boxes you meant.
     await pick(user, 'Paid to', 'A steel supplier')
     await user.type(screen.getByLabelText('Amount'), '500000')

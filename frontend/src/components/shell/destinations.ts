@@ -14,6 +14,8 @@ export type Destination = {
 // A tab that goes nowhere is the dead end we have already fixed once, and a test holds every destination here to a route that exists. That test is why this list is still one row short of the one he drew: **`Daybook` is his second row and has no route**, so it arrives with its screen rather than ahead of it.
 
 // The headings are his, and they are the reason this file grew a field. A flat list of eight is a list you read; two named groups of two or three are groups you aim at.
+
+// The addresses stay as they are -- `/owed`, `/money-in`, `/more`. What he opens and what he reads is the label; a path is not drawn anywhere in his design, and moving three of them would put every link, trail and picture through a rename that changes nothing he can see.
 export const DESTINATIONS: Array<Destination> = [
   // Above the headings, because neither of them is a place you keep: one is where the whole thing is read back, and the other is where the day's work is entered.
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

@@ -641,7 +641,7 @@ export const ON_SHOW: Array<OnShow> = [
     at: '/more/what-for',
     name: 'What money is spent on',
     where: 'More, then what money is spent on',
-    proves: 'Trade',
+    proves: 'Categories',
     draw: () => <Trades trades={TRADES} onAdd={nothing} onEdit={nothing} onTakeOff={nothing} />,
   },
   {
@@ -881,11 +881,11 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'start-a-house',
     at: '/sites/new',
-    name: 'Start a house',
+    name: 'Add a site',
     where: 'the houses, then start one',
     proves: 'Covered area',
     draw: () => (
-      <Page title="Start a house">
+      <Page title="Add a site">
         <HouseDetails saying="Start it" onSave={nothing} />
       </Page>
     ),

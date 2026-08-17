@@ -38,7 +38,7 @@ export function Reports({ what }: { what: WhatTheBooksAnswer | null }) {
         <Report
           to="/dashboard"
           icon={<BarChart3 className="text-brass size-4" aria-hidden />}
-          name="Spent by trade"
+          name="Spending by category"
           what="Where the money went, by trade, across every house at once."
           figure={
             <>

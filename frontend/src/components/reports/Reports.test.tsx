@@ -33,7 +33,7 @@ describe('the questions the books get asked', () => {
     const cards = await screen.findAllByRole('listitem')
     expect(cards.map((card) => within(card).getByRole('link').textContent)).toHaveLength(3)
 
-    expect(screen.getByText('Spent by trade')).toBeTruthy()
+    expect(screen.getByText('Spending by category')).toBeTruthy()
     expect(screen.getByText('Who is owed what')).toBeTruthy()
     expect(screen.getByText('Partner positions')).toBeTruthy()
 
