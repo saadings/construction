@@ -24,7 +24,10 @@ const NAMED_BEFORE_COUNTING = 10
 
 export function TheSettings({ what }: { what: WhatIsOnIt }) {
   return (
-    <Page title="More" said="The lists the rest of the app picks from. Change them here once and every screen follows.">
+    <Page
+      title="Settings"
+      said="The lists the rest of the app picks from. Change them here once and every screen follows."
+    >
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Section
           name="Trade"

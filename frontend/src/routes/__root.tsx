@@ -1,4 +1,4 @@
-import { ClerkProvider, Show, SignInButton, UserButton, useAuth } from '@clerk/tanstack-react-start'
+import { ClerkProvider, Show, SignInButton, UserButton, useAuth, useUser } from '@clerk/tanstack-react-start'
 import { dark } from '@clerk/themes'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
@@ -68,6 +68,7 @@ function RootComponent() {
           <Shell
             finding={<TheSearch />}
             account={(avatar) => <UserButton appearance={{ elements: { userButtonAvatarBox: avatar } }} />}
+            who={<TheirName />}
           >
             <Outlet />
           </Shell>
@@ -119,4 +120,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   )
+}
+
+// The name beside the avatar at the foot of the nav, as drawn. Read here rather than in the shell for the reason everything else in that file is a prop: `useUser` needs Clerk's provider, and a shell that needs one is a shell nothing can draw or photograph.
+
+// Nothing at all until Clerk has answered, rather than a placeholder: a name is the one thing on that row, and a wrong or stand-in name beside somebody's own avatar is worse than a row with an avatar alone.
+function TheirName() {
+  const { user } = useUser()
+
+  return user?.fullName ?? null
 }

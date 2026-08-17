@@ -11,7 +11,7 @@ export type Destination = {
 
 // Written once and read by both shapes of the nav -- the rail and the strip a phone scrolls -- so a destination cannot appear in one and be forgotten in the other.
 
-// A tab that goes nowhere is the dead end we have already fixed once, and a test holds every destination here to a route that exists. That test is why this list is shorter than the one he drew: `Daybook`, `Receipts` and `Reports` are in his design as top-level rows and have no route yet, so they arrive with their routes rather than ahead of them.
+// A tab that goes nowhere is the dead end we have already fixed once, and a test holds every destination here to a route that exists. That test is why this list is still one row short of the one he drew: **`Daybook` is his second row and has no route**, so it arrives with its screen rather than ahead of it.
 
 // The headings are his, and they are the reason this file grew a field. A flat list of eight is a list you read; two named groups of two or three are groups you aim at.
 export const DESTINATIONS: Array<Destination> = [
@@ -21,17 +21,18 @@ export const DESTINATIONS: Array<Destination> = [
   { to: '/', label: 'Sites', icon: Building2, under: 'Ledgers' },
   { to: '/people', label: 'People', icon: Users, under: 'Ledgers' },
 
-  // `Owed` rather than the design's `Payables` on purpose. The screen it opens is titled `Owed` and is in the other half of this rename; a rail saying one word over a page saying another is the mismatch a picture caught on `coming-in` an hour ago, and it is not worth creating a second one to be an hour early.
-  { to: '/owed', label: 'Owed', icon: HandCoins, under: 'Money' },
+  // `Payables`, `Receipts` and `Settings` are the words he drew. They were `Owed`, `Money in` and `More` because I ruled that a rail saying one word over a page saying another is worse than a rail disagreeing with the drawing -- which was true, and was the wrong way out of it: the screens take the drawn words too, so there is no mismatch to avoid.
 
-  // `Money in` rather than the design's `Receipts`, for the reason above: the screen it opens is titled `Money in`, which is the app's own word -- a house says `Come in` and the button says `Put money in`.
-  { to: '/money-in', label: 'Money in', icon: ArrowDownToLine, under: 'Money' },
+  // He opened the deployed app and said it is very different from what he drew. The design decides this now, and a deviation is a thing we bring to him rather than a thing we make.
+  { to: '/owed', label: 'Payables', icon: HandCoins, under: 'Money' },
+
+  { to: '/money-in', label: 'Receipts', icon: ArrowDownToLine, under: 'Money' },
 
   // Arrived with its route rather than ahead of it, which is what the comment above asked for. Under `Money` because every question it opens is one about money, and because the design puts it there.
   { to: '/reports', label: 'Reports', icon: BarChart3, under: 'Money' },
 
-  // Last and apart, the way he drew it: pushed to the foot of the rail above the sign-out, because it is the one row nobody is trying to reach quickly. `More` rather than his `Settings` for the same reason as the row above.
-  { to: '/more', label: 'More', icon: Settings2 },
+  // Last and apart, the way he drew it: pushed to the foot of the rail above the account, because it is the one row nobody is trying to reach quickly.
+  { to: '/more', label: 'Settings', icon: Settings2 },
 ]
 
 /** The headings, in the order the rail draws them. Read off the destinations rather than written twice, so a group cannot outlive the last thing in it. */

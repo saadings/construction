@@ -57,7 +57,7 @@ const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1
 export function EverythingThatCameIn({ everything }: { everything: EverythingIn | null | undefined }) {
   if (everything === undefined) {
     return (
-      <Page title="Money in" said={WHAT_THIS_IS}>
+      <Page title="Receipts" said={WHAT_THIS_IS}>
         <MoneyInWaiting />
       </Page>
     )
@@ -66,14 +66,14 @@ export function EverythingThatCameIn({ everything }: { everything: EverythingIn 
   // The ledger has answered and does not know this sign-in. Nothing on this screen would work, so it offers none of it.
   if (everything === null) {
     return (
-      <Page title="Money in" said={WHAT_THIS_IS}>
+      <Page title="Receipts" said={WHAT_THIS_IS}>
         <NotKnownHere />
       </Page>
     )
   }
 
   return (
-    <Page title="Money in" said={WHAT_THIS_IS}>
+    <Page title="Receipts" said={WHAT_THIS_IS}>
       <TheThreeKinds everything={everything} />
 
       {everything.receipts.length === 0 ? (
