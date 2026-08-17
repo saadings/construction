@@ -9,6 +9,7 @@ import type { ReactNode } from 'react'
 import { useEffect } from 'react'
 
 import { api } from '../../../convex/_generated/api'
+import { TheSearch } from '../components/search/TheSearch'
 import { Shell } from '../components/shell/Shell'
 import { WayIn } from '../components/shell/WayIn'
 import { env } from '../lib/env'
@@ -61,7 +62,8 @@ function RootComponent() {
         </Show>
         <Show when="signed-in">
           <RememberThisSignIn />
-          <Shell>
+          {/* The search is handed in from here rather than drawn inside the shell, for the reason the shell says: it reads the ledger, and a shell that owns a `useQuery` cannot be rendered by anything that has no Convex client -- which is every test about the nav and every picture of it. */}
+          <Shell finding={<TheSearch />}>
             <Outlet />
           </Shell>
         </Show>

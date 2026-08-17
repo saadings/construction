@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
@@ -12,6 +13,7 @@ import { Positions } from '../components/partners/Positions'
 import { People } from '../components/people/People'
 import { TheirAccount } from '../components/people/TheirAccount'
 import { Reports } from '../components/reports/Reports'
+import { Finding, WayToFind } from '../components/search/Finding'
 import { BankAccounts } from '../components/settings/BankAccounts'
 import { HowItLooks } from '../components/settings/HowItLooks'
 import { TheMenu } from '../components/settings/TheMenu'
@@ -69,6 +71,33 @@ const nothingTrue = () => Promise.resolve(true)
 // Clerk's `SignInButton` in the app and this in the gallery, because nothing here may reach a deployment. It stands in for the wrapper and not for the button: Clerk's own hangs an `onClick` on whatever is inside it and draws no box, so what is measured here is the button the app ships rather than a copy of it kept in step by hand.
 function AsClerkWouldOpenIt({ children }: { children: ReactNode }) {
   return children
+}
+
+// The search, with the names invented and the reading already done. What the app draws is `TheSearch`, which holds the open state and reads the ledger for them -- and the gallery has no ledger, which is exactly why the reading and the drawing are two components.
+
+// Its own state rather than a prop, because a dialog that starts closed is a picture of a page with nothing on it, and `tapFirst` is what opens it.
+function TheSearchAsDrawn() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="p-3">
+      <WayToFind
+        onOpen={() => {
+          setOpen(true)
+        }}
+      />
+      <Finding
+        found={[
+          { id: 's1', name: THE_HOUSE, what: 'House', to: '/sites/s1' },
+          { id: 's2', name: '204-C, Phase 6', what: 'House', to: '/sites/s2' },
+          { id: 'p1', name: 'The tile shop', what: 'Person', to: '/people/p1' },
+          { id: 'p2', name: 'The one who started it', what: 'Person', to: '/people/p2' },
+        ]}
+        open={open}
+        onOpen={setOpen}
+      />
+    </div>
+  )
 }
 
 export const ON_SHOW: Array<OnShow> = [
@@ -704,6 +733,19 @@ export const ON_SHOW: Array<OnShow> = [
         <TheNavOnAPhone />
       </div>
     ),
+  },
+  {
+    slug: 'finding-anything',
+    at: '/dashboard',
+    // A dialog is a portal on `body`, the same as the sheet and for the same reason: what the gallery draws into is not where this lands.
+    shownIn: '[data-slot="dialog-content"]',
+    name: 'Finding a house or a person',
+    where: 'the header of every screen',
+    proves: 'Houses',
+    // Opened, because a dialog that starts closed photographs an empty page and reports a clean nothing. The nav went 889 tests and 17 screens that way, and this is the same shape: a control on the header and everything worth looking at behind it.
+    tapFirst: ['Find a house or a person'],
+    // Drawn with the names already read. The screen it is really in reads them only once somebody opens it, and there is a second picture in that -- the one where nothing has arrived -- which is what `Finding.test` holds rather than a photograph, because a wait has no fixed moment to point a camera at.
+    draw: () => <TheSearchAsDrawn />,
   },
   {
     slug: 'agree-a-contract',

@@ -78,6 +78,25 @@ if (typeof window !== 'undefined') {
     Object.defineProperty(window, 'localStorage', { value: store, configurable: true })
   }
 
+  // The fourth, and it arrived with `cmdk`: a command list watches its own height so it can size the popup around it. jsdom has no `ResizeObserver` at all, and the throw lands inside React's render, so the dialog draws **nothing** and every query against it fails as "unable to find the text" -- which reads as the component being wrong rather than the room being empty.
+
+  // Nothing is observed, because there is no layout here to observe. What matters is that constructing one and calling it is not an error: a component that measures itself must be *drawable* in a room with no measurements, and where its size actually matters is `yarn columns`, in a browser.
+  if (typeof window.ResizeObserver === 'undefined') {
+    window.ResizeObserver = class implements ResizeObserver {
+      observe() {
+        // No layout, so nothing to report.
+      }
+
+      unobserve() {
+        // The same, and it must exist: a component that observes on mount disconnects on unmount.
+      }
+
+      disconnect() {
+        // The same again.
+      }
+    }
+  }
+
   // What a resize is, to anything watching. A test sets `window.innerWidth` and dispatches one; nothing here polls, so without this a width set after mount is a width nobody hears about.
   window.addEventListener('resize', () => {
     for (const query of asked) {

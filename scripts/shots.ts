@@ -213,8 +213,23 @@ async function main(): Promise<void> {
         // Read after the taps and added back, so what is asserted is the property that was always meant -- the app's screen starts at the top of the page -- and the two ways it can be false are asked about separately: furniture pushing it down is caught here, and a page left scrolled by the screen before is caught above, before anything on this one has moved.
         const startsAt = box.y + howFarDown(await on.evaluate('window.scrollY'))
 
-        // Both directions. This was `> TOP_OF_THE_SCREEN` alone, which is only half an assertion: it catches furniture pushing the screen down and says nothing about the screen being pushed *up*.
-        if (Math.abs(startsAt) > TOP_OF_THE_SCREEN) {
+        // An overlay is not a page and does not begin where one does. A dialog is `top-[50%]` with itself pulled back half its height, so on a phone it begins 247px down and always will -- the search is one, and the assertion below is about a screen that is *in* the page rather than lifted out of it.
+
+        // Asked of the element rather than excused by name: `position: fixed` is what taken-out-of-the-flow means, and a sheet says it too while still starting at zero, because it is anchored to an edge. So this is not a way round the rule for anything that wants one.
+        const liftedOut: unknown = await on.evaluate(
+          `getComputedStyle(document.querySelector('${screen.shownIn}')).position === 'fixed'`
+        )
+
+        // What is true of a lifted-out screen instead, and it is the property the top-of-the-page rule was standing in for: the thing being photographed is wholly inside the picture. A centred dialog taller than the viewport is cut off at both ends and the picture says nothing about the half that is missing.
+        if (liftedOut === true) {
+          if (box.y < -TOP_OF_THE_SCREEN || box.y + box.height > size.height + TOP_OF_THE_SCREEN) {
+            throw new Error(
+              `${screen.slug} at ${String(size.width)} is lifted out of the page and runs from ${String(Math.round(box.y))}px to ${String(Math.round(box.y + box.height))}px, outside a ${String(size.height)}px picture. ` +
+                `An overlay is photographed where it opens, and what has to be true of it is that all of it is in frame.`
+            )
+          }
+        } else if (Math.abs(startsAt) > TOP_OF_THE_SCREEN) {
+          // Both directions. This was `> TOP_OF_THE_SCREEN` alone, which is only half an assertion: it catches furniture pushing the screen down and says nothing about the screen being pushed *up*.
           throw new Error(
             `The app's screen starts ${String(Math.round(startsAt))}px from the top of the page on ${screen.slug} at ${String(size.width)}. ` +
               `Positive is the gallery's own furniture in the picture; negative is the screen drawn above where the page begins.`
