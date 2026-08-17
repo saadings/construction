@@ -2,7 +2,8 @@
 import { readFileSync } from 'node:fs'
 
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Shell } from './Shell'
@@ -40,20 +41,42 @@ function renderAt(path: string) {
 
 // The sheet is gone with the design, and with it the hamburger, the dialog, and the close-behind-you rule that a sheet needed. A strip that is simply on the page needs none of that, which is the one thing this redesign gives back to the tests as well as to him.
 describe('the nav', () => {
-  it('offers every place there is to go, in both shapes', async () => {
+  it('offers every place there is to go', async () => {
     renderAt('/')
     await screen.findByText('The screen itself')
 
-    const shapes = screen.getAllByRole('list', { name: 'Sections' })
-
-    // Both, counted. One shape rendering everything and the other rendering nothing passes any check that looks at the document as a whole.
-    expect(shapes, 'the rail and the strip are two lists, not one').toHaveLength(2)
-
-    for (const shape of shapes) {
-      for (const destination of DESTINATIONS) {
-        expect(within(shape).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
-      }
+    const rail = screen.getByRole('list', { name: 'Sections' })
+    for (const destination of DESTINATIONS) {
+      expect(within(rail).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
     }
+  })
+
+  it('offers every one of them inside the sheet as well, which is the whole of the nav on a phone', async () => {
+    // The rail and the sheet draw one component, so this cannot drift -- and it is asked anyway, because "they are the same component" is a claim about the source and this is a claim about what a person can reach.
+    const user = userEvent.setup()
+    renderAt('/')
+    await screen.findByText('The screen itself')
+
+    await user.click(screen.getByRole('button', { name: 'Sections' }))
+    const sheet = await screen.findByRole('dialog')
+
+    for (const destination of DESTINATIONS) {
+      expect(within(sheet).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
+    }
+  })
+
+  it('closes the sheet behind whatever was picked, because a phone has only the sheet', async () => {
+    const user = userEvent.setup()
+    renderAt('/')
+    await screen.findByText('The screen itself')
+
+    await user.click(screen.getByRole('button', { name: 'Sections' }))
+    const sheet = await screen.findByRole('dialog')
+    await user.click(within(sheet).getByRole('link', { name: /People/ }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
   })
 
   it('groups them under the headings he drew, and draws no heading with nothing under it', async () => {

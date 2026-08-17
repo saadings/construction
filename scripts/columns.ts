@@ -13,9 +13,14 @@ import { GALLERY, everyScreenItShows, serveTheGallery, unfoldIt } from './theGal
 
 // The defect it is here to stop: a grid written once per row sizes a content-shaped track to that row's own content, so the column lands wherever that row happens to need it. Four screens had it, and the three that did not were not defended against it -- their last cell simply happened to be the same width every time.
 
-/** The same widths the pictures are taken at: a phone, the width the sidebar changes at, and a desk. */
+// A width list is a claim about which devices exist, and it needs the same scepticism as a selector. This one said phone, breakpoint, desk -- and it had never rendered the state his own phone is in when he turns it sideways to read a column of figures, which is 852 CSS px and lands above every breakpoint the app has.
+
+// Nothing here found that. It was found by somebody measuring the built app at a width the list did not contain, which is the one thing a list cannot do for itself.
+
+/** A phone, the same phone turned sideways, the width the rail appears at, and a desk. */
 const SCREENS_READ_ON = [
   { width: 390, height: 844 },
+  { width: 852, height: 393 },
   { width: 768, height: 1024 },
   { width: 1280, height: 800 },
 ]
@@ -36,8 +41,12 @@ const A_THUMB_NEEDS = 44
 
 // The widths were a premise rather than a measurement, inherited from a shape that was deleted. So the question is asked of the pointer instead, at every width, in a context that reports a coarse one -- which is what the app's own rule now keys on.
 
-/** The floor for it. Every other check here counts what it saw; this one saw nothing at all until this branch, which is exactly how the nav stayed 32px. */
-const AT_LEAST_THIS_MANY_TAPPED = 5
+// The floor for it. Every other check here counts what it saw; this one saw nothing at all until it was written, which is exactly how the nav stayed 32px.
+
+// Its subject has moved twice and the number did not, which is the failure a floor is itself vulnerable to. It was five when the sheet held five rows; it stayed five when the sheet was deleted and a strip held five; and with the sheet back it would be satisfied by a sweep that opened nothing and found the hamburger alone. So it is set from what the nav actually contains: six rows and a sign-out in the rail, the same again in the sheet, and the button that opens it -- at four widths.
+
+/** Well under what a full sweep sees, and far above what one that never opened the sheet would. */
+const AT_LEAST_THIS_MANY_TAPPED = 40
 
 /** And once more for the trails. Only the screens with something above them draw one, so this is well under what a full sweep sees -- but a `data-slot` renamed under us would report every trail unpinned across an app whose trails it never found. */
 const AT_LEAST_THIS_MANY_TRAILS = 20
