@@ -57,8 +57,8 @@ const PIECES = new Set([
   'PayOut',
 ])
 
-/** Drawn by a route, but not from the gallery: the shell holds Clerk's own control, and `TheSearch` calls `useQuery`, which throws outside a Convex client. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */
-const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell', 'TheSearch'])
+/** Drawn by a route, but not from the gallery: `TheSearch` calls `useQuery`, which throws outside a Convex client. `Shell` was here and is not any more -- it held Clerk's own control, so the header was never drawn at any width, and the account is a prop now. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */
+const NOT_WITHOUT_A_SIGN_IN = new Set(['TheSearch'])
 
 /** What being un-drawable actually looks like in a file: Clerk's own control, or a read that needs a client. Written as a check rather than as a sentence, so a name can only stay on the list while the thing it names is still true of it. */
 const NEEDS_A_PROVIDER = /<UserButton|useQuery\(/

@@ -1,4 +1,3 @@
-import { UserButton } from '@clerk/tanstack-react-start'
 import type { ReactNode } from 'react'
 
 import { TheNav, TheNavOnAPhone } from './TheNav'
@@ -11,15 +10,23 @@ import { TheNav, TheNavOnAPhone } from './TheNav'
 
 // The search is handed in rather than drawn here, and it is the same rule the nav's footer is written to: `TheSearch` reads the ledger, `useQuery` throws outside a Convex client, and a `Shell` that owns one is a `Shell` nothing can render on its own. Nine tests about the nav failed the moment it was put in this file directly -- not wrongly, and not about the nav.
 
-// Which is the rule twice over now: a component bound to a provider must not own anything else worth drawing. Clerk taught it first, and the nav spent an afternoon unphotographed inside a component nothing could draw.
-export function Shell({ children, finding }: { children: ReactNode; finding?: ReactNode }) {
-  // Clerk's own button, sized through the only handle it gives: a class on the avatar box. Reasoned rather than measured -- nothing draws this without a sign-in, so the wrapper around it is what the sweep can see and this is what it cannot.
-  const signOut = <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-8' } }} />
+// Which is the rule three times now, and the third is what makes this file drawable at all. The account was Clerk's own control written straight into this component, so nothing could render the shell -- and the header, the one bar on every screen at every width, had never been drawn by any test or photographed by any camera. The nav had exactly this and it is how its rows stayed 32px until somebody's thumb found them.
 
+// So the account is handed in, and handed in as something that takes a size rather than as a finished control: 44 in the corner and 32 on the rail are decisions this file makes and states its reasons for, and Clerk is only what fills them.
+export function Shell({
+  children,
+  finding,
+  account,
+}: {
+  children: ReactNode
+  finding?: ReactNode
+  /** Whoever is signed in, drawn at whatever size the place asks for. */
+  account: (avatar: string) => ReactNode
+}) {
   return (
     <div className="bg-background text-foreground flex min-h-dvh w-full">
       <div className="hidden md:flex">
-        <TheNav footer={signOut} />
+        <TheNav footer={account('size-8')} />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -35,9 +42,7 @@ export function Shell({ children, finding }: { children: ReactNode; finding?: Re
           <div className="ml-auto md:ml-0">{finding}</div>
 
           {/* The corner, on a phone, on every screen. Signing out is not a thing somebody strolls to -- it is what they reach for on a shared phone or the wrong account, and they look for their own face rather than for a menu. It is out of the sheet entirely: two places to sign out is worse than either one. */}
-          <div className="ml-auto flex size-11 items-center justify-center md:hidden">
-            <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-11' } }} />
-          </div>
+          <div className="ml-auto flex size-11 items-center justify-center md:hidden">{account('size-11')}</div>
         </header>
 
         <main className="min-w-0 flex-1">{children}</main>

@@ -20,6 +20,7 @@ import { TheMenu } from '../components/settings/TheMenu'
 import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
 import { Page } from '../components/shell/Page'
+import { Shell } from '../components/shell/Shell'
 import { TheNav, TheNavOnAPhone } from '../components/shell/TheNav'
 import { WayIn } from '../components/shell/WayIn'
 import { AgreeAContract } from '../components/site/AgreeAContract'
@@ -76,6 +77,23 @@ function AsClerkWouldOpenIt({ children }: { children: ReactNode }) {
 // The search, with the names invented and the reading already done. What the app draws is `TheSearch`, which holds the open state and reads the ledger for them -- and the gallery has no ledger, which is exactly why the reading and the drawing are two components.
 
 // Its own state rather than a prop, because a dialog that starts closed is a picture of a page with nothing on it, and `tapFirst` is what opens it.
+
+// The shell with its two providers stood in for and nothing else changed. The account is a circle the size the shell asked for, so what is measured is the box the real one is given rather than a copy of the real one kept in step by hand -- and `chrome.test` is what asks whether the app hands over Clerk's own.
+function TheShellAsDrawn() {
+  return (
+    <Shell
+      account={(avatar) => <span className={`bg-brass block rounded-full ${avatar}`} />}
+      finding={<TheSearchAsDrawn />}
+    >
+      <Page title="Dashboard">
+        <p className="text-muted-foreground max-w-prose">
+          Whatever screen you are on sits here. This picture is of the frame around it.
+        </p>
+      </Page>
+    </Shell>
+  )
+}
+
 function TheSearchAsDrawn() {
   const [open, setOpen] = useState(false)
 
@@ -733,6 +751,18 @@ export const ON_SHOW: Array<OnShow> = [
         <TheNavOnAPhone />
       </div>
     ),
+  },
+  {
+    slug: 'the-shell',
+    at: '/dashboard',
+    name: 'The shell, whole',
+    where: 'every screen, at every width',
+    // Not `Construction`, which this shell says twice -- once in the rail and once in the header -- and each of them is hidden at the width the other is shown at. Playwright takes the first match and waits for it to be visible, so a marker on either one waits forever at one width or the other. The same trap the rail fell into an hour after it was drawn.
+    proves: 'Whatever screen you are on sits here.',
+    // The one thing on every screen and nothing had ever drawn it. `Shell` held Clerk's own control, Clerk will not render outside its own provider, and the gallery must hold nothing that could reach a deployment -- so the header was never photographed at any width, and the rail and the sheet were only ever drawn on their own, out of the row they really sit in.
+
+    // Three props were what it took, each made one at a time as the thing behind it turned out to matter: the rail's footer when its rows were 32px, the search when it started reading the ledger, and the account last, which was the one still holding the door shut.
+    draw: () => <TheShellAsDrawn />,
   },
   {
     slug: 'finding-anything',

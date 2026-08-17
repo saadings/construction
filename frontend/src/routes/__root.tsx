@@ -1,4 +1,4 @@
-import { ClerkProvider, Show, SignInButton, useAuth } from '@clerk/tanstack-react-start'
+import { ClerkProvider, Show, SignInButton, UserButton, useAuth } from '@clerk/tanstack-react-start'
 import { dark } from '@clerk/themes'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
@@ -62,8 +62,13 @@ function RootComponent() {
         </Show>
         <Show when="signed-in">
           <RememberThisSignIn />
-          {/* The search is handed in from here rather than drawn inside the shell, for the reason the shell says: it reads the ledger, and a shell that owns a `useQuery` cannot be rendered by anything that has no Convex client -- which is every test about the nav and every picture of it. */}
-          <Shell finding={<TheSearch />}>
+          {/* Both of these are handed in from here rather than drawn inside the shell, for the reason the shell says: one reads the ledger and the other is Clerk's, and neither will render without the provider it belongs to. A shell that owns either cannot be drawn by anything -- which was every test about the nav, and every camera. */}
+
+          {/* Clerk's real control and not a wrapper around one. `WayIn` was made drawable the same way and that is the caution as well as the precedent: a prop the app fills is a prop the app can fill with something that does nothing, and the screen photographs perfectly either way. `chrome.test` is what asks whether what is handed over here is the real thing. */}
+          <Shell
+            finding={<TheSearch />}
+            account={(avatar) => <UserButton appearance={{ elements: { userButtonAvatarBox: avatar } }} />}
+          >
             <Outlet />
           </Shell>
         </Show>
