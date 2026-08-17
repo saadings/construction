@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as OwedRouteImport } from './routes/owed'
 import { Route as MoreRouteImport } from './routes/more'
+import { Route as MoneyInRouteImport } from './routes/money-in'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MoreIndexRouteImport } from './routes/more.index'
@@ -39,6 +40,11 @@ const OwedRoute = OwedRouteImport.update({
 const MoreRoute = MoreRouteImport.update({
   id: '/more',
   path: '/more',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MoneyInRoute = MoneyInRouteImport.update({
+  id: '/money-in',
+  path: '/money-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -110,6 +116,7 @@ const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/money-in': typeof MoneyInRoute
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/money-in': typeof MoneyInRoute
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/more/how-it-looks': typeof MoreHowItLooksRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/money-in': typeof MoneyInRoute
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/money-in'
     | '/more'
     | '/owed'
     | '/people'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/money-in'
     | '/owed'
     | '/people'
     | '/more/how-it-looks'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/money-in'
     | '/more'
     | '/owed'
     | '/people'
@@ -220,6 +232,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  MoneyInRoute: typeof MoneyInRoute
   MoreRoute: typeof MoreRouteWithChildren
   OwedRoute: typeof OwedRoute
   PeopleRoute: typeof PeopleRouteWithChildren
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       path: '/more'
       fullPath: '/more'
       preLoaderRoute: typeof MoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/money-in': {
+      id: '/money-in'
+      path: '/money-in'
+      fullPath: '/money-in'
+      preLoaderRoute: typeof MoneyInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -379,6 +399,7 @@ const PeopleRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  MoneyInRoute: MoneyInRoute,
   MoreRoute: MoreRouteWithChildren,
   OwedRoute: OwedRoute,
   PeopleRoute: PeopleRouteWithChildren,
