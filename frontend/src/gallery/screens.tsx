@@ -11,6 +11,7 @@ import { AgreeShares } from '../components/partners/AgreeShares'
 import { Positions } from '../components/partners/Positions'
 import { People } from '../components/people/People'
 import { TheirAccount } from '../components/people/TheirAccount'
+import { Reports } from '../components/reports/Reports'
 import { BankAccounts } from '../components/settings/BankAccounts'
 import { HowItLooks } from '../components/settings/HowItLooks'
 import { TheMenu } from '../components/settings/TheMenu'
@@ -522,6 +523,22 @@ export const ON_SHOW: Array<OnShow> = [
         />
       )
     },
+  },
+  {
+    slug: 'reports',
+    at: '/reports',
+    name: 'Reports',
+    where: 'the nav, under the money',
+    proves: 'The questions the books get asked',
+    // Every figure here is one a screen behind a card also shows, so each is a different number: a card reading the wrong field looks exactly like a working card when two of them happen to match.
+    draw: () => (
+      <Reports
+        what={{
+          spending: { trades: 7, goneOutPaisa: paisa(19_938_452), ownMoneyPaisa: paisa(6_540_000) },
+          owed: { people: 3, payablePaisa: paisa(3_412_500) },
+        }}
+      />
+    ),
   },
   {
     slug: 'people',

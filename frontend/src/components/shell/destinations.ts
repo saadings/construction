@@ -1,4 +1,4 @@
-import { Building2, HandCoins, LayoutDashboard, Settings2, Users } from 'lucide-react'
+import { ArrowDownToLine, BarChart3, Building2, HandCoins, LayoutDashboard, Settings2, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type Destination = {
@@ -23,6 +23,12 @@ export const DESTINATIONS: Array<Destination> = [
 
   // `Owed` rather than the design's `Payables` on purpose. The screen it opens is titled `Owed` and is in the other half of this rename; a rail saying one word over a page saying another is the mismatch a picture caught on `coming-in` an hour ago, and it is not worth creating a second one to be an hour early.
   { to: '/owed', label: 'Owed', icon: HandCoins, under: 'Money' },
+
+  // `Money in` rather than the design's `Receipts`, for the reason above: the screen it opens is titled `Money in`, which is the app's own word -- a house says `Come in` and the button says `Put money in`.
+  { to: '/money-in', label: 'Money in', icon: ArrowDownToLine, under: 'Money' },
+
+  // Arrived with its route rather than ahead of it, which is what the comment above asked for. Under `Money` because every question it opens is one about money, and because the design puts it there.
+  { to: '/reports', label: 'Reports', icon: BarChart3, under: 'Money' },
 
   // Last and apart, the way he drew it: pushed to the foot of the rail above the sign-out, because it is the one row nobody is trying to reach quickly. `More` rather than his `Settings` for the same reason as the row above.
   { to: '/more', label: 'More', icon: Settings2 },

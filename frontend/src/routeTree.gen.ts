@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as OwedRouteImport } from './routes/owed'
 import { Route as MoreRouteImport } from './routes/more'
@@ -27,6 +28,11 @@ import { Route as SitesSiteIdSharesRouteImport } from './routes/sites.$siteId.sh
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
 import { Route as SitesSiteIdComingInRouteImport } from './routes/sites.$siteId.coming-in'
 
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PeopleRoute = PeopleRouteImport.update({
   id: '/people',
   path: '/people',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/reports': typeof ReportsRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/money-in': typeof MoneyInRoute
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/reports': typeof ReportsRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/reports': typeof ReportsRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/more'
     | '/owed'
     | '/people'
+    | '/reports'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
@@ -197,6 +207,7 @@ export interface FileRouteTypes {
     | '/money-in'
     | '/owed'
     | '/people'
+    | '/reports'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/more'
     | '/owed'
     | '/people'
+    | '/reports'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
@@ -236,6 +248,7 @@ export interface RootRouteChildren {
   MoreRoute: typeof MoreRouteWithChildren
   OwedRoute: typeof OwedRoute
   PeopleRoute: typeof PeopleRouteWithChildren
+  ReportsRoute: typeof ReportsRoute
   SitesNewRoute: typeof SitesNewRoute
   SitesSiteIdComingInRoute: typeof SitesSiteIdComingInRoute
   SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
@@ -245,6 +258,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/people': {
       id: '/people'
       path: '/people'
@@ -403,6 +423,7 @@ const rootRouteChildren: RootRouteChildren = {
   MoreRoute: MoreRouteWithChildren,
   OwedRoute: OwedRoute,
   PeopleRoute: PeopleRouteWithChildren,
+  ReportsRoute: ReportsRoute,
   SitesNewRoute: SitesNewRoute,
   SitesSiteIdComingInRoute: SitesSiteIdComingInRoute,
   SitesSiteIdDayRoute: SitesSiteIdDayRoute,
