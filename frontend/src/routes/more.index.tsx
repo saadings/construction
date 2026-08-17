@@ -3,53 +3,18 @@ import { useQuery } from 'convex/react'
 
 import { api } from '../../../convex/_generated/api'
 import { whatItLooksLike } from '../components/settings/HowItLooks'
-import type { WhereToGo } from '../components/settings/TheMenu'
-import { TheCountWaiting, TheMenu } from '../components/settings/TheMenu'
+import { TheSettings } from '../components/settings/TheSettings'
 import { useHowItLooks } from '../lib/theme'
 
 export const Route = createFileRoute('/more/')({ component: More })
 
-// How many, or what it is set to. A menu that lists only names has to be opened five times to answer one question, and four of these five answer theirs in a word.
+// The lists themselves rather than how many of them there are. A count answers *is there anything on it*; the card answers *is the one I am looking for on it*, which is the question that had somebody opening four screens.
 
-// A list still coming hands back the shape of a figure rather than a nought: they are different answers, and a nought is the one that reads as a fact. A list that refused says nothing at all, because the screen behind it will say why.
-function howMany(rows: Array<unknown> | null | undefined, none: string) {
-  if (rows === undefined) return <TheCountWaiting />
-  if (rows === null) return ''
-
-  return rows.length === 0 ? none : String(rows.length)
-}
-
+// Handed over as they came. `undefined` is a reading still in flight and `null` is the ledger saying it has never seen this sign-in -- the card keeps them apart, because a refusal drawn as a wait is a card that pulses forever.
 function More() {
   const trades = useQuery(api.trades.queries.list, {})
   const accounts = useQuery(api.bankAccounts.queries.list, {})
   const { chosen } = useHowItLooks()
 
-  const places: Array<WhereToGo> = [
-    {
-      to: '/more/what-for',
-      name: 'Trade',
-      what: 'The list a day sheet picks from — bricks, steel, plot, and anything you add.',
-      now: howMany(trades, 'none yet'),
-    },
-    {
-      to: '/more/which-account',
-      name: 'Account',
-      what: 'The accounts a cheque or transfer says it left. Only the last four figures are kept.',
-      now: howMany(accounts, 'none yet'),
-    },
-    {
-      to: '/more/who-can-sign-in',
-      name: 'Who can sign in',
-      what: 'Invite somebody. Nobody can sign in without one.',
-      now: '',
-    },
-    {
-      to: '/more/how-it-looks',
-      name: 'Appearance',
-      what: 'Light, dark, or whatever the phone is doing.',
-      now: whatItLooksLike(chosen),
-    },
-  ]
-
-  return <TheMenu places={places} />
+  return <TheSettings what={{ trades, accounts, looksLike: whatItLooksLike(chosen) }} />
 }
