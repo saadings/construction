@@ -33,8 +33,12 @@ function inBasisPoints(typed: string): number | null {
 }
 
 // The same markup at every width: a phone gets the name and the box, a desk gets what he put in and the way out as well.
+
+// `gap-y-3` and not `gap-y-1`, and the twelve pixels are `ROOM_FOR_A_THUMB`'s. On a phone this row wraps and the way out lands under the box somebody types a share into -- the way out grows its hit area twelve pixels past what is drawn, so with four pixels between the lines it reached **eight pixels into the input above it**. A thumb aimed at the bottom of a percentage took the partner out of the shares.
+
+// Which is the price of the give-back stated in one place: a control that grows into the row above needs the row above to have moved out of the way. Nothing here is drawn differently; the lines are twelve pixels apart instead of four.
 const ROW =
-  'grid grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_5rem]'
+  'grid grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-x-4 gap-y-3 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem_5rem]'
 
 // Handed the same reading the house page shows, rather than a slice of it: the route passes what came back and this decides what to draw, so the three states are answered in one place instead of two disagreeing.
 export function AgreeShares({

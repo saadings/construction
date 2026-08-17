@@ -82,11 +82,17 @@ describe('what shadcn brings that a way out does not want', () => {
 
     // Which is why the floor is written as tappable area rather than as visible size. A rule read as "44px tall" is one somebody argues an exemption out of the first time it would double the height of a dense table; this one needs no exemption at all.
 
-    // The horizontal half is newer and came from the widened sweep: `Cancel` measured 44 high and **43 wide**, because a control drawn as text is exactly as wide as its own word and WCAG 2.5.5 asks for 44 in both directions. `min-width` cannot answer it -- this is `inline`, and `min-width` does not apply to a non-replaced inline box -- so it is the same padding-and-give-it-back sideways.
+    // The horizontal half came from the widened sweep: `Cancel` measured 44 high and **43 wide**, because a control drawn as text is exactly as wide as its own word and WCAG 2.5.5 asks for 44 in both directions. `min-width` cannot answer it -- this is `inline`, and `min-width` does not apply to a non-replaced inline box -- so the padding grows it sideways too.
     expect(classesOn(), 'nothing makes this taller than its own words').toMatch(/(^|\s)py-3(\s|$)/)
     expect(classesOn(), 'the row it sits in moves to make room').toMatch(/(^|\s)-my-3(\s|$)/)
     expect(classesOn(), 'nothing makes this wider than its own word').toMatch(/(^|\s)px-2(\s|$)/)
-    expect(classesOn(), 'the row it sits in moves sideways to make room').toMatch(/(^|\s)-mx-2(\s|$)/)
+  })
+
+  it('takes the width it grew by, rather than taking it off a neighbour', () => {
+    // The give-back goes one way only, and the asymmetry is the whole finding. A row owns its own height and can hand twenty-four pixels back for nothing. **A line is shared**: `-mx-2` handed sixteen pixels back into the line, and on `sure-you-want-to` the confirmation and its cancel sit twelve pixels apart -- each pulled eight toward the other, so their hit areas overlapped by four, on the pair where a mis-tap removes a row somebody has to re-enter.
+
+    // Nothing measured it until `columns` learned to compare two controls with each other. Every question that file asked before was about one element at a time, and each of those two was perfectly reachable on its own.
+    expect(classesOn(), 'the width it grew by is taken back off whatever is beside it').not.toMatch(/(^|\s)-mx-2(\s|$)/)
   })
 
   it('says what it does, so the thing that measures does not have to guess', () => {
