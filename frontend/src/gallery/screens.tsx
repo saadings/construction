@@ -102,11 +102,14 @@ export const ON_SHOW: Array<OnShow> = [
             { tradeId: 't4', name: 'Electrical', paisa: paisa(1_845_500) },
             { tradeId: null, name: 'Everything else', paisa: paisa(2_907_952) },
           ],
+          // These are drawn as figures now rather than as bar heights behind a hover tooltip, so they are in the sweep above for the first time -- and it found what the comment at the top of this fixture asks for and the months had stopped doing. Two of them held a nought.
+
+          // The nought that stays is `12-B, Phase 3` below, a house started with nothing entered against it, because that is the state he is in on his first day and a picture of it is worth having. An empty bar is not worth a second one: what a bar of nothing looks like is a unit test on `across`, and the sweep cannot tell two noughts apart no matter which two they are.
           whatCameIn: [
-            { month: '2026-04', ownMoneyPaisa: paisa(2_100_000), broughtInPaisa: paisa(0) },
+            { month: '2026-04', ownMoneyPaisa: paisa(2_100_000), broughtInPaisa: paisa(1_375_000) },
             { month: '2026-05', ownMoneyPaisa: paisa(1_240_000), broughtInPaisa: paisa(4_800_000) },
             { month: '2026-06', ownMoneyPaisa: paisa(3_200_000), broughtInPaisa: paisa(6_150_000) },
-            { month: '2026-07', ownMoneyPaisa: paisa(0), broughtInPaisa: paisa(4_660_000) },
+            { month: '2026-07', ownMoneyPaisa: paisa(985_000), broughtInPaisa: paisa(4_660_000) },
           ],
           houses: [
             {

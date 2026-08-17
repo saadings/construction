@@ -57,11 +57,16 @@ const TOO_SHORT_TO_BE_A_SCREEN = 200
 
 // A picture taken while something is still arriving is a picture of an arrival. The nav below 768 is a sheet that slides in, and Playwright calls it visible the moment it has a box -- so the first picture of it was 30px of sheet and a screenful of the overlay behind it, which reads as a broken nav rather than a photograph taken too early.
 
-// The box is not the whole of what moves. A bar chart grows its bars from nothing over about half a second while its own box is still from the first frame -- so the dashboard was photographed with every bar a few pixels high, and the picture said the houses had brought in almost nothing.
+// The box is not the whole of what moves. A bar chart grew its bars from nothing over about half a second while its own box was still from the first frame -- so the dashboard was photographed with every bar a few pixels high, and the picture said the houses had brought in almost nothing.
 
 // It had been passing on luck rather than on a wait: the same picture taken minutes earlier caught the animation finished. A machine with a second gate running on it is enough to change which frame lands.
 
-/** What is drawn, as one string: where the screen is, and how tall each bar in it has grown. */
+// What it asked for was `.recharts-bar-rectangle path`, which is a claim about a library and not about this app. recharts is gone now -- the chart it drew had no figure anywhere on it, so it became bars this app draws itself -- and that selector would have gone on finding nothing, joining nothing, and reporting a screen at rest forever. A wait that cannot notice movement is a wait that has been deleted without anybody deciding to.
+
+// So it asks `[data-bar]`, which this repo puts on every bar it draws. Nothing here animates its width today, and that is the honest statement of what this now guards: the day something does -- a transition, a bar drawn off a reading that lands late -- the camera has a way to notice, and it is a way that survives whoever draws the bar.
+const EVERY_BAR = '[data-bar]'
+
+/** What is drawn, as one string: where the screen is, and how far along each bar in it has grown. */
 async function asItStands(on: Page, shownIn: string): Promise<string | null> {
   const box = await on.locator(shownIn).boundingBox()
 
@@ -70,7 +75,7 @@ async function asItStands(on: Page, shownIn: string): Promise<string | null> {
   }
 
   const bars: string = await on.evaluate(
-    `[...document.querySelectorAll('.recharts-bar-rectangle path')].map((bar) => Math.round(bar.getBoundingClientRect().height)).join(',')`
+    `[...document.querySelectorAll('${EVERY_BAR}')].map((bar) => Math.round(bar.getBoundingClientRect().width)).join(',')`
   )
 
   return `${String(box.x)},${String(box.y)},${String(box.width)}|${bars}`
