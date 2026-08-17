@@ -68,22 +68,27 @@ describe('signing out', () => {
 
   // Deliberately absent: what the bands are is changing. The shell is being replaced with shadcn's Sidebar, the bar along the bottom goes, and navigation on a phone moves to the top corner -- so a guard naming three bands and reading each one out of the shape that carries it would be written to be deleted. A gap somebody knows about is better than a guard that has to be believed and then removed.
 
-  it('is at the foot of the rail, which is the one part of the nav every width shows', () => {
-    // The whole of it: the rail carries the sign-out and the strip a phone scrolls does not, so on a phone it is still reached from the rail rather than from a second control -- one answer rather than two to keep in step.
+  it('is reachable in one tap at every width, and lives in exactly one place at each', () => {
+    // It moved, and the reason is the shape of the requirement rather than the shape of the layout. Signing out is not a thing somebody strolls to: it is what they reach for on a shared phone or in the wrong account, and a person in that state looks for their own face rather than for a menu. Behind a hamburger it was two taps and no label.
 
-    // Asked across the join, and in both halves rather than one. Either half alone passes while signing out is unreachable: a footer holding `{footer}` says nothing about what is passed to it, and a shell passing a `<UserButton` says nothing about where it lands.
+    // So the corner of the header on a phone, the foot of the rail on a desk, and not both anywhere -- two places to sign out is worse than either one.
+    const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
     const nav = SOURCE.find((file) => file.path === THE_NAV)?.text ?? ''
 
-    // The locate is the assertion: `indexOf` answers -1 for a row that is gone, and a slice from -1 is not empty -- it is the tail of the file, which contains everything. shadcn's `SidebarFooter` went with the sheet, so what this anchors on now is the row itself, which carries the 44px the sign-out is held to.
-    const at = nav.indexOf('min-h-11 items-center border-t')
+    // On a desk it is handed to the rail, and the rail draws it in the row that carries the 44px. Both halves, because either alone passes while signing out is unreachable: a row holding `{footer}` says nothing about what is passed to it, and a shell passing a `<UserButton` says nothing about where it lands.
+    expect(shell).toMatch(/<TheNav footer={signOut}/)
 
+    const at = nav.indexOf('min-h-11 items-center border-t')
     expect(at, 'the row the sign-out sits in is gone').toBeGreaterThan(0)
     expect(nav.slice(at, at + 200)).toContain('{footer}')
 
-    // And the other end: the shell is what puts Clerk's control into it.
-    const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
+    // On a phone it is in the header, one tap, on every screen. The locate is the assertion again: a header that has stopped drawing it answers -1 here rather than passing quietly.
+    const corner = shell.indexOf('ml-auto flex size-11')
+    expect(corner, 'the account is not in the corner of the phone header').toBeGreaterThan(0)
+    expect(shell.slice(corner, corner + 220)).toContain('<UserButton')
 
-    expect(shell).toMatch(/<TheNav[\s\S]*footer={<UserButton/)
+    // And the sheet does not draw it. `TheNavOnAPhone` renders the rail with no footer at all, so there is one answer per width rather than two.
+    expect(nav).toContain('<TheNav />')
   })
 
   it('has nothing left over from when a phone had no chrome to carry it', () => {

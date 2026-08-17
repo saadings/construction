@@ -22,10 +22,15 @@ export function Shell({ children }: { children: ReactNode }) {
         {/* The one bar over the content at every width, and on a phone it is the whole way into the nav. It scrolls with nothing because it is sticky, which is the fault the sidebar had before this. */}
         <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-sm md:px-6">
           <div className="md:hidden">
-            <TheNavOnAPhone footer={<UserButton appearance={{ elements: { userButtonAvatarBox: 'size-11' } }} />} />
+            <TheNavOnAPhone />
           </div>
 
           <span className="font-display text-foreground text-lg leading-none md:hidden">Construction</span>
+
+          {/* The corner, on a phone, on every screen. Signing out is not a thing somebody strolls to -- it is what they reach for on a shared phone or the wrong account, and they look for their own face rather than for a menu. It is out of the sheet entirely: two places to sign out is worse than either one. */}
+          <div className="ml-auto flex size-11 items-center justify-center md:hidden">
+            <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-11' } }} />
+          </div>
         </header>
 
         <main className="min-w-0 flex-1">{children}</main>

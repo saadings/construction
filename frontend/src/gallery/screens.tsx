@@ -614,9 +614,7 @@ export const ON_SHOW: Array<OnShow> = [
     tapFirst: ['Sections'],
     draw: () => (
       <div className="p-3">
-        <TheNavOnAPhone
-          footer={<span aria-label="Where the sign-out avatar goes" className="bg-muted block size-11 rounded-full" />}
-        />
+        <TheNavOnAPhone />
       </div>
     ),
   },

@@ -13,7 +13,7 @@ import { DESTINATIONS, GROUPS } from './destinations'
 // It does not decide where it is drawn. `Shell` does, and that is not only tidiness: a component carrying its own `md:hidden` cannot be photographed at the width it hides at, which is how the strip went unmeasured for an afternoon.
 
 /** What Clerk draws goes here, because Clerk needs a provider and the gallery must not have one. `Shell` passes the real control; the gallery passes something the same size and says so on the page. */
-export function TheNav({ footer }: { footer: ReactNode }) {
+export function TheNav({ footer }: { footer?: ReactNode }) {
   const above = DESTINATIONS.filter((destination) => destination.under === undefined)
 
   return (
@@ -55,13 +55,15 @@ export function TheNav({ footer }: { footer: ReactNode }) {
               ))}
             </ul>
 
-            {/* Chrome, at every width. On a phone the header carries it, so it is the same control rather than a special case. */}
-            <div
-              data-nav-row=""
-              className="border-sidebar-border mt-2 flex min-h-11 items-center border-t px-3 pt-4 md:min-h-8"
-            >
-              {footer}
-            </div>
+            {/* Only where the header has no room for it, which is the desk. On a phone it is in the corner of every screen instead: somebody who has just realised they are in the wrong account looks for their own face, not for a menu. */}
+            {footer === undefined ? null : (
+              <div
+                data-nav-row=""
+                className="border-sidebar-border mt-2 flex min-h-11 items-center border-t px-3 pt-4 md:min-h-8"
+              >
+                {footer}
+              </div>
+            )}
           </li>
         </ul>
       </nav>
@@ -69,8 +71,8 @@ export function TheNav({ footer }: { footer: ReactNode }) {
   )
 }
 
-/** The same rail, opened from the corner, which is the whole of navigation below 768. Its own component and not a branch inside `Shell` for the reason the footer is a prop: `Shell` holds Clerk, Clerk will not render outside its provider, and a gallery entry drawing `Shell` draws nothing -- which is how this nav went unphotographed the first time. */
-export function TheNavOnAPhone({ footer }: { footer: ReactNode }) {
+/** The same rail, opened from the corner, which is the whole of navigation below 768. Its own component and not a branch inside `Shell` for the reason the rail's footer is a prop: `Shell` holds Clerk, Clerk will not render outside its provider, and a gallery entry drawing `Shell` draws nothing -- which is how this nav went unphotographed the first time. */
+export function TheNavOnAPhone() {
   const [open, setOpen] = useState(false)
   const here = useRouterState({ select: (state) => state.location.pathname })
 
@@ -93,7 +95,7 @@ export function TheNavOnAPhone({ footer }: { footer: ReactNode }) {
       <SheetContent side="left" className="bg-sidebar w-60 border-0 p-0">
         {/* Named for a screen reader and hidden from the page: the rail draws the wordmark itself, and a sheet with two titles reads as two things. */}
         <SheetTitle className="sr-only">Sections</SheetTitle>
-        <TheNav footer={footer} />
+        <TheNav />
       </SheetContent>
     </Sheet>
   )
