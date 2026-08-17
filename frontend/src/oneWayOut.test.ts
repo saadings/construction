@@ -9,7 +9,11 @@ import { withoutComments } from './testing/source'
 // An underline is an affordance and grey text is not, so a control that removes a row was reading as a caption on three screens. `WayOut` is the one of them, and this is what keeps it the one.
 
 /** What a way out says. Every one of them is some shape of taking a thing back out, because that is the only thing this app lets anybody do to a row that has gone in. */
-const WHAT_A_WAY_OUT_SAYS = /^(Take (out|them off|it back|this line off|it off the list|off the list))$/
+
+// `Remove` was added after the rename and it is the hole that rename left: the app's word for this control changed, the list of words this reads did not, and a hand-written `<button>Remove</button>` was invisible to the guard written to catch exactly that. Nothing failed, because a rule that cannot see the app reports what a clean app reports.
+
+// The old words stay beside it. Five ways out still say `Take it back`, and a guard that only knows today's vocabulary stops seeing yesterday's the moment somebody writes one.
+const WHAT_A_WAY_OUT_SAYS = /^(Remove|Take (out|them off|it back|this line off|it off the list|off the list))$/
 
 /** Where it is written, so the exception below is an exception to something that exists. */
 const WHERE_IT_IS_WRITTEN = 'components/form/WayOut.tsx'
@@ -105,5 +109,10 @@ describe('a way out written by hand', () => {
     expect(aWayOutWrittenByHand('<button type="button" onClick={x}>Put them in</button>')).toEqual([])
     // And the words in a comment about one are not one.
     expect(aWayOutWrittenByHand('// the old <button>Take out</button> was plain grey\nconst x = 1')).toEqual([])
+
+    // The word the rename brought in, in the shape it would arrive in. Verbatim from the plant that proved this rule had gone blind to it.
+    expect(
+      aWayOutWrittenByHand('<button type="button" onClick={() => setAsking(true)} className="text-sm">Remove</button>')
+    ).toEqual(['Remove'])
   })
 })
