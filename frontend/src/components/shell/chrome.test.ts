@@ -35,10 +35,15 @@ const THE_SHELL = join(FRONTEND, 'components', 'shell', 'Shell.tsx')
 // The nav came out of the shell so something could measure it: the shell holds Clerk, Clerk needs its own provider, and the gallery has none -- so everything in that file was exempt from being looked at, and every nav row inside it stayed 32px on a phone until Nauman found them with a thumb. The footer is in this file now, and the shell hands it what goes in.
 const THE_NAV = join(FRONTEND, 'components', 'shell', 'TheNav.tsx')
 
+/** Where every provider this app has is opened, and now the only place Clerk's own control is written. */
+const THE_ROOT = join(FRONTEND, 'routes', '__root.tsx')
+
 describe('where the chrome is allowed to live', () => {
-  it('is the shell, and never a route', () => {
-    // Swept rather than checked in the one corner it picked: a route pinning it bottom-left instead would be the same defect and would pass a check written about `top-5 right-5`.
-    expect(holding(/<UserButton/)).toEqual([THE_SHELL])
+  it('is the root, and never a screen', () => {
+    // Swept rather than checked in the one corner it picked: a screen pinning it bottom-left instead would be the same defect and would pass a check written about `top-5 right-5`.
+
+    // It was `[THE_SHELL]` until the shell stopped holding Clerk. That is not a weakening: the shell was the one component nothing could render, so putting the account there made the header undrawable and unphotographable at every width. It is handed in from the root now and this asks that exactly one file holds it.
+    expect(holding(/<UserButton/)).toEqual([THE_ROOT])
   })
 
   it('is not pinned over the page by anybody at all', () => {
@@ -60,9 +65,9 @@ describe('signing out', () => {
     // The half a position-only fix leaves broken. It was on the Sites route and nowhere else, so People, Owed, More and every house screen had no way out at all.
     const shell = SOURCE.find((file) => file.path === THE_SHELL)
 
-    expect(shell?.text).toContain('<UserButton')
+    expect(shell?.text).toContain('account(')
     // And the shell is what the root wraps every route in, or the sentence above is about a component nothing renders.
-    const root = SOURCE.find((file) => file.path === join(FRONTEND, 'routes', '__root.tsx'))
+    const root = SOURCE.find((file) => file.path === THE_ROOT)
     expect(root?.text).toContain('<Shell')
   })
 
@@ -75,8 +80,8 @@ describe('signing out', () => {
     const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
     const nav = SOURCE.find((file) => file.path === THE_NAV)?.text ?? ''
 
-    // On a desk it is handed to the rail, and the rail draws it in the row that carries the 44px. Both halves, because either alone passes while signing out is unreachable: a row holding `{footer}` says nothing about what is passed to it, and a shell passing a `<UserButton` says nothing about where it lands.
-    expect(shell).toMatch(/<TheNav footer={signOut}/)
+    // On a desk it is handed to the rail, and the rail draws it in the row that carries the 44px. Both halves, because either alone passes while signing out is unreachable: a row holding `{footer}` says nothing about what is passed to it, and a shell passing something says nothing about where it lands.
+    expect(shell).toMatch(/<TheNav footer={account\('size-8'\)}/)
 
     const at = nav.indexOf('min-h-11 items-center border-t')
     expect(at, 'the row the sign-out sits in is gone').toBeGreaterThan(0)
@@ -85,10 +90,30 @@ describe('signing out', () => {
     // On a phone it is in the header, one tap, on every screen. The locate is the assertion again: a header that has stopped drawing it answers -1 here rather than passing quietly.
     const corner = shell.indexOf('ml-auto flex size-11')
     expect(corner, 'the account is not in the corner of the phone header').toBeGreaterThan(0)
-    expect(shell.slice(corner, corner + 220)).toContain('<UserButton')
+    expect(shell.slice(corner, corner + 220)).toContain("account('size-11')")
 
     // And the sheet does not draw it. `TheNavOnAPhone` renders the rail with no footer at all, so there is one answer per width rather than two.
     expect(nav).toContain('<TheNav />')
+  })
+
+  it('is Clerk’s own control that the root hands over, and not a wrapper that draws nothing', () => {
+    // The caution that comes with making a thing a prop, and it is not hypothetical here: `WayIn` was made drawable exactly this way, and the note above it says what that bought and what it cost -- TypeScript stops the prop being dropped and stops nothing about what is passed, so the app could hand over the same do-nothing wrapper the gallery does and every picture would be perfect.
+
+    // So the shell being drawable is paid for here. What the root hands over is read off the call rather than guessed at, and then followed: a test naming a variable passes the day somebody renames it and stops meaning anything the day somebody replaces it.
+    const root = SOURCE.find((file) => file.path === THE_ROOT)?.text ?? ''
+
+    const handed = /<Shell[\s\S]{0,300}?account={\(([\w]+)\)\s*=>\s*([\s\S]{0,160}?)}\s*>/.exec(root)
+
+    // The locate is the assertion. `null` here is a root that has stopped handing an account over at all, which every check below would otherwise read as nothing to complain about.
+    expect(handed, 'the root does not hand the shell an account').not.toBeNull()
+
+    const said = handed?.[1] ?? ''
+    const drawn = handed?.[2] ?? ''
+
+    expect(drawn, 'what the root hands over is not Clerk’s own control').toContain('<UserButton')
+
+    // And it is sized by what asked for it. Without this the root could hand over a `UserButton` at a size of its own choosing and the shell's two reasons -- 44 in the corner, 32 on the rail -- would be written down and not applied.
+    expect(drawn, 'the account the root hands over ignores the size it was asked for').toContain(said)
   })
 
   it('has nothing left over from when a phone had no chrome to carry it', () => {

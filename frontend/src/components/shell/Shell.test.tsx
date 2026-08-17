@@ -25,7 +25,10 @@ afterEach(() => {
 })
 
 function renderAt(path: string) {
-  const root = createRootRoute({ component: () => <Shell>The screen itself</Shell> })
+  // Stood in for, because what this file asks about is the nav rather than the account -- and the shell no longer holds Clerk, so it can be rendered at all. Whether the app hands over the real control is `chrome.test`'s question, asked of the root.
+  const root = createRootRoute({
+    component: () => <Shell account={(avatar) => <span className={avatar} />}>The screen itself</Shell>,
+  })
   const children = DESTINATIONS.map((destination) =>
     createRoute({ getParentRoute: () => root, path: destination.to, component: () => null })
   )
