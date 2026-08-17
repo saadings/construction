@@ -116,6 +116,9 @@ describe('a day of payments', () => {
     }
   })
 
+  // Seen once, on 17 August 2026: this failed in a full gate and passed on two reruns and the gate after. Not chased and not reproduced -- written here rather than left in a message, because a flake nobody can find the second time is one that gets called a fluke twice.
+
+  // If it comes back, it is real, and it is in the flow that becomes `/daybook`.
   it('takes a payment back out of the sitting before any of it goes in', async () => {
     // Nothing here has been written yet, so this is a row leaving the sitting rather than a payment leaving the ledger. Without it, a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards.
     const user = userEvent.setup()
