@@ -115,4 +115,35 @@ describe('every place the nav offers to go', () => {
     // The control: the check above is only worth anything if a made-up route fails it.
     expect(ROUTE_TREE).not.toContain("'/nowhere-at-all'")
   })
+
+  // And the converse, which is the half that was missing. The design has four rows the app has no route for yet -- `Daybook`, `Receipts`, `Reports`, `Partners` -- and each is one line in `destinations.ts` the day its route lands. That is exactly the shape of work that gets lost: small, last, and invisible in a diff.
+
+  // So the build stops somebody rather than the handoff being remembered. A screen of its own that nobody can reach from the nav is the same defect as a nav row that reaches nothing, arriving from the other side.
+
+  // Proved by adding a real `routes/partners.tsx` and watching this fail naming `/partners`. It has to be a real route file: `routeTree.gen.ts` is regenerated from the routes directory whenever anything runs, so a line planted into it is gone before the test reads it -- which is a good property of the file and a trap for anybody checking this the obvious way.
+  it('offers every screen that is a place of its own, so a new one cannot arrive unreachable', () => {
+    // Two properties together, and neither alone is enough. Hanging off the root is what makes a route a section rather than something inside one -- `/more/what-for` is written `path: '/what-for'` with `MoreRoute` as its parent, so a check on the path alone reads it as top level. And one segment is what stops `/sites/new`, which does hang off the root but is a form under Sites.
+    const itsOwnPlace = [
+      ...ROUTE_TREE.matchAll(/path: '(\/[a-z][a-z-]*|\/)',\s*\n\s*getParentRoute: \(\) => rootRouteImport/g),
+    ]
+      .map((found) => found[1])
+      .filter((path) => path === '/' || !path.slice(1).includes('/'))
+
+    const missing = itsOwnPlace.filter((path) => !DESTINATIONS.some((destination) => destination.to === path))
+
+    expect(missing, 'a screen of its own that the nav does not offer').toEqual([])
+  })
+
+  it('is reading real routes, rather than finding none and calling that complete', () => {
+    // The floor. A pattern that stopped matching reports the same clean nothing as an app where every screen is in the rail -- which is the failure the sweep above exists to prevent, arriving inside it.
+    const found = [
+      ...ROUTE_TREE.matchAll(/path: '(\/[a-z][a-z-]*|\/)',\s*\n\s*getParentRoute: \(\) => rootRouteImport/g),
+    ].map((one) => one[1])
+
+    // Both ends of the pattern, because it is two things joined and either half breaking leaves the other looking fine: a real section has to be found, and something that is not one has to not be.
+    expect(found).toContain('/dashboard')
+    expect(found).not.toContain('/what-for')
+    expect(found.length).toBeGreaterThan(4)
+    expect(found, 'the houses are a section and this is not seeing them').toContain('/')
+  })
 })
