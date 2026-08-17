@@ -120,6 +120,48 @@ export async function unfoldIt(on: Page, screen: ScreenItShows): Promise<void> {
     await on.getByRole('button', { name: tap }).first().click()
     await on.waitForTimeout(50)
   }
+
+  await onceItHasStoppedMoving(on, screen.shownIn)
+}
+
+// What is drawn, as one string: where the screen is, how big it is, and how far along each bar in it has grown.
+
+// The bars are here because a chart used to animate its own height. Nothing does today -- the sizes are what move now.
+async function asItStands(on: Page, shownIn: string): Promise<string | null> {
+  const box = await on.locator(shownIn).boundingBox()
+
+  if (box === null) {
+    return null
+  }
+
+  const bars: unknown = await on.evaluate(
+    `[...document.querySelectorAll('[data-bar]')].map((bar) => Math.round(bar.getBoundingClientRect().width)).join(',')`
+  )
+
+  return `${String(box.x)},${String(box.y)},${String(box.width)},${String(box.height)}|${String(bars)}`
+}
+
+// Waited on the position rather than on a duration: an animation length is a number that goes stale, and a timeout long enough for the slowest machine is a tax on every screen that is not moving at all.
+
+// It lived in `shots` alone, because the thing it was written for was a picture taken mid-animation. Measuring has the same problem and it went unnoticed for a different reason: a sheet slides in without changing the height of anything inside it, so every tapped-open screen measured so far happened to be stable in the one dimension anybody was asking about.
+
+// A dialog is not. It opens with `zoom-in-95`, which scales the whole thing -- so every row inside the search measured **43px** where the class says 44, at every width, and the app was not wrong about any of it. An instrument that reads a number off a moving thing reports a defect that is not there, which is worse than missing one: somebody goes and changes the app until the instrument agrees.
+async function onceItHasStoppedMoving(on: Page, shownIn: string): Promise<void> {
+  const givingUp = 40
+
+  let before = await asItStands(on, shownIn)
+
+  for (let waited = 0; waited < givingUp; waited += 1) {
+    await on.waitForTimeout(50)
+    const now = await asItStands(on, shownIn)
+
+    // Both read, and equality asked of a pair that exists: a `null` on either side is a thing that is not on the page, and calling that "not moving" is the not-there-reading-as-a-value this whole harness keeps finding.
+    if (before !== null && now !== null && before === now) {
+      return
+    }
+
+    before = now
+  }
 }
 
 /** Every screen the gallery shows, read off the page rather than listed here: a list in a script drifts from the gallery silently. */

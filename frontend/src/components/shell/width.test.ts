@@ -23,11 +23,45 @@ function everySourceFile(from: string): Array<string> {
 const SOURCE = everySourceFile(SCREENS).map((path) => ({ path, text: readFileSync(path, 'utf8') }))
 
 describe('the width a screen is allowed to take', () => {
-  it('is not capped at a phone anywhere', () => {
+  // A dialog is not a page and capping one is what a dialog is for: a search palette 1280px wide on a desk is worse than one at 512. shadcn's `DialogContent` is `sm:max-w-lg`, and this rule said no to it on the day the search arrived.
+
+  // Answered by asking what the cap is on rather than by excusing the file it is in. An overlay is `fixed` -- it is taken out of the page and placed over it -- and a page container never is. So the two are told apart by a property both of them state, and a `max-w-lg` that appears on anything in the flow is still refused wherever it is written, vendored or not.
+
+  /** A cap that belongs to something lifted out of the page rather than to the page. */
+  const ON_AN_OVERLAY = (classes: string) => classes.split(/\s+/).includes('fixed')
+
+  // Read outward from the cap to the quotes on either side of it, rather than by matching a quoted span containing one.
+
+  // The span version found a match and it was the wrong span: a regex scanning left to right pairs the **closing** quote of an earlier string with the opening quote of this one, so what came back began `\n className={cn(\n '` and the class list was inside it rather than being it. The overlay test then read the character before `fixed` as a quote instead of a space and answered no -- a correct question about the wrong text, which is the failure this repository keeps meeting from a new direction.
+
+  /** Every class list in a file that caps at a phone, said one at a time so each can be asked what it is on. */
+  function everyPhoneCap(text: string): Array<string> {
+    return [...text.matchAll(/\bmax-w-lg\b/g)].map((found) => {
+      const at = found.index
+      const before = text.slice(0, at)
+      const opens = Math.max(before.lastIndexOf("'"), before.lastIndexOf('"'), before.lastIndexOf('`'))
+      const closes = text.slice(at).search(/['"`]/)
+
+      return text.slice(opens + 1, closes === -1 ? text.length : at + closes)
+    })
+  }
+
+  it('is not capped at a phone anywhere, unless the cap is on an overlay', () => {
     // `max-w-lg` is the exact cap that was on every page container. A table of payments is the reason a desk is wider than a phone.
-    const capped = SOURCE.filter((file) => file.text.includes('max-w-lg')).map((file) => file.path)
+    const capped = SOURCE.filter((file) => everyPhoneCap(file.text).some((classes) => !ON_AN_OVERLAY(classes))).map(
+      (file) => file.path
+    )
 
     expect(capped).toEqual([])
+  })
+
+  it('is still reading the caps it lets through, rather than finding none at all', () => {
+    // The control on the exception. An exception that matched nothing would report exactly what an app with no dialogs reports, and the whole of this rule would then be about a pattern nobody writes.
+    const overlays = SOURCE.filter((file) => everyPhoneCap(file.text).some(ON_AN_OVERLAY)).map((file) => file.path)
+
+    expect(overlays).toContain('frontend/src/components/ui/dialog.tsx')
+    expect(everyPhoneCap('className="fixed top-[50%] max-w-lg"')).toHaveLength(1)
+    expect(ON_AN_OVERLAY('mx-auto flex max-w-lg flex-col')).toBe(false)
   })
 
   // Reading one value would let `max-w-md` through, so this reads the shape instead: a column centred in the page and capped at a phone. A cap on a paragraph or on a control is not that, and is left alone.

@@ -57,8 +57,11 @@ const PIECES = new Set([
   'PayOut',
 ])
 
-/** Drawn by a route, but not from the gallery: the shell holds Clerk's own control, and Clerk will not render outside its own provider. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again. */
-const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell'])
+/** Drawn by a route, but not from the gallery: the shell holds Clerk's own control, and `TheSearch` calls `useQuery`, which throws outside a Convex client. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */
+const NOT_WITHOUT_A_SIGN_IN = new Set(['Shell', 'TheSearch'])
+
+/** What being un-drawable actually looks like in a file: Clerk's own control, or a read that needs a client. Written as a check rather than as a sentence, so a name can only stay on the list while the thing it names is still true of it. */
+const NEEDS_A_PROVIDER = /<UserButton|useQuery\(/
 
 /** The screens that draw their own layout rather than sitting in a `Page`, and are right to: a day sheet is a sticky header over a form, so its padding is inside the header and inside the form rather than around both, and the way in is one name and one button centred in a whole screen with no nav and no trail above it. */
 const ITS_OWN_LAYOUT = new Set(['DaySheet', 'WayIn'])
@@ -193,6 +196,23 @@ describe('the gallery', () => {
       .map(([path]) => path)
 
     expect(bare).toEqual([])
+  })
+
+  it('has nothing named as undrawable that could be drawn perfectly well', () => {
+    // The other end of the exemption above, and the reason it is a check rather than a comment: a name on this list stops the gallery asking for a picture, so a stale one is a screen nobody looks at with a note beside it saying why that is fine.
+
+    // What makes a component un-drawable here is a provider it cannot do without: Clerk's control, or a `useQuery`. The day either comes out of one of these files -- as it came out of `WayIn` -- this fails and the name has to come out with it.
+    const files = new Map(everyScreen().map((screen) => [screen.path, screen.source]))
+
+    for (const name of NOT_WITHOUT_A_SIGN_IN) {
+      const found = [...files].find(([path]) => path.endsWith(`/${name}.tsx`))
+
+      expect(found, `${name} is named as undrawable and is not a component here at all`).toBeDefined()
+      expect(
+        NEEDS_A_PROVIDER.test(found?.[1] ?? ''),
+        `${name} is named as undrawable and needs no provider -- draw it and take the name off`
+      ).toBe(true)
+    }
   })
 
   it('has nothing named as drawing its own layout that is not a screen any more', () => {
