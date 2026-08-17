@@ -4,10 +4,12 @@
 
 // Written here rather than beside one of its users, which is the whole reason it exists. It was in `WayOut`, with the reasoning above it, and the sibling two files away -- the same shape pointing the other way, drawn as text on a line in exactly the same manner -- did not have it. `Add a line`, `Change` and `Split payment` were 20px high, and four row expanders on `What it went on` with them. **A principle written in a comment beside one implementation is a principle with one user.**
 
-// The horizontal half is newer and came from `Cancel`, which was 44 high and 43 wide: a text-drawn control is exactly as wide as its own word, and WCAG 2.5.5 asks for 44 in both directions. `min-width` cannot do it -- these are inline, and `min-width` does not apply to a non-replaced inline box -- so the same padding-and-give-it-back applies sideways.
+// The horizontal half came from `Cancel`, which was 44 high and 43 wide: a text-drawn control is exactly as wide as its own word, and WCAG 2.5.5 asks for 44 in both directions. `min-width` cannot do it -- these are inline, and `min-width` does not apply to a non-replaced inline box -- so the padding grows it sideways too.
 
-/** What makes a control drawn as text on a line reachable, at no cost to the line it is on. */
-export const ROOM_FOR_A_THUMB = 'px-2 -mx-2 py-3 -my-3 has-[>svg]:px-2'
+// **The give-back does not.** `-mx-2` took the sixteen pixels back out of the line, and a line is shared: on `sure-you-want-to` the confirmation and its cancel sit in a row with a 12px gap, each pulled 8px toward the other, so their hit areas **overlapped by four pixels** -- on the pair where a mis-tap removes a row somebody has to re-enter. The vertical give-back is safe for the opposite reason: a row owns its own height, and taking 24px back out of it costs nothing anybody else is standing on.
+
+// So the horizontal room is grown and kept. A text control is now sixteen pixels wider in its row than the word in it, which is a real change to the layout and the honest price of the target -- rather than a target that overlaps its neighbour and looks free.
+export const ROOM_FOR_A_THUMB = 'px-2 py-3 -my-3 has-[>svg]:px-2'
 
 // The same trick at the other bar, for a link rather than a control.
 

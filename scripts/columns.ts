@@ -344,6 +344,62 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
   return { tapped, navRows, small, crowded }
 })()`
 
+// The ninth question, and it came out of the eighth. `ROOM_FOR_A_THUMB` grows the box a finger lands on past the box anybody sees, so a control can clear 44 in every direction and still be standing on its neighbour -- and a sweep that measures each control on its own reports both of them clean.
+
+// It found four pixels of `Yes, remove` underneath `Cancel`. Not a control that is hard to hit: a control that is easy to hit **by mistake**, on the pair where the mistake removes a row somebody has to remember to re-enter. Nothing in this file could have seen it, because every question here until now was about one element at a time.
+
+// Asked only of pairs that are both in the ordinary flow of the page. A sticky bar sits over the content behind it and an open sheet sits over the trigger that opened it -- those are two things where one is deliberately in front, the top one takes the tap, and that is the whole design. What is wrong is two peers on one line each reaching into the other, where a tap near the join lands on whichever happens to be later in the document.
+
+// Read off the page rather than reasoned about: an element is in the flow when nothing between it and the body is positioned. Which is a property both members of a pair state, and it excludes every benign overlap here without naming one of them.
+const WHAT_STANDS_ON_WHAT = `(() => {
+  const inTheFlow = (el) => {
+    for (let up = el; up !== null && up !== document.body; up = up.parentElement) {
+      const how = getComputedStyle(up).position
+      if (how === 'fixed' || how === 'sticky' || how === 'absolute') return false
+    }
+    return true
+  }
+
+  const boxes = []
+
+  for (const control of document.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,summary,[role="button"],[role="radio"],[role="switch"],[role="checkbox"],[role="tab"],[role="option"],[role="menuitem"]')) {
+    if (control.closest('[data-slug]') !== null) continue
+    if (control.getAttribute('aria-hidden') === 'true') continue
+    if (control.getAttribute('aria-disabled') === 'true') continue
+
+    const box = control.getBoundingClientRect()
+    if (box.width === 0 && box.height === 0) continue
+    if (!inTheFlow(control)) continue
+
+    boxes.push({
+      said: (control.getAttribute('aria-label') || (control.textContent ?? '').trim() || 'a control with no words on it').slice(0, 32),
+      x: box.x,
+      y: box.y,
+      right: box.x + box.width,
+      bottom: box.y + box.height,
+    })
+  }
+
+  const standing = []
+
+  for (let one = 0; one < boxes.length; one += 1) {
+    for (let other = one + 1; other < boxes.length; other += 1) {
+      const a = boxes[one]
+      const b = boxes[other]
+
+      const across = Math.round(Math.min(a.right, b.right) - Math.max(a.x, b.x))
+      const down = Math.round(Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y))
+
+      // A pixel of touching is a rounding artefact rather than a shared target.
+      if (across > 1 && down > 1) {
+        standing.push({ said: a.said, near: b.said, apart: -Math.min(across, down) })
+      }
+    }
+  }
+
+  return { tapped: boxes.length, navRows: 0, small: [], crowded: standing }
+})()`
+
 // The sixth question, and the one with the sharpest cost. A first pass over every control at 390 found 104 of 151 under the bar, which is a real finding and a piece of work nobody is doing today -- and a guard that fails on a hundred things gets switched off. So this asks it of the controls where a mis-tap costs something: the ones that remove a row.
 
 // Thirteen of the thirteen were 20px. Not most of them, not the ones on the crowded screens -- every single control in this app that takes a row out was less than half of what a thumb needs, including `Take out` beside a figure on a phone.
@@ -660,6 +716,7 @@ async function main(): Promise<void> {
   let trailsSeen = 0
   let tappedSeen = 0
   let navRowsSeen = 0
+  let standingSeen = 0
   let removesSeen = 0
   let choicesSeen = 0
   let linesSeen = 0
@@ -736,6 +793,16 @@ async function main(): Promise<void> {
           for (const near of thumb.crowded) {
             wrong.push(
               `${screen.slug} at ${String(size.width)}: "${near.said}" and "${near.near}" are ${String(near.apart)}px apart, inside the ${String(A_LINE_NEEDS)} this keeps clear around a link`
+            )
+          }
+
+          const standing = whatCannotBeHit(await page.evaluate(WHAT_STANDS_ON_WHAT))
+          standingSeen += standing.tapped
+
+          for (const on of standing.crowded) {
+            wrong.push(
+              `${screen.slug} at ${String(size.width)}: "${on.said}" and "${on.near}" overlap by ${String(-on.apart)}px. ` +
+                `Both are in the flow of the page, so a tap near the join lands on whichever is later in the document rather than on the one it was aimed at.`
             )
           }
 
@@ -820,6 +887,12 @@ async function main(): Promise<void> {
     )
   }
 
+  if (standingSeen < AT_LEAST_THIS_MANY_TAPPED) {
+    throw new Error(
+      `Only ${String(standingSeen)} controls were compared against each other, which is too few to have looked -- and a comparison of nothing with nothing reports exactly what an app where no two targets overlap reports.`
+    )
+  }
+
   if (navRowsSeen < AT_LEAST_THIS_MANY_NAV_ROWS) {
     throw new Error(
       `Only ${String(navRowsSeen)} nav rows were among them, which means the sheet was never opened -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
@@ -837,7 +910,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, no two controls in the flow stand on each other, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 
