@@ -33,7 +33,7 @@ export function TheMenu({ places }: { places: Array<WhereToGo> }) {
           <li key={place.to} className="border-hairline col-span-2 grid grid-cols-subgrid border-b">
             <Link
               to={place.to}
-              className="hover:bg-panel col-span-2 grid grid-cols-subgrid items-center gap-4 px-1 py-4 transition-colors"
+              className="hover:bg-row-hover col-span-2 grid grid-cols-subgrid items-center gap-4 px-1 py-4 transition-colors"
             >
               <span className="min-w-0">
                 <span className="text-foreground block text-[0.9375rem] font-medium">{place.name}</span>

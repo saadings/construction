@@ -35,7 +35,8 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
     <tr
       data-slot="table-row"
       className={cn(
-        'border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted',
+        // Their `hover:bg-muted/50` measured 2.47 apart from a white card and 0.32 from a dark one -- at or under what an eye can see, on the only thing telling somebody which row their finger is about to commit. `--row-hover` is a token with a number behind it: 7.66 from a card and 4.09 from the page.
+        'border-b transition-colors hover:bg-row-hover has-aria-expanded:bg-row-hover data-[state=selected]:bg-muted',
         className
       )}
       {...props}

@@ -57,7 +57,7 @@ export function SitesList({ sites }: { sites: Array<SiteRow> }) {
                 <Link
                   to="/sites/$siteId"
                   params={{ siteId: site._id }}
-                  className={`${ROW} hover:bg-row-alt -mx-3 rounded-md px-3 py-3.5 transition-colors`}
+                  className={`${ROW} hover:bg-row-hover -mx-3 rounded-md px-3 py-3.5 transition-colors`}
                 >
                   <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{site.name}</span>
 
