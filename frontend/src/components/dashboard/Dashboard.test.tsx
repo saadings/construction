@@ -278,6 +278,18 @@ describe('everything at once', () => {
     expect(screen.getByRole('link', { name: 'All sites' }).getAttribute('href')).toBe('/')
   })
 
+  it('keeps the way to all of them on one line', async () => {
+    // At 390 the subtitle beside it wraps to two lines and takes the row's width with it, and this broke to `All` over `sites` with the arrow beside the second word -- a control reading as a rendering fault, on the screen he opens first.
+
+    // Asserted on the class list because nothing else here can see it: jsdom lays nothing out, `columns` finds no misalignment and no squeezed cell, and the tap target measures fine. It was found by looking at a picture, and this is the only thing that would notice it going back.
+    renderIt(BUSY)
+    const wayThere = await screen.findByRole('link', { name: 'All sites' })
+
+    expect(wayThere.className).toContain('whitespace-nowrap')
+    // The half that matters. Without it the words stay together and the box overflows the row instead.
+    expect(wayThere.className).toContain('shrink-0')
+  })
+
   it('offers the whole of the reports from the header', async () => {
     // His header button. The tiles are a summary and somebody who wants all of it should not have to find the nav to say so.
     renderIt(BUSY)
