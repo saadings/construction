@@ -9,6 +9,8 @@ export const sitesSchema = defineTable({
   phase: v.optional(v.string()),
   scheme: v.optional(v.string()),
   coveredAreaSqft: v.optional(v.number()),
+  // What the build is expected to cost, in whole paisa. Absent until somebody says: a house with no estimate is not a house estimated at nothing, and every screen that measures spending against this has to be able to tell those apart.
+  budgetEstimatePaisa: v.optional(v.number()),
   startedOn: v.optional(v.string()),
   // The only thing deciding whether a site shows a sale or a bill: false means the partners own the plot and will sell it.
   builtForAClient: v.boolean(),

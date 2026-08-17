@@ -287,9 +287,36 @@ export const ON_SHOW: Array<OnShow> = [
     draw: () => (
       <SitesList
         sites={[
-          { _id: 's1', name: THE_HOUSE, stage: 'building', builtForAClient: false, spentPaisa: paisa(11_798_452) },
-          { _id: 's2', name: '204-C, Phase 6', stage: 'sold', builtForAClient: true, spentPaisa: paisa(8_140_000) },
-          { _id: 's3', name: '12-B, Phase 3', stage: 'planning', builtForAClient: false, spentPaisa: 0 },
+          // Three houses in the three states this card has: one measured against an estimate, one **over** it, and one with no estimate at all. Every figure is different, so a card reading the wrong field cannot look like a working card.
+          {
+            _id: 's1',
+            name: THE_HOUSE,
+            stage: 'building',
+            builtForAClient: false,
+            spentPaisa: paisa(11_798_452),
+            receivedPaisa: paisa(14_250_000),
+            budgetEstimatePaisa: paisa(19_400_000),
+            coveredAreaSqft: 5400,
+          },
+          {
+            _id: 's2',
+            name: '204-C, Phase 6',
+            stage: 'sold',
+            builtForAClient: true,
+            spentPaisa: paisa(8_140_000),
+            receivedPaisa: paisa(9_600_000),
+            budgetEstimatePaisa: paisa(7_250_000),
+            clientName: 'The one it is built for',
+            coveredAreaSqft: 3175,
+          },
+          {
+            _id: 's3',
+            name: '12-B, Phase 3',
+            stage: 'planning',
+            builtForAClient: false,
+            spentPaisa: 0,
+            receivedPaisa: 0,
+          },
         ]}
       />
     ),

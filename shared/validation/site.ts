@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { readRupees } from '../money'
 import { boundedText, calendarDay } from './primitives'
 
 // A house is spoken about by its address, so that is the name: "1-A, Phase 0".
@@ -59,6 +60,32 @@ export function areaWhileTyping(typed: string): string {
   return digits === '' ? '' : Number(digits).toLocaleString('en-US')
 }
 
+// What the build is expected to cost, which is the figure spending is measured against. He drew the field himself -- `Budget estimate`, in PKR, under the sentence "What you expect the build to cost. Spending is measured against this."
+
+// Written here rather than reaching for `money`, for the reason that file gives about `positiveMoney`: a primitive brings its own words with it, and "put in how much was paid" is the wrong sentence under a figure nobody has paid.
+export const budgetEstimate = z.union([z.string(), z.number()]).transform((value, ctx) => {
+  const read = readRupees(value)
+
+  if (!read.ok) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        read.why === 'largerThanWeKeep'
+          ? 'That is more than this keeps track of. Check the figure.'
+          : 'Put in what you expect the build to cost, in figures.',
+    })
+    return z.NEVER
+  }
+
+  // Nothing and below nothing are the same mistake here and a different one from a house nobody has estimated: an estimate that is not set is absent, and one that is set is a real figure.
+  if (read.paisa <= 0) {
+    ctx.addIssue({ code: 'custom', message: 'Put in what you expect the build to cost, or leave it empty.' })
+    return z.NEVER
+  }
+
+  return read.paisa
+})
+
 export const siteStage = z.enum(['planning', 'building', 'finishing', 'complete', 'sold'])
 
 // Whether the partners own this plot or are building it for someone. It decides whether the site shows a sale or a bill, and nothing else does.
@@ -69,6 +96,7 @@ export const siteInput = z.object({
   phase: addressPart.optional(),
   scheme: addressPart.optional(),
   coveredAreaSqft: coveredArea.optional(),
+  budgetEstimatePaisa: budgetEstimate.optional(),
   startedOn: calendarDay.optional(),
   builtForAClient: z.boolean(),
   stage: siteStage,

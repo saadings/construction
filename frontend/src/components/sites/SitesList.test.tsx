@@ -27,6 +27,7 @@ const aHouse: SiteRow = {
   stage: 'building',
   builtForAClient: false,
   spentPaisa: 497498000,
+  receivedPaisa: 612000000,
 }
 
 describe('the sites on the home screen', () => {
@@ -47,6 +48,61 @@ describe('the sites on the home screen', () => {
     // "Complete" is what the stage is called underneath; "Finished" is what a person calls it.
     expect(within(row).getByText(/Finished/)).toBeTruthy()
     expect(within(row).getByText(/For a client/)).toBeTruthy()
+  })
+
+  it('measures spending against the estimate, and says so when there is none', async () => {
+    renderAt([
+      { ...aHouse, budgetEstimatePaisa: 1_000_000_00, spentPaisa: 250_000_00 },
+      { ...aHouse, _id: 's2', name: '204-C, Phase 6', budgetEstimatePaisa: undefined },
+    ])
+
+    const cards = await screen.findAllByRole('listitem')
+
+    // A quarter of the estimate spent, said as a share rather than left to be worked out from two figures.
+    expect(within(cards[0]).getByText('25%')).toBeTruthy()
+    expect(within(cards[0]).getByText(/Spent against estimate/)).toBeTruthy()
+
+    // And the house nobody has estimated says what is missing rather than drawing an empty track. A blank reads as broken.
+    expect(within(cards[1]).getByText(/No estimate set/)).toBeTruthy()
+    expect(within(cards[1]).queryByText(/Spent against estimate/)).toBeNull()
+  })
+
+  it('says a house is over its estimate rather than drawing a bar past its own track', async () => {
+    renderAt([{ ...aHouse, budgetEstimatePaisa: 100_000_00, spentPaisa: 250_000_00 }])
+
+    const card = await screen.findByRole('listitem')
+
+    // Two and a half times the estimate. The share is capped so the bar stays inside the track, and the figure is the one that tells him -- capped at a hundred with nothing else said would report a house on budget.
+    expect(within(card).getByText('100%')).toBeTruthy()
+    expect(within(card).getByText('100%').className).toContain('text-destructive')
+  })
+
+  it('says who a house is for in each of the three ways it can be', async () => {
+    renderAt([
+      { ...aHouse, clientName: 'The one it is built for', builtForAClient: true },
+      { ...aHouse, _id: 's2', name: '204-C', builtForAClient: true },
+      { ...aHouse, _id: 's3', name: '12-B', builtForAClient: false },
+    ])
+
+    const cards = await screen.findAllByRole('listitem')
+
+    expect(within(cards[0]).getByText(/For The one it is built for/)).toBeTruthy()
+    // A client house with nobody named on it still says it is one, which is what the table's `Whose` column carried.
+    expect(within(cards[1]).getByText(/For a client/)).toBeTruthy()
+    expect(within(cards[2]).getByText(/Ours to sell/)).toBeTruthy()
+  })
+
+  it('leaves out an area nobody has put in, rather than an orphan separator', async () => {
+    renderAt([
+      { ...aHouse, coveredAreaSqft: 5400 },
+      { ...aHouse, _id: 's2', name: '204-C' },
+    ])
+
+    const cards = await screen.findAllByRole('listitem')
+
+    expect(within(cards[0]).getByText(/5,400 sqft/)).toBeTruthy()
+    // The separator belongs to the pair rather than to the line.
+    expect(within(cards[1]).queryByText(/·/)).toBeNull()
   })
 
   it('has something to say when there are no sites yet', async () => {

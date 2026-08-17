@@ -61,11 +61,12 @@ describe('a row under a finger', () => {
     const paints = new Map(screens.map(({ path, source }) => [path, whatItPaintsOnHover(source)]))
 
     for (const path of [
-      // `components/settings/TheMenu.tsx` was the fourth and is gone: the menu it drew became four cards, and a card is not a row under a finger. What it was here to prove -- that the sweep opens the files this rule was written about -- the five below still prove.
+      // Two names have come off this list and both for the same reason: the row they named stopped being a row. `components/settings/TheMenu.tsx` became four cards, and `components/sites/SitesList.tsx` became a card a house -- his drawing of that screen is a grid, and a card is told apart by its border rather than by a plane arriving under a finger.
+
+      // What they were here to prove -- that the sweep opens the files this rule was written about -- the four below still prove. When the count reaches one, the floor is a floor over nothing and this rule needs a different anchor.
       'components/partners/Positions.tsx',
       'components/partners/AgreeShares.tsx',
       'components/shares/PayOut.tsx',
-      'components/sites/SitesList.tsx',
       'components/ui/table.tsx',
     ]) {
       expect(paints.get(path), `${path} had a hover and the sweep is not opening it`).toContain(`hover:bg-${THE_ONE}`)
