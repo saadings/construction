@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { formatPaisa } from '~shared/money'
 
 import { Figure } from '../shell/Page'
+import { Heading, Panel, TablePanel } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Position = {
@@ -70,13 +71,15 @@ export function Positions({
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h2 className="text-foreground text-base font-medium">Owed to partners</h2>
-        <p className="text-muted-foreground flex items-baseline gap-3 text-sm">
-          <span>{what.sharesAgreed ? 'Shares agreed between them.' : 'Shares follow what each of them put in.'}</span>
-          {beside}
-        </p>
-      </div>
+      {/* The drawn language: a heading with the count of what is under it, and the note beside rather than beneath. This screen has no drawing of its own -- the partner half was left out of the design and Nauman asked for it back -- so it is built from the same pieces the drawn ones are. */}
+      <Heading said="Owed to partners" count={what.positions.length}>
+        <span className="text-muted-foreground text-[0.8125rem]">
+          {what.sharesAgreed ? 'Shares agreed between them.' : 'Shares follow what each of them put in.'}
+        </span>
+      </Heading>
+      {beside === undefined ? null : (
+        <p className="text-muted-foreground flex items-baseline gap-3 text-sm">{beside}</p>
+      )}
 
       <Profit what={what} />
 
@@ -85,39 +88,44 @@ export function Positions({
           Nobody has put money into this house yet. Put a partner’s money in and the shares work themselves out.
         </p>
       ) : (
-        <div className={GRID}>
-          <div
-            className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
-          >
-            <span>Partner</span>
-            <span className="text-right">Put in</span>
-            <span className="text-right">Share</span>
-            <span className="text-right">Due</span>
-            <span className="text-right">Paid</span>
-            <span className="text-right">Remaining</span>
+        <TablePanel>
+          <div className={GRID}>
+            <div
+              className={`${ROW} text-muted-foreground border-border hidden border-b px-5 py-2.5 text-[0.75rem] font-semibold sm:grid`}
+            >
+              <span>Partner</span>
+              <span className="text-right">Put in</span>
+              <span className="text-right">Share</span>
+              <span className="text-right">Due</span>
+              <span className="text-right">Paid</span>
+              <span className="text-right">Remaining</span>
+            </div>
+
+            <ul className={PASSES_THEM_DOWN}>
+              {what.positions.map((position) => (
+                <li
+                  key={position.personId}
+                  className={`${ROW} border-border hover:bg-muted/60 border-b px-5 py-3.5 transition-colors last:border-0`}
+                >
+                  <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{position.name}</span>
+
+                  <Cell label="Put in">{formatPaisa(position.capitalPaisa)}</Cell>
+                  <Cell label="Share">{asPercent(position.basisPoints)}</Cell>
+                  {/* Nothing is due until the house is sold, and a dash says that better than a zero, which reads as a figure somebody worked out. */}
+                  <Cell label="Due">{what.sold ? formatPaisa(position.duePaisa) : '—'}</Cell>
+                  {/* Brass, because it is money that has gone out to him. The one figure on this row that is real before the house sells. */}
+                  <Cell label="Paid" tone="text-brass">
+                    {formatPaisa(position.paidPaisa)}
+                  </Cell>
+                  {/* A dash for the same reason `Due` has one, and it took a payout going in to find out why it matters: nothing is due until the house sells, so a partner paid ahead of the sale reads as owed minus paid, which is a negative figure in a column headed Left. That reads as the partnership owing him, when he is the one who has had money early. */}
+                  <Cell label="Remaining" tone={howTheBalanceReads(what.sold, position.balancePaisa)}>
+                    {what.sold ? formatPaisa(position.balancePaisa) : '—'}
+                  </Cell>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          <ul className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
-            {what.positions.map((position) => (
-              <li key={position.personId} className={`${ROW} py-3.5`}>
-                <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{position.name}</span>
-
-                <Cell label="Put in">{formatPaisa(position.capitalPaisa)}</Cell>
-                <Cell label="Share">{asPercent(position.basisPoints)}</Cell>
-                {/* Nothing is due until the house is sold, and a dash says that better than a zero, which reads as a figure somebody worked out. */}
-                <Cell label="Due">{what.sold ? formatPaisa(position.duePaisa) : '—'}</Cell>
-                {/* Brass, because it is money that has gone out to him. The one figure on this row that is real before the house sells. */}
-                <Cell label="Paid" tone="text-brass">
-                  {formatPaisa(position.paidPaisa)}
-                </Cell>
-                {/* A dash for the same reason `Due` has one, and it took a payout going in to find out why it matters: nothing is due until the house sells, so a partner paid ahead of the sale reads as owed minus paid, which is a negative figure in a column headed Left. That reads as the partnership owing him, when he is the one who has had money early. */}
-                <Cell label="Remaining" tone={howTheBalanceReads(what.sold, position.balancePaisa)}>
-                  {what.sold ? formatPaisa(position.balancePaisa) : '—'}
-                </Cell>
-              </li>
-            ))}
-          </ul>
-        </div>
+        </TablePanel>
       )}
 
       {/* Said out loud rather than left to be worked out from two dashes and a figure. Only where it is true: somebody has been paid on a house that has not sold. */}
@@ -198,9 +206,10 @@ function Cell({ label, tone, children }: { label: string; tone?: string; childre
   )
 }
 
+// Three tiles rather than one strip, which is how every drawn screen carries its totals: a card each, so a figure is a thing on the page rather than a column of a table nobody drew.
 function Profit({ what }: { what: WhatThePartnersHave }) {
   return (
-    <dl className="border-border bg-panel grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border px-4 py-3 sm:grid-cols-3">
+    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <Sum label="Invested">{formatPaisa(what.broughtInPaisa)}</Sum>
       <Sum label="Expenses" tone="text-brass">
         {formatPaisa(what.spentPaisa)}
@@ -212,11 +221,11 @@ function Profit({ what }: { what: WhatThePartnersHave }) {
 
 function Sum({ label, tone, children }: { label: string; tone?: string; children: string }) {
   return (
-    <div className="flex flex-col">
-      <dt className="text-faint text-[0.6875rem] tracking-[0.06em] uppercase">{label}</dt>
-      <dd className={`${tone ?? 'text-foreground'} text-lg`}>
+    <Panel className="flex flex-col gap-3 p-5">
+      <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">{label}</dt>
+      <dd className={`${tone ?? 'text-foreground'} text-[1.6875rem] leading-none`}>
         <Figure>{children}</Figure>
       </dd>
-    </div>
+    </Panel>
   )
 }

@@ -11,6 +11,7 @@ import { NOBODY, PickAPerson } from '../form/PickAPerson'
 import { StillSending } from '../form/StillSending'
 import { WayOut } from '../form/WayOut'
 import { Figure, Form, Page } from '../shell/Page'
+import { TablePanel } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import type { Position, WhatThePartnersHave } from './Positions'
 
@@ -159,22 +160,24 @@ function Setting({
           Nobody has put money into this house yet. Add whoever is taking a share, or put a partner’s money in first.
         </p>
       ) : (
-        <div className="flex flex-col">
-          <div
-            className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
-          >
-            <span>Partner</span>
-            <span className="text-right">Put in</span>
-            <span className="text-right">Share</span>
-            <span />
-          </div>
+        <TablePanel>
+          <div className="flex flex-col">
+            <div
+              className={`${ROW} text-muted-foreground border-border hidden border-b px-5 py-2.5 text-[0.75rem] font-semibold sm:grid`}
+            >
+              <span>Partner</span>
+              <span className="text-right">Put in</span>
+              <span className="text-right">Share</span>
+              <span />
+            </div>
 
-          <ul className="divide-hairline flex flex-col divide-y">
-            {rows.map((row) => (
-              <Share key={who(row)} row={row} onChange={change} onTakeOut={takeOut} />
-            ))}
-          </ul>
-        </div>
+            <ul className="flex flex-col">
+              {rows.map((row) => (
+                <Share key={who(row)} row={row} onChange={change} onTakeOut={takeOut} />
+              ))}
+            </ul>
+          </div>
+        </TablePanel>
       )}
 
       <AddsUp short={short} siteName={siteName} />
@@ -245,7 +248,7 @@ function Share({
   const said = `${who(row)}-wrong`
 
   return (
-    <li className={`${ROW} py-3`}>
+    <li className={`${ROW} border-border hover:bg-muted/60 border-b px-5 py-3 transition-colors last:border-0`}>
       <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{row.name}</span>
 
       {/* What he put in, beside his share, because a share is agreed against it even where it does not follow it. */}

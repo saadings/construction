@@ -18,6 +18,14 @@ const SURFACES = ['--ground', '--panel', '--row-alt', '--hairline']
 // The app has two planes now. The nav is a dark rail against a warm page, which is the design's strongest structural move -- and every ink on it is a different question from the same ink on the page: `--sidebar-foreground` is near-white, which is unreadable on the ground and 14.6:1 where it actually sits.
 
 // Asked as its own pairing rather than excused, because a token nobody measures is how `--faint` failed twice.
+
+// And a third kind of surface: a tinted plane per meaning colour, which a role pill and a past-due tile sit on. Same rule as the rail -- the pairing that happens is the one to measure, and `--green` on `--green-tint` is a different sum from `--green` on the page.
+const ON_A_TINT: Array<[string, string]> = [
+  ['--green', '--green-tint'],
+  ['--brass', '--brass-tint'],
+  ['--refusal', '--refusal-tint'],
+]
+
 const ON_THE_RAIL: Array<[string, string]> = [
   ['--sidebar-foreground', '--sidebar'],
   ['--sidebar-accent-foreground', '--sidebar-accent'],
@@ -42,7 +50,7 @@ function whatCannotBeRead(palette: Record<string, string>): Array<string> {
     }
   }
 
-  for (const [word, surface] of ON_THE_RAIL) {
+  for (const [word, surface] of [...ON_THE_RAIL, ...ON_A_TINT]) {
     const ink = asAColour(word, palette)
     const behind = asAColour(surface, palette)
     if (ink === null || behind === null) continue
