@@ -218,7 +218,7 @@ export function DaySheet({
 
         <section className="flex w-full max-w-2xl flex-col gap-6 lg:order-1">
           <PickATrade
-            label="Trade"
+            label="Category"
             problem={whatIsWrongWith('trade', asTyped(draft, draft.parts[0]))}
             placeholder="Pick one"
             chosen={everyTrade.everything.find((trade) => trade._id === draft.tradeId) ?? null}

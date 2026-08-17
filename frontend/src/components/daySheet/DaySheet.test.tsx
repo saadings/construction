@@ -50,7 +50,7 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 }
 
 async function fillOne(user: ReturnType<typeof userEvent.setup>, { amount = '49,150' } = {}) {
-  await pick(user, 'Trade', 'Cement')
+  await pick(user, 'Category', 'Cement')
   await pick(user, 'Paid to', 'A mason')
   await user.type(screen.getByLabelText('Amount'), amount)
   await user.type(screen.getByLabelText('Cheque number'), '0001')
@@ -89,7 +89,7 @@ describe('a day of payments', () => {
     // Said by the name he calls it rather than by the id it is stored under, because the control now holds the row rather than a string.
     expect(screen.getByLabelText<HTMLInputElement>('Account').value).toBe('Bank 0000')
     // What does change: it is a different trade, a different person and a different amount every time.
-    expect(screen.getByLabelText<HTMLSelectElement>('Trade').value).toBe('')
+    expect(screen.getByLabelText<HTMLSelectElement>('Category').value).toBe('')
     expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('')
     expect(screen.getByText('1-A, Phase 0')).toBeTruthy()
   })
@@ -171,7 +171,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onAddAccount } = aSheet({ accounts: [] })
 
-    await pick(user, 'Trade', 'Cement')
+    await pick(user, 'Category', 'Cement')
     await user.type(screen.getByLabelText('Amount'), '25000')
 
     await useTheName(user, 'Account', 'Bank 0000')
@@ -182,7 +182,7 @@ describe('a day of payments', () => {
     expect(onAddAccount).toHaveBeenCalledWith('Bank 0000', '0000')
     expect(JSON.stringify(onAddAccount.mock.calls)).not.toContain('5555555555')
     // Back in the sitting with the account chosen, and nothing typed so far thrown away.
-    expect(screen.getByLabelText<HTMLInputElement>('Trade').value).toBe('Cement')
+    expect(screen.getByLabelText<HTMLInputElement>('Category').value).toBe('Cement')
     expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('25,000')
   })
 
@@ -191,7 +191,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onAddTrade } = aSheet()
 
-    await useTheName(user, 'Trade', 'Scaffolding')
+    await useTheName(user, 'Category', 'Scaffolding')
 
     // Nothing has been added yet: the offer opens the question rather than answering it.
     expect(onAddTrade).not.toHaveBeenCalled()
@@ -201,7 +201,7 @@ describe('a day of payments', () => {
 
     expect(onAddTrade).toHaveBeenCalledWith({ name: 'Scaffolding', countsAsBuildingCost: false })
     // Added and picked. Adding a trade and leaving the field empty is the same walk again.
-    expect(screen.getByLabelText<HTMLInputElement>('Trade').value).toBe('Scaffolding')
+    expect(screen.getByLabelText<HTMLInputElement>('Category').value).toBe('Scaffolding')
   })
 
   it('offers nothing to add for a trade already on the list, however it is spelt or spaced', async () => {
@@ -211,8 +211,8 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.click(screen.getByRole('combobox', { name: 'Trade' }))
-    await user.type(screen.getByRole('combobox', { name: 'Trade' }), ' grey  STRUCTURE ')
+    await user.click(screen.getByRole('combobox', { name: 'Category' }))
+    await user.type(screen.getByRole('combobox', { name: 'Category' }), ' grey  STRUCTURE ')
 
     expect(screen.queryByRole('button', { name: /^Use/ })).toBeNull()
   })
@@ -250,7 +250,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onPutIn } = aSheet()
 
-    await pick(user, 'Trade', 'Cement')
+    await pick(user, 'Category', 'Cement')
     await pick(user, 'Paid to', 'A mason')
     await user.type(screen.getByLabelText('Amount'), '300000')
 
@@ -311,7 +311,7 @@ describe('a day of payments', () => {
 
     await fillOne(user, { amount: '25000' })
     await user.click(screen.getByRole('button', { name: 'Add another' }))
-    await pick(user, 'Trade', 'Grey structure')
+    await pick(user, 'Category', 'Grey structure')
     await pick(user, 'Paid to', 'A mason')
     await user.type(screen.getByLabelText('Amount'), '10000')
     await user.type(screen.getByLabelText('Cheque number'), '0002')
@@ -327,7 +327,7 @@ describe('a day of payments', () => {
     const user = userEvent.setup()
     const { onPutIn } = aSheet()
 
-    await pick(user, 'Trade', 'Cement')
+    await pick(user, 'Category', 'Cement')
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
     expect(screen.getByRole('alert').textContent).toContain('Say who was paid.')
@@ -347,6 +347,9 @@ describe('a day of payments', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save' }))
 
+    // `category` came off this list, the same way `outstanding` did. Both were our judgement about what reads as the machine showing through, and both turned out to be words he uses himself: `outstanding` he chose in a message, and `Category -- what the money was for` is the label on his own drawing of this screen.
+
+    // The rule is unchanged and it is worth restating so the removal is not read as softening it: what is banned is the machine showing through, and a word the man who asked for the app writes on his own design of the screen is not that, whatever it sounds like to us.
     const onScreen = document.body.textContent
     for (const technical of [
       'record',
@@ -354,7 +357,6 @@ describe('a day of payments', () => {
       'entity',
       'ledger',
       'sync',
-      'category',
       'vendor',
       'field',
       'validation',
@@ -375,7 +377,7 @@ describe('a question that answers for itself', () => {
     // Opening a day sheet is not a mistake. Six red questions before a single answer is the app shouting at somebody who has done nothing.
     aSheet()
 
-    expect(await screen.findByLabelText('Trade')).toBeTruthy()
+    expect(await screen.findByLabelText('Category')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
@@ -384,7 +386,7 @@ describe('a question that answers for itself', () => {
     aSheet()
 
     // Straight past "what for" without answering it.
-    await user.click(screen.getByLabelText('Trade'))
+    await user.click(screen.getByLabelText('Category'))
     await user.click(screen.getByLabelText('Amount'))
 
     expect(screen.getByRole('alert').textContent).toBe('Pick what this was for.')
@@ -394,11 +396,11 @@ describe('a question that answers for itself', () => {
     const user = userEvent.setup()
     aSheet()
 
-    await user.click(screen.getByLabelText('Trade'))
+    await user.click(screen.getByLabelText('Category'))
     await user.click(screen.getByLabelText('Amount'))
     expect(screen.getByText('Pick what this was for.')).toBeTruthy()
 
-    await pick(user, 'Trade', 'Cement')
+    await pick(user, 'Category', 'Cement')
 
     // Only that one goes. The amount, which the eye also left, is still unanswered and still says so.
     expect(screen.queryByText('Pick what this was for.')).toBeNull()

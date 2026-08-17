@@ -36,7 +36,7 @@ export function Trades({
 
   return (
     <Page
-      title="Trade"
+      title="Categories"
       beside={
         adding ? null : (
           <Button className="text-sm" onClick={() => setAdding(true)}>

@@ -60,7 +60,7 @@ function aSheet(over: Partial<Parameters<typeof DaySheet>[0]> = {}) {
 
 /** One line, typed the way somebody types it. Cash, because a cheque asks for its number and an account as well and none of that is what these are about. */
 async function fillOne(user: ReturnType<typeof userEvent.setup>, amount: string) {
-  await pick(user, 'Trade', 'Cement')
+  await pick(user, 'Category', 'Cement')
   await pick(user, 'Paid to', 'A mason')
   await user.type(screen.getByLabelText('Amount'), amount)
   await user.click(screen.getByRole('radio', { name: 'Cash' }))

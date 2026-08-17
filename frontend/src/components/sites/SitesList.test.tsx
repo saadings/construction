@@ -54,7 +54,7 @@ describe('the sites on the home screen', () => {
 
     expect(await screen.findByText(/No houses yet/)).toBeTruthy()
     // An empty screen with no way forward is a dead end, so the way to start one is still there -- at both widths, since only one of the two is ever on screen.
-    expect(screen.getAllByRole('link', { name: 'Start a house' })).toHaveLength(2)
+    expect(screen.getAllByRole('link', { name: 'Add a site' })).toHaveLength(2)
   })
 
   it('never puts a technical word on the screen', async () => {
