@@ -127,8 +127,11 @@ describe('signing out', () => {
 
   it('leads somewhere real from every row of the menu, not only the one this test is about', () => {
     // The same question asked of all five: a row is a promise that a screen exists, and four of them are outside what the test above looks at.
-    const menu = SOURCE.find((file) => file.path === join(FRONTEND, 'routes', 'more.index.tsx'))?.text ?? ''
-    const named = [...menu.matchAll(/to: '(\/more\/[\w-]+)'/g)].map((found) => found[1])
+
+    // Read where the rows are written, which moved: the menu became four cards with the list itself on them, so the route now hands over readings and the ways through are in the screen. The subject is unchanged and the file is not.
+    const menu =
+      SOURCE.find((file) => file.path === join(FRONTEND, 'components', 'settings', 'TheSettings.tsx'))?.text ?? ''
+    const named = [...menu.matchAll(/to="(\/more\/[\w-]+)"/g)].map((found) => found[1])
 
     // The floor: four rows are drawn, so four are read. A regex that stopped matching would report a clean answer about nothing.
     expect(named.length).toBe(4)

@@ -16,7 +16,7 @@ import { Reports } from '../components/reports/Reports'
 import { Finding, WayToFind } from '../components/search/Finding'
 import { BankAccounts } from '../components/settings/BankAccounts'
 import { HowItLooks } from '../components/settings/HowItLooks'
-import { TheMenu } from '../components/settings/TheMenu'
+import { TheSettings } from '../components/settings/TheSettings'
 import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
 import { Page } from '../components/shell/Page'
@@ -654,25 +654,15 @@ export const ON_SHOW: Array<OnShow> = [
     at: '/more',
     name: 'More',
     where: 'the last place in the nav',
-    proves: 'What money is spent on',
+    proves: 'The list a day sheet picks from',
+    // One of the trades is not a building cost, because the sentence under them only appears where one is -- and a card photographed without it is a picture of the easy half.
     draw: () => (
-      <TheMenu
-        places={[
-          {
-            to: '/more/what-for',
-            name: 'What money is spent on',
-            what: 'The list every payment is put under.',
-            now: `${String(TRADES.length)} of them`,
-          },
-          {
-            to: '/more/which-account',
-            name: 'Account',
-            what: 'The accounts cheques and transfers leave.',
-            now: `${String(BANK.length)} of them`,
-          },
-          { to: '/more/who-can-sign-in', name: 'Who can sign in', what: 'Who may open the ledger.', now: '2 waiting' },
-          { to: '/more/how-it-looks', name: 'Appearance', what: 'Light or dark, or follow the phone.', now: 'Auto' },
-        ]}
+      <TheSettings
+        what={{
+          trades: TRADES,
+          accounts: BANK,
+          looksLike: 'Auto',
+        }}
       />
     ),
   },

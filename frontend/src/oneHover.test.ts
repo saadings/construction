@@ -61,7 +61,7 @@ describe('a row under a finger', () => {
     const paints = new Map(screens.map(({ path, source }) => [path, whatItPaintsOnHover(source)]))
 
     for (const path of [
-      'components/settings/TheMenu.tsx',
+      // `components/settings/TheMenu.tsx` was the fourth and is gone: the menu it drew became four cards, and a card is not a row under a finger. What it was here to prove -- that the sweep opens the files this rule was written about -- the five below still prove.
       'components/partners/Positions.tsx',
       'components/partners/AgreeShares.tsx',
       'components/shares/PayOut.tsx',
