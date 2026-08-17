@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { asDayHeWrites, isCalendarDate, notInTheFuture, parseCalendarDate, todayOnThisDevice } from './calendarDate'
+import {
+  asADayAndMonth,
+  asAShortMonth,
+  asDayHeWrites,
+  asTheDayInFull,
+  asTheMonthInFull,
+  isCalendarDate,
+  notInTheFuture,
+  parseCalendarDate,
+  todayOnThisDevice,
+} from './calendarDate'
 
 describe('the day something happened', () => {
   it('reads the way the workbooks write dates', () => {
@@ -98,5 +108,48 @@ describe('refusing a day that has not happened', () => {
     const now = new Date('2025-10-07T12:00:00Z')
     expect(notInTheFuture('2025-10-07', now)).toBe(true)
     expect(notInTheFuture('2015-05-22', now)).toBe(true)
+  })
+})
+
+describe('saying a month and a day in full', () => {
+  it('writes a month the way a person says one', () => {
+    expect(asTheMonthInFull('2025-03')).toBe('March 2025')
+    expect(asTheMonthInFull('2024-12')).toBe('December 2024')
+  })
+
+  it('shortens a month to what an axis has room for', () => {
+    expect(asAShortMonth('2025-03')).toBe('Mar')
+    expect(asAShortMonth('2024-10')).toBe('Oct')
+  })
+
+  it('names the weekday, the day, the month and the year', () => {
+    expect(asTheDayInFull('2025-03-12')).toBe('Wednesday, 12 March 2025')
+  })
+
+  it('names a day without its year, for a sentence holding several', () => {
+    expect(asADayAndMonth('2025-03-10')).toBe('10 March')
+  })
+
+  // The same trap `asDayHeWrites` is tested against. A heading saying which day the figures are as at, built at local midnight, reads as the day before for everybody east of UTC -- which is everybody using this.
+  it('says the same day in every timezone', () => {
+    const before = process.env.TZ
+
+    try {
+      for (const zone of ['Asia/Karachi', 'America/New_York', 'Pacific/Kiritimati', 'UTC']) {
+        process.env.TZ = zone
+        expect(asTheDayInFull('2025-03-12'), `in ${zone}`).toBe('Wednesday, 12 March 2025')
+        expect(asADayAndMonth('2025-03-12'), `in ${zone}`).toBe('12 March')
+      }
+    } finally {
+      process.env.TZ = before
+    }
+  })
+
+  // A screen showing a stored value it cannot read must not show an empty space where a date should be.
+  it('hands back anything it cannot read', () => {
+    expect(asTheMonthInFull('2025-13')).toBe('2025-13')
+    expect(asAShortMonth('later')).toBe('later')
+    expect(asTheDayInFull('')).toBe('')
+    expect(asADayAndMonth('sometime')).toBe('sometime')
   })
 })

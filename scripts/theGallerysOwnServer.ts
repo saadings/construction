@@ -127,6 +127,8 @@ export async function unfoldIt(on: Page, screen: ScreenItShows): Promise<void> {
 // What is drawn, as one string: where the screen is, how big it is, and how far along each bar in it has grown.
 
 // The bars are here because a chart used to animate its own height. Nothing does today -- the sizes are what move now.
+
+// Both dimensions, not the width alone. It read the width because every bar in this app was a horizontal row; `Money in and out` draws his columns, which carry their length in their height, and a settle check reading the one dimension a chart does not move in reports it at rest before it has drawn -- the same false rest the `.recharts-bar-rectangle` selector gave, arrived at from the other side.
 async function asItStands(on: Page, shownIn: string): Promise<string | null> {
   const box = await on.locator(shownIn).boundingBox()
 
@@ -135,7 +137,7 @@ async function asItStands(on: Page, shownIn: string): Promise<string | null> {
   }
 
   const bars: unknown = await on.evaluate(
-    `[...document.querySelectorAll('[data-bar]')].map((bar) => Math.round(bar.getBoundingClientRect().width)).join(',')`
+    `[...document.querySelectorAll('[data-bar]')].map((bar) => { const at = bar.getBoundingClientRect(); return Math.round(at.width) + 'x' + Math.round(at.height) }).join(',')`
   )
 
   return `${String(box.x)},${String(box.y)},${String(box.width)},${String(box.height)}|${String(bars)}`

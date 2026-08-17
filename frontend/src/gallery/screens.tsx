@@ -32,7 +32,7 @@ import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
 import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import { HouseDetails } from '../components/sites/HouseDetails'
 import { SitesList } from '../components/sites/SitesList'
-import { A_DAY, BANK, EVERYTHING_AT_ONCE, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
+import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, everythingAtOnce, paisa } from './fixtures'
 
 // Every screen a route draws whole, with invented figures, so somebody can look at one without signing in.
 
@@ -135,9 +135,10 @@ export const ON_SHOW: Array<OnShow> = [
     at: '/dashboard',
     name: 'Dashboard',
     where: 'the first row of the nav',
-    proves: 'Outstanding',
+    // The whole caption, not `Outstanding`. That word is now the start of a longer one, and a camera waiting on a string that is a prefix of another string waits on whichever the page draws first.
+    proves: 'Outstanding payables',
     // Every figure below is a different number on purpose. Two that happen to match make a wiring bug look like a working screen -- a tile reading the wrong field, a house's column drawn from the total -- and this has been caught twice already in fixtures that were not this careful.
-    draw: () => <Dashboard what={EVERYTHING_AT_ONCE} />,
+    draw: () => <Dashboard what={everythingAtOnce()} />,
   },
   {
     slug: 'spent-by-trade',
@@ -540,19 +541,24 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'the nav, under the money',
     proves: 'The questions the books get asked',
     // Every figure here is one a screen behind a card also shows, so each is a different number: a card reading the wrong field looks exactly like a working card when two of them happen to match.
-    draw: () => (
-      <Reports
-        what={{
-          // Read from the Dashboard's own fixture rather than written again. These two are the same money on two screens, and it had `6,540,000` of its own -- the same figure, stale in the same way, and two screens hand-writing one number is exactly how they come to disagree while both look right.
-          spending: {
-            trades: 7,
-            goneOutPaisa: EVERYTHING_AT_ONCE.goneOutPaisa,
-            ownMoneyPaisa: EVERYTHING_AT_ONCE.comeIn.ownMoneyPaisa,
-          },
-          owed: { people: 3, payablePaisa: EVERYTHING_AT_ONCE.owed.payablePaisa },
-        }}
-      />
-    ),
+    draw: () => {
+      // Built once and read three times, not built three times. Each call is its own set of figures, so a nudge under `nothingMeansTwoThings` would move one of them and leave the other two alone -- which is the shape of the defect that check looks for, manufactured by the fixture rather than found in the app.
+      const dashboard = everythingAtOnce()
+
+      return (
+        <Reports
+          what={{
+            // Read from the Dashboard's own fixture rather than written again. These two are the same money on two screens, and it had `6,540,000` of its own -- the same figure, stale in the same way, and two screens hand-writing one number is exactly how they come to disagree while both look right.
+            spending: {
+              trades: 7,
+              goneOutPaisa: dashboard.goneOutPaisa,
+              ownMoneyPaisa: dashboard.comeIn.ownMoneyPaisa,
+            },
+            owed: { people: 3, payablePaisa: dashboard.owed.payablePaisa },
+          }}
+        />
+      )
+    },
   },
   {
     slug: 'people',

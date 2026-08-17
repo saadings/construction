@@ -115,3 +115,58 @@ export function asAWeekday(day: string): string {
     timeZone: 'UTC',
   })
 }
+
+// The months by name, written out rather than asked of `Intl`. Same reasoning as `asDayHeWrites`: a locale is a guess about the reader, and one browser default is all that stands between `March` and `marzo` on a screen nobody is watching.
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const
+
+/** A month said as a person says it: `March 2025` from `2025-03`. Anything that is not a month comes back as it was. */
+export function asTheMonthInFull(month: string): string {
+  const [year, at] = month.split('-').map(Number)
+  const name = MONTHS[at - 1]
+
+  return year && name !== undefined ? `${name} ${String(year)}` : month
+}
+
+/** The three letters a chart axis has room for: `Mar` from `2025-03`. */
+export function asAShortMonth(month: string): string {
+  const name = MONTHS[Number(month.split('-')[1]) - 1]
+
+  return name === undefined ? month : name.slice(0, 3)
+}
+
+// The weekday and the month spelled out, for a line saying which day a screen's figures are as at. `asAWeekday` says `Sat 4 Jul` for a day sheet's own header, where the short form is what fits; this is the long one, and both exist because a heading and a sheet header are not the same sentence.
+
+// UTC throughout, as `asAWeekday` is. The day has already been decided by whoever is holding the device, and rebuilding it at local midnight is how it becomes the day before.
+export function asTheDayInFull(day: string): string {
+  const [year, month, date] = day.split('-').map(Number)
+  const name = MONTHS[month - 1]
+  if (!year || !date || name === undefined) return day
+
+  const weekday = new Date(Date.UTC(year, month - 1, date)).toLocaleDateString('en-GB', {
+    weekday: 'long',
+    timeZone: 'UTC',
+  })
+
+  return `${weekday}, ${String(date)} ${name} ${String(year)}`
+}
+
+/** The day and its month alone: `10 March`. For naming several days in one sentence, where saying the year three times is what makes it unreadable. */
+export function asADayAndMonth(day: string): string {
+  const [, month, date] = day.split('-').map(Number)
+  const name = MONTHS[month - 1]
+
+  return date && name !== undefined ? `${String(date)} ${name}` : day
+}
