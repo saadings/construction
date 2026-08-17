@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs'
+
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ConvexError } from 'convex/values'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -85,9 +87,26 @@ describe('what for', () => {
 
   it('is named after the field that picks from it, which is where he went looking', () => {
     // He was on the day sheet looking at `WHAT FOR` and could not find this screen, because it was called "what money is spent on" -- true, and not the words in front of him.
+
+    // Asked as the pairing rather than as a word. It was written as `Trade` on both sides, and the design calls the field `Category` and the list `Categories` -- so renaming one of them to the drawing would have rebuilt the exact defect this test is about, and a test pinning the old word would have looked like the thing stopping it.
     renderIt()
 
-    expect(screen.getByRole('heading', { name: 'Trade' })).toBeTruthy()
+    const said = readFileSync('frontend/src/components/daySheet/DaySheet.tsx', 'utf8')
+    const theField = /<PickATrade[\s\S]*?label="([^"]+)"/.exec(said)
+
+    expect(theField, 'the day sheet no longer picks a trade through a labelled control').not.toBeNull()
+
+    const heading = screen.getByRole('heading', { level: 1 }).textContent
+
+    // The list of them, whatever the field is called: `Trade` and `Trades`, `Category` and `Categories`. Written as the stem rather than as a plural rule, because English is not a rule and the thing being asserted is that the two words are the same word.
+    const stem = (theField?.[1] ?? '').replace(/y$/i, '')
+
+    expect(heading, 'this screen has no heading to compare').not.toBe('')
+
+    expect(
+      heading.toLowerCase().startsWith(stem.toLowerCase()),
+      `the day sheet says "${theField?.[1] ?? ''}" and this screen is called "${heading}"`
+    ).toBe(true)
     expect(document.body.textContent).not.toContain('What money is spent on')
   })
 

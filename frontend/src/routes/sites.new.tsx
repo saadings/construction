@@ -13,7 +13,7 @@ function StartASite() {
   const start = useMutation(api.sites.mutations.start)
 
   return (
-    <Page title="Start a house">
+    <Page title="Add a site">
       <HouseDetails
         saying="Start it"
         onSave={async (house) => {

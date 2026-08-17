@@ -33,7 +33,7 @@ async function renderWith(what: WhatIsOnIt) {
   render(<RouterProvider router={router} />)
 
   // The heading is drawn from nothing that is read, so it is there in every state this screen has.
-  await screen.findByRole('heading', { name: 'Trade' })
+  await screen.findByRole('heading', { name: 'Categories' })
 }
 
 describe('the lists the rest of the app picks from', () => {
@@ -84,7 +84,7 @@ describe('the lists the rest of the app picks from', () => {
     expect(screen.getByText('and 4 more')).toBeTruthy()
 
     // And the count beside the heading is the whole list, not what fitted.
-    expect(within(screen.getByRole('heading', { name: 'Trade' }).parentElement!).getByText('14')).toBeTruthy()
+    expect(within(screen.getByRole('heading', { name: 'Categories' }).parentElement!).getByText('14')).toBeTruthy()
   })
 
   it('keeps the two unknowns apart on each card that reads something', async () => {

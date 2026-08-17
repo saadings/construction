@@ -30,7 +30,7 @@ export function TheSettings({ what }: { what: WhatIsOnIt }) {
     >
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Section
-          name="Trade"
+          name="Categories"
           what="The list a day sheet picks from — bricks, steel, plot, and anything you add."
           count={what.trades === undefined || what.trades === null ? undefined : what.trades.length}
           to="/more/what-for"
