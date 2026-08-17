@@ -57,9 +57,11 @@ export function TheSites({ houses }: { houses: Array<House> }) {
         </div>
 
         {/* `ROOM_FOR_A_THUMB` and not `ROOM_FOR_A_LINK`. This one carries an arrow, so it is two lines of content tall and `columns` reads it as a control standing on its own rather than a link inside a sentence -- it measured 43px against the 44 a control needs. The four pixels a link is given are the right number for a link and the wrong one for this. */}
+
+        {/* And it does not break in half. At 390 the subtitle beside it wraps to two lines and takes the row's width with it, leaving this squeezed to `All` over `sites` with the arrow beside the second word -- a control that reads as a rendering fault. `shrink-0` is the half that matters: without it, `whitespace-nowrap` only moves the overflow somewhere else. */}
         <Link
           to="/"
-          className={`text-brass flex items-center gap-1.5 text-[0.8125rem] font-medium ${ROOM_FOR_A_THUMB}`}
+          className={`text-brass flex shrink-0 items-center gap-1.5 text-[0.8125rem] font-medium whitespace-nowrap ${ROOM_FOR_A_THUMB}`}
         >
           All sites
           <ArrowRight aria-hidden className="size-3.5 shrink-0" />
