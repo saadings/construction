@@ -68,19 +68,17 @@ describe('signing out', () => {
 
   // Deliberately absent: what the bands are is changing. The shell is being replaced with shadcn's Sidebar, the bar along the bottom goes, and navigation on a phone moves to the top corner -- so a guard naming three bands and reading each one out of the shape that carries it would be written to be deleted. A gap somebody knows about is better than a guard that has to be believed and then removed.
 
-  it('is in the footer, which is the one part of the nav every width shows', () => {
-    // The whole of it: the column has a footer and the sheet is the same component, so there is no second answer for a phone and nothing to keep in step.
+  it('is at the foot of the rail, which is the one part of the nav every width shows', () => {
+    // The whole of it: the rail carries the sign-out and the strip a phone scrolls does not, so on a phone it is still reached from the rail rather than from a second control -- one answer rather than two to keep in step.
 
-    // Asked across the join now that the nav is its own file, and asked in both halves rather than one. Either half alone passes while signing out is unreachable: a footer holding `{footer}` says nothing about what is passed to it, and a shell passing a `<UserButton` says nothing about where it lands.
+    // Asked across the join, and in both halves rather than one. Either half alone passes while signing out is unreachable: a footer holding `{footer}` says nothing about what is passed to it, and a shell passing a `<UserButton` says nothing about where it lands.
     const nav = SOURCE.find((file) => file.path === THE_NAV)?.text ?? ''
-    const footer = nav.slice(nav.indexOf('<SidebarFooter'), nav.indexOf('</SidebarFooter>'))
 
-    // The locate is the assertion: `indexOf` answers -1 for a footer that is gone, and a slice from -1 is not empty -- it is the tail of the file, which contains everything.
-    expect(nav).toContain('<SidebarFooter')
-    expect(nav.indexOf('<SidebarFooter')).toBeGreaterThan(0)
-    expect(nav.indexOf('</SidebarFooter>')).toBeGreaterThan(nav.indexOf('<SidebarFooter'))
+    // The locate is the assertion: `indexOf` answers -1 for a row that is gone, and a slice from -1 is not empty -- it is the tail of the file, which contains everything. shadcn's `SidebarFooter` went with the sheet, so what this anchors on now is the row itself, which carries the 44px the sign-out is held to.
+    const at = nav.indexOf('min-h-11 items-center border-t')
 
-    expect(footer).toContain('{footer}')
+    expect(at, 'the row the sign-out sits in is gone').toBeGreaterThan(0)
+    expect(nav.slice(at, at + 200)).toContain('{footer}')
 
     // And the other end: the shell is what puts Clerk's control into it.
     const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''

@@ -1,81 +1,113 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
-} from '../ui/sidebar'
-import { DESTINATIONS } from './destinations'
+import { cn } from '../../lib/utils'
+import type { Destination } from './destinations'
+import { DESTINATIONS, GROUPS } from './destinations'
 
-// The nav itself, taken out of `Shell` so something can look at it. It was the one part of this app no test and no picture had ever measured -- the shell holds Clerk's `UserButton`, Clerk will not render outside its own provider, and the gallery keeps the backend out on purpose, so the whole shell was exempt and the nav went with it.
+// The nav, in the two shapes he drew: a dark rail down the side of a desk, and a strip a phone scrolls sideways. It was shadcn's `Sidebar` -- a column that became a sheet behind a hamburger -- and the design replaces that outright.
 
-// That is how every row in it stayed 32px tall on a phone. Nauman found it with a thumb, which is the only instrument that had been asked.
+// Neither shape decides where it is drawn -- `Shell` does. A component carrying its own `md:hidden` cannot be photographed at the width it hides at, and the rail is tapped on a tablet at 768 where the strip is already gone.
 
-/** The way in, on a phone: the corner button that opens the sheet. It lives here rather than in `Shell` for one reason -- `Shell` cannot be drawn without a sign-in, and this is the only control that opens the only navigation a phone has. Kept beside the rows it opens so the two cannot drift, and so the gallery measures the button the app ships rather than a copy of it. */
-export function TheWayIntoTheNav() {
-  return <SidebarTrigger className="size-11" />
-}
+// Worth knowing rather than discovering: losing the sheet is his decision and losing the tap target is not. His strip is `py-2` at 13px, about 34px tall, and it is the only navigation a phone has -- which is the exact defect he reported when the rows were 32px. So the arrangement is his and the height is the app's.
 
 /** What Clerk draws goes here, because Clerk needs a provider and the gallery must not have one. `Shell` passes the real control; the gallery passes something the same size and says so on the page. */
 export function TheNav({ footer }: { footer: ReactNode }) {
+  const above = DESTINATIONS.filter((destination) => destination.under === undefined)
+
   return (
-    <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="px-3 pt-3">
-        <span className="font-display text-foreground text-xl leading-none">Construction</span>
-      </SidebarHeader>
+    // Every colour by name. The rail is dark against warm paper in the light theme and that separation has to survive the dark one, where the ground comes up to meet it -- so the surface and its edge are two tokens rather than one, and neither is decided here.
+    <aside className="bg-sidebar text-sidebar-foreground sticky top-0 flex h-dvh w-60 shrink-0 flex-col">
+      <div className="px-5 pt-5 pb-4">
+        <span className="font-display text-sidebar-foreground text-[22px] leading-none">Construction</span>
+      </div>
 
-      <SidebarContent className="px-1.5 py-2">
-        {/* Named, because shadcn's own markup is unlabelled `div`s and a list of links with no name is a list of links. It was `Sections` in all three hand-rolled shapes and it stays that, so nothing that could find it before has to learn a new word. */}
-
-        {/* Further apart on a phone than on a desk, because the gap is part of the target: two 44px rows touching each other are still easy to miss between. */}
-        <SidebarMenu aria-label="Sections" className="gap-2 md:gap-1">
-          {DESTINATIONS.map((destination) => (
+      {/* Named, because a list of links with no name is a list of links. It was `Sections` in every shape this nav has had and it stays that, so nothing that could find it before has to learn a new word. */}
+      <nav className="flex flex-1 flex-col overflow-y-auto px-3 pb-4">
+        <ul aria-label="Sections" className="flex flex-1 flex-col gap-1">
+          {above.slice(0, 1).map((destination) => (
             <Where key={destination.to} destination={destination} />
           ))}
-        </SidebarMenu>
-      </SidebarContent>
 
-      {/* Chrome, at every width, which is the whole of #81's finding: a page cannot know what the chrome is doing, and the chrome cannot know what a page put in its corner. On a phone the sheet carries this, so it is the same answer rather than a special case -- and it is at the foot of the sheet where a thumb is, not above a list that has to be scrolled past. */}
-      <SidebarFooter className="px-3 pb-4">
-        {/* The row a thumb has to find, held open to the same height as the rows above it. Signing out is the one control nobody wants to reach for twice or hit by accident. */}
-        <div className="flex min-h-11 items-center md:min-h-8">{footer}</div>
-      </SidebarFooter>
-    </Sidebar>
+          {GROUPS.map((group) => {
+            const inside = DESTINATIONS.filter((destination) => destination.under === group)
+
+            // A heading with nothing under it is a heading about nothing. Read off the destinations so a group cannot outlive its last row.
+            return inside.length === 0 ? null : (
+              <li key={group}>
+                <h2 className="px-3 pt-5 pb-1 text-[10px] font-semibold tracking-[0.16em] uppercase opacity-40">
+                  {group}
+                </h2>
+                <ul aria-label={group} className="flex flex-col gap-1">
+                  {inside.map((destination) => (
+                    <Where key={destination.to} destination={destination} />
+                  ))}
+                </ul>
+              </li>
+            )
+          })}
+
+          <li className="mt-auto flex flex-col gap-1 pt-6">
+            <ul className="flex flex-col gap-1">
+              {above.slice(1).map((destination) => (
+                <Where key={destination.to} destination={destination} />
+              ))}
+            </ul>
+
+            {/* Chrome, at every width. On a phone the header carries it, so it is the same control rather than a special case. */}
+            <div
+              data-nav-row=""
+              className="border-sidebar-border mt-2 flex min-h-11 items-center border-t px-3 pt-4 md:min-h-8"
+            >
+              {footer}
+            </div>
+          </li>
+        </ul>
+      </nav>
+    </aside>
   )
 }
 
-// 44px, which Apple's guidance and WCAG 2.5.5 arrive at separately, and the same bar that made the date input a defect in #96. A phone gets it and a desk does not: 32px rows are right under a mouse, and a list of 44px rows on a 1440px screen is a nav shouting. One value cannot be right at both ends, so neither end gets a compromise.
+/** The strip a phone scrolls, which is the whole of navigation under 768 now that the sheet is gone. */
+export function TheNavOnAPhone() {
+  return (
+    <nav className="border-border bg-background/95 sticky top-16 z-10 border-b backdrop-blur-sm">
+      <ul aria-label="Sections" className="flex gap-1 overflow-x-auto px-4 py-2">
+        {DESTINATIONS.map((destination) => (
+          <Where key={destination.to} destination={destination} across />
+        ))}
+      </ul>
+    </nav>
+  )
+}
 
-// Written here rather than in `ui/sidebar.tsx`, which is generator output the next `shadcn add` overwrites. It lands through `cn`, so `h-11` replaces the variant's `h-8` and `md:h-8` puts it back above 768.
-const WHAT_A_THUMB_NEEDS = 'h-11 gap-3 [&>svg]:size-5 md:h-8 md:gap-2 md:[&>svg]:size-4'
+// 44px, which Apple's guidance and WCAG 2.5.5 arrive at separately, and the bar every control in this app is held to. It is here rather than only on the strip because the rail is tapped on a tablet at 768, which is above the breakpoint that hides the strip.
 
-// A destination, and the sheet closes behind it. A sheet you have to dismiss after picking something is worse than the bar it replaced -- two actions where there was one, and the second is the one you forget while holding a cheque book.
-function Where({ destination }: { destination: (typeof DESTINATIONS)[number] }) {
-  const { isMobile, setOpenMobile } = useSidebar()
+// A desk gets less: 32px rows are right under a mouse, and a list of 44px rows on a 1440px screen is a nav shouting.
+const WHAT_A_THUMB_NEEDS = 'min-h-11 md:min-h-8'
+
+function Where({ destination, across = false }: { destination: Destination; across?: boolean }) {
   const here = useRouterState({ select: (state) => state.location.pathname })
-  // The same rule the old nav marked by: everything under `/more` is More, and only `/` itself is Sites.
+  // The same rule every shape of this nav has marked by: everything under `/more` is More, and only `/` itself is Sites.
   const on = destination.to === '/' ? here === '/' : here.startsWith(destination.to)
 
   return (
-    <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={on} tooltip={destination.label} className={WHAT_A_THUMB_NEEDS}>
-        <Link
-          to={destination.to}
-          onClick={() => {
-            if (isMobile) setOpenMobile(false)
-          }}
-        >
-          <destination.icon aria-hidden />
-          <span>{destination.label}</span>
-        </Link>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
+    <li className={across ? 'shrink-0' : undefined}>
+      <Link
+        to={destination.to}
+        data-nav-row=""
+        data-here={on || undefined}
+        className={cn(
+          WHAT_A_THUMB_NEEDS,
+          'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+          across
+            ? 'text-muted-foreground data-[here]:bg-sidebar-primary data-[here]:text-sidebar-primary-foreground whitespace-nowrap'
+            : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[here]:bg-sidebar-primary data-[here]:text-sidebar-primary-foreground opacity-70 hover:opacity-100 data-[here]:opacity-100'
+        )}
+      >
+        {across ? null : <destination.icon className="size-4 shrink-0" aria-hidden />}
+        <span>{destination.label}</span>
+      </Link>
+    </li>
   )
 }

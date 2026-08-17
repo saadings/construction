@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 
 import { Dashboard } from '../components/dashboard/Dashboard'
@@ -17,7 +16,7 @@ import { TheMenu } from '../components/settings/TheMenu'
 import { Trades } from '../components/settings/Trades'
 import { PayOut } from '../components/shares/PayOut'
 import { Page } from '../components/shell/Page'
-import { TheNav, TheWayIntoTheNav } from '../components/shell/TheNav'
+import { TheNav, TheNavOnAPhone } from '../components/shell/TheNav'
 import { WayIn } from '../components/shell/WayIn'
 import { AgreeAContract } from '../components/site/AgreeAContract'
 import { ChangeTheContract } from '../components/site/ChangeTheContract'
@@ -28,7 +27,6 @@ import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
 import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import { HouseDetails } from '../components/sites/HouseDetails'
 import { SitesList } from '../components/sites/SitesList'
-import { SidebarProvider, useSidebar } from '../components/ui/sidebar'
 import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, paisa } from './fixtures'
 
 // Every screen a route draws whole, with invented figures, so somebody can look at one without signing in.
@@ -64,16 +62,7 @@ export type OnShow = {
 const nothing = () => Promise.resolve()
 const nothingTrue = () => Promise.resolve(true)
 
-// The sheet, held open. Below 768 the nav is a sheet that starts closed, so a gallery that just drew it would photograph and measure an empty page -- and report a clean nothing about the only navigation a phone has. Opened here because that is the state somebody is in the moment they are trying to hit a row.
-function AsAThumbFindsIt() {
-  const { isMobile, setOpenMobile } = useSidebar()
-
-  useEffect(() => {
-    if (isMobile) setOpenMobile(true)
-  }, [isMobile, setOpenMobile])
-
-  return null
-}
+// The sheet that had to be held open for a photograph is gone with the design: below 768 the nav is a strip that is simply on the page, so nothing has to be opened before it can be measured. That is a small thing the redesign gives back -- the state a picture had to be put into was the state a person had to put it into too.
 
 // Clerk's `SignInButton` in the app and this in the gallery, because nothing here may reach a deployment. It stands in for the wrapper and not for the button: Clerk's own hangs an `onClick` on whatever is inside it and draws no box, so what is measured here is the button the app ships rather than a copy of it kept in step by hand.
 function AsClerkWouldOpenIt({ children }: { children: ReactNode }) {
@@ -590,21 +579,15 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'the-nav',
     at: '/dashboard',
-    // The sheet is a portal on `body` below 768 and an ordinary child above it, so the one selector that holds at every width is the nav itself.
-    shownIn: '[data-slot="sidebar"]',
     name: 'The nav',
-    where: 'behind the hamburger on a phone, down the side from 768 up',
-    proves: 'Construction',
+    where: 'down the side from 768 up, and across the top of a phone',
+    // Not the wordmark. It is in the rail, the rail is hidden below 768, and a picture at 390 then waits fifteen seconds for a word that is deliberately not on it. A destination is in both shapes, which is the property that makes it the right thing to wait for.
+    proves: 'Dashboard',
     // Drawn at `/dashboard` so one row is the row you are on: an active row is a different height in some navs and the same in this one, which is worth being able to see rather than assume.
+
+    // Both shapes at once, because they are two elements now rather than one that changes: the rail is hidden below 768 and the strip above it, so a picture at 390 holds the strip and a picture at 1280 holds the rail, and neither has to be tapped open first. The hamburger and the sheet are gone with the design.
     draw: () => (
-      <SidebarProvider>
-        <AsAThumbFindsIt />
-
-        {/* Where `Shell` puts it: in a bar that is gone from 768 up, which is why this is hidden there too rather than sitting over the column. */}
-        <div className="p-3 md:hidden">
-          <TheWayIntoTheNav />
-        </div>
-
+      <div className="flex min-h-dvh flex-col md:flex-row">
         {/* Clerk's `UserButton` in the app, and this in the gallery, because nothing here may reach a deployment. It is a stand-in for the control and not the control: what the sweep measures here is the room the nav keeps for it. */}
         <TheNav
           footer={
@@ -614,7 +597,10 @@ export const ON_SHOW: Array<OnShow> = [
             />
           }
         />
-      </SidebarProvider>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TheNavOnAPhone />
+        </div>
+      </div>
     ),
   },
   {

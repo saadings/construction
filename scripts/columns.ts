@@ -206,8 +206,10 @@ const WHAT_IS_CUT_OFF = `(() => {
 // Nothing here had ever measured it and nothing could have. `Shell` holds Clerk's `UserButton`, Clerk will not render outside its own provider, and the gallery is kept clear of anything that could reach a deployment -- so the shell was exempt from the sweep, and the nav inside it went with it. The nav is its own file now for that reason alone.
 
 // Asked only below 768, and asked of the nav rather than of everything: a first pass over every control in the app at 390 found 104 of 151 under this bar, which is a real finding and a different piece of work. A guard that fails on a hundred things nobody is fixing today gets switched off.
+
+// Asked of a marker the nav puts there rather than of shadcn's `data-sidebar="menu-button"`, which went with the sheet the redesign removed -- a generator's attribute, owned by whatever the next `shadcn add` writes, carrying the measurement that exists because his nav rows were 32px. The floor below is what said so: it measured zero and refused, rather than reporting that every nav control on a phone clears 44px, which is what a sweep finding nothing says when nobody has given it one.
 const WHAT_A_THUMB_CANNOT_HIT = `(() => {
-  const asked = '[data-sidebar="menu-button"], [data-sidebar="trigger"], [data-slot="sidebar-footer"] > div'
+  const asked = '[data-nav-row]'
 
   const small = []
   let tapped = 0

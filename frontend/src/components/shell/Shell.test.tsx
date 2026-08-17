@@ -2,11 +2,11 @@
 import { readFileSync } from 'node:fs'
 
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { Shell } from './Shell'
-import { DESTINATIONS } from './destinations'
+import { DESTINATIONS, GROUPS } from './destinations'
 
 // Clerk's own button refuses to render outside its provider, and what is being tested here is the nav rather than anything Clerk does. Stood in for by a button, so the shell still renders and the tests below are about the shell.
 
@@ -36,52 +36,42 @@ function renderAt(path: string) {
   render(<RouterProvider router={router} />)
 }
 
-// One list, rendered once. jsdom reports the desktop shape because `useIsMobile` reads a width it has no window to measure -- so what is read here is the nav's contents, and where each shape puts it is `chrome.test.ts`'s question, read out of the source.
+// Two shapes now rather than one that changes: a rail from 768 up and a strip a phone scrolls, both in the document at once with CSS deciding which is seen. jsdom applies no CSS, so what is read here is that each shape offers every destination -- and which of them is visible at a width is `chrome.test.ts`'s question, read out of the source.
+
+// The sheet is gone with the design, and with it the hamburger, the dialog, and the close-behind-you rule that a sheet needed. A strip that is simply on the page needs none of that, which is the one thing this redesign gives back to the tests as well as to him.
 describe('the nav', () => {
-  it('offers every place there is to go', async () => {
+  it('offers every place there is to go, in both shapes', async () => {
     renderAt('/')
     await screen.findByText('The screen itself')
 
-    const nav = screen.getByRole('list', { name: 'Sections' })
-    for (const destination of DESTINATIONS) {
-      expect(within(nav).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
+    const shapes = screen.getAllByRole('list', { name: 'Sections' })
+
+    // Both, counted. One shape rendering everything and the other rendering nothing passes any check that looks at the document as a whole.
+    expect(shapes, 'the rail and the strip are two lists, not one').toHaveLength(2)
+
+    for (const shape of shapes) {
+      for (const destination of DESTINATIONS) {
+        expect(within(shape).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
+      }
     }
   })
 
-  it('offers a way to open it where there is no column to see', async () => {
-    // Below 768 the column is not rendered at all and this is the only way to the nav. It used to be a bar along the bottom under a thumb; Nauman chose the corner knowing that, and the sheet is what he opens standing on a site.
+  it('groups them under the headings he drew, and draws no heading with nothing under it', async () => {
     renderAt('/')
     await screen.findByText('The screen itself')
 
-    expect(screen.getByRole('button', { name: 'Toggle Sidebar' })).toBeTruthy()
-  })
-
-  it('closes the sheet behind whatever was picked, because a phone has only the sheet', async () => {
-    // The one thing jsdom can answer about a phone: the sidebar branches on width in JavaScript, so setting the width picks the branch even though no CSS applies. A sheet you have to dismiss after picking something is two actions where there was one, and the second is the one you forget while holding a cheque book.
-    window.innerWidth = 390
-    renderAt('/')
-    await screen.findByText('The screen itself')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle Sidebar' }))
-    const sheet = await screen.findByRole('dialog')
-
-    fireEvent.click(within(sheet).getByRole('link', { name: /People/ }))
-
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog')).toBeNull()
-    })
+    for (const group of GROUPS) {
+      const under = screen.getByRole('list', { name: group })
+      expect(within(under).getAllByRole('link').length, `${group} is a heading over nothing`).toBeGreaterThan(0)
+    }
   })
 
   it('marks where you are, and only there', async () => {
     renderAt('/more')
     await screen.findByText('The screen itself')
 
-    const marked = screen
-      .getAllByRole('link')
-      .filter((link) => link.dataset.active === 'true')
-      .map((link) => link.textContent)
-
-    expect(new Set(marked)).toEqual(new Set(['More']))
+    // Both shapes mark it, so the set is the label rather than one entry per shape.
+    expect(whatIsMarked()).toEqual(new Set(['More']))
   })
 
   it('marks More from inside one of its screens, rather than only from the menu', async () => {
@@ -89,12 +79,7 @@ describe('the nav', () => {
     renderAt('/more/what-for')
     await screen.findByText('The screen itself')
 
-    const marked = screen
-      .getAllByRole('link')
-      .filter((link) => link.dataset.active === 'true')
-      .map((link) => link.textContent)
-
-    expect(new Set(marked)).toEqual(new Set(['More']))
+    expect(whatIsMarked()).toEqual(new Set(['More']))
   })
 
   it('marks Sites only on Sites itself, not on everything under it', async () => {
@@ -102,14 +87,19 @@ describe('the nav', () => {
     renderAt('/people')
     await screen.findByText('The screen itself')
 
-    const marked = screen
-      .getAllByRole('link')
-      .filter((link) => link.dataset.active === 'true')
-      .map((link) => link.textContent)
-
-    expect(new Set(marked)).toEqual(new Set(['People']))
+    expect(whatIsMarked()).toEqual(new Set(['People']))
   })
 })
+
+/** Which destinations are marked as where you are, in either shape. */
+function whatIsMarked(): Set<string | null> {
+  return new Set(
+    screen
+      .getAllByRole('link')
+      .filter((link) => link.dataset.here !== undefined)
+      .map((link) => link.textContent)
+  )
+}
 
 describe('every place the nav offers to go', () => {
   // The rebase that deleted `sites.new.tsx` left a link to a route that was gone, and 217 tests stayed green because none of them opened it. This is that check, written down.
