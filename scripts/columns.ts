@@ -32,8 +32,9 @@ const AT_LEAST_THIS_MANY_CELLS = 100
 /** What a thumb needs, which Apple's guidance and WCAG 2.5.5 arrive at separately. The same bar that made the date input a defect in #96, asked here of the one navigation a phone has. */
 const A_THUMB_NEEDS = 44
 
-/** Below this the nav is a sheet and the rows are what a thumb hits; above it there is a column under a mouse and 32px rows are right. A phone-only rule, because one height cannot be correct at both ends. */
-const A_PHONE_IS_UNDER = 768
+// This was `A_PHONE_IS_UNDER = 768`, and the sentence under it described a shell that no longer exists: below it a sheet, above it a column under a mouse. There is no sheet, and above 768 the rail is the only navigation there is -- so every touch device from a tablet up was getting rows the sweep never asked about, at a width it never ran at.
+
+// The widths were a premise rather than a measurement, inherited from a shape that was deleted. So the question is asked of the pointer instead, at every width, in a context that reports a coarse one -- which is what the app's own rule now keys on.
 
 /** The floor for it. Every other check here counts what it saw; this one saw nothing at all until this branch, which is exactly how the nav stayed 32px. */
 const AT_LEAST_THIS_MANY_TAPPED = 5
@@ -491,7 +492,7 @@ async function main(): Promise<void> {
   let linesSeen = 0
 
   try {
-    const page = await browser.newPage()
+    const page = await browser.newPage({ hasTouch: true })
     await page.goto(server.at)
 
     const screens = await everyScreenItShows(page)
@@ -548,7 +549,7 @@ async function main(): Promise<void> {
         const trails = whatIsPinned(await page.evaluate(WHAT_IS_PINNED))
         trailsSeen += trails.trails
 
-        if (size.width < A_PHONE_IS_UNDER) {
+        {
           const thumb = whatIsTooSmall(await page.evaluate(WHAT_A_THUMB_CANNOT_HIT))
           tappedSeen += thumb.tapped
 
@@ -635,7 +636,7 @@ async function main(): Promise<void> {
 
   if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
     throw new Error(
-      `Only ${String(tappedSeen)} nav controls were measured on a phone, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
+      `Only ${String(tappedSeen)} nav controls were measured under a thumb, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
     )
   }
 
@@ -650,7 +651,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control, every way out and every choice clears ${String(A_THUMB_NEEDS)}px on a phone, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls, ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control, every way out and every choice clears ${String(A_THUMB_NEEDS)}px under a thumb, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls, ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 

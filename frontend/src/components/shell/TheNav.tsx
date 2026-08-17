@@ -81,10 +81,12 @@ export function TheNavOnAPhone() {
   )
 }
 
-// 44px, which Apple's guidance and WCAG 2.5.5 arrive at separately, and the bar every control in this app is held to. It is here rather than only on the strip because the rail is tapped on a tablet at 768, which is above the breakpoint that hides the strip.
+// 44px, which Apple's guidance and WCAG 2.5.5 arrive at separately, and the bar every control in this app is held to.
 
-// A desk gets less: 32px rows are right under a mouse, and a list of 44px rows on a 1440px screen is a nav shouting.
-const WHAT_A_THUMB_NEEDS = 'min-h-11 md:min-h-8'
+// Asked of the pointer rather than of the width, and that is the correction. A width was standing in for a device -- fine while the sheet meant a phone was the only touch device that reached the nav, and false the moment the rail became the only navigation above 768. An iPad in portrait is 768 to 834 CSS px and is a thumb; it was getting 36px rows, which is the defect he reported at 32.
+
+// Coarse is the default and a fine pointer opts down, so a browser that does not understand the variant gives everybody the reachable height rather than the tight one. A desk still gets less: 36px rows are right under a mouse, and a list of 44px rows on a 1440px screen is a nav shouting.
+const WHAT_A_THUMB_NEEDS = 'min-h-11 pointer-fine:min-h-9'
 
 function Where({ destination, across = false }: { destination: Destination; across?: boolean }) {
   const here = useRouterState({ select: (state) => state.location.pathname })
