@@ -118,6 +118,25 @@ describe('signing out', () => {
   })
 })
 
+describe('the way out of the nav on a phone', () => {
+  const THE_SHEET = join(FRONTEND, 'components', 'ui', 'sheet.tsx')
+
+  it('is a control a thumb can hit, and not the size of the icon in it', () => {
+    // Found in a picture of main rather than by anything here. shadcn's own line positions this button and never sizes it, so it collapsed to its 16px icon -- in the one navigation a phone has, on the control that takes focus the moment the sheet opens. It read as an empty brass square, because the focus ring was larger than the button it was ringing.
+
+    // A string and not a measurement, which is the honest description of this test. The sweep that measures what a thumb can hit asks `[data-nav-row]`, and this button is inside our sheet, is shadcn's markup, and wears none of our attributes -- so it sits in the gap between the two definitions the selector has had. Widening that sweep is the real instrument and is its own piece of work; this holds the line until it lands, and it is written here rather than in the vendored file because the next `shadcn add sheet` overwrites the file and not this.
+    const sheet = SOURCE.find((file) => file.path === THE_SHEET)?.text ?? ''
+
+    // Matched on the control rather than on its name. `SheetPrimitive.Close` is in this file three times and the first is a type annotation -- `React.ComponentProps<typeof SheetPrimitive.Close>` -- so an `indexOf` lands on a line that draws nothing and reads the wrong 400 characters. It failed, which is luck: had the annotation happened to sit above a `size-11` this would have passed while the button stayed 16px.
+
+    // Which is the -1 problem with the sign flipped. A locator that matches more than one thing has a wrong-one that reads exactly like the right one, and neither the type nor the assertion can tell them apart. So the anchor is the shape only the drawn button has: a class, and the icon inside it.
+    const drawn = /<SheetPrimitive\.Close\s+className="([^"]*)"\s*>\s*<XIcon/.exec(sheet)
+
+    expect(drawn, 'the sheet draws no close button around an icon at all').not.toBeNull()
+    expect(drawn?.[1] ?? '', 'the close button is positioned and never sized').toContain('size-11')
+  })
+})
+
 // The way in is the same shape as the footer and needs the same question asked of it. Clerk will not render outside its own provider and the gallery holds nothing that could reach a deployment, so what opens the sign-in is handed to `WayIn` as a prop and the gallery hands it a stand-in.
 
 // Which means the picture is of the real button in a fake wrapper. TypeScript stops the prop being dropped -- it is required -- and stops nothing about what is passed, so the app could hand it the same do-nothing wrapper the gallery does and the screen would photograph perfectly while signing in did nothing at all.

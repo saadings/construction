@@ -65,8 +65,11 @@ function SheetContent({
         {...props}
       >
         {children}
+        {/* Sized, because shadcn's own line positions this and never sizes it -- so the button collapsed to its 16px icon in the one navigation a phone has, and it is what takes focus the moment the sheet opens. In the picture it read as an empty brass square, because the focus ring was bigger than the button it was ringing. */}
+
+        {/* `top-2 right-2` with a 44px box puts the icon's centre where `top-4 right-4` around a 16px box put it, so the target grew and nothing moved. One size at every width: a close button is generous on a desk rather than wrong, and a second rule here is a second thing to keep in step. */}
         {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
+          <SheetPrimitive.Close className="absolute top-2 right-2 flex size-11 items-center justify-center rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
             <XIcon className="size-4" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
