@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
+import { todayOnThisDevice } from '~shared/calendarDate'
 
 import { api } from '../../../convex/_generated/api'
 import type { WhatTheBooksAnswer } from '../components/reports/Reports'
@@ -9,7 +10,7 @@ export const Route = createFileRoute('/reports')({ component: TheQuestionsTheBoo
 
 // Two readings the app already has rather than a third that adds them up again. A card carrying a figure worked out beside the screen it opens is exactly how a card and a screen come to disagree, and this way they are the same arithmetic by construction.
 function TheQuestionsTheBooksAnswer() {
-  const happening = useQuery(api.dashboard.queries.whatIsHappening, {})
+  const happening = useQuery(api.dashboard.queries.whatIsHappening, { today: todayOnThisDevice() })
   const owed = useQuery(api.owed.queries.position, {})
 
   const what = whatTheBooksAnswer(happening, owed)

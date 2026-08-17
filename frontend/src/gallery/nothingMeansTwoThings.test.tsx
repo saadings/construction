@@ -18,6 +18,11 @@ import type { OnShow } from './screens'
 let nudgeAt = -1
 let asked = 0
 
+// How many amounts this screen drew, counted at the moment it drew them. It is what separates a screen with no money on it from a screen whose money this file cannot reach, and those two look identical from every other angle: both show figures, and both come back clean.
+
+// `rupeesToPaisa` is asked when a fixture is built, which may be at import; `formatPaisa` is asked while the screen renders, every time, whatever the fixture is.
+let showedMoney = 0
+
 // Mocked at the path the fixtures import, not at the path this file would write. `../../shared/money` and `~shared/money` are two module ids to vitest and only one of them is the one being used -- the first attempt intercepted nothing and reported a screen with no figures on it, which is exactly the clean nothing this file exists to distrust.
 vi.mock('~shared/money', async (real) => {
   const actual: typeof Money = await real()
@@ -30,6 +35,11 @@ vi.mock('~shared/money', async (real) => {
 
       // One rupee, which no figure in any fixture is within: enough to move a number, too little to turn a screen into a different screen.
       return actual.rupeesToPaisa(input) + (at === nudgeAt ? 100 : 0)
+    },
+    formatPaisa: (paisa: number) => {
+      showedMoney += 1
+
+      return actual.formatPaisa(paisa)
     },
   }
 })
@@ -47,6 +57,7 @@ function figuresOnScreen(): Array<string> {
 async function draw(showing: OnShow, nudge: number): Promise<Array<string>> {
   window.location.hash = showing.slug
   asked = 0
+  showedMoney = 0
   nudgeAt = nudge
 
   const { Gallery } = await import('./Gallery')
@@ -107,16 +118,29 @@ describe('what a figure on a gallery screen means', () => {
   it('is asked of every screen the gallery shows', async () => {
     const { ON_SHOW } = await import('./screens')
     const said: Array<string> = []
+    const unreachable: Array<string> = []
     let figuresSeen = 0
 
     for (const showing of ON_SHOW) {
       const before = await draw(showing, -1)
+      // Read here rather than after the nudges: it is a property of this screen, and leaving it to be read at the end makes it a property of whichever render happened last.
+      const drewMoney = showedMoney > 0
+
       figuresSeen += before.length
       if (before.length < 2) continue
 
       const rounds: Array<Array<string>> = []
       for (let nudge = 0; nudge < asked; nudge += 1) {
         rounds.push(await draw(showing, nudge))
+      }
+
+      // Whether this screen is inside the instrument at all. Every nudge leaving every figure exactly where it was means no amount on it came through the mocked function -- so nothing was compared, and the screen reports clean because it was never asked.
+
+      // Asked only of a screen that drew money. `which-account` shows two account numbers in the same face and no amount at all, and it is out of the reach of a check about amounts for the honest reason rather than the bad one.
+      const moved = rounds.some((round) => round.some((figure, at) => figure !== before[at]))
+
+      if (drewMoney && !moved) {
+        unreachable.push(showing.slug)
       }
 
       for (const collision of whatMeansTwoThings(before, rounds)) {
@@ -126,6 +150,11 @@ describe('what a figure on a gallery screen means', () => {
 
     // The floor, set just under what this really counts rather than at a round number nobody measured: 67 figures across the gallery under jsdom, which draws no CSS and so shows fewer than a browser does. A selector that stopped finding figures reports the same clean nothing as a gallery where none of them collide.
     expect(figuresSeen).toBeGreaterThan(50)
+
+    // The Dashboard's fixture became a module constant and its `paisa()` calls ran once at import, so every nudge here moved nothing on it and the screen passed while two independent literals rendered `12,840,000` twice. Nothing said so, because a screen outside the instrument and a screen with no collisions give the same answer.
+
+    // This is what tells them apart, and it is the assertion this file was missing rather than a check on the fixtures: a screen showing figures none of which can be moved is a screen that has quietly left the reach of what is measuring it.
+    expect(unreachable, 'these screens draw figures the nudge cannot reach').toEqual([])
     expect(said).toEqual([])
   }, 180_000)
 })
