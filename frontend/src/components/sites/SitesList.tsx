@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
 import { formatPaisa } from '~shared/money'
 
+import { cn } from '../../lib/utils'
 import { Figure, Page } from '../shell/Page'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
@@ -113,12 +114,19 @@ export function SitesListWaiting() {
 }
 
 // One button in two shapes: beside the heading where there is room, and under the thumb where there is not.
+
+// **Both were on the screen at 390**, and had been in every picture of it since the day it was drawn. The class list here says `inline-flex` and the caller says `hidden sm:inline-flex`; joined with a template string both reach the page, they set the same property, they have equal specificity, and which one wins is decided by the order Tailwind happens to emit them in. It emitted the wrong one, so the button meant for a desk sat under the round one meant for a thumb.
+
+// `cn` is what this needed and what every other component here already uses: tailwind-merge knows `hidden` and `inline-flex` are the same property and keeps the one the caller asked for. This file is the last in the app joining a `className` with a template string, which is why it is the only one that could have this.
 function StartOne({ className, short = false }: { className?: string; short?: boolean }) {
   return (
     <Link
       to="/sites/new"
       aria-label="Start a house"
-      className={`bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-md px-4 py-2.5 font-medium ${className ?? ''}`}
+      className={cn(
+        'bg-primary text-primary-foreground inline-flex items-center gap-2 rounded-md px-4 py-2.5 font-medium',
+        className
+      )}
     >
       <Plus className="size-5" aria-hidden />
       {short ? null : 'Start a house'}
