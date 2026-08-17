@@ -1,49 +1,54 @@
 import type { ReactNode } from 'react'
 
 import { TheNav, TheNavOnAPhone } from './TheNav'
+import { TheStrip } from './TheStrip'
 
-// The shell he drew, with the one thing he asked back: "I need sidebar on the mobile view as well like it was before."
+// The shell he drew. He opened the deployed app and said it is very different from what he drew, and he was right: every instrument we built asks whether this app is readable, reachable and consistent with itself, and not one of them asks whether it is the thing on the drawing.
 
-// So below 768 the rail is a sheet opened from the corner, and above it the rail is simply there. It is the same component in both -- relocated rather than reimplemented -- because two navigations for one list is how a destination comes to exist in one and not the other.
+// So the drawing decides, and a difference is something brought to him rather than something made. Three of the differences in this file were mine.
 
-// The design's horizontal strip is gone with it. Two navigations for five destinations is duplication, and a scroller hides its tail: `Daybook`, `Receipts`, `Reports` and `Partners` are four rows nobody would know were there.
+// The one exception is his own: "I need sidebar on the mobile view as well like it was before." The hamburger and the sheet stay. **The strip is back beside them** -- it is in the design, I read *as well* as *instead*, and dropped it on my own reasoning.
 
-// The search is handed in rather than drawn here, and it is the same rule the nav's footer is written to: `TheSearch` reads the ledger, `useQuery` throws outside a Convex client, and a `Shell` that owns one is a `Shell` nothing can render on its own. Nine tests about the nav failed the moment it was put in this file directly -- not wrongly, and not about the nav.
+// The app's name is out of the header. The breadcrumb's first step is `Ledger` and carries the identity; two names in one bar is the duplication the drawing avoids.
 
-// Which is the rule three times now, and the third is what makes this file drawable at all. The account was Clerk's own control written straight into this component, so nothing could render the shell -- and the header, the one bar on every screen at every width, had never been drawn by any test or photographed by any camera. The nav had exactly this and it is how its rows stayed 32px until somebody's thumb found them.
+// The account is out of the corner and back at the foot of the nav, where he drew it. That placement was mine, argued from somebody reaching for a sign-out while alarmed, and the cost of putting it back is that signing out on a phone is two taps.
 
-// So the account is handed in, and handed in as something that takes a size rather than as a finished control: 44 in the corner and 32 on the rail are decisions this file makes and states its reasons for, and Clerk is only what fills them.
+// What is handed in rather than drawn here, and why it is a rule rather than a habit: `TheSearch` reads the ledger and Clerk's control needs its own provider, so a `Shell` owning either is a `Shell` nothing can render. That is how the nav's rows stayed 32px until a thumb found them, and how this header went unphotographed at every width until the account became a prop.
 export function Shell({
   children,
   finding,
   account,
+  who,
 }: {
   children: ReactNode
   finding?: ReactNode
   /** Whoever is signed in, drawn at whatever size the place asks for. */
   account: (avatar: string) => ReactNode
+  /** Their name, beside the avatar at the foot of the nav, as drawn. */
+  who?: ReactNode
 }) {
   return (
     <div className="bg-background text-foreground flex min-h-dvh w-full">
       <div className="hidden md:flex">
-        <TheNav footer={account('size-8')} />
+        <TheNav footer={account('size-8')} who={who} />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* The one bar over the content at every width, and on a phone it is the whole way into the nav. It scrolls with nothing because it is sticky, which is the fault the sidebar had before this. */}
+        {/* The one bar over the content at every width. It scrolls with nothing because it is sticky, which is the fault the sidebar had before this. */}
         <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-sm md:px-6">
+          {/* His, and the one thing in this bar the drawing does not have. Below 768 the strip underneath is the whole of navigation in the design; he asked for the sidebar as well, so this opens it. */}
           <div className="md:hidden">
-            <TheNavOnAPhone />
+            <TheNavOnAPhone footer={account('size-8')} who={who} />
           </div>
 
-          <span className="font-display text-foreground text-lg leading-none md:hidden">Construction</span>
+          {/* The drawing puts the breadcrumb here, `Ledger ›` and then the screen. It is not here, and that is on the list rather than done: `columns` refuses a trail inside a sticky header -- *navigation scrolls off, identity stays* -- so taking the drawing literally fails a guard this app already holds. `Page` still draws the trail in the content. */}
+          <div className="min-w-0 flex-1" />
 
-          {/* Nauman asked for it and this is where it goes: on every screen, because looking for a house is not a thing you first navigate somewhere to do. On a desk it is a field with its own words in it; on a phone it is a square beside the nav, because the row already holds three things. */}
-          <div className="ml-auto md:ml-0">{finding}</div>
-
-          {/* The corner, on a phone, on every screen. Signing out is not a thing somebody strolls to -- it is what they reach for on a shared phone or the wrong account, and they look for their own face rather than for a menu. It is out of the sheet entirely: two places to sign out is worse than either one. */}
-          <div className="ml-auto flex size-11 items-center justify-center md:hidden">{account('size-11')}</div>
+          <div className="flex items-center gap-3">{finding}</div>
         </header>
+
+        {/* Under the header and above everything, sticky at the header's own height, as drawn. */}
+        <TheStrip />
 
         <main className="min-w-0 flex-1">{children}</main>
       </div>

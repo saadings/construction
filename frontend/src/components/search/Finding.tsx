@@ -71,12 +71,16 @@ export function WayToFind({ onOpen }: { onOpen: () => void }) {
       variant="outline"
       onClick={onOpen}
       // Named rather than left to the icon. A magnifying glass is the one icon almost everybody reads, and "almost" is doing work on a screen somebody uses to find a house they are owed money on.
-      aria-label="Find a house or a person"
-      className="border-border text-muted-foreground hover:text-foreground size-11 justify-center gap-0 bg-transparent px-0 font-normal shadow-none has-[>svg]:px-0 md:w-56 md:justify-start md:gap-2 md:px-3 md:has-[>svg]:px-3"
+      aria-label="Search for a house or a person"
+      className="border-input bg-card text-muted-foreground hover:border-brass hover:text-foreground size-11 justify-center gap-0 px-0 font-normal has-[>svg]:px-0 lg:w-auto lg:justify-start lg:gap-2 lg:px-3 lg:has-[>svg]:px-3"
     >
       <Search className="size-4 shrink-0" aria-hidden />
-      {/* Said only where there is room for it. On a phone the control is a square in a row that already holds the nav, the app's name and the account. */}
-      <span className="hidden text-sm md:inline">Find a house or a person</span>
+
+      {/* The word and the shortcut, as drawn, and `lg` is the drawing's own breakpoint. Below it the control is a square: the row it is in already holds the way into the nav, and a phone has no keyboard to press the shortcut with. */}
+      <span className="hidden text-sm lg:inline">Search</span>
+      <kbd className="border-border bg-muted ml-6 hidden rounded border px-1.5 py-0.5 font-mono text-[10px] lg:inline">
+        ⌘K
+      </kbd>
     </OnShadcn>
   )
 }

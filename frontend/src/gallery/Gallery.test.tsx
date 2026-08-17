@@ -57,7 +57,7 @@ describe('every screen in the gallery', () => {
 
     // And nothing from another screen came with it.
     expect(within(drawn()).queryByText('204-C, Phase 6')).toBeNull()
-    expect(await within(drawn()).findByRole('heading', { name: 'Owed' })).toBeTruthy()
+    expect(await within(drawn()).findByRole('heading', { name: 'Payables' })).toBeTruthy()
   })
 
   it('is looking at every screen, rather than at an empty list', () => {
@@ -106,7 +106,7 @@ describe('the gallery in front of a camera', () => {
     window.location.hash = 'owed'
     render(<Gallery />)
 
-    expect(await within(drawn()).findByRole('heading', { name: 'Owed' })).toBeTruthy()
+    expect(await within(drawn()).findByRole('heading', { name: 'Payables' })).toBeTruthy()
   })
 
   it('leaves the furniture there for somebody looking rather than photographing', () => {

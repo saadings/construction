@@ -46,7 +46,7 @@ const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1
 export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
   if (owed === undefined) {
     return (
-      <Page title="Owed" said={WHAT_THIS_IS}>
+      <Page title="Payables" said={WHAT_THIS_IS}>
         <OwedWaiting />
       </Page>
     )
@@ -55,14 +55,14 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
   // The ledger has answered and does not know this sign-in. Nothing on this screen would work, so it offers none of it.
   if (owed === null) {
     return (
-      <Page title="Owed" said={WHAT_THIS_IS}>
+      <Page title="Payables" said={WHAT_THIS_IS}>
         <NotKnownHere />
       </Page>
     )
   }
 
   return (
-    <Page title="Owed" said={WHAT_THIS_IS}>
+    <Page title="Payables" said={WHAT_THIS_IS}>
       <BothWays payablePaisa={owed.payablePaisa} advancedPaisa={owed.advancedPaisa} />
 
       {owed.everyone.length === 0 ? (

@@ -83,6 +83,7 @@ function TheShellAsDrawn() {
   return (
     <Shell
       account={(avatar) => <span className={`bg-brass block rounded-full ${avatar}`} />}
+      who="Nauman Yousaf"
       finding={<TheSearchAsDrawn />}
     >
       <Page title="Dashboard">
@@ -466,9 +467,9 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'owed',
     at: '/owed',
-    name: 'Owed',
+    name: 'Payables',
     where: 'the second place in the nav',
-    proves: 'Owed',
+    proves: 'Payables',
     // What is chosen and what is worked out, kept apart. `58,000` was the advance held against one supplier and also, by arithmetic, what the kitchen people were left standing -- two ideas, one string, and either could have been broken with both tests still green.
 
     // Every payment was also `120,000`, so an assertion about one supplier's payment matched all three rows.
@@ -511,7 +512,7 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'money-in',
     at: '/money-in',
-    name: 'Money in',
+    name: 'Receipts',
     where: 'the nav, under the money it is the other half of',
     proves: 'Money arriving',
     // Two houses, because the whole reason this screen exists is that a house's own screen cannot answer what has come in altogether. One house here would photograph as a longer version of a screen the app already has.
@@ -652,7 +653,7 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'more',
     at: '/more',
-    name: 'More',
+    name: 'Settings',
     where: 'the last place in the nav',
     proves: 'The list a day sheet picks from',
     // One of the trades is not a building cost, because the sentence under them only appears where one is -- and a card photographed without it is a picture of the easy half.
@@ -763,7 +764,7 @@ export const ON_SHOW: Array<OnShow> = [
     where: 'the header of every screen',
     proves: 'Houses',
     // Opened, because a dialog that starts closed photographs an empty page and reports a clean nothing. The nav went 889 tests and 17 screens that way, and this is the same shape: a control on the header and everything worth looking at behind it.
-    tapFirst: ['Find a house or a person'],
+    tapFirst: ['Search for a house or a person'],
     // Drawn with the names already read. The screen it is really in reads them only once somebody opens it, and there is a second picture in that -- the one where nothing has arrived -- which is what `Finding.test` holds rather than a photograph, because a wait has no fixed moment to point a camera at.
     draw: () => <TheSearchAsDrawn />,
   },

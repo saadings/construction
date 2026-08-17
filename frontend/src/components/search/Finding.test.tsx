@@ -113,6 +113,6 @@ describe('finding a house or a person', () => {
     // Drawn on its own, outside a router: it opens a dialog and navigates nowhere.
     render(<WayToFind onOpen={() => undefined} />)
 
-    expect(screen.getByRole('button', { name: 'Find a house or a person' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Search for a house or a person' })).toBeTruthy()
   })
 })

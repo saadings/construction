@@ -80,20 +80,21 @@ describe('signing out', () => {
     const shell = SOURCE.find((file) => file.path === THE_SHELL)?.text ?? ''
     const nav = SOURCE.find((file) => file.path === THE_NAV)?.text ?? ''
 
-    // On a desk it is handed to the rail, and the rail draws it in the row that carries the 44px. Both halves, because either alone passes while signing out is unreachable: a row holding `{footer}` says nothing about what is passed to it, and a shell passing something says nothing about where it lands.
+    // It moved back. The corner of the phone header was mine, argued from somebody reaching for a sign-out while alarmed, and he neither asked for it nor saw it -- the drawing puts the account at the foot of the nav, so that is where it is, at both widths. The cost is that signing out on a phone is two taps, and that cost is on his list rather than absorbed here.
+
+    // Both halves, because either alone passes while signing out is unreachable: a row holding `{footer}` says nothing about what is passed to it, and a shell passing something says nothing about where it lands.
     expect(shell).toMatch(/<TheNav footer={account\('size-8'\)}/)
+    expect(shell).toMatch(/<TheNavOnAPhone footer={account\('size-8'\)}/)
 
-    const at = nav.indexOf('min-h-11 items-center border-t')
-    expect(at, 'the row the sign-out sits in is gone').toBeGreaterThan(0)
-    expect(nav.slice(at, at + 200)).toContain('{footer}')
+    const at = nav.indexOf('min-h-11 items-center gap-3 border-t')
+    expect(at, 'the row the account sits in is gone').toBeGreaterThan(0)
+    expect(nav.slice(at, at + 260)).toContain('{footer}')
 
-    // On a phone it is in the header, one tap, on every screen. The locate is the assertion again: a header that has stopped drawing it answers -1 here rather than passing quietly.
-    const corner = shell.indexOf('ml-auto flex size-11')
-    expect(corner, 'the account is not in the corner of the phone header').toBeGreaterThan(0)
-    expect(shell.slice(corner, corner + 220)).toContain("account('size-11')")
+    // And the sheet draws the same rail rather than a second one, so there is one answer per width and not two.
+    expect(nav).toContain('<TheNav footer={footer} who={who} />')
 
-    // And the sheet does not draw it. `TheNavOnAPhone` renders the rail with no footer at all, so there is one answer per width rather than two.
-    expect(nav).toContain('<TheNav />')
+    // Nothing left in the header. Two places to sign out is worse than either one, and this is the half that catches the old one being forgotten rather than removed.
+    expect(shell, 'the account is still in the corner of the phone header').not.toContain("account('size-11')")
   })
 
   it('is Clerk’s own control that the root hands over, and not a wrapper that draws nothing', () => {

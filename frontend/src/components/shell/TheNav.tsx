@@ -13,14 +13,16 @@ import { DESTINATIONS, GROUPS } from './destinations'
 // It does not decide where it is drawn. `Shell` does, and that is not only tidiness: a component carrying its own `md:hidden` cannot be photographed at the width it hides at, which is how the strip went unmeasured for an afternoon.
 
 /** What Clerk draws goes here, because Clerk needs a provider and the gallery must not have one. `Shell` passes the real control; the gallery passes something the same size and says so on the page. */
-export function TheNav({ footer }: { footer?: ReactNode }) {
+export function TheNav({ footer, who }: { footer?: ReactNode; who?: ReactNode }) {
   const above = DESTINATIONS.filter((destination) => destination.under === undefined)
 
   return (
     // Every colour by name. The rail is dark against warm paper in the light theme and that separation has to survive the dark one, where the ground comes up to meet it -- so the surface and its edge are two tokens rather than one, and neither is decided here.
     <aside className="bg-sidebar text-sidebar-foreground sticky top-0 flex h-dvh w-60 shrink-0 flex-col">
-      <div className="px-5 pt-5 pb-4">
+      {/* Two lines, as drawn. The second was missing and it is what tells somebody what the thing is: `Construction` alone is a subject, `Construction Ledger` is a product. */}
+      <div className="flex flex-col gap-0.5 px-5 pt-5 pb-4">
         <span className="font-display text-sidebar-foreground text-[22px] leading-none">Construction</span>
+        <span className="text-sidebar-foreground/40 text-[11px] font-medium tracking-[0.14em] uppercase">Ledger</span>
       </div>
 
       {/* Named, because a list of links with no name is a list of links. It was `Sections` in every shape this nav has had and it stays that, so nothing that could find it before has to learn a new word. */}
@@ -55,13 +57,18 @@ export function TheNav({ footer }: { footer?: ReactNode }) {
               ))}
             </ul>
 
-            {/* Only where the header has no room for it, which is the desk. On a phone it is in the corner of every screen instead: somebody who has just realised they are in the wrong account looks for their own face, not for a menu. */}
+            {/* At the foot of the rail and at the foot of the sheet, which is where he drew it: an avatar and the name beside it, above a hairline. It was in the corner of the phone header instead, on my argument that somebody reaching for a sign-out while alarmed looks for their own face rather than a menu -- he neither asked for that nor saw it, the drawing decides, and the cost is that signing out on a phone is two taps. */}
+
+            {/* The drawing has no sign-out anywhere at all, so the avatar stays Clerk's own control rather than becoming the plain initials circle it draws. That one is on his list: identity you can see is not the same as a way out. */}
             {footer === undefined ? null : (
               <div
                 data-nav-row=""
-                className="border-sidebar-border mt-2 flex min-h-11 items-center border-t px-3 pt-4 md:min-h-8"
+                className="border-sidebar-border mt-2 flex min-h-11 items-center gap-3 border-t px-3 pt-4 md:min-h-11"
               >
                 {footer}
+                {who === undefined ? null : (
+                  <span className="text-sidebar-foreground min-w-0 truncate text-[13px] font-medium">{who}</span>
+                )}
               </div>
             )}
           </li>
@@ -72,7 +79,7 @@ export function TheNav({ footer }: { footer?: ReactNode }) {
 }
 
 /** The same rail, opened from the corner, which is the whole of navigation below 768. Its own component and not a branch inside `Shell` for the reason the rail's footer is a prop: `Shell` holds Clerk, Clerk will not render outside its provider, and a gallery entry drawing `Shell` draws nothing -- which is how this nav went unphotographed the first time. */
-export function TheNavOnAPhone() {
+export function TheNavOnAPhone({ footer, who }: { footer?: ReactNode; who?: ReactNode }) {
   const [open, setOpen] = useState(false)
   const here = useRouterState({ select: (state) => state.location.pathname })
 
@@ -95,7 +102,7 @@ export function TheNavOnAPhone() {
       <SheetContent side="left" className="bg-sidebar w-60 border-0 p-0">
         {/* Named for a screen reader and hidden from the page: the rail draws the wordmark itself, and a sheet with two titles reads as two things. */}
         <SheetTitle className="sr-only">Sections</SheetTitle>
-        <TheNav />
+        <TheNav footer={footer} who={who} />
       </SheetContent>
     </Sheet>
   )

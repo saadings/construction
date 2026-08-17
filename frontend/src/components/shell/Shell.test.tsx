@@ -97,15 +97,15 @@ describe('the nav', () => {
     await screen.findByText('The screen itself')
 
     // Both shapes mark it, so the set is the label rather than one entry per shape.
-    expect(whatIsMarked()).toEqual(new Set(['More']))
+    expect(whatIsMarked()).toEqual(new Set(['Settings']))
   })
 
-  it('marks More from inside one of its screens, rather than only from the menu', async () => {
+  it('marks Settings from inside one of its screens, rather than only from the menu', async () => {
     // Every settings screen lives under `/more`, and the mark says which of the four you are inside.
     renderAt('/more/what-for')
     await screen.findByText('The screen itself')
 
-    expect(whatIsMarked()).toEqual(new Set(['More']))
+    expect(whatIsMarked()).toEqual(new Set(['Settings']))
   })
 
   it('marks Sites only on Sites itself, not on everything under it', async () => {
