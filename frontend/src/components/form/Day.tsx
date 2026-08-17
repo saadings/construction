@@ -44,7 +44,7 @@ const LOOKS = {
       'border-border bg-card hover:bg-card focus-visible:border-primary aria-invalid:border-destructive w-full rounded-none border-0 border-b-2 px-0 py-2.5 text-lg has-[>svg]:px-0',
   },
   // Kept as a bordered button, unlike `Line`'s `beside`, which brings no border at all. A box you type into shows what it is by having a caret in it; this one shows nothing until it is tapped, and in a stage's row it sits beside "Bill it" where an unbordered date would read as text somebody had already entered. The room it brings is small because the row it is in has its own.
-  beside: { variant: 'outline', classes: 'w-auto px-2 py-1 text-base' },
+  beside: { variant: 'outline', classes: 'w-auto px-2 py-2.5 text-base' },
 } as const
 
 export function Day({

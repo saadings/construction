@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { formatPaisa } from '~shared/money'
 
+import { ROOM_FOR_A_LINK } from '../roomForAThumb'
 import { Figure, Page } from '../shell/Page'
 import { Tile } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
@@ -152,8 +153,14 @@ function Houses({ houses }: { houses: WhatIsHappening['houses'] }) {
             {houses.map((house) => (
               <TableRow key={house.siteId}>
                 {/* A house is named by whoever started it and can run long, so it wraps rather than pushing its figures off the side. */}
+
+                {/* The name is the way into the house and it was 20px high, under WCAG 2.5.8's floor for a link in a line. `ROOM_FOR_A_LINK` is four pixels given straight back to the layout, so the table is as tall as it was. */}
                 <TableCell className="py-2.5 pr-4 whitespace-normal">
-                  <Link to="/sites/$siteId" params={{ siteId: house.siteId }} className="text-foreground">
+                  <Link
+                    to="/sites/$siteId"
+                    params={{ siteId: house.siteId }}
+                    className={`text-foreground ${ROOM_FOR_A_LINK}`}
+                  >
                     {house.name}
                   </Link>
                 </TableCell>

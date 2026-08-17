@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react'
 
 import { cn } from '../../lib/utils'
+import { ROOM_FOR_A_THUMB } from '../roomForAThumb'
 import { Button as OnShadcn } from '../ui/button'
 
 // Every way out of something already put in: a payment taken back out of a sitting, a receipt off what has come in, an invitation off the list, a line off a bill.
@@ -17,11 +18,10 @@ import { Button as OnShadcn } from '../ui/button'
 
 // `whitespace-normal` and `shrink` for the reason `Button` has them: shadcn's are `whitespace-nowrap shrink-0`, and a way out sits at the end of a row beside the thing it removes, where refusing to wrap or to give way pushes the row wider than the screen instead.
 
-// `py-3 -my-3` is what makes a thumb able to hit it, and the pair is the whole trick. Measured at 390, **thirteen of the thirteen controls in this app that remove something were 20px high** -- less than half of what a thumb needs, on the controls where a mis-tap costs a row somebody has to remember to re-enter.
+// `ROOM_FOR_A_THUMB` is what makes a thumb able to hit it. Measured at 390, **thirteen of the thirteen controls in this app that remove something were 20px high** -- less than half of what a thumb needs, on the controls where a mis-tap costs a row somebody has to remember to re-enter.
 
-// The padding grows the box a finger lands on to 44; the negative margin takes the same amount back out of the layout, so nothing on any row moves. The floor is about **tappable area, not visible size** -- said here because a rule read as "44px tall" is one somebody argues an exemption out of the first time it would double the height of a dense table, and this needs no exemption at all.
-const ALWAYS =
-  'text-muted-foreground hover:text-foreground inline h-auto shrink px-0 py-3 -my-3 has-[>svg]:px-0 text-sm font-normal whitespace-normal underline underline-offset-4 disabled:cursor-default'
+// The reasoning behind the trick moved into that file rather than staying here, because it stayed here and the sibling component did not get it.
+const ALWAYS = `text-muted-foreground hover:text-foreground inline h-auto shrink ${ROOM_FOR_A_THUMB} text-sm font-normal whitespace-normal underline underline-offset-4 disabled:cursor-default`
 
 export function WayOut({
   busy = false,

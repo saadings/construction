@@ -256,7 +256,7 @@ function RaiseOne({ onRaise }: { onRaise: (bill: RaisedBill) => Promise<void> })
       )}
 
       <div>
-        <Button onClick={raise} busy={saving} className="py-2 text-sm">
+        <Button onClick={raise} busy={saving} className="text-sm">
           Raise the bill
         </Button>
       </div>

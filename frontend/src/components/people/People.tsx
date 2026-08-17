@@ -205,7 +205,7 @@ function OnePerson({
       <div className="flex flex-wrap items-center gap-3">
         <Button
           busy={saving}
-          className="py-2 text-sm"
+          className="text-sm"
           onClick={() =>
             send(async () => {
               await onEdit(person._id, {

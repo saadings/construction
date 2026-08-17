@@ -117,7 +117,7 @@ export function PickAnAccount({
           )}
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => add(naming, onAdd)} busy={saving} className="py-2 text-sm">
+            <Button onClick={() => add(naming, onAdd)} busy={saving} className="text-sm">
               Add
             </Button>
 

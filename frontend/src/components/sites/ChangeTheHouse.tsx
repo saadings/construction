@@ -95,7 +95,7 @@ function PutItAway({ onPutAway }: { onPutAway: () => Promise<void> }) {
 
       {sure ? (
         <div className="flex flex-wrap items-center gap-3">
-          <Button look="beside" onClick={putAway} busy={saving} className="py-2 text-sm">
+          <Button look="beside" onClick={putAway} busy={saving} className="text-sm">
             Yes, archive
           </Button>
           <WayOut

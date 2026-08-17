@@ -1,5 +1,6 @@
 import { Link, useRouter, useRouterState } from '@tanstack/react-router'
 
+import { ROOM_FOR_A_LINK } from '../roomForAThumb'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -100,7 +101,8 @@ function TheWayBack({ named }: { named: Named }) {
       <BreadcrumbList className="flex-wrap">
         {above.map((step) => (
           <BreadcrumbItem key={step}>
-            <BreadcrumbLink asChild>
+            {/* A step is the way back up and it was 20px high, which is under WCAG 2.5.8's floor for a link sitting in a line. `ROOM_FOR_A_LINK` is four pixels of padding given straight back to the layout, so the trail is as tall as it was and the step is as tall as a fingertip. */}
+            <BreadcrumbLink asChild className={ROOM_FOR_A_LINK}>
               <Link to={reachedBy(step, params)}>{saidAs(step, named)}</Link>
             </BreadcrumbLink>
             <BreadcrumbSeparator />

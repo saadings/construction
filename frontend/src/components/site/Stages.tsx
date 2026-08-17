@@ -125,7 +125,7 @@ function BillIt({ stage, onBill }: { stage: StageRow; onBill: (id: string, day: 
       <span className="flex items-center justify-end gap-2">
         {/* Named on the box, because the question it answers is the row it is on. */}
         <Day look="beside" label={`When ${stage.description} was billed`} value={day} onPick={setDay} />
-        <Button look="beside" busy={saving} className="px-3 py-1 text-sm" onClick={bill}>
+        <Button look="beside" busy={saving} className="px-3 text-sm" onClick={bill}>
           Bill
         </Button>
       </span>
@@ -201,7 +201,7 @@ function AddAStage({ onAdd }: { onAdd: (stage: { description: string; percent: s
       )}
 
       <div>
-        <Button onClick={add} busy={saving} className="py-2 text-sm">
+        <Button onClick={add} busy={saving} className="text-sm">
           Put the stage in
         </Button>
       </div>

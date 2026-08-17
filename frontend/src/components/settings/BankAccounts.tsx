@@ -167,7 +167,7 @@ function AddAnAccount({ onAdd }: { onAdd: (label: string, lastFourDigits: string
       )}
 
       <div>
-        <Button onClick={add} busy={saving} className="py-2 text-sm">
+        <Button onClick={add} busy={saving} className="text-sm">
           Add account
         </Button>
       </div>

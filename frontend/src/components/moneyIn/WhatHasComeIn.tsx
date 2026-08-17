@@ -60,7 +60,7 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
         <Link
           to="/sites/$siteId/coming-in"
           params={{ siteId }}
-          className="border-border text-foreground shrink-0 rounded-md border px-4 py-2 text-sm font-medium"
+          className="border-border text-foreground shrink-0 rounded-md border px-4 py-3 text-sm font-medium"
         >
           Put money in
         </Link>
