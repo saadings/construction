@@ -291,7 +291,7 @@ function OnePayout({ paidOut, onTakeBack }: { paidOut: PaidOut; onTakeBack: (pay
   }
 
   return (
-    <li className="border-border hover:bg-muted/60 grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 border-b px-5 py-3.5 transition-colors last:border-0">
+    <li className="border-border hover:bg-row-hover grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 border-b px-5 py-3.5 transition-colors last:border-0">
       <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{paidOut.personName}</span>
       {/* Brass, because it is money leaving the partnership, the same colour it is given under Paid. */}
       <Figure className="text-brass text-right text-lg">{formatPaisa(paidOut.amountPaisa)}</Figure>

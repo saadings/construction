@@ -105,7 +105,7 @@ export function Positions({
               {what.positions.map((position) => (
                 <li
                   key={position.personId}
-                  className={`${ROW} border-border hover:bg-muted/60 border-b px-5 py-3.5 transition-colors last:border-0`}
+                  className={`${ROW} border-border hover:bg-row-hover border-b px-5 py-3.5 transition-colors last:border-0`}
                 >
                   <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{position.name}</span>
 

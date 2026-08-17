@@ -248,7 +248,7 @@ function Share({
   const said = `${who(row)}-wrong`
 
   return (
-    <li className={`${ROW} border-border hover:bg-muted/60 border-b px-5 py-3 transition-colors last:border-0`}>
+    <li className={`${ROW} border-border hover:bg-row-hover border-b px-5 py-3 transition-colors last:border-0`}>
       <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{row.name}</span>
 
       {/* What he put in, beside his share, because a share is agreed against it even where it does not follow it. */}
