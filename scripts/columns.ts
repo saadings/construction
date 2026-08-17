@@ -348,16 +348,34 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
 
 // It found four pixels of `Yes, remove` underneath `Cancel`. Not a control that is hard to hit: a control that is easy to hit **by mistake**, on the pair where the mistake removes a row somebody has to remember to re-enter. Nothing in this file could have seen it, because every question here until now was about one element at a time.
 
-// Asked only of pairs that are both in the ordinary flow of the page. A sticky bar sits over the content behind it and an open sheet sits over the trigger that opened it -- those are two things where one is deliberately in front, the top one takes the tap, and that is the whole design. What is wrong is two peers on one line each reaching into the other, where a tap near the join lands on whichever happens to be later in the document.
+// Asked only of pairs that sit in the same plane. A sticky bar sits over the content behind it and an open sheet sits over the trigger that opened it -- those are two things where one is deliberately in front, the top one takes the tap, and that is the whole design. What is wrong is two peers on one line each reaching into the other, where a tap near the join lands on whichever happens to be later in the document.
 
-// Read off the page rather than reasoned about: an element is in the flow when nothing between it and the body is positioned. Which is a property both members of a pair state, and it excludes every benign overlap here without naming one of them.
+// Which plane a control is in is read off the page rather than reasoned about: it is the nearest ancestor that is positioned, or the body when there is none.
+
+// The first version asked whether an element was in the *ordinary flow* -- nothing positioned anywhere above it -- and const-2 named what that also drops. A dialog is `fixed` and a sheet is `fixed`, so **every control inside the search and inside the phone nav was invisible to this question at every width**: counted by the 44px pass, never compared with anything by this one. The search is a list of rows a thumb goes down and the newest thing in the app; the sheet's rows are twenty-five controls nothing had measured until yesterday.
+
+// So it is the same plane rather than no plane. Two peers on a line inside a dialog is the same defect as two peers on a line in the page, and what wants excluding is *one thing deliberately in front of another* -- which is a pair whose planes differ, not a pair that is positioned at all.
 const WHAT_STANDS_ON_WHAT = `(() => {
-  const inTheFlow = (el) => {
-    for (let up = el; up !== null && up !== document.body; up = up.parentElement) {
+  const planes = []
+
+  const planeOf = (el) => {
+    let found = document.body
+
+    for (let up = el.parentElement; up !== null && up !== document.body; up = up.parentElement) {
       const how = getComputedStyle(up).position
-      if (how === 'fixed' || how === 'sticky' || how === 'absolute') return false
+      if (how === 'fixed' || how === 'sticky' || how === 'absolute' || how === 'relative') {
+        found = up
+        break
+      }
     }
-    return true
+
+    let at = planes.indexOf(found)
+    if (at === -1) {
+      at = planes.length
+      planes.push(found)
+    }
+
+    return at
   }
 
   const boxes = []
@@ -369,10 +387,10 @@ const WHAT_STANDS_ON_WHAT = `(() => {
 
     const box = control.getBoundingClientRect()
     if (box.width === 0 && box.height === 0) continue
-    if (!inTheFlow(control)) continue
 
     boxes.push({
       said: (control.getAttribute('aria-label') || (control.textContent ?? '').trim() || 'a control with no words on it').slice(0, 32),
+      plane: planeOf(control),
       x: box.x,
       y: box.y,
       right: box.x + box.width,
@@ -386,6 +404,8 @@ const WHAT_STANDS_ON_WHAT = `(() => {
     for (let other = one + 1; other < boxes.length; other += 1) {
       const a = boxes[one]
       const b = boxes[other]
+
+      if (a.plane !== b.plane) continue
 
       const across = Math.round(Math.min(a.right, b.right) - Math.max(a.x, b.x))
       const down = Math.round(Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y))
@@ -910,7 +930,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, no two controls in the flow stand on each other, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, no two controls in one plane stand on each other, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 
