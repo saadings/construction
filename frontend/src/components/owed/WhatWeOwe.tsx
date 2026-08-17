@@ -5,6 +5,7 @@ import { formatPaisa } from '~shared/money'
 import { WayOut } from '../form/WayOut'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Figure, Page } from '../shell/Page'
+import { TablePanel, Tile } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type OnAHouse = {
@@ -34,6 +35,8 @@ export type WhatIsOwed = {
 
 // Across every house on purpose. A steel supplier delivering to two of them is owed one figure, and two half-balances on two houses is the 487-R mistake in a new place -- nobody adds them up and the pair disagree by the time anybody tries.
 
+// The drawing puts three tiles over this table and two of them are dropped rather than filled with a guess. **Past due** needs a day a bill falls due and a bill has none -- there are no terms anywhere in this app, so late is not a thing it can know. **Cash on hand** needs an opening balance per account, which nothing holds; adding up what has moved gives a figure that is confidently wrong for every account that did not start at nothing. The drawn **oldest unpaid bill** and its age go the same way: money goes out on account rather than against bill seven, so which bill is still unpaid is not answerable without a rule nobody has decided.
+
 // One grid for the whole list, and every row takes its columns from it. Written per row, the phone's `auto` track sized to whatever was in that row: three people put `Outstanding` at 346 and one put it at 355, because the figures beside it were a different width. The tracks are declared once and the widest content in the column decides them for everybody.
 const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]'
 
@@ -43,7 +46,7 @@ const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1
 export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
   if (owed === undefined) {
     return (
-      <Page title="Owed">
+      <Page title="Owed" said={WHAT_THIS_IS}>
         <OwedWaiting />
       </Page>
     )
@@ -52,14 +55,14 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
   // The ledger has answered and does not know this sign-in. Nothing on this screen would work, so it offers none of it.
   if (owed === null) {
     return (
-      <Page title="Owed">
+      <Page title="Owed" said={WHAT_THIS_IS}>
         <NotKnownHere />
       </Page>
     )
   }
 
   return (
-    <Page title="Owed">
+    <Page title="Owed" said={WHAT_THIS_IS}>
       <BothWays payablePaisa={owed.payablePaisa} advancedPaisa={owed.advancedPaisa} />
 
       {owed.everyone.length === 0 ? (
@@ -67,42 +70,49 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
           Nothing is owed to anybody yet. What somebody bills lands here, and what has been paid to them comes off it.
         </p>
       ) : (
-        <div className={GRID}>
-          <div
-            className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
-          >
-            <span>Who</span>
-            <span className="text-right">Billed</span>
-            <span className="text-right">Paid</span>
-            <span className="text-right">Outstanding</span>
-          </div>
+        <TablePanel>
+          <div className={GRID}>
+            <div
+              className={`${ROW} text-muted-foreground border-border hidden border-b px-5 py-2.5 text-[0.75rem] font-semibold sm:grid`}
+            >
+              <span>Who</span>
+              {/* The answer beside the name, the working after it, which is the order the drawing reads in: what he is owed today is the question, and billed and paid are how that figure was arrived at. */}
+              <span className="text-right">Outstanding</span>
+              <span className="text-right">Billed</span>
+              <span className="text-right">Paid</span>
+            </div>
 
-          <ul className={`${ROW} divide-hairline gap-y-0 divide-y`}>
-            {owed.everyone.map((person) => (
-              <OnePerson key={person.personId} person={person} />
-            ))}
-          </ul>
-        </div>
+            <ul className={ROW}>
+              {owed.everyone.map((person) => (
+                <OnePerson key={person.personId} person={person} />
+              ))}
+            </ul>
+          </div>
+        </TablePanel>
       )}
     </Page>
   )
 }
 
+/** What the screen is, said where the drawing says it. */
+const WHAT_THIS_IS =
+  'What has been billed and not yet paid — one balance for each person, across every house they are on.'
+
 // Two figures and never one. An advance held by the tile man is not money available to pay the steel man, so netting them makes a figure that looks actionable and is not -- which is exactly why the workbooks keep MARKET PAYABLES and TOTAL RECEIVABLE on separate lines.
 function BothWays({ payablePaisa, advancedPaisa }: { payablePaisa: number; advancedPaisa: number }) {
   return (
-    <section className="flex flex-wrap items-baseline gap-x-12 gap-y-4">
-      <div>
-        <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Owed to them</p>
-        {/* Green, because it is money owed out of the partnership rather than money already gone. */}
-        <Figure className="text-green text-[2.5rem] leading-none">{formatPaisa(payablePaisa)}</Figure>
-      </div>
-
-      <div>
-        <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Paid in advance</p>
-        <Figure className="text-foreground text-xl">{formatPaisa(advancedPaisa)}</Figure>
-      </div>
-    </section>
+    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Green, because it is money owed out of the partnership rather than money already gone. */}
+      <Tile label="Owed to them" tone="text-green">
+        <Figure>{formatPaisa(payablePaisa)}</Figure>
+      </Tile>
+      <Tile
+        label="Paid in advance"
+        beneath="Held by somebody who has had more than he has billed. Not money to pay anybody else with."
+      >
+        <Figure>{formatPaisa(advancedPaisa)}</Figure>
+      </Tile>
+    </dl>
   )
 }
 
@@ -112,7 +122,7 @@ function OnePerson({ person }: { person: Standing }) {
   const holding = person.outstandingPaisa < 0
 
   return (
-    <li className={`${ROW} py-3.5`}>
+    <li className={`${ROW} border-border hover:bg-row-hover border-b px-5 py-3.5 transition-colors last:border-0`}>
       <span className="flex min-w-0 items-baseline gap-2">
         <Link
           to="/people/$personId"
@@ -134,13 +144,13 @@ function OnePerson({ person }: { person: Standing }) {
         )}
       </span>
 
+      <Cell label="Outstanding" tone={holding ? 'text-foreground' : 'text-green'}>
+        {holding ? `${formatPaisa(-person.outstandingPaisa)} adv` : formatPaisa(person.outstandingPaisa)}
+      </Cell>
       <Cell label="Billed">{formatPaisa(person.billedPaisa)}</Cell>
       {/* Brass, because it is money that has gone out. */}
       <Cell label="Paid" tone="text-brass">
         {formatPaisa(person.paidPaisa)}
-      </Cell>
-      <Cell label="Outstanding" tone={holding ? 'text-foreground' : 'text-green'}>
-        {holding ? `${formatPaisa(-person.outstandingPaisa)} adv` : formatPaisa(person.outstandingPaisa)}
       </Cell>
 
       {open ? (
@@ -176,24 +186,25 @@ function Cell({ label, tone, children }: { label: string; tone?: string; childre
   )
 }
 
-// The shape of what is coming: the two figures, then the list under them.
+// The shape of what is coming: the two tiles, then the table under them.
 function OwedWaiting() {
   return (
     <WhileWaiting what="Working out what is owed">
-      <div className="flex flex-wrap gap-x-12 gap-y-4">
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-10 w-56 max-w-full" />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-6 w-32" />
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {[0, 1].map((tile) => (
+          <div key={tile} className="border-border bg-card flex flex-col gap-3 rounded-xl border p-5 shadow-sm">
+            <Skeleton className="h-2.5 w-24" />
+            <Skeleton className="h-6 w-40 max-w-full" />
+          </div>
+        ))}
       </div>
 
-      <div className="divide-hairline flex flex-col divide-y">
+      <div className="border-border bg-card flex flex-col rounded-xl border shadow-sm">
         {[0, 1, 2].map((row) => (
-          <div key={row} className="flex items-baseline justify-between gap-4 py-3.5">
+          <div
+            key={row}
+            className="border-border flex items-baseline justify-between gap-4 border-b px-5 py-3.5 last:border-0"
+          >
             <Skeleton className="h-4 w-40 max-w-full" />
             <Skeleton className="h-4 w-24 shrink-0" />
           </div>

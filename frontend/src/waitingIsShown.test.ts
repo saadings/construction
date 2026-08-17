@@ -70,6 +70,8 @@ const NOT_WAITING_ON_ANYTHING: Record<string, string> = {
     'onTakeOff === undefined asks whether the caller passed a way to take a line off, which is a question about a prop; every figure on this screen is handed to it already read',
   'components/shell/Panel.tsx':
     'count === undefined asks whether a heading was given a number to show beside it, which is a question about a prop; these are the shapes the app is drawn out of and none of them reads anything',
+  'components/shell/Page.tsx':
+    'said === undefined asks whether a screen handed over the sentence that goes under its title, which is a question about a prop; this is the box every screen sits in and it reads nothing',
   'components/form/Day.tsx':
     'date, said and picked === undefined each ask whether a string is a day on the calendar or whether the calendar handed one back; all three are worked out in this file and none of them is an answer in flight',
 }

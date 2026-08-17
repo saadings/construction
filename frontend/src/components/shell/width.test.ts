@@ -58,13 +58,31 @@ describe('the width a screen is allowed to take', () => {
     expect(SOURCE.some((file) => file.text.includes('max-w-2xl'))).toBe(true)
   })
 
+  /** The box a screen sits in: the first element `Page` opens, and the only thing in that file this rule is about. */
+  const THE_CONTAINER = /export function Page\([\s\S]*?<div className="([^"]*)"/
+
   it('caps a form inside the content rather than capping the page around it', () => {
     // A form reads badly at 1440px: the eye loses the line between a label and the box it belongs to. A table does not, so the cap belongs to the form.
     const page = SOURCE.find((file) => file.path.endsWith('shell/Page.tsx'))
 
     expect(page?.text).toContain('max-w-2xl')
-    // And the page container itself has no cap at all.
-    expect(page?.text.split('export function Page')[1]?.split('export function')[0]).not.toContain('max-w-')
+
+    // Asked of the container rather than of everything written inside `Page`. Read whole, the function body now holds the sentence that goes under a title, capped at the width prose is read at -- and a cap on a paragraph is not the page capping itself, which is the distinction the rule two blocks up already makes.
+    const container = THE_CONTAINER.exec(page?.text ?? '')
+
+    expect(container, 'Page no longer opens with a container this can read').not.toBeNull()
+    expect(container?.[1], 'this is not the container, so what it says about caps is about something else').toContain(
+      'px-5'
+    )
+    expect(container?.[1]).not.toContain('max-w-')
+  })
+
+  it('would notice the cap going back on the container tomorrow', () => {
+    // The control, on the reader rather than on the file: this narrowed from the whole function body to one element, and a regex that matched the wrong element -- or nothing -- would agree with a clean `Page` forever.
+    expect(
+      THE_CONTAINER.exec('export function Page({ title }) {\n  return <div className="mx-auto max-w-lg px-5">')?.[1]
+    ).toBe('mx-auto max-w-lg px-5')
+    expect(THE_CONTAINER.exec('export function Page({ title }) {\n  return <p className="max-w-[64ch]">')).toBeNull()
   })
 })
 
