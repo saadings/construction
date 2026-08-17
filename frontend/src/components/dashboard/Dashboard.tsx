@@ -2,8 +2,8 @@ import { Link } from '@tanstack/react-router'
 import { formatPaisa } from '~shared/money'
 
 import { Figure, Page } from '../shell/Page'
+import { Tile } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
-import { Card } from '../ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { MoneyByMonth } from './MoneyByMonth'
 import { WhereItWent } from './WhereItWent'
@@ -58,43 +58,63 @@ export function Dashboard({ what }: { what: WhatIsHappening | null | undefined }
 }
 
 function Everything({ what }: { what: WhatIsHappening }) {
+  // What has come in and not gone out again. The ledger's own subtraction and nothing more, which is why it is not called cash: an opening balance per account is a thing nothing here holds, and there is history behind this ledger whose outgoings were never entered.
+  const notYetSpent = what.comeIn.receivedPaisa - what.goneOutPaisa
+
   return (
     <div className="flex flex-col gap-8">
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Tile label="Outstanding" paisa={what.owed.payablePaisa} tone="text-green">
-          {/* Never netted into the figure above it. An advance held by the tile man is not money available to pay the steel man. */}
-          {what.owed.advancedPaisa === 0
-            ? 'Nobody is holding an advance.'
-            : `${formatPaisa(what.owed.advancedPaisa)} is held in advance, which is not money to pay anybody with.`}
+      {/* A `dl` because `Tile` renders `dt` and `dd`: what each figure is, and the figure. */}
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Tile
+          label="Outstanding"
+          tone="text-green"
+          // Never netted into the figure above it. An advance held by the tile man is not money available to pay the steel man.
+          beneath={
+            what.owed.advancedPaisa === 0
+              ? 'Nobody is holding an advance.'
+              : `${formatPaisa(what.owed.advancedPaisa)} is held in advance, which is not money to pay anybody with.`
+          }
+        >
+          <Figure>{formatPaisa(what.owed.payablePaisa)}</Figure>
         </Tile>
 
-        <Tile label="Expenses" paisa={what.goneOutPaisa} tone="text-brass">
-          Across every house, everything not taken back out.
+        <Tile label="Expenses" tone="text-brass" beneath="Across every house, everything not taken back out.">
+          <Figure>{formatPaisa(what.goneOutPaisa)}</Figure>
         </Tile>
 
-        <Tile label="Invested" paisa={what.comeIn.receivedPaisa} tone="text-green">
-          {/* The line I would not let a reviewer cut. Without it the biggest figure on the screen reads as profit. */}
-          {what.comeIn.ownMoneyPaisa === 0
-            ? 'None of it is your own money.'
-            : `${formatPaisa(what.comeIn.ownMoneyPaisa)} of it is your own money.`}
+        <Tile
+          label="Invested"
+          tone="text-green"
+          // The line I would not let a reviewer cut. Without it the biggest figure on the screen reads as profit.
+          beneath={
+            what.comeIn.ownMoneyPaisa === 0
+              ? 'None of it is your own money.'
+              : `${formatPaisa(what.comeIn.ownMoneyPaisa)} of it is your own money.`
+          }
+        >
+          <Figure>{formatPaisa(what.comeIn.receivedPaisa)}</Figure>
         </Tile>
-      </section>
+
+        {/* The caveat is on the tile and not in a comment, which is the whole difference between a figure and a wrong figure. A sentence in the source ships to nobody, and this one is the only thing standing between this figure and being read as a bank balance. */}
+
+        {/* Said in a word rather than by a sign, which is what this app does everywhere money can go the other way: `Owed` shows an advance as its own amount followed by `adv` rather than as a negative balance. A minus in front of a figure is a thing somebody reads past. */}
+        <Tile
+          label={notYetSpent < 0 ? 'Spent past what came in' : 'Not yet spent'}
+          tone={notYetSpent < 0 ? 'text-brass' : 'text-green'}
+          beneath={
+            notYetSpent < 0
+              ? 'More has gone out than has come in. Money that was in the accounts before this ledger started does not appear here.'
+              : 'What has come in, less what has gone out. Not a bank balance — nothing here knows what was in the accounts before this ledger started.'
+          }
+        >
+          <Figure>{formatPaisa(Math.abs(notYetSpent))}</Figure>
+        </Tile>
+      </dl>
 
       <WhereItWent spending={what.whereItWent} />
       <MoneyByMonth months={what.whatCameIn} />
       <Houses houses={what.houses} />
     </div>
-  )
-}
-
-function Tile({ label, paisa, tone, children }: { label: string; paisa: number; tone: string; children: string }) {
-  // shadcn's own card, which was vendored for this and had no user until now. Four of its defaults are undone: `gap-6` and `py-6` are the room a card with a header, a body and a footer needs and this has three lines, `rounded-xl` is rounder than anything else on these screens, and `shadow-sm` is a raised card in an app that has none.
-  return (
-    <Card className="border-border gap-1 rounded-md p-4 shadow-none">
-      <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">{label}</p>
-      <Figure className={`${tone} text-[2rem] leading-none`}>{formatPaisa(paisa)}</Figure>
-      <p className="text-muted-foreground text-sm">{children}</p>
-    </Card>
   )
 }
 
@@ -182,11 +202,12 @@ function NothingYet({ houses }: { houses: number }) {
 function Waiting() {
   return (
     <WhileWaiting what="Getting everything">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((tile) => (
-          <div key={tile} className="border-border bg-card flex flex-col gap-2 rounded-md border p-4">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-8 w-40 max-w-full" />
+      {/* The shape of what is coming, so nothing jumps when it arrives: four tiles in the grid the tiles use, drawn as the card they are drawn as. */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((tile) => (
+          <div key={tile} className="border-border bg-card flex flex-col gap-3 rounded-xl border p-5 shadow-sm">
+            <Skeleton className="h-2.5 w-24" />
+            <Skeleton className="h-6 w-40 max-w-full" />
             <Skeleton className="h-3 w-32" />
           </div>
         ))}

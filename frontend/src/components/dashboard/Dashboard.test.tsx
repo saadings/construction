@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import type { WhatIsHappening } from './Dashboard'
 import { Dashboard } from './Dashboard'
-import { asAMonth } from './MoneyByMonth'
+import { A_SUMMARY, asAMonth } from './MoneyByMonth'
 
 afterEach(cleanup)
 
@@ -18,9 +18,10 @@ const BUSY: WhatIsHappening = {
     { tradeId: 't1', name: 'Civil labour', paisa: 4_000_000_00 },
     { tradeId: null, name: 'Everything else (12)', paisa: 500_000_00 },
   ],
+  // Adds to `comeIn` on purpose -- 610,000 + 630,000 is the 1,240,000 of his own money, and the four together are the 12,000,000 that has come in. A fixture whose parts do not add up is one where an assertion about a total can pass off the wrong figure.
   whatCameIn: [
-    { month: '2026-03', ownMoneyPaisa: 1_240_000_00, broughtInPaisa: 0 },
-    { month: '2026-04', ownMoneyPaisa: 0, broughtInPaisa: 10_760_000_00 },
+    { month: '2026-03', ownMoneyPaisa: 610_000_00, broughtInPaisa: 4_260_000_00 },
+    { month: '2026-04', ownMoneyPaisa: 630_000_00, broughtInPaisa: 6_500_000_00 },
   ],
   // Every figure distinct from every other, including the ones the app derives. A house whose figure equals a tile's is how an assertion passes by finding the wrong one -- which this fixture did on its first run.
   houses: [
@@ -43,7 +44,7 @@ const HIS_FIRST_DAY: WhatIsHappening = {
 
 function renderIt(what: WhatIsHappening | null | undefined) {
   const root = createRootRoute({ component: () => <Dashboard what={what} /> })
-  const kids = ['/', '/people', '/sites/$siteId'].map((path) =>
+  const kids = ['/', '/people', '/sites/$siteId', '/money-in'].map((path) =>
     createRoute({ getParentRoute: () => root, path, component: () => null })
   )
   const router = createRouter({
@@ -57,12 +58,20 @@ function renderIt(what: WhatIsHappening | null | undefined) {
 describe('everything at once', () => {
   it('gives every figure in this fixture one of its own', () => {
     // The control on the fixture rather than on the screen. Two ideas sharing a figure is how an assertion finds the wrong one, and this fixture did exactly that: the total that came in and one house's share of it were the same number.
+
+    // It grew when the month chart stopped being a chart. Its figures were readable only through a hover tooltip, so they were on no screen and in no assertion's way; drawn as text they are twelve more numbers a `getByText` can land on, and `2026-03` was carrying the same 1,240,000 as the tile above it.
+
+    // Which is the rule: this list is every figure the screen renders, so it goes stale the moment a figure that was hidden becomes visible. Adding to the screen means adding here.
     const figures = [
       BUSY.owed.payablePaisa,
       BUSY.owed.advancedPaisa,
       BUSY.goneOutPaisa,
       BUSY.comeIn.receivedPaisa,
       BUSY.comeIn.ownMoneyPaisa,
+      // Worked out by the screen and drawn on it, so it is as capable of colliding as any of the others.
+      BUSY.comeIn.receivedPaisa - BUSY.goneOutPaisa,
+      ...BUSY.whereItWent.map((one) => one.paisa),
+      ...BUSY.whatCameIn.flatMap((one) => [one.ownMoneyPaisa, one.broughtInPaisa]),
       ...BUSY.houses.flatMap((house) => [house.goneOutPaisa, house.comeInPaisa]),
     ]
 
@@ -112,6 +121,82 @@ describe('everything at once', () => {
     const goingThere = screen.getByRole('link', { name: '1-A, Phase 0' })
     expect(goingThere.getAttribute('href')).toBe('/sites/s1')
     expect(screen.getByText('Planning')).toBeTruthy()
+  })
+
+  it('says what came in each month, in figures, rather than in bar heights alone', async () => {
+    // The whole reason this stopped being a chart. recharts drew four bars, an axis of months and a legend, and the amount was readable only through a hover tooltip -- which on a phone is a tap-and-hold nobody discovers. `Spent by trade` sits directly above it saying its figure on every row.
+    renderIt(BUSY)
+
+    const broughtIn = await screen.findByRole('list', { name: 'Brought in' })
+    const ownMoney = screen.getByRole('list', { name: 'Own funds' })
+
+    // Each series named in words over its own rows, so the two greens agree with a label rather than standing in for one. A legend of two swatches is exactly the colour-alone reading the houses table was fixed for.
+    expect(within(broughtIn).getByText('4,260,000')).toBeTruthy()
+    expect(within(ownMoney).getByText('610,000')).toBeTruthy()
+
+    // And the month is on the row, or a figure is an amount belonging to nothing.
+    expect(within(broughtIn).getAllByText('Mar 26')).toHaveLength(1)
+    expect(within(ownMoney).getAllByText('Apr 26')).toHaveLength(1)
+  })
+
+  it('gives the camera something to watch a bar by', async () => {
+    // The floor under `shots`, which waits for a screen to stop moving by measuring `[data-bar]`. It used to measure `.recharts-bar-rectangle`, which was a claim about a library rather than about this app -- and a selector that finds nothing reports a screen at rest, forever and quietly. This is where the marker is drawn, so this is where it is held to existing.
+    renderIt(BUSY)
+
+    // Waited for, because the router draws on a tick and a count taken before it has is zero -- which is the same answer this test exists to refuse. Asked first as its own failure, so the count below is about the marker rather than about the timing.
+    await screen.findByRole('list', { name: 'Spent by trade' })
+
+    // A number and not a floor: one for each trade, and one for each month in each of the two series.
+    expect(document.querySelectorAll('[data-bar]').length).toBe(BUSY.whereItWent.length + BUSY.whatCameIn.length * 2)
+  })
+
+  it('shows only a summary of the months, and says so when it is holding some back', async () => {
+    // A house takes a year or two and this list grows a row a month. A dashboard drawing twenty-four of them is not a summary, and the screen that holds all of it already exists.
+    const many = Array.from({ length: 9 }, (_, at) => ({
+      month: `2026-0${at + 1}`,
+      ownMoneyPaisa: (at + 1) * 100_00,
+      broughtInPaisa: (at + 1) * 1_000_00,
+    }))
+
+    renderIt({ ...BUSY, whatCameIn: many })
+
+    const broughtIn = await screen.findByRole('list', { name: 'Brought in' })
+    expect(within(broughtIn).getAllByRole('listitem')).toHaveLength(A_SUMMARY)
+
+    // The last six and not the first six: what is happening now is what a summary is for.
+    expect(within(broughtIn).queryByText('Mar 26')).toBeNull()
+    expect(within(broughtIn).getByText('Sep 26')).toBeTruthy()
+
+    // And a way to the rest, rather than figures that are simply not there.
+    expect(screen.getByRole('link', { name: 'All of it' }).getAttribute('href')).toBe('/money-in')
+  })
+
+  it('says nothing about holding months back when it is holding none', async () => {
+    // A permanent line about the last six months is a line about nothing for the first five.
+    renderIt(BUSY)
+    await screen.findByRole('list', { name: 'Brought in' })
+
+    expect(screen.queryByRole('link', { name: 'All of it' })).toBeNull()
+  })
+
+  it('says what has come in and not gone out again, and refuses to be read as a bank balance', async () => {
+    // The caveat is on the tile and not in a comment. A comment ships to nobody, and this sentence is the whole difference between a figure and a wrong figure: there is history behind this ledger whose outgoings were never entered.
+    renderIt(BUSY)
+
+    expect(await screen.findByText('Not yet spent')).toBeTruthy()
+    // 12,000,000 in and 8,500,000 out.
+    expect(screen.getByText('3,500,000')).toBeTruthy()
+    expect(screen.getByText(/Not a bank balance/)).toBeTruthy()
+  })
+
+  it('says the other way round in a word rather than with a minus sign', async () => {
+    // What this app does everywhere money can go the other way: `Owed` shows an advance as its own amount followed by `adv` rather than as a negative balance. A minus in front of a figure is a thing somebody reads past.
+    renderIt({ ...BUSY, goneOutPaisa: 14_000_000_00 })
+
+    expect(await screen.findByText('Spent past what came in')).toBeTruthy()
+    expect(screen.getByText('2,000,000')).toBeTruthy()
+    expect(screen.queryByText('-2,000,000')).toBeNull()
+    expect(screen.getByText(/More has gone out than has come in/)).toBeTruthy()
   })
 
   it('says a month the way somebody says it', () => {
