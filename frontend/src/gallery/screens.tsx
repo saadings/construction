@@ -4,6 +4,7 @@ import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
 import { WhoCanSignIn } from '../components/invites/WhoCanSignIn'
 import { ComingIn } from '../components/moneyIn/ComingIn'
+import { EverythingThatCameIn } from '../components/moneyIn/EverythingThatCameIn'
 import { WhatHasComeIn } from '../components/moneyIn/WhatHasComeIn'
 import { WhatWeOwe } from '../components/owed/WhatWeOwe'
 import { AgreeShares } from '../components/partners/AgreeShares'
@@ -451,6 +452,72 @@ export const ON_SHOW: Array<OnShow> = [
                 ],
               }
             }),
+          }}
+        />
+      )
+    },
+  },
+  {
+    slug: 'money-in',
+    at: '/money-in',
+    name: 'Money in',
+    where: 'the nav, under the money it is the other half of',
+    proves: 'Money arriving',
+    // Two houses, because the whole reason this screen exists is that a house's own screen cannot answer what has come in altogether. One house here would photograph as a longer version of a screen the app already has.
+    draw: () => {
+      const arriving = [
+        {
+          day: '2026-07-23',
+          rupees: 4_500_000,
+          from: 0,
+          house: 0,
+          why: 'clientPayment' as const,
+          how: 'cheque' as const,
+          reference: 'CH-4471',
+        },
+        {
+          day: '2026-07-11',
+          rupees: 2_000_000,
+          from: 1,
+          house: 1,
+          why: 'partnerMoney' as const,
+          how: 'transfer' as const,
+        },
+        {
+          day: '2026-06-28',
+          rupees: 1_250_000,
+          from: 0,
+          house: 0,
+          why: 'clientPayment' as const,
+          how: 'payOrder' as const,
+          reference: 'PO-2288',
+        },
+        { day: '2026-06-02', rupees: 900_000, from: 1, house: 1, why: 'partnerMoney' as const, how: 'cash' as const },
+      ]
+
+      const byWhy = {
+        partnerMoney: paisa(arriving.reduce((sum, one) => (one.why === 'partnerMoney' ? sum + one.rupees : sum), 0)),
+        clientPayment: paisa(arriving.reduce((sum, one) => (one.why === 'clientPayment' ? sum + one.rupees : sum), 0)),
+        // Nothing sold yet, which is the state a reason with nothing under it has to photograph in: a zero rather than a gap.
+        sale: 0,
+      }
+
+      return (
+        <EverythingThatCameIn
+          everything={{
+            byWhy,
+            receivedPaisa: byWhy.partnerMoney + byWhy.clientPayment + byWhy.sale,
+            receipts: arriving.map((one, at) => ({
+              _id: `r${at + 1}`,
+              day: one.day,
+              amountPaisa: paisa(one.rupees),
+              why: one.why,
+              method: one.how,
+              reference: one.reference,
+              siteId: one.house === 0 ? 's1' : 's2',
+              siteName: one.house === 0 ? THE_HOUSE : '204-C, Phase 6',
+              fromName: NOBODY[one.from]?.name ?? 'Somebody else',
+            })),
           }}
         />
       )

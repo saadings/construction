@@ -217,6 +217,82 @@ describe('what came in on a house', () => {
     expect(letIn(await signedIn.query(api.moneyIn.queries.totals, { siteId: other })).receivedPaisa).toBe(4500000)
   })
 
+  it('reads every house at once, and says which house each one landed on', async () => {
+    const t = convexWithMoneyIn()
+    const house = await t.run(aHouseWithMoneyIn)
+    await t.run(async (ctx) => {
+      const siteId = await ctx.db.insert('sites', {
+        name: '2-B, Phase 0',
+        builtForAClient: false,
+        stage: 'building',
+        hidden: false,
+      })
+      await ctx.db.insert('moneyIn', {
+        siteId,
+        day: '2025-12-01',
+        amountPaisa: 4500000,
+        fromId: house.partner,
+        why: 'partnerMoney',
+        method: 'cash',
+        removed: false,
+        addedByExternalId: SIGNED_IN_AS,
+      })
+    })
+
+    const everywhere = letIn(await t.withIdentity({ subject: SIGNED_IN_AS }).query(api.moneyIn.queries.everywhere, {}))
+
+    // Four receipts over two houses, newest first, each carrying the house it landed on and the person it came from.
+    expect(everywhere.receipts.map((one) => `${one.day} ${one.siteName} ${one.fromName}`)).toEqual([
+      '2025-12-01 2-B, Phase 0 The partner',
+      '2025-10-20 1-A, Phase 0 The one it is built for',
+      '2025-09-15 1-A, Phase 0 The one it is built for',
+      '2025-08-01 1-A, Phase 0 The partner',
+    ])
+
+    // And the sums are over both houses, which is the whole reason this is read at all: 2,000,000 and 45,000 of partner money on two different houses is one figure to the partnership.
+    expect(everywhere.byWhy.partnerMoney).toBe(204500000)
+    expect(everywhere.byWhy.clientPayment).toBe(550000000)
+    expect(everywhere.receivedPaisa).toBe(754500000)
+  })
+
+  it('leaves out of the ledger-wide read what was taken back out of it', async () => {
+    const t = convexWithMoneyIn()
+    const house = await t.run(aHouseWithMoneyIn)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    const first = letIn(await signedIn.query(api.moneyIn.queries.forSite, { siteId: house.siteId }))
+    await signedIn.mutation(api.moneyIn.mutations.remove, { siteId: house.siteId, moneyInId: first[0]._id })
+
+    const everywhere = letIn(await signedIn.query(api.moneyIn.queries.everywhere, {}))
+
+    // Gone from the list and gone from the sums. A removal that comes off one and not the other is a screen whose rows do not add up to its own tile.
+    expect(everywhere.receipts).toHaveLength(2)
+    expect(everywhere.receipts.map((one) => one._id)).not.toContain(first[0]._id)
+    expect(everywhere.byWhy.clientPayment).toBe(300000000)
+    expect(everywhere.receivedPaisa).toBe(500000000)
+  })
+
+  it('agrees with the house’s own figures, which is the only reason there is one sum and not two', async () => {
+    const t = convexWithMoneyIn()
+    const house = await t.run(aHouseWithMoneyIn)
+
+    const signedIn = t.withIdentity({ subject: SIGNED_IN_AS })
+    const onTheHouse = letIn(await signedIn.query(api.moneyIn.queries.totals, { siteId: house.siteId }))
+    const everywhere = letIn(await signedIn.query(api.moneyIn.queries.everywhere, {}))
+
+    // One house in the ledger, so the two reads are of the same rows and must say the same thing. Two copies of this arithmetic is how a tile and a table come to disagree about a figure he is looking at twice.
+    expect(everywhere.byWhy).toEqual(onTheHouse.byWhy)
+    expect(everywhere.receivedPaisa).toBe(onTheHouse.receivedPaisa)
+  })
+
+  it('answers nothing at all to a sign-in the ledger does not know', async () => {
+    const t = convexWithMoneyIn()
+    await t.run(aHouseWithMoneyIn)
+
+    // Not an empty list, which reads as a ledger with nothing in it. Nothing, which is the screen saying it cannot answer.
+    expect(await t.withIdentity({ subject: 'user_nobody_here' }).query(api.moneyIn.queries.everywhere, {})).toBeNull()
+  })
+
   it('shows it to anybody signed in, and nothing for a house that is not there', async () => {
     const t = convexWithMoneyIn()
     const house = await t.run(aHouseWithMoneyIn)

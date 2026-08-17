@@ -19,6 +19,7 @@ export const ABOVE = new Map<string, { name: string; under?: string }>(
     '/': { name: 'Sites' },
     '/dashboard': { name: 'Dashboard' },
     '/owed': { name: 'Owed' },
+    '/money-in': { name: 'Money in' },
     '/people': { name: 'People' },
     '/people/$personId': { name: 'Their account', under: '/people' },
     '/more': { name: 'More' },

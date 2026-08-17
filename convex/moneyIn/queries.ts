@@ -1,7 +1,8 @@
-import { WHY_IT_CAME } from '../../shared/validation/moneyIn'
 import type { Doc } from '../_generated/dataModel'
+import { ledgerQuery } from '../utils/ledgerAccess'
 import type { SiteQueryCtx } from '../utils/siteAccess'
 import { siteQuery } from '../utils/siteAccess'
+import { newestFirst, splitByWhy } from './whatHasComeIn'
 
 // Everything still standing on this site. Removed receipts are read back nowhere, but they are still there to settle an argument with.
 async function standingOn(ctx: SiteQueryCtx): Promise<Array<Doc<'moneyIn'>>> {
@@ -29,34 +30,48 @@ export const forSite = siteQuery({
       })
     }
 
-    // The day carries no time, and a cheque run puts several receipts on one day. What separates them is written down rather than left to whichever order the rows came back in, so the list reads the same twice.
-
-    // Largest first, because that is the one being looked for; then the name, so two of the same size read alphabetically. The id settles the rest: two receipts alike in day, amount and sender are the same thing to anyone reading them, so the last step only has to be steady.
-    return withNames.sort(
-      (one, other) =>
-        other.day.localeCompare(one.day) ||
-        other.amountPaisa - one.amountPaisa ||
-        one.fromName.localeCompare(other.fromName) ||
-        one._id.localeCompare(other._id)
-    )
+    return withNames.sort(newestFirst)
   },
 })
 
 // Every figure here is the sum of the rows behind it. There is nowhere to type one, which is the whole difference from the workbooks.
 export const totals = siteQuery({
   handler: async (ctx) => {
-    const standing = await standingOn(ctx)
+    return splitByWhy(await standingOn(ctx))
+  },
+})
 
-    // Started from the list of reasons rather than from the rows, so a reason nothing has come in under reads as zero instead of going missing.
-    const byWhy = Object.fromEntries(WHY_IT_CAME.map((why) => [why, 0])) as Record<(typeof WHY_IT_CAME)[number], number>
-    for (const receipt of standing) {
-      byWhy[receipt.why] += receipt.amountPaisa
-    }
+// Every receipt in the ledger, over every house. Read whole rather than per house, because the question this screen answers is what has come in altogether -- and adding three houses up by hand is the thing this app exists to stop.
 
-    return {
-      byWhy,
-      // Not a fourth sum: the three above are every receipt on the site, split three ways, and this says so out loud.
-      receivedPaisa: byWhy.partnerMoney + byWhy.clientPayment + byWhy.sale,
-    }
+// A ledger read rather than a site one: signing in is the whole of who may look, and every screen that spans houses -- what is owed, the dashboard -- is read the same way.
+export const everywhere = ledgerQuery({
+  handler: async (ctx) => {
+    const [all, people, sites] = await Promise.all([
+      ctx.db.query('moneyIn').collect(),
+      ctx.db.query('people').collect(),
+      ctx.db.query('sites').collect(),
+    ])
+
+    const standing = all.filter((receipt) => !receipt.removed)
+    const named = new Map(people.map((person) => [person._id, person.name]))
+    const houseNamed = new Map(sites.map((site) => [site._id, site.name]))
+
+    const receipts = standing
+      .map((receipt) => ({
+        _id: receipt._id,
+        day: receipt.day,
+        amountPaisa: receipt.amountPaisa,
+        why: receipt.why,
+        method: receipt.method,
+        reference: receipt.reference,
+        note: receipt.note,
+        siteId: receipt.siteId,
+        // Both names read back the same way a site's own list reads them: hidden is not deleted, so a row cannot lose what is behind it, and if one ever does it says so rather than showing a blank.
+        siteName: houseNamed.get(receipt.siteId) ?? 'A house no longer in the list',
+        fromName: named.get(receipt.fromId) ?? 'Somebody no longer in the list',
+      }))
+      .sort(newestFirst)
+
+    return { receipts, ...splitByWhy(standing) }
   },
 })
