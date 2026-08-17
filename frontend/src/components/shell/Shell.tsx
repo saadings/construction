@@ -1,31 +1,31 @@
 import { UserButton } from '@clerk/tanstack-react-start'
 import type { ReactNode } from 'react'
 
-import { SidebarInset, SidebarProvider } from '../ui/sidebar'
-import { TheNav, TheWayIntoTheNav } from './TheNav'
+import { TheNav, TheNavOnAPhone } from './TheNav'
 
-// One nav, shadcn's, in the two shapes it has: a column at the side from 768 up, and a sheet you open from the corner below that. The three hand-rolled shapes are gone, and with them the bar along the bottom of a phone.
+// The shell he drew: a dark rail down the side of a desk, a header that stays, and a strip a phone scrolls sideways where the rail cannot fit.
 
-// Nauman chose this knowing a thumb reaches the bottom of a phone and not the top. So the sheet is the whole of navigation there, and it is what he opens standing on a site -- which is where the care that used to go into the bar goes now.
+// It was shadcn's `Sidebar` -- a column above 768 and a sheet behind a hamburger below it. The design has no hamburger and no sheet, which is his decision to make; what it also had was a 34px strip, and that is the defect he reported when the rows were 32px. So the arrangement is his and the height is the app's.
 export function Shell({ children }: { children: ReactNode }) {
   return (
-    <SidebarProvider>
-      {/* The nav is its own file so the gallery can draw it: everything here is exempt from being looked at, because Clerk will not render outside its own provider and the gallery holds nothing that could reach a deployment. */}
-
+    <div className="bg-background text-foreground flex min-h-dvh w-full">
       {/* Clerk's own button, sized through the only handle it gives: a class on the avatar box. Reasoned rather than measured -- nothing draws this without a sign-in, so the wrapper around it is what the sweep can see and this is what it cannot. */}
-      <TheNav footer={<UserButton appearance={{ elements: { userButtonAvatarBox: 'size-11 md:size-8' } }} />} />
+      <div className="hidden md:flex">
+        <TheNav footer={<UserButton appearance={{ elements: { userButtonAvatarBox: 'size-8' } }} />} />
+      </div>
 
-      <SidebarInset>
-        {/* The only chrome over the content, and only where there is no column: the way into the sheet. It scrolls with nothing because it is sticky, which is the fault the sidebar had before this. */}
-        <header className="bg-background/95 sticky top-0 z-20 flex items-center gap-2 px-3 py-2 backdrop-blur-sm md:hidden">
-          {/* 28px as it comes, on the one control that opens the only navigation a phone has. Sized beside the rows it opens, in the file the gallery can draw, so the same sweep measures both. */}
-          <TheWayIntoTheNav />
-          <span className="font-display text-foreground text-lg leading-none">Construction</span>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* The one bar over the content at every width. It is where the trail is on a desk and where the way out of a screen is on a phone, and it scrolls with nothing because it is sticky. */}
+        <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-4 border-b px-6 backdrop-blur-sm">
+          <span className="font-display text-foreground text-lg leading-none md:hidden">Construction</span>
         </header>
 
-        {/* No width cap. A table of payments is the reason a desk is wider than a phone, and a column down the middle of a 1440px screen throws that away. */}
-        <main className="flex-1">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+        <div className="md:hidden">
+          <TheNavOnAPhone />
+        </div>
+
+        <main className="min-w-0 flex-1">{children}</main>
+      </div>
+    </div>
   )
 }
