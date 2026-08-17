@@ -2,21 +2,39 @@ import { ledgerQuery } from '../utils/ledgerAccess'
 import { siteQuery } from '../utils/siteAccess'
 
 // The home screen. Every house in the ledger: one partnership keeping one set of books, so there is no such thing as somebody else's house here.
+
+// A card a house rather than a row: what it is, who it is for, how big it is, what has gone out and what has come in. So the reading carries what a card says rather than what a row said, and the two figures are worked out from the rows behind them here -- a site with a few thousand payments is one index read either way.
 export const all = ledgerQuery({
   handler: async (ctx) => {
     const open = (await ctx.db.query('sites').collect()).filter((site) => !site.hidden)
 
-    // One number a row, worked out here from the rows behind it. A site with a few thousand payments is one index read.
     const withSpending = []
     for (const site of open) {
-      const payments = await ctx.db
-        .query('payments')
-        .withIndex('bySiteAndDay', (q) => q.eq('siteId', site._id))
-        .collect()
+      const [payments, received, roles] = await Promise.all([
+        ctx.db
+          .query('payments')
+          .withIndex('bySiteAndDay', (q) => q.eq('siteId', site._id))
+          .collect(),
+        ctx.db
+          .query('moneyIn')
+          .withIndex('bySiteAndDay', (q) => q.eq('siteId', site._id))
+          .collect(),
+        ctx.db
+          .query('siteRoles')
+          .withIndex('bySite', (q) => q.eq('siteId', site._id))
+          .collect(),
+      ])
+
+      // Derived rather than stored, the same way a funder is: `people` says deliberately nothing about roles, and a house being built for somebody is a capacity on that house rather than a field on the person.
+      const client = roles.find((role) => role.capacity === 'client')
+      const named = client === undefined ? null : await ctx.db.get('people', client.personId)
 
       withSpending.push({
         ...site,
         spentPaisa: payments.reduce((total, payment) => (payment.removed ? total : total + payment.amountPaisa), 0),
+        receivedPaisa: received.reduce((total, one) => (one.removed ? total : total + one.amountPaisa), 0),
+        // Absent rather than a blank: a house with nobody named on it says nothing about who it is for, and a card built from an empty string cannot tell that apart from a house whose client has no name.
+        clientName: named?.name,
       })
     }
 

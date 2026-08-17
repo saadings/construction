@@ -12,6 +12,7 @@ const typedIn = {
   phase: v.optional(v.string()),
   scheme: v.optional(v.string()),
   coveredAreaSqft: v.optional(v.union(v.string(), v.number())),
+  budgetEstimatePaisa: v.optional(v.union(v.string(), v.number())),
   startedOn: v.optional(v.string()),
   builtForAClient: v.boolean(),
   stage: v.union(

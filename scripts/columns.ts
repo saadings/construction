@@ -79,6 +79,12 @@ const AT_LEAST_THIS_MANY_LINES = 4
 // Grouping by the parent was the first answer and it was wrong in the way that matters: it silently stopped comparing three real lists -- `sites`, `more` and `who-is-on-this-house` -- whose rows each sit in a wrapper of their own, and the count fell from 108 to 81 while reading as a clean sweep. A defective list still declares one shape and resolves it differently per row, so a count of tracks separates the two questions and keeps every row of every list.
 
 // What it does cost, said rather than left in the count: 108 rows to 102. Six of those are the two questions on `coming-in` at three widths, which is the point. The other six are one pair on `who-is-on-this-house` -- a subgrid row of seven columns beside one that spans the list as a single track -- and all that pair ever compared was their first cell, which under subgrid is the list's own left edge and agrees whatever happens.
+
+// Measured from each grid's own left edge rather than from the page's. For rows of a list the two are the same number -- every row starts where the list starts -- so nothing about the original defect changes.
+
+// What it fixes is a grid whose copies are **side by side**. His Sites screen is a card a house, three across at 1280, and each card holds a three-up of `Spent` / `Estimate` / `Received`: same class list, same tracks, three different left edges. Read against the page, cell two of the middle card is 612px from cell two of the first and the sweep reports a column that moved. Read against its own card, all three agree, which is what a person sees.
+
+// The absolute reading was right while every grid in a group was a row stacked under the last one. It stopped being right the moment a screen drew the same grid in two places at once, and it reported that as the defect it was built to find.
 const WHERE_THE_COLUMNS_ARE = `(() => {
   const grids = [...document.querySelectorAll('*')].filter((el) => getComputedStyle(el).display === 'grid')
 
@@ -96,12 +102,14 @@ const WHERE_THE_COLUMNS_ARE = `(() => {
     if (drawn.length < 2) continue
     rows += drawn.length
 
-    const lefts = drawn.map((row) =>
-      [...row.children].map((cell) => {
+    const lefts = drawn.map((row) => {
+      const from = row.getBoundingClientRect().left
+
+      return [...row.children].map((cell) => {
         const box = cell.getBoundingClientRect()
-        return box.width === 0 && box.height === 0 ? null : Math.round(box.left)
+        return box.width === 0 && box.height === 0 ? null : Math.round(box.left - from)
       })
-    )
+    })
 
     const widest = Math.max(...lefts.map((row) => row.length))
 
