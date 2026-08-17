@@ -73,16 +73,20 @@ describe('what shadcn brings that a way out does not want', () => {
     expect(classesOn()).not.toContain('inline-flex')
     expect(classesOn()).toContain('h-auto')
     expect(classesOn()).not.toContain('h-9')
-    // Horizontally only. This used to say `p-0` and the vertical half of that was the defect: measured at 390, thirteen of the thirteen controls in this app that remove something were 20px high, less than half of what a thumb needs, on the controls where a mis-tap costs a row somebody has to re-enter.
-    expect(classesOn()).toMatch(/(^|\s)px-0(\s|$)/)
+    // No padding shadcn's button would give it, which is a different claim from no padding at all. The pair below is what took the place of the `p-0` this used to say, in both directions and for the same reason.
+    expect(classesOn()).not.toContain('px-4')
   })
 
   it('gives a thumb something to hit without moving the row it sits in', () => {
     // The pair, and the pair is the whole trick. `py-3` grows the box a finger lands on from 20px to 44; `-my-3` gives the same 24px back to the layout, so nothing on any row moves -- 68 of the 69 comparable pictures were identical afterwards, and the one that differed was the chart that never draws twice the same.
 
     // Which is why the floor is written as tappable area rather than as visible size. A rule read as "44px tall" is one somebody argues an exemption out of the first time it would double the height of a dense table; this one needs no exemption at all.
-    expect(classesOn(), 'nothing makes this bigger than its own words').toMatch(/(^|\s)py-3(\s|$)/)
+
+    // The horizontal half is newer and came from the widened sweep: `Cancel` measured 44 high and **43 wide**, because a control drawn as text is exactly as wide as its own word and WCAG 2.5.5 asks for 44 in both directions. `min-width` cannot answer it -- this is `inline`, and `min-width` does not apply to a non-replaced inline box -- so it is the same padding-and-give-it-back sideways.
+    expect(classesOn(), 'nothing makes this taller than its own words').toMatch(/(^|\s)py-3(\s|$)/)
     expect(classesOn(), 'the row it sits in moves to make room').toMatch(/(^|\s)-my-3(\s|$)/)
+    expect(classesOn(), 'nothing makes this wider than its own word').toMatch(/(^|\s)px-2(\s|$)/)
+    expect(classesOn(), 'the row it sits in moves sideways to make room').toMatch(/(^|\s)-mx-2(\s|$)/)
   })
 
   it('says what it does, so the thing that measures does not have to guess', () => {

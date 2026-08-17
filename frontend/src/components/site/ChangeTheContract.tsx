@@ -96,11 +96,7 @@ function Measure({ contract, onMeasure }: { contract: StandingContract; onMeasur
 
       <Said refusal={refusal} />
       <StillSending busy={saving} />
-      <Button
-        onClick={() => send(async () => await onMeasure(measured))}
-        busy={saving}
-        className="self-start py-2 text-sm"
-      >
+      <Button onClick={() => send(async () => await onMeasure(measured))} busy={saving} className="self-start text-sm">
         Save measurement
       </Button>
     </Form>
@@ -185,7 +181,7 @@ function Revise({ contract, onRevise }: { contract: StandingContract; onRevise: 
           )
         }
         busy={saving}
-        className="self-start py-2 text-sm"
+        className="self-start text-sm"
       >
         Save changes
       </Button>
@@ -216,7 +212,7 @@ function Cancel({ onCancel }: { onCancel: () => Promise<void> }) {
       <StillSending busy={saving} />
       {sure ? (
         <div ref={asked} className="flex flex-wrap gap-3">
-          <Button look="beside" onClick={() => send(onCancel)} busy={saving} className="py-2 text-sm">
+          <Button look="beside" onClick={() => send(onCancel)} busy={saving} className="text-sm">
             Yes, cancel it
           </Button>
           <WayOut

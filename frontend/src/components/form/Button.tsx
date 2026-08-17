@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import type { ButtonHTMLAttributes } from 'react'
 
 import { cn } from '../../lib/utils'
+import { ROOM_FOR_A_THUMB } from '../roomForAThumb'
 import { Button as OnShadcn } from '../ui/button'
 
 // Every button that sends something. Written once for the same reason the pointer cursor is: five screens each spelling out `disabled:opacity-50` is five chances to forget it, and the one that forgets is the one somebody presses twice.
@@ -18,16 +19,18 @@ const LOOKS = {
   // Something more, said as text rather than as a box: `Add a line`, `Change`, `Pay it more than one way`. It sits inside what it adds to, and a box round it would compete with the send below it -- so it is the primary colour and no underline, which is what six screens had each written out by hand.
 
   // Not a `WayOut`, which is the same shape pointing the other way: this one puts something in.
-  another: { variant: 'link', undoing: 'text-primary h-auto p-0 has-[>svg]:px-0 text-sm no-underline' } as const,
+
+  // And it went without `ROOM_FOR_A_THUMB` for exactly that reason. `WayOut` had the trick and the paragraph explaining it; this one is the same shape, drawn as text on a line in the same manner, two files away -- and `Add a line`, `Change` and `Split payment` were 20px high, with four row expanders on `What it went on` beside them.
+  another: { variant: 'link', undoing: `text-primary h-auto ${ROOM_FOR_A_THUMB} text-sm no-underline` } as const,
 
   // The press that actually removes something, and the only red in this list.
 
   // Never the step that *opens* an are-you-sure. `oneWayOut` states that in words -- red belongs to the step that removes rather than to the thing somebody hits by accident -- and both screens that had one did the opposite, with `Put this house away` red and the confirmation under it grey. Those two openers are `WayOut` now, and this is where their colour went.
 
-  // `py-3 -my-3` for the reason `WayOut` has it: the padding makes the box a finger lands on 44px, the negative margin takes it back out of the layout so no row moves. A floor about tappable area rather than visible size.
+  // `ROOM_FOR_A_THUMB` for the reason `WayOut` has it, and now out of the same place as `WayOut` has it.
   removing: {
     variant: 'link',
-    undoing: 'text-destructive h-auto px-0 py-3 -my-3 has-[>svg]:px-0 text-sm no-underline',
+    undoing: `text-destructive h-auto ${ROOM_FOR_A_THUMB} text-sm no-underline`,
   } as const,
 }
 

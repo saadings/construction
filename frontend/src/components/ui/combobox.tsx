@@ -27,12 +27,15 @@ function ComboboxTrigger({ className, children, ...props }: ComboboxPrimitive.Tr
   )
 }
 
+// The × that empties a combobox, and it was 24 by 24. A mis-tap here clears the field somebody has just filled, on the day sheet, which is the screen filled in most and filled in on a phone -- so of the controls in this app it is among the ones where being small costs the most.
+
+// Grown with a margin rather than with `ROOM_FOR_A_THUMB`, because its size comes from `size-6` and `box-sizing: border-box` means padding cannot reach it: `size-6` is 24 including whatever is added inside. So the box is 44 and the margin gives twenty back on each side, which leaves the layout exactly where it was and the icon exactly where it was.
 function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
   return (
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
-      className={cn(className)}
+      className={cn('size-11 -m-2.5 pointer-fine:m-0 pointer-fine:size-6', className)}
       {...props}
     >
       <XIcon className="pointer-events-none" />
@@ -61,7 +64,8 @@ function ComboboxInput({
             variant="ghost"
             asChild
             data-slot="input-group-button"
-            className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
+            // The chevron that opens the list, 24 by 24, and sized the same way and for the same reason as the × below it: `size-6` is 24 including any padding, so the box is grown and the margin gives it straight back.
+            className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent size-11 -m-2.5 pointer-fine:m-0 pointer-fine:size-6"
             disabled={disabled}
           >
             <ComboboxTrigger />

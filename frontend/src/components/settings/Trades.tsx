@@ -39,7 +39,7 @@ export function Trades({
       title="Trade"
       beside={
         adding ? null : (
-          <Button className="py-2 text-sm" onClick={() => setAdding(true)}>
+          <Button className="text-sm" onClick={() => setAdding(true)}>
             Add
           </Button>
         )
@@ -198,7 +198,7 @@ function OneTrade({
       <div className="flex flex-wrap items-center gap-3">
         <Button
           busy={saving}
-          className="py-2 text-sm"
+          className="text-sm"
           onClick={() => send(async () => await onEdit(trade._id, { name, countsAsBuildingCost: building }))}
         >
           Save
@@ -264,7 +264,7 @@ function AddATrade({ onAdd, onDone }: { onAdd: (trade: NewTrade) => Promise<void
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={add} busy={saving} className="py-2 text-sm">
+        <Button onClick={add} busy={saving} className="text-sm">
           Add
         </Button>
         <WayOut onClick={onDone}>Cancel</WayOut>

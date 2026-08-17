@@ -34,8 +34,19 @@ const AT_LEAST_THIS_MANY_FIGURES = 100
 /** The same floor again. A selector that stopped finding cells reports the same clean nothing as an app where none is squeezed. */
 const AT_LEAST_THIS_MANY_CELLS = 100
 
-/** What a thumb needs, which Apple's guidance and WCAG 2.5.5 arrive at separately. The same bar that made the date input a defect in #96, asked here of the one navigation a phone has. */
+/** What a thumb needs, which Apple's guidance and WCAG 2.5.5 arrive at separately. The same bar that made the date input a defect in #96, asked of every standalone control. */
 const A_THUMB_NEEDS = 44
+
+// The other bar, for a link sitting in a line of text or at the start of a table row, and it is WCAG 2.5.8's number: 24 across. Holding all fifteen of these to 44 doubles every table in the app, which is the exemption somebody argues for the first time it would.
+
+// Twenty-four across is not enough on its own. A column of house names each 24 tall and eight pixels apart passes it, and that is the failure that actually costs somebody something -- a thumb aimed at one house opening the one below it.
+
+// So the same number is asked twice: 24 across, **and** 24 clear from the centre of any other target. Two circles 24 wide do not intersect exactly when their centres are 24 apart.
+
+// Said plainly rather than dressed as the standard: **this is stricter than 2.5.8, deliberately.** There, spacing is an *alternative* offered to a target that is under 24 -- a target that reaches 24 needs no clearance at all. Read faithfully, the spacing half here would apply to nothing, because everything now reaches 24: a rule that cannot fire.
+
+// Kept as a rule of its own because the thing it protects is real whatever a standard permits, and because a guard whose second half is unreachable is a guard with one half. The plant is a second link put beside a house name in the dashboard table; it lands 16px away and this names it.
+const A_LINE_NEEDS = 24
 
 // This was `A_PHONE_IS_UNDER = 768`, and the sentence under it described a shell that no longer exists: below it a sheet, above it a column under a mouse. There is no sheet, and above 768 the rail is the only navigation there is -- so every touch device from a tablet up was getting rows the sweep never asked about, at a width it never ran at.
 
@@ -45,8 +56,13 @@ const A_THUMB_NEEDS = 44
 
 // Its subject has moved twice and the number did not, which is the failure a floor is itself vulnerable to. It was five when the sheet held five rows; it stayed five when the sheet was deleted and a strip held five; and with the sheet back it would be satisfied by a sweep that opened nothing and found the hamburger alone. So it is set from what the nav actually contains: six rows and a sign-out in the rail, the same again in the sheet, and the button that opens it -- at four widths.
 
-/** Well under what a full sweep sees, and far above what one that never opened the sheet would. */
-const AT_LEAST_THIS_MANY_TAPPED = 40
+// Two floors now, because widening the question would have let one of them stop meaning anything. A sweep of every control sees a thousand of them, so a number set from what the nav contains would be cleared by the app's buttons alone -- and the sheet could go back to never being opened without the count moving.
+
+/** Well under what a sweep of every control sees, and far above a run that stopped at one screen. */
+const AT_LEAST_THIS_MANY_TAPPED = 700
+
+/** The nav's own floor, kept separate for the reason above: it is the one that proves the sheet was opened. Six rows and a sign-out in the rail, the same again in the sheet, and the button that opens it, at four widths. */
+const AT_LEAST_THIS_MANY_NAV_ROWS = 40
 
 /** And once more for the trails. Only the screens with something above them draw one, so this is well under what a full sweep sees -- but a `data-slot` renamed under us would report every trail unpinned across an app whose trails it never found. */
 const AT_LEAST_THIS_MANY_TRAILS = 20
@@ -215,30 +231,117 @@ const WHAT_IS_CUT_OFF = `(() => {
 
 // Nothing here had ever measured it and nothing could have. `Shell` holds Clerk's `UserButton`, Clerk will not render outside its own provider, and the gallery is kept clear of anything that could reach a deployment -- so the shell was exempt from the sweep, and the nav inside it went with it. The nav is its own file now for that reason alone.
 
-// Asked only below 768, and asked of the nav rather than of everything: a first pass over every control in the app at 390 found 104 of 151 under this bar, which is a real finding and a different piece of work. A guard that fails on a hundred things nobody is fixing today gets switched off.
+// It asked `[data-nav-row]`, and the sentence here said why it asked so little: *a first pass over every control in the app at 390 found 104 of 151 under this bar, which is a real finding and a different piece of work.*
 
-// Asked of a marker the nav puts there rather than of shadcn's `data-sidebar="menu-button"`, which went with the sheet the redesign removed -- a generator's attribute, owned by whatever the next `shadcn add` writes, carrying the measurement that exists because his nav rows were 32px. The floor below is what said so: it measured zero and refused, rather than reporting that every nav control on a phone clears 44px, which is what a sweep finding nothing says when nobody has given it one.
+// That figure was measured through the harness. An unscoped sweep of this page finds **the gallery's own screen picker** -- thirty-odd buttons at 34px, drawn on every one of thirty-two screens -- so most of what it counted was not the app. Asked again with the picker excluded, it is 53 controls out of 1,117 measurements. The reason for narrowing the question was itself an unmeasured number, which is the thing this file exists to refuse.
+
+// Before that it asked shadcn's `data-sidebar="menu-button"`: a generator's attribute, owned by whatever the next `shadcn add` writes. It found zero and refused, which is the floor working. But fixing the ownership problem narrowed the *subject* -- from every shadcn menu button to every row we tag -- and the narrowing is invisible, because 48 measured controls reads as better coverage than 7 while a whole class drops out. **Neither version ever asked the question this is named for**, and the sheet's own close button lived in the gap between the two definitions: inside our sheet, shadcn's markup, wearing none of our attributes.
+
+// So it asks what a person can press, and takes the answer from what the page is rather than from what anything is called.
+
+/** Two bars, because there are two kinds of target and one number for both is a number somebody argues an exemption out of. */
 const WHAT_A_THUMB_CANNOT_HIT = `(() => {
-  const asked = '[data-nav-row]'
+  const asked = [
+    'button',
+    'a[href]',
+    '[role="button"]',
+    '[role="link"]',
+    '[role="tab"]',
+    '[role="menuitem"]',
+    '[role="option"]',
+    '[role="switch"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    'input:not([type="hidden"])',
+    'select',
+    'textarea',
+    'summary',
+  ].join(',')
 
   const small = []
+  const targets = []
   let tapped = 0
+  let navRows = 0
 
   for (const control of document.querySelectorAll(asked)) {
+    // The gallery's own chrome is not the app. Its screen picker is thirty-odd buttons on every screen, which is most of what an unscoped sweep finds -- and counting them is how the recorded reason for not doing this got its number.
+    if (control.closest('[data-slug]') !== null) continue
+
+    // Two exemptions, and both are a property the page states rather than a name somebody chose. A control that stops being hidden or disabled comes back into this sweep by itself.
+
+    // \`aria-hidden\`: base-ui gives every combobox a 1x1 \`*-hidden-input\` to carry the form value. Nobody can see it and nobody can reach it.
+
+    // \`aria-disabled\`: shadcn's \`BreadcrumbPage\` is a \`span role="link" aria-disabled="true"\` -- the screen you are already on, drawn like the steps above it and pressing nowhere. Eleven of them, and every one a false positive.
+
+    // There was a third, and taking it out is the best thing that happened to this sweep. \`tabindex="-1"\` was written to catch the same hidden input, and it reads as unarguable -- a control nobody can tab to. But **not-focusable and not-tappable are different facts**, and the difference is exactly a mouse: a combobox's chevron and its clear button both carry \`tabindex="-1"\` because the input owns the keyboard, and both are pressed with a finger all day.
+
+    // It was hiding **184 measurements** and two real defects, both 24 by 24, one of which empties a field somebody has just filled. The count went from 793 to 977 by deleting one line. An exemption written on a property the page states can still be an exemption about the wrong property, and this one had every quality we ask of a good exemption except being true.
+    if (control.getAttribute('aria-hidden') === 'true') continue
+    if (control.getAttribute('aria-disabled') === 'true') continue
+
     const box = control.getBoundingClientRect()
     if (box.width === 0 && box.height === 0) continue
-    tapped += 1
 
-    if (Math.round(box.height) < ${String(A_THUMB_NEEDS)}) {
-      small.push({
-        said: (control.textContent ?? '').trim().slice(0, 24) || control.getAttribute('aria-label') || 'the avatar',
-        high: Math.round(box.height),
-        wide: Math.round(box.width),
-      })
+    tapped += 1
+    if (control.hasAttribute('data-nav-row')) navRows += 1
+
+    const said =
+      (control.getAttribute('aria-label') || (control.textContent ?? '').trim() || control.getAttribute('placeholder') || '')
+        .slice(0, 32) || 'a control with no words on it'
+
+    // Which bar a control answers to, decided by what it is and how tall it is rather than by a list of names.
+
+    // A \`button\`, an \`input\`, anything with a control's role: 44, always. Whether it is drawn as a box or as text on a line is a look, and \`WayOut\` already shows a text-drawn control reaching 44 with \`py-3 -my-3\` -- padding a finger lands on, given straight back to the layout, so nothing moves.
+
+    // A link gets the other bar, and only when it is a run of words rather than a box: no border, no background of its own, and a content height of exactly one line. That is WCAG 2.5.8's wording for what it exempts -- *its size is otherwise constrained by the line-height of non-target text* -- read as three things the page can be asked.
+
+    // A nav row is a control whether or not it is drawn as one, said here rather than left to the shape: an inactive row has no border and no background and is one line of words, and the whole reason any of this exists is that those rows were 32px.
+
+    // Two wrong versions before this, and both looked clean. \`display === 'inline'\` was the first: a flex or grid parent **blockifies** its children, so every anchor in this app computes to \`block\`, including the ones sitting in a line of text -- fifteen text links on the 44 bar.
+
+    // The second asked whether the box height equalled the line-height, which is the same sentence read one word short. It classified correctly and then **the remedy undid the classification**: giving a 20px link the four pixels it needed made its box 24 and its box was no longer its line, so it left the rule that had just been applied to it and failed the other one. A rule whose own fix moves a thing out of its scope has no fixed point.
+    const style = getComputedStyle(control)
+    const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.2
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+    const boxed =
+      style.borderTopWidth !== '0px' ||
+      style.borderBottomWidth !== '0px' ||
+      (style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent')
+
+    const isALink = control.tagName === 'A' || control.getAttribute('role') === 'link'
+    const inALine =
+      isALink && !boxed && !control.hasAttribute('data-nav-row') && Math.round(box.height - padding) <= Math.round(line) + 1
+
+    targets.push({ x: box.x + box.width / 2, y: box.y + box.height / 2, said, inALine })
+
+    // WCAG 2.5.5 and Apple's guidance arrive at 44 separately, and it is what a standalone control is held to here.
+
+    // A link inside a line of text is held to WCAG 2.5.8 instead -- 24, plus a 24px circle nothing else's circle may enter -- which is the AA rule written for exactly this case. Sizing every house name in a table to 44 doubles the table; the thing that actually costs somebody money is a mis-tap onto the *wrong house*, and spacing is what measures that.
+    const floor = inALine ? ${String(A_LINE_NEEDS)} : ${String(A_THUMB_NEEDS)}
+
+    if (Math.round(box.height) < floor || Math.round(box.width) < floor) {
+      small.push({ said, high: Math.round(box.height), wide: Math.round(box.width), floor })
     }
   }
 
-  return { tapped, small }
+  // The spacing half, and only for the ones sitting in a line. Asked of every one of them rather than only of the undersized, which is where this parts company with 2.5.8 on purpose: there, clearance is the concession offered to a target under 24, so a rule read faithfully would apply to nothing once everything reaches 24.
+  const crowded = []
+
+  for (let one = 0; one < targets.length; one += 1) {
+    if (!targets[one].inALine) continue
+
+    for (let other = 0; other < targets.length; other += 1) {
+      if (one === other) continue
+
+      const apart = Math.hypot(targets[one].x - targets[other].x, targets[one].y - targets[other].y)
+
+      if (apart < ${String(A_LINE_NEEDS)}) {
+        crowded.push({ said: targets[one].said, near: targets[other].said, apart: Math.round(apart) })
+      }
+    }
+  }
+
+  return { tapped, navRows, small, crowded }
 })()`
 
 // The sixth question, and the one with the sharpest cost. A first pass over every control at 390 found 104 of 151 under the bar, which is a real finding and a piece of work nobody is doing today -- and a guard that fails on a hundred things gets switched off. So this asks it of the controls where a mis-tap costs something: the ones that remove a row.
@@ -314,6 +417,8 @@ type Crushed = { said: string; wide: number; tall: number }
 type Pinned = { said: string; how: string; held: string }
 
 type TooSmall = { said: string; high: number; wide: number }
+
+type Crowded = { said: string; near: string; apart: number }
 
 /** What came back from the page, checked rather than assumed: a bad shape here would read as a screen with nothing wrong on it. */
 function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
@@ -455,6 +560,64 @@ function whatIsPinned(said: unknown): { trails: number; pinned: Array<Pinned> } 
   }
 }
 
+/** The widened fifth, checked the same way and for the same reason, and separately because it answers four things rather than two. */
+function whatCannotBeHit(said: unknown): {
+  tapped: number
+  navRows: number
+  small: Array<TooSmall & { floor: number }>
+  crowded: Array<Crowded>
+} {
+  if (
+    typeof said !== 'object' ||
+    said === null ||
+    !('tapped' in said) ||
+    !('navRows' in said) ||
+    !('small' in said) ||
+    !('crowded' in said)
+  ) {
+    throw new Error('The page answered something that is not a sweep of what a thumb can hit.')
+  }
+
+  const { tapped, navRows, small, crowded } = said
+  if (typeof tapped !== 'number' || typeof navRows !== 'number' || !Array.isArray(small) || !Array.isArray(crowded)) {
+    throw new Error('The page answered a sweep with no counts or no findings in it.')
+  }
+
+  return {
+    tapped,
+    navRows,
+    small: small.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('high' in one) || !('floor' in one)) {
+        throw new Error('The page answered a control with nothing in it.')
+      }
+
+      const { said: text, high, wide, floor } = one as Record<string, unknown>
+      if (
+        typeof text !== 'string' ||
+        typeof high !== 'number' ||
+        typeof wide !== 'number' ||
+        typeof floor !== 'number'
+      ) {
+        throw new Error('The page answered a control of the wrong shape.')
+      }
+
+      return { said: text, high, wide, floor }
+    }),
+    crowded: crowded.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('near' in one) || !('apart' in one)) {
+        throw new Error('The page answered a crowding with nothing in it.')
+      }
+
+      const { said: text, near, apart } = one as Record<string, unknown>
+      if (typeof text !== 'string' || typeof near !== 'string' || typeof apart !== 'number') {
+        throw new Error('The page answered a crowding of the wrong shape.')
+      }
+
+      return { said: text, near, apart }
+    }),
+  }
+}
+
 /** The fifth measurement, checked the same way and for the same reason. */
 function whatIsTooSmall(said: unknown): { tapped: number; small: Array<TooSmall> } {
   if (typeof said !== 'object' || said === null || !('tapped' in said) || !('small' in said)) {
@@ -496,6 +659,7 @@ async function main(): Promise<void> {
   let cellsSeen = 0
   let trailsSeen = 0
   let tappedSeen = 0
+  let navRowsSeen = 0
   let removesSeen = 0
   let choicesSeen = 0
   let linesSeen = 0
@@ -559,12 +723,19 @@ async function main(): Promise<void> {
         trailsSeen += trails.trails
 
         {
-          const thumb = whatIsTooSmall(await page.evaluate(WHAT_A_THUMB_CANNOT_HIT))
+          const thumb = whatCannotBeHit(await page.evaluate(WHAT_A_THUMB_CANNOT_HIT))
           tappedSeen += thumb.tapped
+          navRowsSeen += thumb.navRows
 
           for (const small of thumb.small) {
             wrong.push(
-              `${screen.slug} at ${String(size.width)}: ${small.said} is ${String(small.high)}px high and ${String(small.wide)} wide, under the ${String(A_THUMB_NEEDS)} a thumb needs`
+              `${screen.slug} at ${String(size.width)}: ${small.said} is ${String(small.high)}px high and ${String(small.wide)} wide, under the ${String(small.floor)} it needs`
+            )
+          }
+
+          for (const near of thumb.crowded) {
+            wrong.push(
+              `${screen.slug} at ${String(size.width)}: "${near.said}" and "${near.near}" are ${String(near.apart)}px apart, inside the ${String(A_LINE_NEEDS)} this keeps clear around a link`
             )
           }
 
@@ -645,7 +816,13 @@ async function main(): Promise<void> {
 
   if (tappedSeen < AT_LEAST_THIS_MANY_TAPPED) {
     throw new Error(
-      `Only ${String(tappedSeen)} nav controls were measured under a thumb, which is too few to have looked -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
+      `Only ${String(tappedSeen)} controls were measured under a thumb, which is too few to have looked -- and a selector that stopped matching reports the same clean nothing as an app a thumb can use.`
+    )
+  }
+
+  if (navRowsSeen < AT_LEAST_THIS_MANY_NAV_ROWS) {
+    throw new Error(
+      `Only ${String(navRowsSeen)} nav rows were among them, which means the sheet was never opened -- and the nav being unreachable from the gallery is how this went unmeasured in the first place.`
     )
   }
 
@@ -660,7 +837,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned and every nav control, every way out and every choice clears ${String(A_THUMB_NEEDS)}px under a thumb, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} nav controls, ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
   )
 }
 

@@ -13,7 +13,9 @@ function InputGroup({ className, ...props }: React.ComponentProps<'div'>) {
       role="group"
       className={cn(
         'group/input-group relative flex w-full items-center rounded-md border border-input shadow-xs transition-[color,box-shadow] outline-none dark:bg-input/30',
-        'h-9 min-w-0 has-[>textarea]:h-auto',
+        // 44 under a thumb and shadcn's own 36 under a mouse. Every combobox in this app is one of these -- `Trade`, `Paid to`, `Account`, `Received from`, `Add partner`, `Client`, `Stage` -- which is to say the day sheet, the screen he fills in most and the one he fills in on a phone.
+        // Coarse is the default and a fine pointer opts down, so a browser that does not understand the variant gives everybody the reachable height.
+        'min-h-11 pointer-fine:min-h-9 min-w-0 has-[>textarea]:h-auto',
 
         // Variants based on alignment.
         'has-[>[data-align=inline-start]]:[&>input]:pl-2',
@@ -123,7 +125,8 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<'input'>)
     <Input
       data-slot="input-group-control"
       className={cn(
-        'flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent',
+        // Sized here rather than left to fill the group, because the box a finger lands on is this one. Giving the group 44 left the input inside it at shadcn's own `h-9`: the group was tall enough, the border was in the right place, and what a thumb actually hits was still 36. `h-full` then gave 42, because a group of 44 with a border top and bottom has 42 inside it -- so the group takes a minimum and the input takes the number.
+        'h-11 pointer-fine:h-9 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent',
         className
       )}
       {...props}
