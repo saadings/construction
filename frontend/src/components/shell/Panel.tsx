@@ -22,6 +22,32 @@ export function TablePanel({ className, children }: { className?: string; childr
   )
 }
 
+// A figure the screen is about, carried on a card of its own. Every drawn screen puts its totals in these rather than in a strip above the table, so a figure is a thing on the page rather than a column of a table nobody drew.
+
+// Written once because the second screen wanted it: the caption size, the letter-spacing and the figure size are the drawing, and a copy of them is a copy that drifts. It renders `dt`/`dd`, so what holds a row of these is a `dl`.
+
+/** One figure on a card, with what it is above it. */
+export function Tile({
+  label,
+  tone,
+  beneath,
+  children,
+}: {
+  label: string
+  tone?: string
+  /** A sentence under the figure, where the design puts what a figure means rather than leaving it to be worked out. */
+  beneath?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <Panel className="flex flex-col gap-3 p-5">
+      <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">{label}</dt>
+      <dd className={cn('text-[1.6875rem] leading-none', tone ?? 'text-foreground')}>{children}</dd>
+      {beneath === undefined ? null : <dd className="text-muted-foreground text-[0.8125rem]">{beneath}</dd>}
+    </Panel>
+  )
+}
+
 // A word about a row rather than a figure in it: a partner's role, a house's stage, whether a bill is late. The design gives each of the three meaning colours a tinted plane to sit on, so the colour says which and the tint says it is a state.
 export type PillTone = 'green' | 'brass' | 'refusal' | 'quiet'
 

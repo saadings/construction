@@ -10,11 +10,14 @@ import { Trail } from './Trail'
 // The trail is here for the same reason, and it is why a screen drawing its own layout has to ask for one: on a phone the nav is behind a hamburger, so without this there is nothing on the screen saying where you are or how to get back.
 export function Page({
   title,
+  said,
   beside,
   named,
   children,
 }: {
   title: string
+  // What this screen is, in a sentence, which every drawn screen has under its title. Capped at the width a line of prose is read at rather than at the page's, because the table under it is deliberately uncapped.
+  said?: string
   beside?: ReactNode
   // What a `$param` in this screen's address is really called. The router knows there is a house; only the screen knows it is `1-A, Phase 0`.
   named?: Named
@@ -29,6 +32,8 @@ export function Page({
           <h1 className="font-display text-foreground text-[2rem] leading-none sm:text-[2.5rem]">{title}</h1>
           {beside}
         </header>
+
+        {said === undefined ? null : <p className="text-muted-foreground max-w-[64ch] text-sm">{said}</p>}
       </div>
       {children}
     </div>

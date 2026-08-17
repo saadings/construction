@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { formatPaisa } from '~shared/money'
 
 import { Figure } from '../shell/Page'
-import { Heading, Panel, TablePanel } from '../shell/Panel'
+import { Heading, TablePanel, Tile } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 export type Position = {
@@ -206,26 +206,19 @@ function Cell({ label, tone, children }: { label: string; tone?: string; childre
   )
 }
 
-// Three tiles rather than one strip, which is how every drawn screen carries its totals: a card each, so a figure is a thing on the page rather than a column of a table nobody drew.
+// Three tiles rather than one strip, which is how every drawn screen carries its totals: a card each, so a figure is a thing on the page rather than a column of a table nobody drew. The tile itself is `shell/Panel`, because the screen that owed money wanted the same one.
 function Profit({ what }: { what: WhatThePartnersHave }) {
   return (
     <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <Sum label="Invested">{formatPaisa(what.broughtInPaisa)}</Sum>
-      <Sum label="Expenses" tone="text-brass">
-        {formatPaisa(what.spentPaisa)}
-      </Sum>
-      <Sum label={what.profitPaisa < 0 ? 'Out of pocket by' : 'Profit'}>{formatPaisa(Math.abs(what.profitPaisa))}</Sum>
+      <Tile label="Invested">
+        <Figure>{formatPaisa(what.broughtInPaisa)}</Figure>
+      </Tile>
+      <Tile label="Expenses" tone="text-brass">
+        <Figure>{formatPaisa(what.spentPaisa)}</Figure>
+      </Tile>
+      <Tile label={what.profitPaisa < 0 ? 'Out of pocket by' : 'Profit'}>
+        <Figure>{formatPaisa(Math.abs(what.profitPaisa))}</Figure>
+      </Tile>
     </dl>
-  )
-}
-
-function Sum({ label, tone, children }: { label: string; tone?: string; children: string }) {
-  return (
-    <Panel className="flex flex-col gap-3 p-5">
-      <dt className="text-faint text-[0.6875rem] font-semibold tracking-[0.12em] uppercase">{label}</dt>
-      <dd className={`${tone ?? 'text-foreground'} text-[1.6875rem] leading-none`}>
-        <Figure>{children}</Figure>
-      </dd>
-    </Panel>
   )
 }
