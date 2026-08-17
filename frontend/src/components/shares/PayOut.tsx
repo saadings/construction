@@ -17,6 +17,7 @@ import { WayOut } from '../form/WayOut'
 import { useWhatWasAdded } from '../form/whatWasAdded'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { Figure, Form, NothingIsDeleted, SaidUnderneath } from '../shell/Page'
+import { Heading, TablePanel } from '../shell/Panel'
 import { Skeleton, SkeletonLines, WhileWaiting } from '../shell/Skeleton'
 
 // Money going back to a partner, written down after it has moved. The app pays nobody: somebody wrote a cheque or made a transfer, and this is where that gets recorded.
@@ -78,8 +79,9 @@ export function PayOut({
 }) {
   return (
     <section className="flex flex-col gap-6 border-t pt-8">
+      {/* The drawn language, on a screen the design does not draw: heading and note in a row, the list in a card. */}
       <div className="flex flex-col gap-1">
-        <h2 className="text-foreground text-base font-medium">Paid out</h2>
+        <Heading said="Paid out" />
         <p className="text-muted-foreground max-w-prose text-sm">
           A cheque or a transfer that has already left. Writing it here is what makes it show under Paid.
         </p>
@@ -254,11 +256,13 @@ function AlreadyOut({
 
   return (
     <div className="flex flex-col gap-2">
-      <ul className="divide-hairline flex flex-col divide-y">
-        {paidOut.map((one) => (
-          <OnePayout key={one._id} paidOut={one} onTakeBack={onTakeBack} />
-        ))}
-      </ul>
+      <TablePanel>
+        <ul className="flex flex-col">
+          {paidOut.map((one) => (
+            <OnePayout key={one._id} paidOut={one} onTakeBack={onTakeBack} />
+          ))}
+        </ul>
+      </TablePanel>
 
       {/* Once under the list rather than on every row: every row here removes, and the same sentence repeated per payout is noise rather than reassurance. */}
 
@@ -287,7 +291,7 @@ function OnePayout({ paidOut, onTakeBack }: { paidOut: PaidOut; onTakeBack: (pay
   }
 
   return (
-    <li className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 py-3.5">
+    <li className="border-border hover:bg-muted/60 grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 border-b px-5 py-3.5 transition-colors last:border-0">
       <span className="text-foreground min-w-0 truncate text-[1.0625rem]">{paidOut.personName}</span>
       {/* Brass, because it is money leaving the partnership, the same colour it is given under Paid. */}
       <Figure className="text-brass text-right text-lg">{formatPaisa(paidOut.amountPaisa)}</Figure>
