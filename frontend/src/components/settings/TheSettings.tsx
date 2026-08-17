@@ -83,7 +83,8 @@ function Section({
         beside={
           <Link
             to={to}
-            className="border-input bg-card hover:border-brass rounded-md border px-3 py-1.5 text-[0.8125rem] font-medium shadow-xs transition-colors"
+            // 44px tall rather than the drawn 31. The drawing is a picture and this is the control a thumb aims at on the one screen whose whole job is getting somewhere else -- and the box is bordered, so the `py-3 -my-3` trick a way out uses would grow what you can see rather than only what you can hit.
+            className="border-input bg-card hover:border-brass inline-flex min-h-11 items-center rounded-md border px-4 text-[0.8125rem] font-medium shadow-xs transition-colors"
           >
             Open
           </Link>
