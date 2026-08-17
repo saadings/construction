@@ -51,6 +51,11 @@
   --brass-tint: #f5efe4;
   --refusal-tint: #fcf1f2;
 
+  /* What a row goes when a finger is on it. It was `--row-alt` on the page and `--muted` at 60% on a card, which measure 0.61 and 2.47 from what they sit on -- at or under what an eye can see, and the dark pair was worse at 1.77 and 0.32. */
+
+  /* Hover is the only thing telling somebody which row their finger is about to commit, so it is a token with a number behind it rather than a tint borrowed from the row stripe: 4.09 from the page and 7.66 from a card. */
+  --row-hover: #eee8db;
+
   --background: var(--ground);
   --foreground: var(--ink);
   --card: var(--panel);
@@ -102,6 +107,8 @@
     --green-tint: #2b2f24;
     --brass-tint: #372d1c;
     --refusal-tint: #3b2925;
+    /* 7.02 from the page and 5.04 from a card: the same job the light one does rather than the same distance from black. */
+    --row-hover: #2e2b24;
     --border: #2e2a20;
     --input: #2e2a20;
     /* The design draws no dark mode, and the light value cannot be carried over: `#1c1a17` against this ground is 1.05:1 and 2.1 apart -- not a plane, the page. */
@@ -132,6 +139,8 @@
   --green-tint: #2b2f24;
   --brass-tint: #372d1c;
   --refusal-tint: #3b2925;
+  /* 7.02 from the page and 5.04 from a card: the same job the light one does rather than the same distance from black. */
+  --row-hover: #2e2b24;
   --border: #2e2a20;
   --input: #2e2a20;
   /* The same rail, for the same reason: after dark the page is the darkest thing, so the rail lifts off it rather than sinking into it. */
@@ -175,6 +184,7 @@
   --color-green-tint: var(--green-tint);
   --color-brass-tint: var(--brass-tint);
   --color-refusal-tint: var(--refusal-tint);
+  --color-row-hover: var(--row-hover);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

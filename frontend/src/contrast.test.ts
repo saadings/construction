@@ -76,6 +76,25 @@ describe('words a person can actually read', () => {
     expect(whatCannotBeRead(CHOSEN_DARK)).toEqual([])
   })
 
+  it('has a value for every colour it claims to measure, in all three states', () => {
+    // The floor under the loops rather than under the palette, and it is the one that was missing. A pair whose ink or surface is absent is skipped, so a **deleted token produces no finding** -- and no findings is exactly what a clean palette returns.
+
+    // Which absence lands here, checked by removing tokens rather than reasoned about. A dark block losing one is somebody else's: the two dark blocks are held to each other, and a token in dark but not light is caught by name. Both of those were planted and both failed there, not here.
+
+    // What is left is the one nothing else sees: gone from `:root`, so all three palettes lose it at once and every pair it belongs to is skipped in silence. Planted, that fails this and nothing in `styles.test.ts`.
+    const measured = [...WORDS, ...SURFACES, ...ON_THE_RAIL.flat(), ...ON_A_TINT.flat(), '--row-hover']
+
+    for (const name of new Set(measured)) {
+      for (const [mode, palette] of [
+        ['light', LIGHT],
+        ['following the phone', FOLLOWING_THE_PHONE],
+        ['chosen dark', CHOSEN_DARK],
+      ] as const) {
+        expect(asAColour(name, palette), `${name} is measured and has no ${mode} value`).toMatch(/^#[\da-f]{6}$/i)
+      }
+    }
+  })
+
   it('is reading a palette rather than an empty one', () => {
     // The floor, anchored on a pairing that exists today. A reader that stopped parsing the stylesheet would find nothing wrong with it, which is exactly what a clean palette looks like.
     expect(asAColour('--ground', LIGHT)).toBe('#faf7f0')
@@ -146,6 +165,36 @@ function whatCannotBeToldApart(palette: Record<string, string>): Array<string> {
   )
 }
 
+// What a row goes when a finger is on it, which is the only thing saying which row a tap will commit. It was the row stripe on the page and a half-strength muted tint on a card: 0.61 and 2.47 apart in light, 1.77 and 0.32 in dark -- at or under what an eye can see, and worst on the surface a table actually uses.
+
+/** Far enough apart that somebody can see which row their finger is on. Under what a meaning colour needs, because a hover is a state rather than a claim -- and well over the ~2 where two colours stop being two. */
+const A_HOVER_IS_VISIBLE = 4
+
+describe('a row under a finger', () => {
+  it('changes by enough to be seen, on the page and on a card', () => {
+    for (const [what, palette] of [
+      ['light', LIGHT],
+      ['dark', CHOSEN_DARK],
+    ] as const) {
+      const hover = asAColour('--row-hover', palette) ?? ''
+
+      for (const surface of ['--ground', '--panel']) {
+        const behind = asAColour(surface, palette) ?? ''
+
+        expect(toldApart(hover, behind), `${what}: a hover on ${surface} is invisible`).toBeGreaterThan(
+          A_HOVER_IS_VISIBLE
+        )
+      }
+    }
+  })
+
+  it('would notice the hover that shipped', () => {
+    // Planted from the failing side, in both the shapes it had: the row stripe used as a hover on the page, and the muted tint at half strength on a card.
+    expect(toldApart('#f7f4ed', '#faf7f0')).toBeLessThan(A_HOVER_IS_VISIBLE)
+    expect(toldApart('#1d1a13', '#1e1b14')).toBeLessThan(A_HOVER_IS_VISIBLE)
+  })
+})
+
 describe('two colours that mean different things', () => {
   it('are far enough apart to be told apart, in light', () => {
     expect(whatCannotBeToldApart(LIGHT)).toEqual([])
@@ -165,9 +214,17 @@ describe('two colours that mean different things', () => {
   })
 
   it('measures distance the way the eye does, not the way a ratio does', () => {
-    // The controls, at both ends of the scale.
+    // The controls, at both ends of the scale. They are anchors rather than expectations: neither depends on this palette, so neither can be quietly tuned into agreeing with whatever somebody hoped to find.
+
+    // A second session's CIEDE2000 had a precedence slip that scored white against black **below** two near-identical darks, and the tell was that two numbers in one output could not both be true. These three would have caught it: the extremes, and the ordering between them.
     expect(toldApart('#000000', '#ffffff')).toBeCloseTo(100, 0)
     expect(toldApart('#8a5a1e', '#8a5a1e')).toBeCloseTo(0, 5)
+
+    // Ordering, which is the property a broken transform breaks first: two colours a person cannot tell apart must score under two a person can, whatever the arithmetic in between.
+    expect(toldApart('#1e1b14', '#1d1a13')).toBeLessThan(toldApart('#1c1a17', '#faf7f0'))
+
+    // And symmetry, which costs nothing and catches a sign that went the wrong way round.
+    expect(toldApart('#8a5a1e', '#3f6349')).toBeCloseTo(toldApart('#3f6349', '#8a5a1e'), 6)
 
     // And the pair this app has always told apart, which a contrast ratio calls identical. Both numbers, so neither can be read as the other.
     expect(toldApart('#8a5a1e', '#4a6b52')).toBeGreaterThan(FAR_ENOUGH)
