@@ -17,7 +17,8 @@ const EVERYONE: Array<PersonRow> = [
 // Every name is the way into that person's account, so the screen needs somewhere for them to point.
 function renderWith(people: Array<PersonRow> | null | undefined, onAdd = vi.fn(), onHide = vi.fn(), onEdit = vi.fn()) {
   const root = createRootRoute({
-    component: () => <People people={people} onAdd={onAdd} onEdit={onEdit} onHide={onHide} />,
+    // The two drawn sections have their own tests. This file is about the list a person is added and corrected on, so it is handed a refusal here rather than a second fixture to keep in step.
+    component: () => <People people={people} sides={null} onAdd={onAdd} onEdit={onEdit} onHide={onHide} />,
   })
   const router = createRouter({ routeTree: root, history: createMemoryHistory({ initialEntries: ['/'] }) })
 

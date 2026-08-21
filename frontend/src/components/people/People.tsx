@@ -9,7 +9,10 @@ import { WayOut } from '../form/WayOut'
 import { whatWentWrong } from '../form/whatWentWrong'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Form, Page } from '../shell/Page'
+import { Heading } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
+import type { TheTwoSides } from './TheTwoKinds'
+import { TheTwoKinds } from './TheTwoKinds'
 
 export type PersonRow = { _id: string; name: string; phone?: string; notes?: string }
 export type NewPerson = { name: string; phone?: string; notes?: string }
@@ -29,12 +32,15 @@ const PASSES_THEM_DOWN = 'col-span-full grid grid-cols-subgrid'
 
 export function People({
   people,
+  sides,
   onAdd,
   onEdit,
   onHide,
 }: {
   // Three answers, never two: still coming, refused, and a list. Folding the first two together is the spinner nobody could get past.
   people: Array<PersonRow> | null | undefined
+  // The two kinds his drawing splits this screen into, read separately from the list of names: one is what has happened to people, the other is who there is.
+  sides: TheTwoSides | null | undefined
   onAdd: (person: NewPerson) => Promise<void>
   // A name typed wrong was permanent, and two people cannot share a name any more, so there was no way to work around it by adding the right one.
   onEdit: (personId: string, person: NewPerson) => Promise<void>
@@ -50,42 +56,52 @@ export function People({
   }
 
   return (
-    <Page title="People">
-      <AddSomebody onAdd={onAdd} />
+    <Page
+      title="People"
+      said="Two kinds, and they are not the same ledger. Money goes out to the trade — suppliers and subcontractors carry a balance you owe. Money comes in from partners and clients."
+    >
+      <TheTwoKinds sides={sides} />
 
-      {people === undefined ? (
-        <WhileWaiting what="Getting the people">
-          <div className="divide-hairline flex flex-col divide-y">
-            {[0, 1, 2, 3].map((row) => (
-              <div key={row} className={`${ROW} py-3.5`}>
-                <Skeleton className="h-5 w-36 max-w-full" />
-                <Skeleton className="order-last col-span-2 h-4 w-28 sm:order-none sm:col-span-1" />
-                <Skeleton className="hidden h-4 w-44 max-w-full sm:block" />
-              </div>
-            ))}
-          </div>
-        </WhileWaiting>
-      ) : people.length === 0 ? (
-        <p className="text-muted-foreground py-6">
-          Nobody yet. Add the partners and the contractors, and the money goes against their names.
-        </p>
-      ) : (
-        <div className={GRID}>
-          <div
-            className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
-          >
-            <span>Name</span>
-            <span>Number</span>
-            <span>Notes</span>
-          </div>
+      {/* Not in his drawing, and kept: it is where somebody is added, corrected or taken off the list, and the screen his drawing puts that on is a person's own, which does not exist yet. A drawing's silence is not a drawing removing something. */}
+      <section className="flex flex-col gap-3 border-t border-border pt-8">
+        <Heading said="Everyone in the ledger" count={people === undefined ? undefined : people.length} />
 
-          <ul aria-label="Everyone in the ledger" className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
-            {people.map((person) => (
-              <OnePerson key={person._id} person={person} onEdit={onEdit} onHide={onHide} />
-            ))}
-          </ul>
-        </div>
-      )}
+        <AddSomebody onAdd={onAdd} />
+
+        {people === undefined ? (
+          <WhileWaiting what="Getting the people">
+            <div className="divide-hairline flex flex-col divide-y">
+              {[0, 1, 2, 3].map((row) => (
+                <div key={row} className={`${ROW} py-3.5`}>
+                  <Skeleton className="h-5 w-36 max-w-full" />
+                  <Skeleton className="order-last col-span-2 h-4 w-28 sm:order-none sm:col-span-1" />
+                  <Skeleton className="hidden h-4 w-44 max-w-full sm:block" />
+                </div>
+              ))}
+            </div>
+          </WhileWaiting>
+        ) : people.length === 0 ? (
+          <p className="text-muted-foreground py-6">
+            Nobody yet. Add the partners and the contractors, and the money goes against their names.
+          </p>
+        ) : (
+          <div className={GRID}>
+            <div
+              className={`${ROW} text-faint border-border hidden border-b pb-2 text-[0.75rem] tracking-[0.06em] uppercase sm:grid`}
+            >
+              <span>Name</span>
+              <span>Number</span>
+              <span>Notes</span>
+            </div>
+
+            <ul aria-label="Everyone in the ledger" className={`${PASSES_THEM_DOWN} divide-hairline divide-y`}>
+              {people.map((person) => (
+                <OnePerson key={person._id} person={person} onEdit={onEdit} onHide={onHide} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
     </Page>
   )
 }

@@ -714,6 +714,42 @@ export const ON_SHOW: Array<OnShow> = [
     proves: 'People',
     draw: () => (
       <People
+        sides={{
+          owedPaisa: paisa(1_591_701),
+          inPaisa: paisa(9_540_000),
+          weOwe: [
+            {
+              personId: 'p3',
+              name: NOBODY[2].name,
+              phone: '0300-0000000',
+              doing: TRADES[0].name,
+              billedPaisa: paisa(883_701),
+              paidPaisa: paisa(120_000),
+              outstandingPaisa: paisa(763_701),
+            },
+            {
+              personId: 'p4',
+              name: NOBODY[3].name,
+              doing: TRADES[1].name,
+              billedPaisa: paisa(866_500),
+              paidPaisa: paisa(96_500),
+              outstandingPaisa: paisa(770_000),
+            },
+            {
+              personId: 'p5',
+              name: NOBODY[4].name,
+              doing: TRADES[4].name,
+              billedPaisa: paisa(131_400),
+              paidPaisa: paisa(73_400),
+              outstandingPaisa: paisa(58_000),
+            },
+          ],
+          putIn: [
+            { personId: 'p1', name: NOBODY[0].name, role: 'partner', inPaisa: paisa(6_540_000) },
+            { personId: 'p2', name: NOBODY[1].name, role: 'partner', inPaisa: paisa(2_000_000) },
+            { personId: 'p6', name: 'the buyer', role: 'client', inPaisa: paisa(1_000_000) },
+          ],
+        }}
         people={NOBODY.map((person) => ({ _id: person._id, name: person.name }))}
         onAdd={nothing}
         onEdit={nothing}
