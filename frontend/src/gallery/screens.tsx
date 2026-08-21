@@ -37,7 +37,17 @@ import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import { HouseDetails } from '../components/sites/HouseDetails'
 import { PickASite } from '../components/sites/PickASite'
 import { SitesList } from '../components/sites/SitesList'
-import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, everythingAtOnce, paisa } from './fixtures'
+import {
+  A_DAY,
+  BANK,
+  NOBODY,
+  STILL_OWED,
+  THE_HOUSE,
+  TRADES,
+  aPaymentAlreadyStartedFor,
+  everythingAtOnce,
+  paisa,
+} from './fixtures'
 
 // Every screen a route draws whole, with invented figures, so somebody can look at one without signing in.
 
@@ -483,6 +493,35 @@ export const ON_SHOW: Array<OnShow> = [
         onAddTrade={() => Promise.resolve('t1' as never)}
       />
     ),
+  },
+  {
+    slug: 'day-sheet-already-paying',
+    at: '/sites/$siteId/day',
+    name: 'Expenses',
+    where: 'payables, then Pay, onto a payment already started',
+    // The one state in this feature that draws something new, so it is the one that has to be looked at. `Pay` names somebody, a half-typed payment to somebody else is already on this device, and the sheet keeps what he was writing and says why the man he pressed for is not in the box.
+    proves: 'part-written here',
+    draw: () => {
+      const keptUnder = aPaymentAlreadyStartedFor(NOBODY[4]._id)
+
+      return (
+        <DaySheet
+          siteName={THE_HOUSE}
+          day={A_DAY}
+          onChangeDay={() => undefined}
+          trades={TRADES.map((trade) => ({ _id: trade._id as never, name: trade.name }))}
+          people={NOBODY.map((person) => ({ _id: person._id as never, name: person.name }))}
+          accounts={BANK.map((account) => ({ _id: account._id as never, label: account.label }))}
+          saving={false}
+          refusal={null}
+          keptUnder={keptUnder}
+          paying="p3"
+          onPutIn={nothingTrue}
+          onAddAccount={() => Promise.resolve('b1' as never)}
+          onAddTrade={() => Promise.resolve('t1' as never)}
+        />
+      )
+    },
   },
   {
     slug: 'coming-in',
