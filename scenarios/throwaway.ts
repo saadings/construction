@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -43,9 +43,26 @@ export function shimsFor(dir: string, commands: Array<string>, status = 0): stri
   return bin
 }
 
-// Puts the shims first without letting the environment be rebuilt from an ambient one.
+/** Stands in for the slow commands, failing for one stage only. */
+export function shimsFailingOn(dir: string, commands: Array<string>, stage: string): string {
+  const bin = join(dir, 'shims')
+  mkdirSync(bin, { recursive: true })
+
+  // A shim that fails everything cannot see a gate that does not stop: the last stage fails too, so the hook's exit status is non-zero either way and a gate that ignored every earlier failure would still look like one that refused.
+  for (const command of commands) {
+    const path = join(bin, command)
+    writeFileSync(path, `#!/bin/sh\n[ "$1" = '${stage}' ] && exit 1\nexit 0\n`)
+    chmodSync(path, 0o755)
+  }
+
+  return bin
+}
+
+// Puts the shims first without letting the environment be rebuilt from an ambient one, and gives the hook a lock nobody else can be holding.
+
+// The lock path matters as much as the PATH does. The hook re-execs itself through the wrapper, so a scenario running it takes the machine-global lock and queues behind whatever else is gating -- which under `yarn test:scenario` is invisible, because the variable is already set and the hook falls straight through, and which on a single-file run is a wait long enough to exceed the test timeout. Seen once as a 244-second run and a failure in a test that passes alone.
 function reachingFirstFor(env: NodeJS.ProcessEnv, bin: string): NodeJS.ProcessEnv {
-  return { ...env, PATH: `${bin}:${env.PATH ?? ''}` }
+  return { ...env, PATH: `${bin}:${env.PATH ?? ''}`, ONE_AT_A_TIME_LOCK: join(bin, '..', 'lock') }
 }
 
 // A tree partway through something: one file staged, one deliberately left alone, and one staged in part as `git add -p` leaves it.
@@ -85,6 +102,26 @@ export function runHook(dir: string, { failing = false } = {}): void {
     stdio: 'pipe',
     env: reachingFirstFor(inThrowaway(dir), bin),
   })
+}
+
+// The re-exec is deliberately left in the path, because that is where `-e` was lost. `ONE_AT_A_TIME_HELD` has to go with it, or the hook falls straight through to the work carrying husky's flags intact -- which is the arrangement that hid this in the first place, and would have made the assertion pass over a hook that had never been fixed.
+function withoutTheLockHeld(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const copy = { ...env }
+  delete copy.ONE_AT_A_TIME_HELD
+
+  return copy
+}
+
+/** What the hook answers git, run the way husky runs it and allowed to re-exec through the lock. */
+export function hookExitCode(dir: string, bin: string): number {
+  // Aimed in the call itself rather than through a variable holding the same thing: the guard on this directory reads the text of each call, and a reader who cannot see where a command points is the reason that guard exists.
+  const answered = spawnSync('sh', ['-e', join(repoRoot, '.husky', 'pre-commit')], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: withoutTheLockHeld(reachingFirstFor(inThrowaway(dir), bin)),
+  })
+
+  return answered.status ?? 1
 }
 
 export function stagedIn(dir: string): Array<string> {

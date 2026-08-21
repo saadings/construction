@@ -4,7 +4,15 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { discardThrowaways, inThrowaway, stagedIn, throwawayRepository } from './throwaway'
+import {
+  discardThrowaways,
+  hookExitCode,
+  inThrowaway,
+  shimsFailingOn,
+  shimsFor,
+  stagedIn,
+  throwawayRepository,
+} from './throwaway'
 
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
@@ -26,9 +34,11 @@ function isExecutable(path: string): boolean {
   }
 }
 
-// `build` is on this list and stays, at 12.3 seconds -- third-cheapest of the five. It is the only stage that proves this compiles as a program rather than as a pile of files: vitest runs no React Compiler, so a hook named wrong is green in every suite and dies in a browser. `whileSending` was exactly that, 218 passing tests over a component that died on the second tap.
+// `build` is on this list and stays. It is the only stage that proves this compiles as a program rather than as a pile of files: vitest runs no React Compiler, so a hook named wrong is green in every suite and dies in a browser. `whileSending` was exactly that, 218 passing tests over a component that died on the second tap.
 
-// `lint:fix` is 98.8 seconds of the same measurement and stays whole. Scoping it to the staged files was written and taken back out: the cost is `recommendedTypeChecked` building its own TypeScript program with no cache, into a `mktemp -d` discarded every commit -- so a stable gate directory removes nothing and weakens no check, where scoping trades coverage for speed.
+// It was once nearly dropped as the expensive one, on a timing of 12.3 seconds against 98.8 for `lint:fix` in a 218-second hook. Those seconds are one draw from another session's harness and the stages have been seen to move by around 3.5x with what else the machine is doing, so they are quoted here as the reason a proposal was withdrawn and are not a fact about this repository. The argument for keeping `build` does not rest on them: it is the only stage that runs the compiler, at any price.
+
+// `lint:fix` stays whole. Scoping it to the staged files was written and taken back out, and the reason is structural rather than a number: the cost is `recommendedTypeChecked` building its own TypeScript program with no cache, into a `mktemp -d` discarded every commit -- so a stable gate directory removes nothing and weakens no check, where scoping trades coverage for speed.
 const GATES = ['yarn lint:fix', 'yarn format:fix', 'yarn typecheck', 'yarn build', 'yarn test', 'yarn test:scenario']
 
 describe('the gate every commit has to pass', () => {
@@ -88,6 +98,27 @@ describe('the gate every commit has to pass', () => {
   })
 })
 
+describe('what the gate does with a stage that fails', () => {
+  afterEach(discardThrowaways)
+
+  // Everything above asks whether the hook runs the right stages. Nothing asked whether it stops for one that fails, which is the entire purpose of a gate -- and for a while it did not. husky runs this file as `sh -e`, the lock re-execs it through a fresh `sh`, and a POSIX shell does not pass `-e` on: measured at `[ehB]` on the first pass and `[hB]` on the second, which is the pass that does the work. Every stage is a subshell rather than a link in an `&&` chain, so a failing typecheck stopped nothing and the hook exited with whatever the last command returned.
+
+  it('exits cleanly when every stage passes, which is what makes a refusal below mean anything', () => {
+    const dir = throwawayRepository()
+
+    expect(hookExitCode(dir, shimsFor(dir, ['yarn', 'npx']))).toBe(0)
+  })
+
+  // THE REQUIREMENT IS IN THE NAME BECAUSE THE OBVIOUS VERSION CANNOT FAIL. The bug is that the hook exits with whatever the last command returned, so a failure planted in the last stage -- `yarn test:scenario` -- passes under the bug and under the fix alike. Anyone writing this straight from the bug report reaches for that stage first, because it is the one the bug is about. Only an early failure followed by a passing stage tells broken and fixed apart.
+
+  // Three rather than one: `typecheck` proves the mechanism, a later one proves it is not an accident of position, and `test` is the stage a person is likeliest to assume was checked.
+  it.each(['typecheck', 'build', 'test'])('refuses when %s fails and a later stage still passes', (stage) => {
+    const dir = throwawayRepository()
+
+    expect(hookExitCode(dir, shimsFailingOn(dir, ['yarn', 'npx'], stage))).not.toBe(0)
+  })
+})
+
 describe('what the gate does to work it was not asked to commit', () => {
   afterEach(discardThrowaways)
 
@@ -118,7 +149,12 @@ describe('what the gate does to work it was not asked to commit', () => {
       cwd: dir,
       encoding: 'utf8',
       stdio: 'pipe',
-      env: { ...inThrowaway(dir), PATH: `${bin}:${inThrowaway(dir).PATH ?? ''}` },
+      // A lock of its own for the same reason the shimmed runs have one: the hook re-execs through the wrapper, and a scenario that takes the machine-global lock queues behind whatever else is gating.
+      env: {
+        ...inThrowaway(dir),
+        PATH: `${bin}:${inThrowaway(dir).PATH ?? ''}`,
+        ONE_AT_A_TIME_LOCK: join(dir, 'lock'),
+      },
     })
 
     return readFileSync(witness, 'utf8')
