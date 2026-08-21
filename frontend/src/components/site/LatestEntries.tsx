@@ -71,7 +71,10 @@ export function LatestEntries({ siteId, what }: { siteId: string; what: WhatHasB
         <ul className="divide-border flex flex-col divide-y">
           {what.rows.map((entry) => (
             <li key={entry._id} className="flex items-center gap-4 py-2.5">
-              <Figure className="text-faint w-14 shrink-0 text-[0.75rem]">{asDayHeWrites(entry.day)}</Figure>
+              {/* Wide enough for the day it holds. `w-14` is 56px and `23/07/2026` at this size is about 68, so every date on this card was drawn as `23/07/` over `2026` -- at all four widths, since the width was fixed rather than shared. A date broken after the month reads as a whole date and is a different day. */}
+              <Figure className="text-faint w-20 shrink-0 text-[0.75rem] whitespace-nowrap">
+                {asDayHeWrites(entry.day)}
+              </Figure>
 
               <span className="flex min-w-0 flex-col">
                 <span className="text-foreground truncate text-sm font-medium">{entry.category}</span>

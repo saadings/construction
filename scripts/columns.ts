@@ -126,6 +126,8 @@ const WHERE_THE_COLUMNS_ARE = `(() => {
 
 // Text may truncate; a figure may not. A name cut with an ellipsis reads as incomplete and the reader swipes. `9,310,000` cut to `9,3` reads as a different, smaller number, and nothing on the screen says otherwise -- on a table of house totals that is a wrong figure presented as a right one.
 
+// A FIGURE ON TWO LINES IS THE SAME LIE WITHOUT A BOX TO BLAME. `883,701` broken after `883,7` reads as a smaller figure, and there is even less saying otherwise than when a container clips it: nothing is hidden, so nothing is clipping, so the question above answers no. The question below answers no too, because a wrapped cell occupies its box neatly and a column of them is still a column. On the payables rail a phone drew exactly that for as long as the screen has existed, and this file called it clean at four widths every time it was asked.
+
 // Asked of the page as first drawn rather than of what a scroll could reveal, because what a person sees is the first state. And a figure with no box answers 0 for every edge, which is the same not-there-reading-as-a-value the sweep above already skips.
 const WHAT_IS_CUT_IN_HALF = `(() => {
   const clipping = (el) => {
@@ -134,6 +136,7 @@ const WHAT_IS_CUT_IN_HALF = `(() => {
   }
 
   const cut = []
+  const broken = []
   let figures = 0
 
   for (const figure of document.querySelectorAll('.tabular-nums')) {
@@ -157,9 +160,18 @@ const WHAT_IS_CUT_IN_HALF = `(() => {
     if (worst > 0) {
       cut.push({ said: figure.textContent.trim().slice(0, 24), hidden: worst, width: Math.round(box.width) })
     }
+
+    // Counted off a range over the figure's own text rather than off the element's height, because height answers for whatever box the figure happens to sit in and the lines are a property of the text. One rect per line box, so the tops are the lines.
+    const over = document.createRange()
+    over.selectNodeContents(figure)
+    const lines = new Set([...over.getClientRects()].map((rect) => Math.round(rect.top))).size
+
+    if (lines > 1) {
+      broken.push({ said: figure.textContent.trim().slice(0, 24), lines, width: Math.round(box.width) })
+    }
   }
 
-  return { figures, cut }
+  return { figures, cut, broken }
 })()`
 
 // The third question, and the one that found a screen every other check had cleared. `Stages` passed the two above — no column moved, no figure was cut — while its first column was 38px wide and 189 tall, wrapping `On signing` to one letter a line. A date box beside a button took 289 of the table's 490px and starved everything else.
@@ -511,6 +523,9 @@ type Moved = { cls: string; cell: number; xs: Array<number> }
 
 type Cut = { said: string; hidden: number; width: number }
 
+/** A figure the browser drew on more than one line, which no box is hiding and no column is squeezing. */
+type Broken = { said: string; lines: number; width: number }
+
 type Crushed = { said: string; wide: number; tall: number }
 
 type Pinned = { said: string; how: string; held: string }
@@ -548,18 +563,30 @@ function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
 }
 
 /** The other half of what came back, checked the same way and for the same reason. */
-function whatIsCut(said: unknown): { figures: number; cut: Array<Cut> } {
-  if (typeof said !== 'object' || said === null || !('figures' in said) || !('cut' in said)) {
+function whatIsCut(said: unknown): { figures: number; cut: Array<Cut>; broken: Array<Broken> } {
+  if (typeof said !== 'object' || said === null || !('figures' in said) || !('cut' in said) || !('broken' in said)) {
     throw new Error('The page answered something that is not a count of figures.')
   }
 
-  const { figures, cut } = said
-  if (typeof figures !== 'number' || !Array.isArray(cut)) {
+  const { figures, cut, broken } = said
+  if (typeof figures !== 'number' || !Array.isArray(cut) || !Array.isArray(broken)) {
     throw new Error('The page answered a count with no figures or no findings in it.')
   }
 
   return {
     figures,
+    broken: broken.map((one: unknown) => {
+      if (typeof one !== 'object' || one === null || !('said' in one) || !('lines' in one) || !('width' in one)) {
+        throw new Error('The page answered a broken figure with nothing in it.')
+      }
+
+      const { said: text, lines, width } = one
+      if (typeof text !== 'string' || typeof lines !== 'number' || typeof width !== 'number') {
+        throw new Error('The page answered a broken figure of the wrong shape.')
+      }
+
+      return { said: text, lines, width }
+    }),
     cut: cut.map((one: unknown) => {
       if (typeof one !== 'object' || one === null || !('said' in one) || !('hidden' in one) || !('width' in one)) {
         throw new Error('The page answered a cut figure with nothing in it.')
@@ -798,6 +825,12 @@ async function main(): Promise<void> {
         for (const cut of figures.cut) {
           wrong.push(
             `${screen.slug} at ${String(size.width)}: ${cut.said} is cut in half — ${String(cut.hidden)}px of ${String(cut.width)} is outside what holds it`
+          )
+        }
+
+        for (const broken of figures.broken) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: ${broken.said} is drawn on ${String(broken.lines)} lines in ${String(broken.width)}px — the first line reads as the whole figure and nothing says there is more`
           )
         }
 
