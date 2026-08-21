@@ -135,7 +135,7 @@ describe('what is owed altogether', () => {
     const pay = await screen.findByRole('link', { name: 'Pay A tile shop on 1-A, Phase 0' })
 
     // The house and the man both, in the address. `payments.record` is a site mutation, so a payment without a house is not a payment -- and a link that carries the house but not the man opens the right screen and asks him to find himself again.
-    expect(pay.getAttribute('href')).toContain('/sites/s1/day')
+    expect(pay.getAttribute('href')).toContain('/sites/s1/daybook')
     expect(pay.getAttribute('href')).toContain('paying=p3')
   })
 
@@ -155,8 +155,8 @@ describe('what is owed altogether', () => {
     const onSecond = screen.getByRole('link', { name: 'Pay A steel supplier on 1-A, Phase 0' })
 
     // Each against its own house, and each carrying the same man.
-    expect(onFirst.getAttribute('href')).toContain('/sites/s2/day')
-    expect(onSecond.getAttribute('href')).toContain('/sites/s1/day')
+    expect(onFirst.getAttribute('href')).toContain('/sites/s2/daybook')
+    expect(onSecond.getAttribute('href')).toContain('/sites/s1/daybook')
     expect(onFirst.getAttribute('href')).toContain('paying=p1')
   })
 

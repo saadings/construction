@@ -34,7 +34,7 @@ describe('the sweep every guard walks', () => {
 
     expect(paths).toContain('components/site/Stages.tsx')
     expect(paths).toContain('components/form/Pick.tsx')
-    expect(paths).toContain('routes/sites.$siteId.day.tsx')
+    expect(paths).toContain('routes/sites.$siteId.daybook.tsx')
     expect(screens.length).toBeGreaterThan(30)
   })
 

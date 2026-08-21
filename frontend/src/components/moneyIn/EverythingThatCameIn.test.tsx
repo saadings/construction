@@ -11,10 +11,10 @@ afterEach(cleanup)
 // Inside a router now, because the screen has a way in on it: `Record a receipt`, which is a `Link` and needs somewhere to point. It had none before -- `Receipts` was a screen somebody could read and not write to, which is what left the second card of the `New entry` dialog with nowhere to land.
 async function renderIt(everything: EverythingIn | null | undefined) {
   const root = createRootRoute({ component: () => <EverythingThatCameIn everything={everything} /> })
-  const kids = ['/money-in/new'].map((path) => createRoute({ getParentRoute: () => root, path, component: () => null }))
+  const kids = ['/receipts/new'].map((path) => createRoute({ getParentRoute: () => root, path, component: () => null }))
   const router = createRouter({
     routeTree: root.addChildren(kids),
-    history: createMemoryHistory({ initialEntries: ['/money-in'] }),
+    history: createMemoryHistory({ initialEntries: ['/receipts'] }),
   })
 
   const drawn = render(<RouterProvider router={router} />)

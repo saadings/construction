@@ -64,14 +64,14 @@ function OneHouse() {
         <span className="flex flex-wrap items-center gap-2">
           {/* Money in and money out, the two halves of the house, reached the same way -- and each named after the screen it opens, so the button, the rail row and the page title all say one word. `Invested` and `Date` were neither the screen's name nor plain English; he read them off the live site and said so. This button said `Receipts` while the screen it opened said `Invested`, which is the pair it was written about. */}
           <Link
-            to="/sites/$siteId/coming-in"
+            to="/sites/$siteId/receipts"
             params={{ siteId }}
             className="border-border text-foreground rounded-md border px-4 py-3 text-sm font-medium"
           >
             Receipts
           </Link>
           <Link
-            to="/sites/$siteId/day"
+            to="/sites/$siteId/daybook"
             params={{ siteId }}
             className="bg-brass text-background rounded-md px-4 py-3 text-sm font-medium"
           >

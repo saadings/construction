@@ -26,7 +26,7 @@ export type Destination = {
 
 // The headings are his, and they are the reason this file grew a field. A flat list of eight is a list you read; two named groups of two or three are groups you aim at.
 
-// The addresses stay as they are -- `/owed`, `/money-in`, `/more`. What he opens and what he reads is the label; a path is not drawn anywhere in his design, and moving three of them would put every link, trail and picture through a rename that changes nothing he can see.
+// The addresses stay as they are -- `/owed`, `/receipts`, `/more`. What he opens and what he reads is the label; a path is not drawn anywhere in his design, and moving three of them would put every link, trail and picture through a rename that changes nothing he can see.
 export const DESTINATIONS: Array<Destination> = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
 
@@ -43,7 +43,7 @@ export const DESTINATIONS: Array<Destination> = [
   // He opened the deployed app and said it is very different from what he drew. The design decides this now, and a deviation is a thing we bring to him rather than a thing we make.
   { to: '/owed', label: 'Payables', icon: HandCoins, under: 'Money' },
 
-  { to: '/money-in', label: 'Receipts', icon: ArrowDownToLine, under: 'Money' },
+  { to: '/receipts', label: 'Receipts', icon: ArrowDownToLine, under: 'Money' },
 
   // Arrived with its route rather than ahead of it, which is what the comment above asked for. Under `Money` because every question it opens is one about money, and because the design puts it there.
   { to: '/reports', label: 'Reports', icon: BarChart3, under: 'Money' },

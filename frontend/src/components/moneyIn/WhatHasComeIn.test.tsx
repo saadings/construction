@@ -17,7 +17,7 @@ const FUNDED_AND_PAID: ComeIn = {
 // Rendered where it really lives, so a link to a route that is gone fails here rather than under somebody's finger.
 function renderWith(totals: ComeIn | null | undefined) {
   const root = createRootRoute({ component: () => <WhatHasComeIn siteId="s1" totals={totals} /> })
-  const comingIn = createRoute({ getParentRoute: () => root, path: '/sites/$siteId/coming-in', component: () => null })
+  const comingIn = createRoute({ getParentRoute: () => root, path: '/sites/$siteId/receipts', component: () => null })
   const router = createRouter({
     routeTree: root.addChildren([comingIn]),
     history: createMemoryHistory({ initialEntries: ['/'] }),
@@ -80,7 +80,7 @@ describe('what has come in on a house', () => {
     renderWith(FUNDED_AND_PAID)
 
     const goingThere = await screen.findByRole('link', { name: 'Add' })
-    expect(goingThere.getAttribute('href')).toBe('/sites/s1/coming-in')
+    expect(goingThere.getAttribute('href')).toBe('/sites/s1/receipts')
   })
 
   it('holds the shape of what is coming while it is coming', async () => {

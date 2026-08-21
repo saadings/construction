@@ -5,7 +5,7 @@ import { ADayOfPayments } from '../components/daySheet/ADayOfPayments'
 /** Somebody this sheet was asked to open on, named the way it reads in an address bar rather than the way the column is named. */
 export const PAYING = 'paying'
 
-export const Route = createFileRoute('/sites/$siteId/day')({
+export const Route = createFileRoute('/sites/$siteId/daybook')({
   component: ADayOnSite,
 
   // Declared, or nothing arrives: a route without this drops every parameter, and a `Pay` link sending one would navigate, draw the right screen, choose nobody, and photograph exactly like a link that worked.

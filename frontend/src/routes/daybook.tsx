@@ -14,7 +14,7 @@ export const Route = createFileRoute('/daybook')({ component: TheDaybook })
 
 // His second rail row: the day's payments, entered from anywhere rather than from inside a house.
 
-// The house is chosen on the screen, which is the whole difference from `/sites/$siteId/day`. Somebody standing on a site with a cheque book is not navigating to a house first -- he presses `Daybook` and picks.
+// The house is chosen on the screen, which is the whole difference from `/sites/$siteId/daybook`. Somebody standing on a site with a cheque book is not navigating to a house first -- he presses `Daybook` and picks.
 function TheDaybook() {
   const sites = useQuery(api.sites.queries.all, {})
   const router = useRouter()

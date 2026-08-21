@@ -21,8 +21,8 @@ export const ABOVE = new Map<string, { name: string; under?: string }>(
     '/dashboard': { name: 'Dashboard' },
     '/daybook': { name: 'Daybook' },
     '/owed': { name: 'Payables' },
-    '/money-in': { name: 'Receipts' },
-    '/money-in/new': { name: 'Record a receipt', under: '/money-in' },
+    '/receipts': { name: 'Receipts' },
+    '/receipts/new': { name: 'Record a receipt', under: '/receipts' },
     '/reports': { name: 'Reports' },
     '/people': { name: 'People' },
     '/people/$personId': { name: 'Their account', under: '/people' },
@@ -33,8 +33,8 @@ export const ABOVE = new Map<string, { name: string; under?: string }>(
     '/more/how-it-looks': { name: 'Appearance', under: '/more' },
     '/sites/new': { name: 'Add a site', under: '/' },
     '/sites/$siteId': { name: 'The house', under: '/' },
-    '/sites/$siteId/day': { name: 'Daybook', under: '/sites/$siteId' },
-    '/sites/$siteId/coming-in': { name: 'Receipts', under: '/sites/$siteId' },
+    '/sites/$siteId/daybook': { name: 'Daybook', under: '/sites/$siteId' },
+    '/sites/$siteId/receipts': { name: 'Receipts', under: '/sites/$siteId' },
     '/sites/$siteId/shares': { name: 'Partner shares', under: '/sites/$siteId' },
   })
 )

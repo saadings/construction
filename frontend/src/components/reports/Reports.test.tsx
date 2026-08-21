@@ -49,7 +49,7 @@ describe('the questions the books get asked', () => {
     const goes = cards.map((card) => within(card).getByRole('link').getAttribute('href'))
 
     // Partner positions opened the houses, on the argument that a share is agreed on the house it is for. The drawing points it at Receipts and the drawing is right: what a partner has put in **is** a receipt, under `Partner investment`.
-    expect(goes).toEqual(['/', '/dashboard', '/owed', '/money-in'])
+    expect(goes).toEqual(['/', '/dashboard', '/owed', '/receipts'])
   })
 
   it('carries a live figure on each one, so a card is a reading and not a menu item', async () => {

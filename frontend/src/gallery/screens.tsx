@@ -533,7 +533,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'day-sheet',
-    at: '/sites/$siteId/day',
+    at: '/sites/$siteId/daybook',
     name: 'Expenses',
     where: 'a house, then the day sheet',
     // Not `In this sitting`, which is the first thing that came to mind and is `hidden lg:block`. jsdom applies no CSS, so it passed there and the browser found it thirty-four times and never visible -- which is the gallery earning its keep before it had taken a single picture.
@@ -556,7 +556,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'day-sheet-already-paying',
-    at: '/sites/$siteId/day',
+    at: '/sites/$siteId/daybook',
     name: 'Expenses',
     where: 'payables, then Pay, onto a payment already started',
     // The one state in this feature that draws something new, so it is the one that has to be looked at. `Pay` names somebody, a half-typed payment to somebody else is already on this device, and the sheet keeps what he was writing and says why the man he pressed for is not in the box.
@@ -584,8 +584,8 @@ export const ON_SHOW: Array<OnShow> = [
     },
   },
   {
-    slug: 'coming-in',
-    at: '/sites/$siteId/coming-in',
+    slug: 'receipts-on-a-house',
+    at: '/sites/$siteId/receipts',
     // Named apart from the ledger-wide one below. The app calls both `Receipts` and is right to -- the button, the trail and the title all say it -- but the picker shows only this name, so two entries reading `Receipts` are two buttons nobody can tell apart.
     name: 'Receipts on a house',
     where: 'a house, then its receipts',
@@ -714,8 +714,8 @@ export const ON_SHOW: Array<OnShow> = [
     draw: () => <WhatWeOwe owed={whatIsStillOwed()} />,
   },
   {
-    slug: 'money-in',
-    at: '/money-in',
+    slug: 'receipts',
+    at: '/receipts',
     name: 'Receipts',
     where: 'the nav, under the money it is the other half of',
     proves: 'Money arriving',
@@ -1191,7 +1191,7 @@ export const ON_SHOW: Array<OnShow> = [
   },
   {
     slug: 'a-send-that-has-not-come-back',
-    at: '/sites/$siteId/day',
+    at: '/sites/$siteId/daybook',
     // The sentence itself, because it is the whole of what this screen is here to show. `shots` waits for what a screen proves, so the wait for it is the wait that was already there.
     proves: 'This has not gone in yet',
     provesAfter: 8_000,

@@ -59,7 +59,7 @@ export function LatestEntries({ siteId, what }: { siteId: string; what: WhatHasB
         </div>
 
         <Link
-          to="/sites/$siteId/day"
+          to="/sites/$siteId/daybook"
           params={{ siteId }}
           className="text-brass shrink-0 py-3 -my-3 text-[0.8125rem] font-medium hover:underline"
         >
