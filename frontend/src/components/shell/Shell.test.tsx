@@ -71,6 +71,17 @@ describe('the nav', () => {
     expect(payables.textContent).toContain('owed to')
   })
 
+  it('carries what has not gone in on the row that would send it', async () => {
+    // The one badge in this app that is not about the ledger. It counts what is typed on this device and unposted -- work that can be lost, and the only thing anywhere in the shell that says so.
+    renderAt('/', { counts: { '/daybook': 3 } })
+    await screen.findByText('The screen itself')
+
+    const daybook = within(screen.getByRole('list', { name: 'Sections' })).getByRole('link', { name: /Daybook/ })
+
+    expect(within(daybook).getByText('3')).toBeTruthy()
+    expect(daybook.textContent).toContain('waiting')
+  })
+
   it('says nothing on a row with nothing behind it', async () => {
     // A badge reading `0` is a badge saying nothing needs you, said permanently, in the place kept for saying something does.
     renderAt('/', { counts: { '/owed': 0 } })

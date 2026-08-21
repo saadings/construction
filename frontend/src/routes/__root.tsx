@@ -1,14 +1,15 @@
 import { ClerkProvider, Show, SignInButton, UserButton, useAuth, useUser } from '@clerk/tanstack-react-start'
 import { dark } from '@clerk/themes'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
+import { HeadContent, Outlet, Scripts, createRootRouteWithContext, useRouterState } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { useMutation, useQuery } from 'convex/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { api } from '../../../convex/_generated/api'
+import { howManyAreWaiting, whatIsStillWaiting } from '../components/daySheet/theSittingKept'
 import { TheSearch } from '../components/search/TheSearch'
 import { Shell } from '../components/shell/Shell'
 import type { Counts } from '../components/shell/TheNav'
@@ -142,9 +143,24 @@ function TheApp() {
 // It is one subscription on every screen rather than only on `Payables`, which is the cost of a badge that has to be right wherever you are standing. Convex dedupes it with the same read on `Payables` itself, and it is live -- so the number moves the moment a bill or a payment does, which is the whole reason it is worth carrying.
 function useWhatIsWaiting(): Counts {
   const owed = useQuery(api.owed.queries.position, {})
+  const here = useRouterState({ select: (state) => state.location.pathname })
+
+  // Read again on every move, and deliberately not while somebody is typing.
+
+  // A same-tab write to `localStorage` raises no event, so this cannot follow a keystroke without being told -- and telling it would redraw the whole shell on every keystroke of a twenty-payment sitting.
+
+  // Which is the right way round rather than a concession. On the daybook the number is beside the work and the badge has no job; it acquires one the moment he walks away, and walking away is navigation. Stale while looking at the truth is not staleness.
+  const [waiting, setWaiting] = useState(() => howManyAreWaiting(whatIsStillWaiting()))
+
+  useEffect(() => {
+    setWaiting(howManyAreWaiting(whatIsStillWaiting()))
+  }, [here])
 
   // Nothing at all until it answers, and nothing when it is refused. A badge is a claim that something needs you, and a reading that has not come back is not a claim about anything.
-  return { '/owed': owed?.everyone.filter((person) => person.outstandingPaisa > 0).length }
+  return {
+    '/owed': owed?.everyone.filter((person) => person.outstandingPaisa > 0).length,
+    '/daybook': waiting,
+  }
 }
 
 // The name beside the avatar at the foot of the nav, as drawn. Read here rather than in the shell for the reason everything else in that file is a prop: `useUser` needs Clerk's provider, and a shell that needs one is a shell nothing can draw or photograph.

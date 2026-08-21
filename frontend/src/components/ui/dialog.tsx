@@ -71,14 +71,11 @@ function DialogContent({
   )
 }
 
+// Left at every width. shadcn writes `text-center sm:text-left`, which is invisible above 640 and centres a heading on the one width he actually uses -- and every dialog he has drawn has its heading flush left.
+
+// Fixed here rather than in the dialog that found it. There are four more of his drawn and waiting, and each of them would inherit it: a generator's defaults are a class of thing arriving, not an instance. The 16px close button on this same component was the same lesson, and it came back the next time `shadcn add` ran.
 function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="dialog-header"
-      className={cn('flex flex-col gap-2 text-center sm:text-left', className)}
-      {...props}
-    />
-  )
+  return <div data-slot="dialog-header" className={cn('flex flex-col gap-2 text-left', className)} {...props} />
 }
 
 function DialogFooter({

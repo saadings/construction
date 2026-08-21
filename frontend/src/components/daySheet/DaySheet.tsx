@@ -300,11 +300,19 @@ export function DaySheet({
               {problem ?? refusal}
             </p>
           ) : null}
+          {/* Neither of these breaks in half. At 390 `Add another` wrapped to `Add` over `another` inside its own button -- a control reading as a rendering fault, on the screen he uses most. */}
+
+          {/* `whitespace-nowrap` keeps the words together and `shrink-0` is the half that matters: without it the words stay together and the box overflows the row instead. Same pair as `All sites`, and the second rendering fault this week that only a photograph could see -- both a flexible side squeezing a fixed one. */}
           <div className="flex gap-3">
-            <Button look="beside" onClick={keepAndStartAnother} disabled={saving} className="flex-1">
+            <Button
+              look="beside"
+              onClick={keepAndStartAnother}
+              disabled={saving}
+              className="flex-1 shrink-0 whitespace-nowrap"
+            >
               Add another
             </Button>
-            <Button onClick={() => void putThemIn()} busy={saving} className="flex-1">
+            <Button onClick={() => void putThemIn()} busy={saving} className="flex-1 shrink-0 whitespace-nowrap">
               Save
             </Button>
           </div>

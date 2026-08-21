@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
+import { WhatIsWaiting } from '../components/daySheet/WhatIsWaiting'
 import { WhatAreYouRecording } from '../components/entry/WhatAreYouRecording'
 import { WhoCanSignIn } from '../components/invites/WhoCanSignIn'
 import { ComingIn } from '../components/moneyIn/ComingIn'
@@ -420,6 +421,26 @@ export const ON_SHOW: Array<OnShow> = [
         onPutIn={nothingTrue}
         onAddAccount={() => Promise.resolve('b1' as never)}
         onAddTrade={() => Promise.resolve('t1' as never)}
+      />
+    ),
+  },
+  {
+    slug: 'what-is-waiting',
+    at: '/daybook',
+    name: 'Typed here and not sent',
+    where: 'the daybook, above the sheet',
+    partOf: 'the daybook',
+    // Only ever on the screen when there is something in it, which is why it is photographed with something in it. A picture of this block empty is a picture of nothing at all.
+    proves: 'Typed here and not sent',
+    draw: () => (
+      <WhatIsWaiting
+        waiting={[
+          { keptUnder: 'sitting:s2:2026-07-11', siteId: 's2', day: '2026-07-11', entries: 3, paisa: paisa(240_000) },
+          { keptUnder: 'sitting:s3:2026-07-19', siteId: 's3', day: '2026-07-19', entries: 1, paisa: paisa(48_500) },
+        ]}
+        // Somewhere the list is not, so both rows are drawn. The one being looked at is left out on the real screen, and a picture that hid one would be a picture of the rule rather than of the block.
+        hereNow="sitting:s1:2026-07-23"
+        onOpen={() => undefined}
       />
     ),
   },

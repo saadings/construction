@@ -18,10 +18,17 @@ import { whereASittingIsKept } from './theSittingKept'
 // Written once because there are two ways in and one screen. `/sites/$siteId/day` reaches it from a house, with the house fixed by the address; `/daybook` is his own second rail row and reaches it from anywhere, with the house chosen on the screen. The forty lines of wiring underneath were the same forty lines twice, which is how the two come to disagree about what a refusal says or which day the sheet opens on.
 export function ADayOfPayments({
   siteId,
+  day: dayFromAbove,
+  onChangeDay: dayChangedAbove,
   pickSite,
   whereToAfterwards,
 }: {
   siteId: string
+  // Which day, when something above needs to move it. The daybook does: opening a sitting from the waiting list has to move the house and the day together, and a day held down here could only be told about one of them.
+
+  // Absent everywhere else, and then this holds its own -- because a screen reached at a house is a screen opened on today, and threading that through a route to say `today` is a prop that says nothing.
+  day?: string | null
+  onChangeDay?: (day: string) => void
   /** The house picker, drawn in the sheet's own header. Absent where the address already decided which house this is. */
   pickSite?: ReactNode
   /** Where to go once a sitting is in. From a house it is that house, because the figure he has just moved is that house's and watching it move is the whole reason the day was entered. */
@@ -37,7 +44,12 @@ export function ADayOfPayments({
   const addAccount = useMutation(api.bankAccounts.mutations.add)
   const addTrade = useMutation(api.trades.mutations.add)
 
-  const [day, setDay] = useState(todayOnThisDevice)
+  // Always called, and then deferred to: a hook behind a condition is a hook that runs on some renders and not others.
+  const [dayHere, setDayHere] = useState(todayOnThisDevice)
+
+  const day = dayFromAbove ?? dayHere
+  const setDay = dayChangedAbove ?? setDayHere
+
   const [saving, setSaving] = useState(false)
   const [refusal, setRefusal] = useState<string | null>(null)
 
