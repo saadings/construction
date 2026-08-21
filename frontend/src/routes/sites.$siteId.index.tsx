@@ -2,6 +2,7 @@ import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useState } from 'react'
 import { asDayHeWrites } from '~shared/calendarDate'
+import { paisaToRupees } from '~shared/money'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -111,6 +112,13 @@ function OneHouse() {
           name: site.name,
           // Held as it is typed, because that is what the box takes back.
           coveredAreaSqft: site.coveredAreaSqft === undefined ? '' : site.coveredAreaSqft.toLocaleString('en-US'),
+          // Read back in rupees, grouped the same way `Covered area` above it is. Not `formatPaisa`: that is what puts a figure on a screen, and this is a value going back into a box.
+
+          // Loaded rather than left empty. `edit` patches what it is given and an absent key removes the field, so a form opening blank here would clear an estimate the moment somebody corrected the stage.
+          budgetEstimatePaisa:
+            site.budgetEstimatePaisa === undefined
+              ? ''
+              : paisaToRupees(site.budgetEstimatePaisa).toLocaleString('en-US'),
           // Looked up in the list the picker is drawn from, so a stage the app does not know cannot reach it.
           stage: STAGES.find((each) => each.value === site.stage)?.value ?? ('building' as Stage),
           builtForAClient: site.builtForAClient,

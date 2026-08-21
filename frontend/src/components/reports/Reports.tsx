@@ -10,7 +10,9 @@ import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 // The questions the books get asked, each one opening the screen that answers it. A way in rather than a screen of its own: every figure on a card is read off the same query as the screen behind it, so a card and the screen it opens cannot disagree about the figure he is looking at twice.
 
-// Four were drawn and one is not here. **Cost per house against its estimate** is the report he would want most, and nothing in this ledger holds what a house was expected to cost -- there is a contract with a client, which is what a house is sold for, and no estimate of what it takes to build. A card promising that answer and opening a screen that cannot give it is worse than no card.
+// Four were drawn and one is not here yet. **Cost per house against its estimate** is the report he would want most, and until now the honest reason was that nothing held what a house was expected to cost.
+
+// That reason has expired. The estimate is stored, and as of this change there is a field somebody can put one in -- so the card is buildable and its absence is a choice from here rather than a limit.
 
 export type WhatTheBooksAnswer = {
   /** How much has gone out and over how many trades, read off the dashboard's own reading rather than worked out again here. */
