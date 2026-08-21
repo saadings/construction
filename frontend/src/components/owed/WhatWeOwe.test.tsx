@@ -45,8 +45,31 @@ const MASON: Standing = {
   ],
 }
 
+// A man owed on exactly one house, which is the ordinary case and the one where the house never has to be asked for.
+const TILE_SHOP: Standing = {
+  personId: 'p3',
+  name: 'A tile shop',
+  billedPaisa: 300_000_00,
+  paidPaisa: 100_000_00,
+  outstandingPaisa: 200_000_00,
+  onHouses: [
+    {
+      siteId: 's1',
+      name: '1-A, Phase 0',
+      billedPaisa: 300_000_00,
+      paidPaisa: 100_000_00,
+      outstandingPaisa: 200_000_00,
+    },
+  ],
+}
+
 function whatIsOwed(over: Partial<WhatIsOwed> = {}): WhatIsOwed {
-  return { everyone: [STEEL, MASON], payablePaisa: 750_000_00, advancedPaisa: 150_000_00, ...over }
+  return {
+    everyone: [STEEL, MASON, TILE_SHOP],
+    payablePaisa: 950_000_00,
+    advancedPaisa: 150_000_00,
+    ...over,
+  }
 }
 
 // The rows carry links to a person and to a house, so they need somewhere to point.
@@ -68,13 +91,20 @@ describe('what is owed altogether', () => {
     renderWith(whatIsOwed())
     await screen.findAllByRole('listitem')
 
-    // Both figures are up, each under its own words. 750,000 is also the steel supplier's own standing, so it is there twice on purpose.
-    expect(screen.getAllByText('750,000')).toHaveLength(2)
+    // Both figures are up, each under its own words.
     expect(screen.getByText('Owed to them')).toBeTruthy()
     expect(screen.getByText('Paid in advance')).toBeTruthy()
+
+    // The total is nobody's own balance, which it used to be: with two people on the list it read 750,000 and so did the steel supplier's row, and a tile echoing a row is indistinguishable from a tile adding them up.
+    expect(screen.getByText('950,000')).toBeTruthy()
+    expect(screen.getAllByText('750,000')).toHaveLength(1)
     expect(screen.getByText('150,000')).toBeTruthy()
+
+    // The parts really are the whole, so this cannot pass on figures that merely happen to be drawn.
+    expect(750_000 + 200_000).toBe(950_000)
+
     // And the netted figure appears nowhere, because it is the one nobody can act on.
-    expect(document.body.textContent).not.toContain('600,000')
+    expect(document.body.textContent).not.toContain('800,000')
   })
 
   it('gives each person one balance, however many houses it came from', async () => {
@@ -84,6 +114,50 @@ describe('what is owed altogether', () => {
     expect(within(rows[0]).getByText('A steel supplier')).toBeTruthy()
     expect(within(rows[0]).getByText('1,000,000')).toBeTruthy()
     expect(within(rows[0]).getByText('250,000')).toBeTruthy()
+  })
+
+  it('offers to pay a man owed on one house, on the house he is owed on', async () => {
+    renderWith(whatIsOwed())
+
+    const pay = await screen.findByRole('link', { name: 'Pay A tile shop on 1-A, Phase 0' })
+
+    // The house and the man both, in the address. `payments.record` is a site mutation, so a payment without a house is not a payment -- and a link that carries the house but not the man opens the right screen and asks him to find himself again.
+    expect(pay.getAttribute('href')).toContain('/sites/s1/day')
+    expect(pay.getAttribute('href')).toContain('paying=p3')
+  })
+
+  it('never guesses which house, and offers one against each where a man is owed on several', async () => {
+    renderWith(whatIsOwed())
+
+    const rows = await screen.findAllByRole('listitem')
+
+    // Nothing on the row itself: two houses and one button would have to pick one, and picking is the thing this arrangement exists to avoid.
+    expect(within(rows[0]).queryByRole('link', { name: /^Pay A steel supplier/ })).toBeNull()
+    // And the row is really his, so the absence above is an absence rather than a query that found nothing.
+    expect(within(rows[0]).getByText('A steel supplier')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Which houses A steel supplier is owed on' }))
+
+    const onFirst = screen.getByRole('link', { name: 'Pay A steel supplier on 2-B, Phase 0' })
+    const onSecond = screen.getByRole('link', { name: 'Pay A steel supplier on 1-A, Phase 0' })
+
+    // Each against its own house, and each carrying the same man.
+    expect(onFirst.getAttribute('href')).toContain('/sites/s2/day')
+    expect(onSecond.getAttribute('href')).toContain('/sites/s1/day')
+    expect(onFirst.getAttribute('href')).toContain('paying=p1')
+  })
+
+  it('offers nothing to a man who is holding an advance, on a house or at all', async () => {
+    renderWith(whatIsOwed())
+
+    const rows = await screen.findAllByRole('listitem')
+    const his = rows.find((row) => within(row).queryByText('A mason') !== null)
+
+    // He is on this screen because his balance belongs on it. Offering to pay him is offering to deepen an advance he already holds.
+    expect(his).toBeTruthy()
+    expect(within(his as HTMLElement).queryByRole('link', { name: /^Pay A mason/ })).toBeNull()
+    // Asked from the other end: he is drawn, and his advance is drawn, so nothing above passed on an empty row.
+    expect(within(his as HTMLElement).getByText(/150,000/)).toBeTruthy()
   })
 
   it('says an advance is an advance rather than a balance below nothing', async () => {

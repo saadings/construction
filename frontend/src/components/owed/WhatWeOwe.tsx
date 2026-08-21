@@ -39,7 +39,10 @@ export type WhatIsOwed = {
 // The drawing puts three tiles over this table and two of them are dropped rather than filled with a guess. **Past due** needs a day a bill falls due and a bill has none -- there are no terms anywhere in this app, so late is not a thing it can know. **Cash on hand** needs an opening balance per account, which nothing holds; adding up what has moved gives a figure that is confidently wrong for every account that did not start at nothing. The drawn **oldest unpaid bill** and its age go the same way: money goes out on account rather than against bill seven, so which bill is still unpaid is not answerable without a rule nobody has decided.
 
 // One grid for the whole list, and every row takes its columns from it. Written per row, the phone's `auto` track sized to whatever was in that row: three people put `Outstanding` at 346 and one put it at 355, because the figures beside it were a different width. The tracks are declared once and the widest content in the column decides them for everybody.
-const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]'
+const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))_auto]'
+
+// The day sheet's parameter, named once. It is a contract with a route this file does not own, and a mismatch would send somebody to the right screen with nobody chosen -- which is indistinguishable from a working button, including in a photograph.
+export const PAYING = 'paying'
 
 /** A row, or anything between the grid and a row: it takes the columns above rather than declaring any. */
 const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
@@ -81,6 +84,7 @@ export function WhatWeOwe({ owed }: { owed: WhatIsOwed | null | undefined }) {
               <span className="text-right">Outstanding</span>
               <span className="text-right">Billed</span>
               <span className="text-right">Paid</span>
+              <span className="text-right">Action</span>
             </div>
 
             <ul className={ROW}>
@@ -160,10 +164,16 @@ function OnePerson({ person }: { person: Standing }) {
         {formatPaisa(person.paidPaisa)}
       </Cell>
 
+      {/* A payment belongs to a house, because `payments.record` is a site mutation. So the house is never guessed: a man owed on one house gets the way to pay him here, and a man owed on several gets one against each house, under the list that already names them. */}
+      <span className="col-span-full flex justify-end sm:col-span-1">
+        {owingOn(person).length === 1 ? <Pay person={person} house={owingOn(person)[0]} /> : null}
+      </span>
+
       {open ? (
         <ul className="text-muted-foreground col-span-full flex flex-col gap-1 pt-2 pl-4 text-sm">
           {person.onHouses.map((house) => (
-            <li key={house.siteId} className="flex items-baseline justify-between gap-4">
+            {/* Wrapping, because `Pay` joined this line and a 44px control beside a name on a phone does not fit beside it. The row gap is not the 4 above: what has to be cleared is the house-name link, which is a link in a line and wants 24px kept around it rather than merely not being sat on. Overlap and clearance are two checks and passing the first says nothing about the second. */}
+            <li key={house.siteId} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-6">
               {/* 24px rather than a bare 20px line, reached with padding and left inline. `inline-flex` was tried first and moved these out of the rule for a link in a line and into the 44px one for a control -- a remedy that carries its target into a stricter bar than the one that judged it. The expansion is shut until asked, so no picture had ever held one of these to measure. */}
               <Link
                 to="/sites/$siteId"
@@ -172,16 +182,41 @@ function OnePerson({ person }: { person: Standing }) {
               >
                 {house.name}
               </Link>
-              <Figure className="shrink-0">
-                {house.outstandingPaisa < 0
-                  ? `${formatPaisa(-house.outstandingPaisa)} adv`
-                  : formatPaisa(house.outstandingPaisa)}
-              </Figure>
+              <span className="flex items-center gap-3">
+                <Figure className="shrink-0">
+                  {house.outstandingPaisa < 0
+                    ? `${formatPaisa(-house.outstandingPaisa)} adv`
+                    : formatPaisa(house.outstandingPaisa)}
+                </Figure>
+                {house.outstandingPaisa > 0 ? <Pay person={person} house={house} /> : null}
+              </span>
             </li>
           ))}
         </ul>
       ) : null}
     </li>
+  )
+}
+
+// Only the houses something is outstanding on. A man holding an advance is on this list because his balance belongs on it, and offering to pay him again is offering to deepen it.
+function owingOn(person: Standing): Array<OnAHouse> {
+  return person.onHouses.filter((house) => house.outstandingPaisa > 0)
+}
+
+// `Pay` as drawn, and it is a link rather than a button: what it does is open the day sheet for that house with him already chosen, which is a place rather than an action.
+
+// The parameter is read by a route this file does not own. Written wrong it would open the right day sheet with nobody selected -- the screen would look correct and the man would have to find himself again, which is a workaround handed to him rather than a feature.
+function Pay({ person, house }: { person: Standing; house: OnAHouse }) {
+  return (
+    <Link
+      to="/sites/$siteId/day"
+      params={{ siteId: house.siteId }}
+      search={{ [PAYING]: person.personId }}
+      aria-label={`Pay ${person.name} on ${house.name}`}
+      className="border-input bg-card hover:border-brass hover:text-brass inline-flex min-h-11 shrink-0 items-center rounded-md border px-3 text-[0.8125rem] font-medium shadow-xs transition-colors pointer-fine:min-h-9"
+    >
+      Pay
+    </Link>
   )
 }
 
