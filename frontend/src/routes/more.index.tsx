@@ -14,7 +14,8 @@ export const Route = createFileRoute('/more/')({ component: More })
 function More() {
   const trades = useQuery(api.trades.queries.list, {})
   const accounts = useQuery(api.bankAccounts.queries.list, {})
+  const people = useQuery(api.people.queries.list, {})
   const { chosen } = useHowItLooks()
 
-  return <TheSettings what={{ trades, accounts, looksLike: whatItLooksLike(chosen) }} />
+  return <TheSettings what={{ trades, accounts, people, looksLike: whatItLooksLike(chosen) }} />
 }

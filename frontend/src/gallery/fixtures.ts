@@ -16,6 +16,9 @@ export const NOBODY = [
   { _id: 'p3', name: 'The mason' },
   { _id: 'p4', name: 'The tile shop' },
   { _id: 'p5', name: 'The kitchen people' },
+  // The last two exist for the payables rail. Everybody above is owed on exactly one house and nobody holds an advance, so `N houses`, the expansion under it and both readings of `adv` were in no picture at all.
+  { _id: 'p6', name: 'The steel supplier' },
+  { _id: 'p7', name: 'The paint shop' },
 ] as const
 
 export const TRADES = [
