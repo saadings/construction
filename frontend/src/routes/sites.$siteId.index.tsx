@@ -1,16 +1,19 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useState } from 'react'
-import { formatPaisa } from '~shared/money'
+import { asDayHeWrites } from '~shared/calendarDate'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { whatWentWrong } from '../components/form/whatWentWrong'
 import { WhatHasComeIn } from '../components/moneyIn/WhatHasComeIn'
 import { Positions } from '../components/partners/Positions'
-import { Figure, Page } from '../components/shell/Page'
+import { Page } from '../components/shell/Page'
+import { Pill } from '../components/shell/Panel'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { Billing } from '../components/site/Billing'
+import { HouseTiles } from '../components/site/HouseTiles'
+import { LatestEntries } from '../components/site/LatestEntries'
 import type { TradeSpend } from '../components/site/SpentByTrade'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
@@ -26,13 +29,17 @@ function OneHouse() {
 
   const site = useQuery(api.sites.queries.one, forSite)
   const totals = useQuery(api.payments.queries.totals, forSite)
+  // What the drawn header and the four tiles are read off. Each is a reading the app already answers, asked on its own, so one slow one does not hold up the rest of the page.
+  const contract = useQuery(api.contracts.queries.forSite, forSite)
+  const latest = useQuery(api.payments.queries.latest, forSite)
   // Asked for rather than added up from the rows: a total worked out on the screen disagrees with the one every other reading uses the moment a receipt is taken back out.
   const comeIn = useQuery(api.moneyIn.queries.totals, forSite)
   const edit = useMutation(api.sites.mutations.edit)
   const putAway = useMutation(api.sites.mutations.hide)
   const router = useRouter()
 
-  if (site === undefined || totals === undefined) {
+  // The contract is waited on with the rest rather than folded into "no contract". `null` from that reading means *this house has none*, which is what makes the margin tile absent -- so answering it on its behalf while it is still coming would take the tile off the screen and put it back a moment later.
+  if (site === undefined || totals === undefined || contract === undefined) {
     return <OneHouseWaiting />
   }
 
@@ -51,35 +58,46 @@ function OneHouse() {
     <Page
       title={site.name}
       named={{ siteId: site.name }}
+      said={<WhatThisHouseIs site={site} />}
       beside={
         <span className="flex flex-wrap items-center gap-2">
-          {/* Money in and money out, the two halves of the house, reached the same way. */}
+          {/* Money in and money out, the two halves of the house, reached the same way -- and each named after the screen it opens, so the button, the rail row and the page title all say one word. `Invested` and `Date` were neither the screen's name nor plain English; he read them off the live site and said so. */}
           <Link
             to="/sites/$siteId/coming-in"
             params={{ siteId }}
             className="border-border text-foreground rounded-md border px-4 py-3 text-sm font-medium"
           >
-            Invested
+            Receipts
           </Link>
           <Link
             to="/sites/$siteId/day"
             params={{ siteId }}
             className="bg-brass text-background rounded-md px-4 py-3 text-sm font-medium"
           >
-            Date
+            Daybook
           </Link>
         </span>
       }
     >
-      <section className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
-        <Amount label="Spent" paisa={totals.spentPaisa} big />
-        <Amount label="Building" paisa={totals.buildingCostPaisa} />
-        <Amount label="Land" paisa={totals.plotCostPaisa} />
+      {/* The four figures he draws across the top, each read off a query the app already answers. `Spent` was three figures in a row before it -- what has gone out, and how that splits between the build and the land -- and that split now lives under `Cost by category`, which is where a person looks for it. */}
+      <HouseTiles
+        what={{
+          spentPaisa: totals.spentPaisa,
+          receivedPaisa: comeIn === undefined || comeIn === null ? 0 : comeIn.receivedPaisa,
+          budgetEstimatePaisa: site.budgetEstimatePaisa,
+          // `null` here is a house with no contract, which is a house the partnership is building to sell. It has arrived by now: the page above waits for it.
+          contractPaisa: contract === null ? null : contract.valuePaisa,
+        }}
+      />
+
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <WhatItWentOn siteId={forSite.siteId} byTrade={totals.byTrade} />
+
+        <div className="flex flex-col gap-5">
+          <LatestEntries siteId={siteId} what={latest} />
+          <WhatHasComeIn siteId={siteId} totals={comeIn} />
+        </div>
       </section>
-
-      <WhatHasComeIn siteId={siteId} totals={comeIn} />
-
-      <WhatItWentOn siteId={forSite.siteId} byTrade={totals.byTrade} />
 
       {/* The one thing deciding whether a house shows billing or a sale. A house built for the partners has no client to bill. */}
       {site.builtForAClient ? <Billing siteId={forSite.siteId} /> : null}
@@ -141,14 +159,24 @@ function OneHouseWaiting() {
   )
 }
 
-function Amount({ label, paisa, big = false }: { label: string; paisa: number; big?: boolean }) {
+// What a house is, said under its name the way he draws it: the stage, who it is for, how big it is and when it started. Each piece is left out where the house has not been told it, and the separators belong to the pieces rather than to the line -- a house with nothing filled in shows its stage and nothing else, rather than three dots with gaps between them.
+function WhatThisHouseIs({
+  site,
+}: {
+  site: { stage: Stage; builtForAClient: boolean; clientName?: string; coveredAreaSqft?: number; startedOn?: string }
+}) {
+  const said = [
+    site.clientName === undefined ? (site.builtForAClient ? 'For a client' : 'Ours to sell') : `For ${site.clientName}`,
+    site.coveredAreaSqft === undefined ? undefined : `${site.coveredAreaSqft.toLocaleString('en-US')} sqft`,
+    site.startedOn === undefined ? undefined : `Started ${asDayHeWrites(site.startedOn)}`,
+  ].filter((piece) => piece !== undefined)
+
   return (
-    <div>
-      <p className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">{label}</p>
-      <Figure className={big ? 'text-brass text-[2.5rem] leading-none' : 'text-foreground text-xl'}>
-        {formatPaisa(paisa)}
-      </Figure>
-    </div>
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      {/* Plain, as drawn on this screen and on the houses list. The tinted planes are his Dashboard's and a partner's role. */}
+      <Pill>{STAGES.find((each) => each.value === site.stage)?.label ?? site.stage}</Pill>
+      <span>{said.join(' · ')}</span>
+    </span>
   )
 }
 

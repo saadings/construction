@@ -58,6 +58,11 @@ const PIECES = new Set([
   // What a route draws when there is nothing to draw, and the control a route hands the screen underneath it. A dead end and a picker are pieces, and neither is a screen anybody would photograph on its own.
   'NothingToOpen',
   'PickASite',
+  // The two blocks the house screen is drawn out of. Neither is a screen: `HouseTiles` is the four figures across the top and `LatestEntries` is a card beside what the house went on, and the `Page` around both is the house's own. The gallery photographs each on its own, inside a `Page`, so what is measured is the width it really has.
+  'HouseTiles',
+  'LatestEntries',
+  // Drawn under a house's name rather than as a screen: a stage, who it is for, how big it is and when it started.
+  'Pill',
 ])
 
 /** Drawn by a route, but not from the gallery. `TheSearch` calls `useQuery`, which throws outside a Convex client, and `ADayOfPayments` and `AReceiptComingIn` are the same thing one layer up -- each is the reading and the sending for a screen with two ways in, so that the forty lines under `/daybook` and under a house's own day sheet are not the same forty lines twice. What they draw is `DaySheet` and `ComingIn`, and both of those are on show. `Shell` was here and is not any more -- it held Clerk's own control, so the header was never drawn at any width, and the account is a prop now. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */

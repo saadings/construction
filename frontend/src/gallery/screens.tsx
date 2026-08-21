@@ -27,6 +27,8 @@ import { WayIn } from '../components/shell/WayIn'
 import { AgreeAContract } from '../components/site/AgreeAContract'
 import { ChangeTheContract } from '../components/site/ChangeTheContract'
 import { ExtraWork } from '../components/site/ExtraWork'
+import { HouseTiles } from '../components/site/HouseTiles'
+import { LatestEntries } from '../components/site/LatestEntries'
 import { SpentByTrade } from '../components/site/SpentByTrade'
 import { Stages } from '../components/site/Stages'
 import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
@@ -143,12 +145,74 @@ export const ON_SHOW: Array<OnShow> = [
     draw: () => <Dashboard what={everythingAtOnce()} />,
   },
   {
+    slug: 'what-a-house-comes-to',
+    at: '/sites/$siteId',
+    name: 'What a house comes to',
+    where: 'a house, across the top',
+    partOf: 'the house screen',
+    proves: 'Left in estimate',
+    // A client house measured against both figures: every one of the four is a different number, so a tile reading the wrong field cannot look like a working tile.
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <HouseTiles
+          what={{
+            spentPaisa: paisa(11_798_452),
+            receivedPaisa: paisa(14_250_000),
+            budgetEstimatePaisa: paisa(19_400_000),
+            contractPaisa: paisa(23_600_000),
+          }}
+        />
+      </Page>
+    ),
+  },
+  {
+    slug: 'latest-entries',
+    at: '/sites/$siteId',
+    name: 'Latest entries',
+    where: 'a house, beside what it went on',
+    partOf: 'the house screen',
+    proves: 'Latest entries',
+    draw: () => (
+      <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
+        <LatestEntries
+          siteId="s1"
+          what={{
+            standing: 47,
+            rows: [
+              {
+                _id: 'e1',
+                day: A_DAY,
+                amountPaisa: paisa(500_000),
+                category: TRADES[0].name,
+                paidToName: NOBODY[2].name,
+              },
+              {
+                _id: 'e2',
+                day: '2026-07-11',
+                amountPaisa: paisa(126_400),
+                category: TRADES[2].name,
+                paidToName: NOBODY[3].name,
+              },
+              {
+                _id: 'e3',
+                day: '2026-07-04',
+                amountPaisa: paisa(88_250),
+                category: TRADES[1].name,
+                paidToName: NOBODY[4].name,
+              },
+            ],
+          }}
+        />
+      </Page>
+    ),
+  },
+  {
     slug: 'spent-by-trade',
     at: '/sites/$siteId',
-    name: 'What it went on',
+    name: 'Cost by category',
     where: 'a house, down the screen',
     partOf: 'the house screen',
-    proves: 'What it went on',
+    proves: 'Cost by category',
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <SpentByTrade
