@@ -54,9 +54,23 @@ export function whatGivesWayIn(source: string): Array<string> {
     }
 
     const beside = before.slice(rows[rows.length - 1].index)
-    const squeezable = [...beside.matchAll(A_LABEL)].filter((label) => !label[0].includes('shrink-0'))
+    // `absolute` as well as `shrink-0`, and it is a third way of holding rather than a hole. A label taken out of the flow is not in the row at all: flex has no space to take from it, and it cannot be broken over two lines by a control asking for the whole width. `Budget estimate` puts `Rs` inside the box that way, so the box matches `Covered area` beside it instead of being narrower by two characters.
+    const squeezable = [...beside.matchAll(A_LABEL)].filter(
+      (label) => !label[0].includes('shrink-0') && !label[0].includes('absolute')
+    )
     if (squeezable.length > 0) {
       found.push(`<${opened}> asks for the whole row beside ${squeezable.length} label(s) free to give way`)
+    }
+
+    // What the exemption above costs, checked rather than trusted. A label lifted out of the flow cannot be squeezed -- and it cannot be avoided either: it sits over the control, and only padding on that side keeps it off the typed figure.
+
+    // Nothing else can see this. `columns` measures cells and would find one cell of the right width with a word printed across the value inside it.
+    for (const lifted of [...beside.matchAll(A_LABEL)].filter((label) => label[0].includes('absolute'))) {
+      const side = /\bleft-/.test(lifted[0]) ? 'pl-' : /\bright-/.test(lifted[0]) ? 'pr-' : null
+
+      if (side !== null && !asking[0].includes(side)) {
+        found.push(`<${opened}> has a label lifted over it and no ${side} to clear it`)
+      }
     }
   }
 
@@ -111,6 +125,33 @@ describe('a label beside a control that takes the rest', () => {
     expect(
       whatGivesWayIn('<label className="flex flex-col gap-1.5"><span>Name</span><input className="w-full" /></label>')
     ).toEqual([])
+
+    // And a third: a label lifted out of the flow has nothing to give way with. This is `Rs` inside the estimate box.
+    const liftedOut =
+      '<span className="relative flex items-center"><span className="absolute left-3">Rs</span><input className="w-full pl-10" /></span>'
+    expect(whatGivesWayIn(liftedOut)).toEqual([])
+
+    // The same row with the word back in the flow is still caught, so `absolute` bought an exemption for being out of the row rather than for saying the word.
+    const backInTheFlow =
+      '<span className="relative flex items-center"><span className="left-3">Rs</span><input className="w-full pl-10" /></span>'
+    expect(whatGivesWayIn(backInTheFlow)).toHaveLength(1)
+  })
+
+  it('makes a lifted label clear the answer it is sitting on top of', () => {
+    // The half the exemption does not cover on its own. Out of the flow means it cannot be squeezed and also that it cannot be avoided: it is printed over the control, and only padding on its side keeps it off the figure being typed.
+    const noRoomMade =
+      '<span className="relative flex items-center"><span className="absolute left-3">Rs</span><input className="w-full" /></span>'
+    expect(whatGivesWayIn(noRoomMade)).toEqual(['<input> has a label lifted over it and no pl- to clear it'])
+
+    // Room made on the wrong side is no room at all.
+    const clearedTheOtherWay =
+      '<span className="relative flex items-center"><span className="absolute left-3">Rs</span><input className="w-full pr-10" /></span>'
+    expect(whatGivesWayIn(clearedTheOtherWay)).toHaveLength(1)
+
+    // And a prefix on the right is held to the same rule from the other end.
+    const onTheRight =
+      '<span className="relative flex items-center"><input className="w-full" /><span className="absolute right-3">sqft</span></span>'
+    expect(whatGivesWayIn(onTheRight)).toEqual([])
   })
 
   it('leaves alone the three it called guilty when it read rows forwards', () => {

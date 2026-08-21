@@ -1243,7 +1243,14 @@ export const ON_SHOW: Array<OnShow> = [
     draw: () => (
       <Page title={THE_HOUSE} named={{ siteId: THE_HOUSE }}>
         <ChangeTheHouse
-          house={{ name: THE_HOUSE, coveredAreaSqft: '5,000', stage: 'building', builtForAClient: true }}
+          house={{
+            name: THE_HOUSE,
+            coveredAreaSqft: '5,000',
+            // A figure rather than empty: `Spent against estimate` and its bar had never appeared in any picture, because no fixture on this path had ever carried one.
+            budgetEstimatePaisa: '19,400,000',
+            stage: 'building',
+            builtForAClient: true,
+          }}
           onSave={nothing}
           onPutAway={nothing}
         />
