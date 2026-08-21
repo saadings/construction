@@ -56,10 +56,18 @@ export function anEmptySitting(): TheSitting {
   return { done: [], draft: anEmptyDraft() }
 }
 
-/** Kept as it is typed. Written on every change rather than on a timer: a phone locks between keystrokes, and there is no such thing as a good moment to have last saved. */
+// Kept as it is typed. Written on every change rather than on a timer: a phone locks between keystrokes, and there is no such thing as a good moment to have last saved.
+
+// A sitting with nothing in it is forgotten rather than written. It used to be written, so every house and day anybody merely looked at left a key behind holding an empty sitting -- harmless on the way back, because `aSittingWorthKeeping` refuses it, and not harmless at all to anything that has to sweep the keys. A count of unposted work that counts the days somebody glanced at is a count of nothing.
 export function useKeepingIt(under: string, sitting: TheSitting, keeping: boolean): void {
   useEffect(() => {
     if (!keeping) return
+
+    if (aSittingWorthKeeping(sitting) === null) {
+      forgetOnThisDevice(under)
+
+      return
+    }
 
     keepOnThisDevice(under, sitting)
   }, [under, sitting, keeping])

@@ -91,7 +91,9 @@ describe('signing out', () => {
     expect(nav.slice(at, at + 260)).toContain('{footer}')
 
     // And the sheet draws the same rail rather than a second one, so there is one answer per width and not two.
-    expect(nav).toContain('<TheNav footer={footer} who={who} />')
+
+    // Matched on the opening and the footer prop rather than on the whole call, which broke the day the rail grew a third prop. A literal that includes every argument is a test about the argument list; what this is asking is whether the sheet renders the rail and hands it the account.
+    expect(nav).toMatch(/<TheNav footer={footer}/)
 
     // Nothing left in the header. Two places to sign out is worse than either one, and this is the half that catches the old one being forgotten rather than removed.
     expect(shell, 'the account is still in the corner of the phone header').not.toContain("account('size-11')")

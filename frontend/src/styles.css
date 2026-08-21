@@ -88,6 +88,9 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #33312e;
   --sidebar-ring: var(--brass);
+  /* The count a rail row carries. His is `bg-brass/25` with `text-[#e6b878]` -- brass at a quarter over the rail -- and a token cannot be translucent, so the plane is that mix worked out against this theme's rail rather than left to compose over whatever is behind it. 7.59:1, measured. */
+  --sidebar-badge: #382a19;
+  --sidebar-badge-foreground: #e6b878;
 }
 
 /* Following the phone, which is what the app does unless somebody says otherwise. Guarded so that choosing light beats a phone in dark mode. */
@@ -120,6 +123,8 @@
     --sidebar-accent: #37322b;
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #3f3b34;
+    /* The same mix over the other rail, with the other theme's brass in it: 5.25:1. Re-flattened rather than reused, because the rail is a different ground here and a quarter of a different brass. */
+    --sidebar-badge: #544228;
   }
 }
 
@@ -149,6 +154,7 @@
   --sidebar-accent: #37322b;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #3f3b34;
+  --sidebar-badge: #544228;
 }
 
 @theme inline {
@@ -197,6 +203,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-badge: var(--sidebar-badge);
+  --color-sidebar-badge-foreground: var(--sidebar-badge-foreground);
 }
 
 html,

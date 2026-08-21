@@ -79,7 +79,7 @@ describe('what has come in on a house', () => {
   it('offers the way to put money in, from the house it is about', async () => {
     renderWith(FUNDED_AND_PAID)
 
-    const goingThere = await screen.findByRole('link', { name: 'Put money in' })
+    const goingThere = await screen.findByRole('link', { name: 'Add' })
     expect(goingThere.getAttribute('href')).toBe('/sites/s1/coming-in')
   })
 

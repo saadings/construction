@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import { WhatAreYouRecording } from '../entry/WhatAreYouRecording'
+import type { Counts } from './TheNav'
 import { TheNav, TheNavOnAPhone } from './TheNav'
 import { TheStrip } from './TheStrip'
 
@@ -19,6 +21,7 @@ export function Shell({
   finding,
   account,
   who,
+  counts,
 }: {
   children: ReactNode
   finding?: ReactNode
@@ -26,11 +29,13 @@ export function Shell({
   account: (avatar: string) => ReactNode
   /** Their name, beside the avatar at the foot of the nav, as drawn. */
   who?: ReactNode
+  /** What a rail row has waiting behind it, keyed by where the row goes. Handed in for the same reason everything else here is: the figure comes out of the ledger, and a shell that reads the ledger is a shell nothing can draw. */
+  counts?: Counts
 }) {
   return (
     <div className="bg-background text-foreground flex min-h-dvh w-full">
       <div className="hidden md:flex">
-        <TheNav footer={account('size-8')} who={who} />
+        <TheNav footer={account('size-8')} who={who} counts={counts} />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -38,13 +43,17 @@ export function Shell({
         <header className="border-border bg-background/90 sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 backdrop-blur-sm md:px-6">
           {/* His, and the one thing in this bar the drawing does not have. Below 768 the strip underneath is the whole of navigation in the design; he asked for the sidebar as well, so this opens it. */}
           <div className="md:hidden">
-            <TheNavOnAPhone footer={account('size-8')} who={who} />
+            <TheNavOnAPhone footer={account('size-8')} who={who} counts={counts} />
           </div>
 
           {/* The drawing puts the breadcrumb here, `Ledger ›` and then the screen. It is not here, and that is on the list rather than done: `columns` refuses a trail inside a sticky header -- *navigation scrolls off, identity stays* -- so taking the drawing literally fails a guard this app already holds. `Page` still draws the trail in the content. */}
           <div className="min-w-0 flex-1" />
 
-          <div className="flex items-center gap-3">{finding}</div>
+          {/* `New entry` at every width, as drawn -- it is not behind `lg` the way the search box is. Below that the bar holds three controls on a phone: the hamburger, the search square and this, each of them 44 and the whole row 274 of 390. */}
+          <div className="flex items-center gap-3">
+            {finding}
+            <WhatAreYouRecording />
+          </div>
         </header>
 
         {/* Under the header and above everything, sticky at the header's own height, as drawn. */}

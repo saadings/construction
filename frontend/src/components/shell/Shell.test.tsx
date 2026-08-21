@@ -24,10 +24,14 @@ afterEach(() => {
   window.innerWidth = AT_A_DESK
 })
 
-function renderAt(path: string) {
+function renderAt(path: string, over: { who?: string; counts?: Record<string, number | undefined> } = {}) {
   // Stood in for, because what this file asks about is the nav rather than the account -- and the shell no longer holds Clerk, so it can be rendered at all. Whether the app hands over the real control is `chrome.test`'s question, asked of the root.
   const root = createRootRoute({
-    component: () => <Shell account={(avatar) => <span className={avatar} />}>The screen itself</Shell>,
+    component: () => (
+      <Shell account={(avatar) => <span className={avatar} />} who={over.who} counts={over.counts}>
+        The screen itself
+      </Shell>
+    ),
   })
   const children = DESTINATIONS.map((destination) =>
     createRoute({ getParentRoute: () => root, path: destination.to, component: () => null })
@@ -52,6 +56,53 @@ describe('the nav', () => {
     for (const destination of DESTINATIONS) {
       expect(within(rail).getByRole('link', { name: new RegExp(destination.label) })).toBeTruthy()
     }
+  })
+
+  it('carries what is waiting on the row it is waiting behind', async () => {
+    // His own badge, on `Payables`, with a count the ledger already answers. It is handed in rather than read here for the reason everything else the shell is given is: the shell that reads the ledger is the shell nothing can draw.
+    renderAt('/', { counts: { '/owed': 4 } })
+    await screen.findByText('The screen itself')
+
+    const rail = screen.getByRole('list', { name: 'Sections' })
+    const payables = within(rail).getByRole('link', { name: /Payables/ })
+
+    expect(within(payables).getByText('4')).toBeTruthy()
+    // Named as well as drawn, or `Payables 4` read aloud is a row and a number with nothing joining them.
+    expect(payables.textContent).toContain('owed to')
+  })
+
+  it('says nothing on a row with nothing behind it', async () => {
+    // A badge reading `0` is a badge saying nothing needs you, said permanently, in the place kept for saying something does.
+    renderAt('/', { counts: { '/owed': 0 } })
+    await screen.findByText('The screen itself')
+
+    const payables = within(screen.getByRole('list', { name: 'Sections' })).getByRole('link', { name: /Payables/ })
+
+    expect(payables.textContent).not.toContain('0')
+  })
+
+  it('says nothing at all before the reading has answered', async () => {
+    // Nothing and not nought: a badge is a claim that something needs you, and a read that has not come back is not a claim about anything.
+    renderAt('/')
+    await screen.findByText('The screen itself')
+
+    const rail = screen.getByRole('list', { name: 'Sections' })
+    for (const destination of DESTINATIONS) {
+      expect(within(rail).getByRole('link', { name: new RegExp(destination.label) }).textContent).toBe(
+        destination.label
+      )
+    }
+  })
+
+  it('says what somebody is under their name, as drawn', async () => {
+    // `Owner` is a fixed word and not a reading. There is no global role in this schema -- `siteRoles` carries what somebody is per house and nothing says what they are across the whole ledger -- and it is true of everyone who can sign in today, because the allowlist is the partners.
+
+    // It is on his list as a question rather than as a gap: if other kinds of person are coming, a fixed word is wrong the day the second kind signs in and nothing here would report it.
+    renderAt('/', { who: 'Nauman Yousaf' })
+    await screen.findByText('The screen itself')
+
+    expect(screen.getAllByText('Nauman Yousaf').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Owner').length).toBeGreaterThan(0)
   })
 
   it('offers every one of them inside the sheet as well, which is the whole of the nav on a phone', async () => {

@@ -74,6 +74,8 @@ const NOT_WAITING_ON_ANYTHING: Record<string, string> = {
     'said === undefined asks whether a screen handed over the sentence that goes under its title, which is a question about a prop; this is the box every screen sits in and it reads nothing',
   'components/shell/TheNav.tsx':
     'footer === undefined asks whether the caller handed over a sign-out to draw, which is a question about a prop -- the rail is given one and the sheet is not, since the account sits in the corner of the header on a phone',
+  'components/daySheet/DaySheet.tsx':
+    'pickSite === undefined asks whether the address already decided which house this is, which is a question about a prop -- every figure and every list on this sheet is handed to it already read, and what waits for them is the route above it',
   'components/form/Day.tsx':
     'date, said and picked === undefined each ask whether a string is a day on the calendar or whether the calendar handed one back; all three are worked out in this file and none of them is an answer in flight',
 }

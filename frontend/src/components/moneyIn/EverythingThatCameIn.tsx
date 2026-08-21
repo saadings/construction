@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+import { Plus } from 'lucide-react'
 import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 
@@ -54,10 +56,23 @@ const GRID =
 /** A row: it takes the columns above rather than declaring any. */
 const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
 
+// The way in, in his own words for the screen it opens. His `Receipts` list has one and ours had none at all -- so `Receipts` was a screen you could read and not write to, and the second card of the `New entry` dialog had nowhere to land.
+function RecordOne() {
+  return (
+    <Link
+      to="/money-in/new"
+      className="border-input bg-card hover:border-brass flex min-h-11 items-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium shadow-xs transition-colors pointer-fine:min-h-9"
+    >
+      <Plus aria-hidden className="text-brass size-4 shrink-0" />
+      Record a receipt
+    </Link>
+  )
+}
+
 export function EverythingThatCameIn({ everything }: { everything: EverythingIn | null | undefined }) {
   if (everything === undefined) {
     return (
-      <Page title="Receipts" said={WHAT_THIS_IS}>
+      <Page title="Receipts" said={WHAT_THIS_IS} beside={<RecordOne />}>
         <MoneyInWaiting />
       </Page>
     )
@@ -66,14 +81,14 @@ export function EverythingThatCameIn({ everything }: { everything: EverythingIn 
   // The ledger has answered and does not know this sign-in. Nothing on this screen would work, so it offers none of it.
   if (everything === null) {
     return (
-      <Page title="Receipts" said={WHAT_THIS_IS}>
+      <Page title="Receipts" said={WHAT_THIS_IS} beside={<RecordOne />}>
         <NotKnownHere />
       </Page>
     )
   }
 
   return (
-    <Page title="Receipts" said={WHAT_THIS_IS}>
+    <Page title="Receipts" said={WHAT_THIS_IS} beside={<RecordOne />}>
       <TheThreeKinds everything={everything} />
 
       {everything.receipts.length === 0 ? (

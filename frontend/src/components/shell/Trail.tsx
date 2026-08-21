@@ -19,8 +19,10 @@ export const ABOVE = new Map<string, { name: string; under?: string }>(
   Object.entries({
     '/': { name: 'Sites' },
     '/dashboard': { name: 'Dashboard' },
+    '/daybook': { name: 'Daybook' },
     '/owed': { name: 'Payables' },
     '/money-in': { name: 'Receipts' },
+    '/money-in/new': { name: 'Record a receipt', under: '/money-in' },
     '/reports': { name: 'Reports' },
     '/people': { name: 'People' },
     '/people/$personId': { name: 'Their account', under: '/people' },

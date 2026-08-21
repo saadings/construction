@@ -3,7 +3,7 @@ import { dark } from '@clerk/themes'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
@@ -11,6 +11,7 @@ import { useEffect } from 'react'
 import { api } from '../../../convex/_generated/api'
 import { TheSearch } from '../components/search/TheSearch'
 import { Shell } from '../components/shell/Shell'
+import type { Counts } from '../components/shell/TheNav'
 import { WayIn } from '../components/shell/WayIn'
 import { env } from '../lib/env'
 import { THEME_INIT_SCRIPT, applyHowItLooks, useHowItLooks, usePrefersDark } from '../lib/theme'
@@ -62,16 +63,7 @@ function RootComponent() {
         </Show>
         <Show when="signed-in">
           <RememberThisSignIn />
-          {/* Both of these are handed in from here rather than drawn inside the shell, for the reason the shell says: one reads the ledger and the other is Clerk's, and neither will render without the provider it belongs to. A shell that owns either cannot be drawn by anything -- which was every test about the nav, and every camera. */}
-
-          {/* Clerk's real control and not a wrapper around one. `WayIn` was made drawable the same way and that is the caution as well as the precedent: a prop the app fills is a prop the app can fill with something that does nothing, and the screen photographs perfectly either way. `chrome.test` is what asks whether what is handed over here is the real thing. */}
-          <Shell
-            finding={<TheSearch />}
-            account={(avatar) => <UserButton appearance={{ elements: { userButtonAvatarBox: avatar } }} />}
-            who={<TheirName />}
-          >
-            <Outlet />
-          </Shell>
+          <TheApp />
         </Show>
       </ConvexProviderWithClerk>
     </ClerkProvider>
@@ -120,6 +112,39 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   )
+}
+
+// The shell with everything it cannot fetch for itself handed in.
+
+// A component of its own and not the tree above, because the reading below it needs Convex's provider -- and the provider is inside `RootComponent`'s own returned JSX, so a hook called in that component's body runs outside it. It does: the prerender fell over on exactly that, with `Prerendered 0 pages` and then a missing `_shell.html`, which is the symptom rather than the finding.
+
+// The rule is written here rather than only in `Shell`, because this is the file where it comes apart. `Shell` says a shell must not own a provider-bound thing, and that is true and it is not the whole of it -- **nothing may read a provider from outside it**, and this is the one component in the app that renders the providers rather than sitting inside them. A rule written where it was learned does not travel to where it applies next.
+function TheApp() {
+  // Both of these are handed in rather than drawn inside the shell, for the reason the shell says: one reads the ledger and the other is Clerk's, and neither will render without the provider it belongs to. A shell that owns either cannot be drawn by anything -- which was every test about the nav, and every camera.
+
+  // Clerk's real control and not a wrapper around one. `WayIn` was made drawable the same way and that is the caution as well as the precedent: a prop the app fills is a prop the app can fill with something that does nothing, and the screen photographs perfectly either way. `chrome.test` is what asks whether what is handed over here is the real thing.
+  return (
+    <Shell
+      finding={<TheSearch />}
+      account={(avatar) => <UserButton appearance={{ elements: { userButtonAvatarBox: avatar } }} />}
+      who={<TheirName />}
+      counts={useWhatIsWaiting()}
+    >
+      <Outlet />
+    </Shell>
+  )
+}
+
+// What a rail row has waiting behind it. `Payables` is his own badge and carries how many people are owed something.
+
+// Read here rather than in the shell, for the reason everything else handed to it is: this needs Clerk's provider and Convex's, and a shell that needs either is a shell nothing can draw or photograph.
+
+// It is one subscription on every screen rather than only on `Payables`, which is the cost of a badge that has to be right wherever you are standing. Convex dedupes it with the same read on `Payables` itself, and it is live -- so the number moves the moment a bill or a payment does, which is the whole reason it is worth carrying.
+function useWhatIsWaiting(): Counts {
+  const owed = useQuery(api.owed.queries.position, {})
+
+  // Nothing at all until it answers, and nothing when it is refused. A badge is a claim that something needs you, and a reading that has not come back is not a claim about anything.
+  return { '/owed': owed?.everyone.filter((person) => person.outstandingPaisa > 0).length }
 }
 
 // The name beside the avatar at the foot of the nav, as drawn. Read here rather than in the shell for the reason everything else in that file is a prop: `useUser` needs Clerk's provider, and a shell that needs one is a shell nothing can draw or photograph.

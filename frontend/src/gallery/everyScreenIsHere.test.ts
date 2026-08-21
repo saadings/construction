@@ -55,10 +55,13 @@ const PIECES = new Set([
   'HouseDetails',
   // Reached through `AgreeShares`'s `beneath`, so the `Page` around it is that screen's. Found by the rule below rather than by anybody noticing: it was the third component a route imports and renders without one, and the only one of the three that was right.
   'PayOut',
+  // What a route draws when there is nothing to draw, and the control a route hands the screen underneath it. A dead end and a picker are pieces, and neither is a screen anybody would photograph on its own.
+  'NothingToOpen',
+  'PickASite',
 ])
 
-/** Drawn by a route, but not from the gallery: `TheSearch` calls `useQuery`, which throws outside a Convex client. `Shell` was here and is not any more -- it held Clerk's own control, so the header was never drawn at any width, and the account is a prop now. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */
-const NOT_WITHOUT_A_SIGN_IN = new Set(['TheSearch'])
+/** Drawn by a route, but not from the gallery. `TheSearch` calls `useQuery`, which throws outside a Convex client, and `ADayOfPayments` and `AReceiptComingIn` are the same thing one layer up -- each is the reading and the sending for a screen with two ways in, so that the forty lines under `/daybook` and under a house's own day sheet are not the same forty lines twice. What they draw is `DaySheet` and `ComingIn`, and both of those are on show. `Shell` was here and is not any more -- it held Clerk's own control, so the header was never drawn at any width, and the account is a prop now. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */
+const NOT_WITHOUT_A_SIGN_IN = new Set(['TheSearch', 'ADayOfPayments', 'AReceiptComingIn'])
 
 /** What being un-drawable actually looks like in a file: Clerk's own control, or a read that needs a client. Written as a check rather than as a sentence, so a name can only stay on the list while the thing it names is still true of it. */
 const NEEDS_A_PROVIDER = /<UserButton|useQuery\(/
@@ -178,7 +181,8 @@ describe('the gallery', () => {
     const drawn = whatTheRoutesDraw()
 
     expect(drawn.length).toBeGreaterThan(8)
-    expect(drawn).toContain('DaySheet')
+    // Two that a route still imports and renders directly. `DaySheet` was here and is not any more: its route hands it to `ADayOfPayments`, so the sweep now finds the wiring and the screen is one level below it -- which is what the check below was rewritten to ask about.
+    expect(drawn).toContain('Dashboard')
     expect(drawn).toContain('AgreeShares')
   })
 
@@ -217,10 +221,17 @@ describe('the gallery', () => {
 
   it('has nothing named as drawing its own layout that is not a screen any more', () => {
     // An exemption outlives what it was written for, and a stale one silently excuses whatever takes that path next.
-    const drawn = new Set(whatTheRoutesDraw())
+
+    // Asked of what a picture reaches rather than of what a route imports, and that is a correction rather than a loosening. A route need not draw a screen directly to draw it -- `/daybook` hands `DaySheet` to `ADayOfPayments` -- and the question this is really asking is whether the exempted screen is still a screen somebody sees. A route-shaped question answers no the moment a route grows a wrapper, which is a refactor rather than a stale exemption.
+    const reached = everythingAPictureReaches()
+    const files = new Map(everyScreen().map((screen) => [screen.path, screen.source]))
 
     for (const name of ITS_OWN_LAYOUT) {
-      expect(drawn, `${name} is named as drawing its own layout and no route draws it`).toContain(name)
+      expect(
+        [...files].some(([path]) => path.endsWith(`/${name}.tsx`)),
+        `${name} is named as drawing its own layout and is not a component here at all`
+      ).toBe(true)
+      expect(reached, `${name} is named as drawing its own layout and no picture reaches it`).toContain(name)
     }
   })
 

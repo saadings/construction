@@ -57,12 +57,13 @@ export function WhatHasComeIn({ siteId, totals }: { siteId: string; totals: Come
           <Figure className="text-green text-[2.5rem] leading-none">{formatPaisa(totals.receivedPaisa)}</Figure>
         </div>
 
+        {/* `Put money in` until he read it on the screen and called it poor English, wanting one meaningful word. `Add` is his own register -- his Settings screen puts a bare `Add` on both of its cards -- and it sits directly under the heading it adds to, which is what makes one word enough here and not enough in a header. */}
         <Link
           to="/sites/$siteId/coming-in"
           params={{ siteId }}
           className="border-border text-foreground shrink-0 rounded-md border px-4 py-3 text-sm font-medium"
         >
-          Put money in
+          Add
         </Link>
       </div>
 

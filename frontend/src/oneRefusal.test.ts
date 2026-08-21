@@ -48,6 +48,16 @@ const THEY_EACH_HELD_ONE = [
   'routes/sites.$siteId.coming-in.tsx',
 ]
 
+// Where a refusal that a file above once held is asked for now, for the two whose wiring moved.
+
+// Neither route stopped refusing. Each grew a second way in -- `/daybook` beside a house's own day sheet, `/money-in/new` beside a house's own receipts -- and the reading, the sending and the refusal moved together into one component so that they are not the same forty lines twice.
+
+// Recorded rather than dropped from the list above, because dropping it is how a rule loses its subject: the file would stop asking and nothing would say so. Held to its own successor below, so a name here cannot outlive the file it points at.
+const IT_MOVED: Record<string, string> = {
+  'routes/sites.$siteId.day.tsx': 'components/daySheet/ADayOfPayments.tsx',
+  'routes/sites.$siteId.coming-in.tsx': 'components/moneyIn/AReceiptComingIn.tsx',
+}
+
 /** Every place a screen works out its own words for a refusal. */
 export function saysItItself(written: string): Array<string> {
   const source = withoutComments(written)
@@ -78,7 +88,23 @@ describe('a refusal worked out by hand', () => {
     const asking = ours.filter(({ source }) => source.includes('whatWentWrong(')).map(({ path }) => path)
 
     for (const path of THEY_EACH_HELD_ONE) {
-      expect(asking, `${path} no longer says it itself and does not ask either`).toContain(path)
+      const where = IT_MOVED[path] ?? path
+
+      expect(asking, `${where} no longer says it itself and does not ask either`).toContain(where)
+    }
+  })
+
+  it('names nothing as having moved that has not', () => {
+    // The other end of the record above. A successor that is not a file, or one that does not ask, would leave the original excused and nothing asking in its place -- which reads exactly like a rule being kept.
+    const paths = new Set(ours.map(({ path }) => path))
+
+    for (const [was, now] of Object.entries(IT_MOVED)) {
+      expect(paths.has(was), `${was} is named as having moved its refusal and is not a file here`).toBe(true)
+      expect(paths.has(now), `${now} is named as holding ${was}'s refusal and is not a file here`).toBe(true)
+
+      // And the original really has stopped holding one, or this is a record of nothing.
+      const before = ours.find(({ path }) => path === was)
+      expect(before?.source.includes('whatWentWrong('), `${was} still asks, so it has not moved`).toBe(false)
     }
   })
 

@@ -30,6 +30,8 @@ const ON_THE_RAIL: Array<[string, string]> = [
   ['--sidebar-foreground', '--sidebar'],
   ['--sidebar-accent-foreground', '--sidebar-accent'],
   ['--sidebar-primary-foreground', '--sidebar-primary'],
+  // The count a rail row carries. His `bg-brass/25` is translucent and a token cannot be, so the plane is that mix flattened against each theme's own rail -- which is exactly the kind of hand-worked value that goes unmeasured unless it is named here.
+  ['--sidebar-badge-foreground', '--sidebar-badge'],
 ]
 
 function whatCannotBeRead(palette: Record<string, string>): Array<string> {
