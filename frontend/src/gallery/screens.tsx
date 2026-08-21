@@ -306,7 +306,7 @@ export const ON_SHOW: Array<OnShow> = [
             spentPaisa: paisa(8_140_000),
             receivedPaisa: paisa(9_600_000),
             budgetEstimatePaisa: paisa(7_250_000),
-            clientName: 'The one it is built for',
+            clientName: 'the buyer',
             coveredAreaSqft: 3175,
           },
           {

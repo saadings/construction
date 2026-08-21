@@ -4,7 +4,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { SiteRow } from './SitesList'
-import { SitesList } from './SitesList'
+import { SitesList, acrossTheEstimate, howWideTheBarIs } from './SitesList'
 
 afterEach(cleanup)
 
@@ -67,14 +67,27 @@ describe('the sites on the home screen', () => {
     expect(within(cards[1]).queryByText(/Spent against estimate/)).toBeNull()
   })
 
-  it('says a house is over its estimate rather than drawing a bar past its own track', async () => {
+  it('says how far past the estimate a house has gone, rather than stopping at the limit', async () => {
     renderAt([{ ...aHouse, budgetEstimatePaisa: 100_000_00, spentPaisa: 250_000_00 }])
 
     const card = await screen.findByRole('listitem')
 
-    // Two and a half times the estimate. The share is capped so the bar stays inside the track, and the figure is the one that tells him -- capped at a hundred with nothing else said would report a house on budget.
-    expect(within(card).getByText('100%')).toBeTruthy()
-    expect(within(card).getByText('100%').className).toContain('text-destructive')
+    // Two and a half times the estimate. The figure says so; only the bar's width is capped, because a bar cannot draw past its own track and a percentage has no such limit.
+
+    // `100%` shipped here, and it is the value a capped overspend produces **and** the value a house spent to the rupee produces -- one string for two states, which is the failure this app keeps finding.
+    expect(within(card).getByText('250%')).toBeTruthy()
+    expect(within(card).getByText('250%').className).toContain('text-destructive')
+    expect(within(card).queryByText('100%')).toBeNull()
+  })
+
+  it('draws the bar inside its own track however far past the spending has gone', async () => {
+    renderAt([{ ...aHouse, budgetEstimatePaisa: 100_000_00, spentPaisa: 250_000_00 }])
+
+    const card = await screen.findByRole('listitem')
+    const bar = card.querySelector<HTMLElement>('[data-bar]')
+
+    expect(bar, 'the card draws no bar to measure').not.toBeNull()
+    expect(bar?.style.width).toBe('100%')
   })
 
   it('says who a house is for in each of the three ways it can be', async () => {
@@ -138,5 +151,24 @@ describe('the sites on the home screen', () => {
     }
     // The control: the loop above passes against a blank screen.
     expect(onScreen).toContain('1-a, phase 0')
+  })
+})
+
+describe('the share of an estimate, and the width of the bar that draws it', () => {
+  it('are the same number until the spending goes past the estimate', () => {
+    expect(acrossTheEstimate(50, 100)).toBe(50)
+    expect(howWideTheBarIs(acrossTheEstimate(50, 100))).toBe(50)
+  })
+
+  it('part company past it, which is the whole of the defect that shipped', () => {
+    // 112% on `204-C`, drawn as a full track and said as twelve per cent past.
+    expect(acrossTheEstimate(8_140_000, 7_250_000)).toBe(112)
+    expect(howWideTheBarIs(acrossTheEstimate(8_140_000, 7_250_000))).toBe(100)
+  })
+
+  it('answer for a house with no estimate to be measured against, rather than dividing by it', () => {
+    expect(acrossTheEstimate(500, 0)).toBe(0)
+    expect(acrossTheEstimate(0, 0)).toBe(0)
+    expect(howWideTheBarIs(0)).toBe(0)
   })
 })

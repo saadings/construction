@@ -113,13 +113,24 @@ function whoItIsFor(site: SiteRow): string | undefined {
   return site.builtForAClient ? 'For a client' : 'Ours to sell'
 }
 
-/** How much of the estimate the spending has used, never past a hundred so the bar cannot draw outside its own track. */
+// Two quantities, and collapsing them into one `Math.min` is what shipped: **a bar cannot draw past its own track and a percentage has no such limit.**
+
+// `204-C` had spent 8,140,000 against an estimate of 7,250,000 and the card said `100%`. The colour was right, the bar was right, and the figure said *at the limit* where the ledger meant *twelve per cent past it* -- which on an overspent house is the entire content of the number and the one thing somebody would act on.
+
+// Nothing in the suite could have caught it. Every guard passed and the arithmetic was correct; the only wrong thing was a plausible number. `100%` is exactly what a capped overspend produces **and** exactly what a house spent to the rupee produces -- one string, two ideas, which is this app's oldest failure.
+
+/** How much of the estimate the spending has used, uncapped: past a hundred is the state that matters. */
 export function acrossTheEstimate(spentPaisa: number, estimatePaisa: number): number {
   if (estimatePaisa <= 0 || spentPaisa <= 0) {
     return 0
   }
 
-  return Math.min(100, Math.round((spentPaisa / estimatePaisa) * 100))
+  return Math.round((spentPaisa / estimatePaisa) * 100)
+}
+
+/** How wide to draw it, which is the one place the hundred belongs. */
+export function howWideTheBarIs(share: number): number {
+  return Math.min(100, Math.max(0, share))
 }
 
 // The bar he drew, and what stands in its place until an estimate has been set. A blank reads as broken; a sentence reads as a ledger saying what it has not been told, which is what this app already does with `Not yet spent`.
@@ -149,7 +160,7 @@ function AgainstTheEstimate({ site }: { site: SiteRow }) {
         <span
           data-bar=""
           className={`block h-full rounded-full ${over ? 'bg-destructive' : 'bg-brass'}`}
-          style={{ width: `${String(across)}%` }}
+          style={{ width: `${String(howWideTheBarIs(across))}%` }}
         />
       </span>
     </span>
