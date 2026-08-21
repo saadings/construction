@@ -61,6 +61,17 @@ export function whatGivesWayIn(source: string): Array<string> {
     if (squeezable.length > 0) {
       found.push(`<${opened}> asks for the whole row beside ${squeezable.length} label(s) free to give way`)
     }
+
+    // What the exemption above costs, checked rather than trusted. A label lifted out of the flow cannot be squeezed -- and it cannot be avoided either: it sits over the control, and only padding on that side keeps it off the typed figure.
+
+    // Nothing else can see this. `columns` measures cells and would find one cell of the right width with a word printed across the value inside it.
+    for (const lifted of [...beside.matchAll(A_LABEL)].filter((label) => label[0].includes('absolute'))) {
+      const side = /\bleft-/.test(lifted[0]) ? 'pl-' : /\bright-/.test(lifted[0]) ? 'pr-' : null
+
+      if (side !== null && !asking[0].includes(side)) {
+        found.push(`<${opened}> has a label lifted over it and no ${side} to clear it`)
+      }
+    }
   }
 
   return found
@@ -124,6 +135,23 @@ describe('a label beside a control that takes the rest', () => {
     const backInTheFlow =
       '<span className="relative flex items-center"><span className="left-3">Rs</span><input className="w-full pl-10" /></span>'
     expect(whatGivesWayIn(backInTheFlow)).toHaveLength(1)
+  })
+
+  it('makes a lifted label clear the answer it is sitting on top of', () => {
+    // The half the exemption does not cover on its own. Out of the flow means it cannot be squeezed and also that it cannot be avoided: it is printed over the control, and only padding on its side keeps it off the figure being typed.
+    const noRoomMade =
+      '<span className="relative flex items-center"><span className="absolute left-3">Rs</span><input className="w-full" /></span>'
+    expect(whatGivesWayIn(noRoomMade)).toEqual(['<input> has a label lifted over it and no pl- to clear it'])
+
+    // Room made on the wrong side is no room at all.
+    const clearedTheOtherWay =
+      '<span className="relative flex items-center"><span className="absolute left-3">Rs</span><input className="w-full pr-10" /></span>'
+    expect(whatGivesWayIn(clearedTheOtherWay)).toHaveLength(1)
+
+    // And a prefix on the right is held to the same rule from the other end.
+    const onTheRight =
+      '<span className="relative flex items-center"><input className="w-full" /><span className="absolute right-3">sqft</span></span>'
+    expect(whatGivesWayIn(onTheRight)).toEqual([])
   })
 
   it('leaves alone the three it called guilty when it read rows forwards', () => {
