@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { BarChart3, Building2, Wallet } from 'lucide-react'
+import { BarChart3, Building2, Users, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatPaisa } from '~shared/money'
 
@@ -10,13 +10,13 @@ import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 
 // The questions the books get asked, each one opening the screen that answers it. A way in rather than a screen of its own: every figure on a card is read off the same query as the screen behind it, so a card and the screen it opens cannot disagree about the figure he is looking at twice.
 
-// Four were drawn and one is not here yet. **Cost per house against its estimate** is the report he would want most, and until now the honest reason was that nothing held what a house was expected to cost.
-
-// That reason has expired. The estimate is stored, and as of this change there is a field somebody can put one in -- so the card is buildable and its absence is a choice from here rather than a limit.
+// All four are here now. **Cost per house against its estimate** was absent for as long as nothing held what a house was expected to cost, and there is a field somebody can put one in as of the change before this -- so the reason expired and the card is built rather than left out.
 
 export type WhatTheBooksAnswer = {
+  /** How many houses there are and what they have cost between them, off the same reading the houses screen is drawn from. */
+  houses: { count: number; goneOutPaisa: number }
   /** How much has gone out and over how many trades, read off the dashboard's own reading rather than worked out again here. */
-  spending: { trades: number; goneOutPaisa: number; ownMoneyPaisa: number }
+  spending: { trades: number; thisMonthPaisa: number; ownMoneyPaisa: number }
   /** Who is owed and how much, read off the owed screen's, so the count on the card is the count on the screen. */
   owed: { people: number; payablePaisa: number }
 }
@@ -37,14 +37,29 @@ export function Reports({ what }: { what: WhatTheBooksAnswer | null }) {
   return (
     <Page title="Reports" said={WHAT_THIS_IS}>
       <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* First, as drawn, and the one he said he would want most. It opens the houses, where each one's spending is shown against the estimate now that an estimate can be entered. */}
+        <Report
+          to="/"
+          icon={<Building2 className="text-brass size-4" aria-hidden />}
+          name="Cost per house"
+          what="What each house has cost against its estimate, and what it has taken in. The one report that says whether a house made money."
+          figure={
+            <>
+              {what.houses.count} {what.houses.count === 1 ? 'house' : 'houses'} ·{' '}
+              <Figure>{formatPaisa(what.houses.goneOutPaisa)}</Figure> spent
+            </>
+          }
+        />
+
         <Report
           to="/dashboard"
           icon={<BarChart3 className="text-brass size-4" aria-hidden />}
           name="Spending by category"
-          what="Where the money went, by trade, across every house at once."
+          what="Where the money went this month, by trade, across every house at once."
           figure={
             <>
-              {what.spending.trades} trades · <Figure>{formatPaisa(what.spending.goneOutPaisa)}</Figure> spent
+              {what.spending.trades} {what.spending.trades === 1 ? 'trade' : 'trades'} ·{' '}
+              <Figure>{formatPaisa(what.spending.thisMonthPaisa)}</Figure> this month
             </>
           }
         />
@@ -63,11 +78,11 @@ export function Reports({ what }: { what: WhatTheBooksAnswer | null }) {
         />
 
         <Report
-          to="/"
-          icon={<Building2 className="text-brass size-4" aria-hidden />}
+          to="/money-in"
+          icon={<Users className="text-brass size-4" aria-hidden />}
           name="Partner positions"
-          // The drawing points this card at the receipts screen, which is money arriving rather than what anybody's share came to. Shares are agreed on the house they are for, so it opens the houses instead -- the one place from which every partner's position is one step away.
-          what="What each partner has put in against his share. Agreed on the house it is for, so this opens the houses."
+          // This opened the houses, on the argument that a share is agreed on the house it is for. The drawing points it at Receipts and the drawing is right: what a partner has put in **is** a receipt, under `Partner investment`, and that screen holds the figure this card names.
+          what="What each partner has put in against his share, on the screen that records it arriving."
           figure={
             <>
               <Figure>{formatPaisa(what.spending.ownMoneyPaisa)}</Figure> put in by partners

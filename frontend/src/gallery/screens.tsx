@@ -756,11 +756,16 @@ export const ON_SHOW: Array<OnShow> = [
           what={{
             // Read from the Dashboard's own fixture rather than written again. These two are the same money on two screens, and it had `6,540,000` of its own -- the same figure, stale in the same way, and two screens hand-writing one number is exactly how they come to disagree while both look right.
             spending: {
-              trades: 7,
-              goneOutPaisa: dashboard.goneOutPaisa,
+              trades: dashboard.whereItWent.length,
+              thisMonthPaisa: dashboard.thisMonth.paidOutPaisa,
               ownMoneyPaisa: dashboard.comeIn.ownMoneyPaisa,
             },
             owed: { people: 3, payablePaisa: dashboard.owed.payablePaisa },
+            // From the Dashboard's houses for the same reason as the two above: counted and summed there, not written again here, so this card and the houses screen cannot disagree about what has been spent.
+            houses: {
+              count: dashboard.houses.length,
+              goneOutPaisa: dashboard.houses.reduce((total, house) => total + house.goneOutPaisa, 0),
+            },
           }}
         />
       )
