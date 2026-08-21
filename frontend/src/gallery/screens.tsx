@@ -747,7 +747,16 @@ export const ON_SHOW: Array<OnShow> = [
           how: 'payOrder' as const,
           reference: 'PO-2288',
         },
-        { day: '2026-06-02', rupees: 900_000, from: 1, house: 1, why: 'partnerMoney' as const, how: 'cash' as const },
+        // The one with a note on it, and it is the cash one on purpose: cash carries no cheque number, so this is the row where a note is the only thing saying what the money was. A receipt line that ships undrawn is a line nobody has ever looked at, and this fixture had four receipts and no note between them.
+        {
+          day: '2026-06-02',
+          rupees: 900_000,
+          from: 1,
+          house: 1,
+          why: 'partnerMoney' as const,
+          how: 'cash' as const,
+          note: 'Handed over on site, against the steel order',
+        },
       ]
 
       const byWhy = {
@@ -769,6 +778,8 @@ export const ON_SHOW: Array<OnShow> = [
               why: one.why,
               method: one.how,
               reference: one.reference,
+              // Passed through rather than dropped here, which is the half a fixture alone would not have fixed: the note could have been written on every row and still reached no screen.
+              note: one.note,
               siteId: one.house === 0 ? 's1' : 's2',
               siteName: one.house === 0 ? THE_HOUSE : '204-C, Phase 6',
               fromName: NOBODY[one.from]?.name ?? 'Somebody else',
@@ -794,11 +805,16 @@ export const ON_SHOW: Array<OnShow> = [
           what={{
             // Read from the Dashboard's own fixture rather than written again. These two are the same money on two screens, and it had `6,540,000` of its own -- the same figure, stale in the same way, and two screens hand-writing one number is exactly how they come to disagree while both look right.
             spending: {
-              trades: 7,
-              goneOutPaisa: dashboard.goneOutPaisa,
+              trades: dashboard.whereItWent.length,
+              thisMonthPaisa: dashboard.thisMonth.paidOutPaisa,
               ownMoneyPaisa: dashboard.comeIn.ownMoneyPaisa,
             },
             owed: { people: 3, payablePaisa: dashboard.owed.payablePaisa },
+            // From the Dashboard's houses for the same reason as the two above: counted and summed there, not written again here, so this card and the houses screen cannot disagree about what has been spent.
+            houses: {
+              count: dashboard.houses.length,
+              goneOutPaisa: dashboard.houses.reduce((total, house) => total + house.goneOutPaisa, 0),
+            },
           }}
         />
       )
@@ -911,6 +927,8 @@ export const ON_SHOW: Array<OnShow> = [
         what={{
           trades: TRADES,
           accounts: BANK,
+          // Named people rather than a bare count, so the card photographs with a figure on it instead of the shape it has while it waits.
+          people: NOBODY.map((person) => ({ _id: person._id })),
           looksLike: 'Auto',
         }}
       />

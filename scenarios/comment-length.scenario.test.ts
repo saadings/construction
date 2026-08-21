@@ -6,6 +6,7 @@ import { Linter } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
 import { singleLineComments } from '../eslint-rules/singleLineComments'
+import { everyFileHere } from './everyFileHere'
 
 const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
 
@@ -22,10 +23,9 @@ const HASH_COMMENTED = /\.(ya?ml|sh)$/
 
 export type CommentRun = { file: string; line: number; length: number; text: string }
 
+// Untracked files included, because a sweep of tracked files cannot see the file you just wrote -- and that is the file nobody is sure about. This rule flagged a tracked hook and missed an untracked script with the identical defect, in the same change.
 function sourceFiles(): Array<string> {
-  return execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' })
-    .trim()
-    .split('\n')
+  return everyFileHere(repoRoot)
     .filter((path) => SOURCE.test(path) || path === '.husky/pre-commit')
     .filter((path) => !GENERATED.some((pattern) => pattern.test(path)))
 }
