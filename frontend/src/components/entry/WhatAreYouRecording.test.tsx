@@ -11,7 +11,7 @@ afterEach(cleanup)
 // Awaited on purpose everywhere below. The router draws on a tick, and anything asked before it has drawn is asked of an empty body -- which is the same answer as a control that is not there.
 async function open() {
   const root = createRootRoute({ component: () => <WhatAreYouRecording /> })
-  const kids = ['/daybook', '/money-in/new'].map((path) =>
+  const kids = ['/daybook', '/receipts/new'].map((path) =>
     createRoute({ getParentRoute: () => root, path, component: () => null })
   )
   const router = createRouter({
@@ -42,7 +42,7 @@ describe('the question behind `New entry`', () => {
     await user.click(await open())
 
     expect((await screen.findByRole('link', { name: /Payments/ })).getAttribute('href')).toBe('/daybook')
-    expect(screen.getByRole('link', { name: /Receipts/ }).getAttribute('href')).toBe('/money-in/new')
+    expect(screen.getByRole('link', { name: /Receipts/ }).getAttribute('href')).toBe('/receipts/new')
   })
 
   it('says what each one is for, in his own words', async () => {

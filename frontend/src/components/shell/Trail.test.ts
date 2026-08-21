@@ -45,7 +45,7 @@ describe('the way back up', () => {
 
   it('climbs from a screen to the top, in the order somebody reads it', () => {
     expect(theWayHere('/more/who-can-sign-in')).toEqual(['/more', '/more/who-can-sign-in'])
-    expect(theWayHere('/sites/$siteId/day')).toEqual(['/', '/sites/$siteId', '/sites/$siteId/day'])
+    expect(theWayHere('/sites/$siteId/daybook')).toEqual(['/', '/sites/$siteId', '/sites/$siteId/daybook'])
     expect(theWayHere('/people/$personId')).toEqual(['/people', '/people/$personId'])
   })
 

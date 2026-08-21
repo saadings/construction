@@ -78,7 +78,7 @@ export function Reports({ what }: { what: WhatTheBooksAnswer | null }) {
         />
 
         <Report
-          to="/money-in"
+          to="/receipts"
           icon={<Users className="text-brass size-4" aria-hidden />}
           name="Partner positions"
           // This opened the houses, on the argument that a share is agreed on the house it is for. The drawing points it at Receipts and the drawing is right: what a partner has put in **is** a receipt, under `Partner investment`, and that screen holds the figure this card names.

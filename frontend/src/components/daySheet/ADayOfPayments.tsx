@@ -15,7 +15,7 @@ import { whereASittingIsKept } from './theSittingKept'
 
 // A day of payments against one house: the reading, the sending, and what to do when either is refused.
 
-// Written once because there are two ways in and one screen. `/sites/$siteId/day` reaches it from a house, with the house fixed by the address; `/daybook` is his own second rail row and reaches it from anywhere, with the house chosen on the screen. The forty lines of wiring underneath were the same forty lines twice, which is how the two come to disagree about what a refusal says or which day the sheet opens on.
+// Written once because there are two ways in and one screen. `/sites/$siteId/daybook` reaches it from a house, with the house fixed by the address; `/daybook` is his own second rail row and reaches it from anywhere, with the house chosen on the screen. The forty lines of wiring underneath were the same forty lines twice, which is how the two come to disagree about what a refusal says or which day the sheet opens on.
 export function ADayOfPayments({
   siteId,
   day: dayFromAbove,

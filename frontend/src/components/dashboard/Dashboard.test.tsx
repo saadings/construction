@@ -79,7 +79,7 @@ const HIS_FIRST_DAY: WhatIsHappening = {
 
 function renderIt(what: WhatIsHappening | null | undefined) {
   const root = createRootRoute({ component: () => <Dashboard what={what} /> })
-  const kids = ['/', '/people', '/sites/$siteId', '/money-in', '/reports'].map((path) =>
+  const kids = ['/', '/people', '/sites/$siteId', '/receipts', '/reports'].map((path) =>
     createRoute({ getParentRoute: () => root, path, component: () => null })
   )
   const router = createRouter({

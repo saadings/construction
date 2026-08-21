@@ -215,7 +215,7 @@ function owingOn(person: Standing): Array<OnAHouse> {
 function Pay({ person, house }: { person: Standing; house: OnAHouse }) {
   return (
     <Link
-      to="/sites/$siteId/day"
+      to="/sites/$siteId/daybook"
       params={{ siteId: house.siteId }}
       search={{ [PAYING]: person.personId }}
       aria-label={`Pay ${person.name} on ${house.name}`}

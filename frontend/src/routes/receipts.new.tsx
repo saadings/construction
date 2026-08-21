@@ -8,7 +8,7 @@ import { NothingToOpen } from '../components/shell/NothingToOpen'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { PickASite } from '../components/sites/PickASite'
 
-export const Route = createFileRoute('/money-in/new')({ component: RecordAReceipt })
+export const Route = createFileRoute('/receipts/new')({ component: RecordAReceipt })
 
 // `Record a receipt`, his own screen and his own words for it: money arriving, with the house chosen here rather than carried in the address.
 

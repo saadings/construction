@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { Route } from '../../routes/sites.$siteId.day'
+import { Route } from '../../routes/sites.$siteId.daybook'
 import { pick } from '../../testing/pick'
 import type { Account, Named, Person } from './DaySheet'
 import { DaySheet, whatToOpenOn } from './DaySheet'

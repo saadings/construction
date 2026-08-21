@@ -10,29 +10,34 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ReceiptsRouteImport } from './routes/receipts'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as OwedRouteImport } from './routes/owed'
 import { Route as MoreRouteImport } from './routes/more'
-import { Route as MoneyInRouteImport } from './routes/money-in'
 import { Route as DaybookRouteImport } from './routes/daybook'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MoreIndexRouteImport } from './routes/more.index'
 import { Route as SitesNewRouteImport } from './routes/sites.new'
+import { Route as ReceiptsNewRouteImport } from './routes/receipts.new'
 import { Route as PeoplePersonIdRouteImport } from './routes/people.$personId'
 import { Route as MoreWhoCanSignInRouteImport } from './routes/more.who-can-sign-in'
 import { Route as MoreWhichAccountRouteImport } from './routes/more.which-account'
 import { Route as MoreWhatForRouteImport } from './routes/more.what-for'
 import { Route as MoreHowItLooksRouteImport } from './routes/more.how-it-looks'
-import { Route as MoneyInNewRouteImport } from './routes/money-in.new'
 import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdSharesRouteImport } from './routes/sites.$siteId.shares'
-import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
-import { Route as SitesSiteIdComingInRouteImport } from './routes/sites.$siteId.coming-in'
+import { Route as SitesSiteIdReceiptsRouteImport } from './routes/sites.$siteId.receipts'
+import { Route as SitesSiteIdDaybookRouteImport } from './routes/sites.$siteId.daybook'
 
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReceiptsRoute = ReceiptsRouteImport.update({
+  id: '/receipts',
+  path: '/receipts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PeopleRoute = PeopleRouteImport.update({
@@ -48,11 +53,6 @@ const OwedRoute = OwedRouteImport.update({
 const MoreRoute = MoreRouteImport.update({
   id: '/more',
   path: '/more',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MoneyInRoute = MoneyInRouteImport.update({
-  id: '/money-in',
-  path: '/money-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DaybookRoute = DaybookRouteImport.update({
@@ -80,6 +80,11 @@ const SitesNewRoute = SitesNewRouteImport.update({
   path: '/sites/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReceiptsNewRoute = ReceiptsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => ReceiptsRoute,
+} as any)
 const PeoplePersonIdRoute = PeoplePersonIdRouteImport.update({
   id: '/$personId',
   path: '/$personId',
@@ -105,11 +110,6 @@ const MoreHowItLooksRoute = MoreHowItLooksRouteImport.update({
   path: '/how-it-looks',
   getParentRoute: () => MoreRoute,
 } as any)
-const MoneyInNewRoute = MoneyInNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => MoneyInRoute,
-} as any)
 const SitesSiteIdIndexRoute = SitesSiteIdIndexRouteImport.update({
   id: '/sites/$siteId/',
   path: '/sites/$siteId/',
@@ -120,14 +120,14 @@ const SitesSiteIdSharesRoute = SitesSiteIdSharesRouteImport.update({
   path: '/sites/$siteId/shares',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitesSiteIdDayRoute = SitesSiteIdDayRouteImport.update({
-  id: '/sites/$siteId/day',
-  path: '/sites/$siteId/day',
+const SitesSiteIdReceiptsRoute = SitesSiteIdReceiptsRouteImport.update({
+  id: '/sites/$siteId/receipts',
+  path: '/sites/$siteId/receipts',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
-  id: '/sites/$siteId/coming-in',
-  path: '/sites/$siteId/coming-in',
+const SitesSiteIdDaybookRoute = SitesSiteIdDaybookRouteImport.update({
+  id: '/sites/$siteId/daybook',
+  path: '/sites/$siteId/daybook',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -135,21 +135,21 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/daybook': typeof DaybookRoute
-  '/money-in': typeof MoneyInRouteWithChildren
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/receipts': typeof ReceiptsRouteWithChildren
   '/reports': typeof ReportsRoute
-  '/money-in/new': typeof MoneyInNewRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
   '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
+  '/receipts/new': typeof ReceiptsNewRoute
   '/sites/new': typeof SitesNewRoute
   '/more/': typeof MoreIndexRoute
-  '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
-  '/sites/$siteId/day': typeof SitesSiteIdDayRoute
+  '/sites/$siteId/daybook': typeof SitesSiteIdDaybookRoute
+  '/sites/$siteId/receipts': typeof SitesSiteIdReceiptsRoute
   '/sites/$siteId/shares': typeof SitesSiteIdSharesRoute
   '/sites/$siteId/': typeof SitesSiteIdIndexRoute
 }
@@ -157,20 +157,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/daybook': typeof DaybookRoute
-  '/money-in': typeof MoneyInRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/receipts': typeof ReceiptsRouteWithChildren
   '/reports': typeof ReportsRoute
-  '/money-in/new': typeof MoneyInNewRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
   '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
+  '/receipts/new': typeof ReceiptsNewRoute
   '/sites/new': typeof SitesNewRoute
   '/more': typeof MoreIndexRoute
-  '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
-  '/sites/$siteId/day': typeof SitesSiteIdDayRoute
+  '/sites/$siteId/daybook': typeof SitesSiteIdDaybookRoute
+  '/sites/$siteId/receipts': typeof SitesSiteIdReceiptsRoute
   '/sites/$siteId/shares': typeof SitesSiteIdSharesRoute
   '/sites/$siteId': typeof SitesSiteIdIndexRoute
 }
@@ -179,21 +179,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/daybook': typeof DaybookRoute
-  '/money-in': typeof MoneyInRouteWithChildren
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
+  '/receipts': typeof ReceiptsRouteWithChildren
   '/reports': typeof ReportsRoute
-  '/money-in/new': typeof MoneyInNewRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
   '/more/who-can-sign-in': typeof MoreWhoCanSignInRoute
   '/people/$personId': typeof PeoplePersonIdRoute
+  '/receipts/new': typeof ReceiptsNewRoute
   '/sites/new': typeof SitesNewRoute
   '/more/': typeof MoreIndexRoute
-  '/sites/$siteId/coming-in': typeof SitesSiteIdComingInRoute
-  '/sites/$siteId/day': typeof SitesSiteIdDayRoute
+  '/sites/$siteId/daybook': typeof SitesSiteIdDaybookRoute
+  '/sites/$siteId/receipts': typeof SitesSiteIdReceiptsRoute
   '/sites/$siteId/shares': typeof SitesSiteIdSharesRoute
   '/sites/$siteId/': typeof SitesSiteIdIndexRoute
 }
@@ -203,21 +203,21 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/daybook'
-    | '/money-in'
     | '/more'
     | '/owed'
     | '/people'
+    | '/receipts'
     | '/reports'
-    | '/money-in/new'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
     | '/more/who-can-sign-in'
     | '/people/$personId'
+    | '/receipts/new'
     | '/sites/new'
     | '/more/'
-    | '/sites/$siteId/coming-in'
-    | '/sites/$siteId/day'
+    | '/sites/$siteId/daybook'
+    | '/sites/$siteId/receipts'
     | '/sites/$siteId/shares'
     | '/sites/$siteId/'
   fileRoutesByTo: FileRoutesByTo
@@ -225,20 +225,20 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/daybook'
-    | '/money-in'
     | '/owed'
     | '/people'
+    | '/receipts'
     | '/reports'
-    | '/money-in/new'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
     | '/more/who-can-sign-in'
     | '/people/$personId'
+    | '/receipts/new'
     | '/sites/new'
     | '/more'
-    | '/sites/$siteId/coming-in'
-    | '/sites/$siteId/day'
+    | '/sites/$siteId/daybook'
+    | '/sites/$siteId/receipts'
     | '/sites/$siteId/shares'
     | '/sites/$siteId'
   id:
@@ -246,21 +246,21 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/daybook'
-    | '/money-in'
     | '/more'
     | '/owed'
     | '/people'
+    | '/receipts'
     | '/reports'
-    | '/money-in/new'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
     | '/more/who-can-sign-in'
     | '/people/$personId'
+    | '/receipts/new'
     | '/sites/new'
     | '/more/'
-    | '/sites/$siteId/coming-in'
-    | '/sites/$siteId/day'
+    | '/sites/$siteId/daybook'
+    | '/sites/$siteId/receipts'
     | '/sites/$siteId/shares'
     | '/sites/$siteId/'
   fileRoutesById: FileRoutesById
@@ -269,14 +269,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   DaybookRoute: typeof DaybookRoute
-  MoneyInRoute: typeof MoneyInRouteWithChildren
   MoreRoute: typeof MoreRouteWithChildren
   OwedRoute: typeof OwedRoute
   PeopleRoute: typeof PeopleRouteWithChildren
+  ReceiptsRoute: typeof ReceiptsRouteWithChildren
   ReportsRoute: typeof ReportsRoute
   SitesNewRoute: typeof SitesNewRoute
-  SitesSiteIdComingInRoute: typeof SitesSiteIdComingInRoute
-  SitesSiteIdDayRoute: typeof SitesSiteIdDayRoute
+  SitesSiteIdDaybookRoute: typeof SitesSiteIdDaybookRoute
+  SitesSiteIdReceiptsRoute: typeof SitesSiteIdReceiptsRoute
   SitesSiteIdSharesRoute: typeof SitesSiteIdSharesRoute
   SitesSiteIdIndexRoute: typeof SitesSiteIdIndexRoute
 }
@@ -288,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/receipts': {
+      id: '/receipts'
+      path: '/receipts'
+      fullPath: '/receipts'
+      preLoaderRoute: typeof ReceiptsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/people': {
@@ -309,13 +316,6 @@ declare module '@tanstack/react-router' {
       path: '/more'
       fullPath: '/more'
       preLoaderRoute: typeof MoreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/money-in': {
-      id: '/money-in'
-      path: '/money-in'
-      fullPath: '/money-in'
-      preLoaderRoute: typeof MoneyInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/daybook': {
@@ -353,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/receipts/new': {
+      id: '/receipts/new'
+      path: '/new'
+      fullPath: '/receipts/new'
+      preLoaderRoute: typeof ReceiptsNewRouteImport
+      parentRoute: typeof ReceiptsRoute
+    }
     '/people/$personId': {
       id: '/people/$personId'
       path: '/$personId'
@@ -388,13 +395,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MoreHowItLooksRouteImport
       parentRoute: typeof MoreRoute
     }
-    '/money-in/new': {
-      id: '/money-in/new'
-      path: '/new'
-      fullPath: '/money-in/new'
-      preLoaderRoute: typeof MoneyInNewRouteImport
-      parentRoute: typeof MoneyInRoute
-    }
     '/sites/$siteId/': {
       id: '/sites/$siteId/'
       path: '/sites/$siteId'
@@ -409,33 +409,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitesSiteIdSharesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sites/$siteId/day': {
-      id: '/sites/$siteId/day'
-      path: '/sites/$siteId/day'
-      fullPath: '/sites/$siteId/day'
-      preLoaderRoute: typeof SitesSiteIdDayRouteImport
+    '/sites/$siteId/receipts': {
+      id: '/sites/$siteId/receipts'
+      path: '/sites/$siteId/receipts'
+      fullPath: '/sites/$siteId/receipts'
+      preLoaderRoute: typeof SitesSiteIdReceiptsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sites/$siteId/coming-in': {
-      id: '/sites/$siteId/coming-in'
-      path: '/sites/$siteId/coming-in'
-      fullPath: '/sites/$siteId/coming-in'
-      preLoaderRoute: typeof SitesSiteIdComingInRouteImport
+    '/sites/$siteId/daybook': {
+      id: '/sites/$siteId/daybook'
+      path: '/sites/$siteId/daybook'
+      fullPath: '/sites/$siteId/daybook'
+      preLoaderRoute: typeof SitesSiteIdDaybookRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface MoneyInRouteChildren {
-  MoneyInNewRoute: typeof MoneyInNewRoute
-}
-
-const MoneyInRouteChildren: MoneyInRouteChildren = {
-  MoneyInNewRoute: MoneyInNewRoute,
-}
-
-const MoneyInRouteWithChildren =
-  MoneyInRoute._addFileChildren(MoneyInRouteChildren)
 
 interface MoreRouteChildren {
   MoreHowItLooksRoute: typeof MoreHowItLooksRoute
@@ -466,18 +455,30 @@ const PeopleRouteChildren: PeopleRouteChildren = {
 const PeopleRouteWithChildren =
   PeopleRoute._addFileChildren(PeopleRouteChildren)
 
+interface ReceiptsRouteChildren {
+  ReceiptsNewRoute: typeof ReceiptsNewRoute
+}
+
+const ReceiptsRouteChildren: ReceiptsRouteChildren = {
+  ReceiptsNewRoute: ReceiptsNewRoute,
+}
+
+const ReceiptsRouteWithChildren = ReceiptsRoute._addFileChildren(
+  ReceiptsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   DaybookRoute: DaybookRoute,
-  MoneyInRoute: MoneyInRouteWithChildren,
   MoreRoute: MoreRouteWithChildren,
   OwedRoute: OwedRoute,
   PeopleRoute: PeopleRouteWithChildren,
+  ReceiptsRoute: ReceiptsRouteWithChildren,
   ReportsRoute: ReportsRoute,
   SitesNewRoute: SitesNewRoute,
-  SitesSiteIdComingInRoute: SitesSiteIdComingInRoute,
-  SitesSiteIdDayRoute: SitesSiteIdDayRoute,
+  SitesSiteIdDaybookRoute: SitesSiteIdDaybookRoute,
+  SitesSiteIdReceiptsRoute: SitesSiteIdReceiptsRoute,
   SitesSiteIdSharesRoute: SitesSiteIdSharesRoute,
   SitesSiteIdIndexRoute: SitesSiteIdIndexRoute,
 }

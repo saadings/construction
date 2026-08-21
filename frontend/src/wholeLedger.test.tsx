@@ -61,7 +61,7 @@ function spentOn(paisa: number) {
 
 function withRoutes(children: ReactNode, at = '/') {
   const root = createRootRoute({ component: () => <>{children}</> })
-  const kids = ['/sites/$siteId/coming-in', '/sites/$siteId/day', '/people/$personId'].map((path) =>
+  const kids = ['/sites/$siteId/receipts', '/sites/$siteId/daybook', '/people/$personId'].map((path) =>
     createRoute({ getParentRoute: () => root, path, component: () => null })
   )
   const router = createRouter({

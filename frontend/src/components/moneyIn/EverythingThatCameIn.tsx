@@ -62,7 +62,7 @@ const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1
 function RecordOne() {
   return (
     <Link
-      to="/money-in/new"
+      to="/receipts/new"
       className="border-input bg-card hover:border-brass flex min-h-11 items-center gap-2 rounded-md border px-3.5 py-2 text-sm font-medium shadow-xs transition-colors pointer-fine:min-h-9"
     >
       <Plus aria-hidden className="text-brass size-4 shrink-0" />

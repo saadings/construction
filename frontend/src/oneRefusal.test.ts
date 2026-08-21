@@ -42,20 +42,20 @@ const THEY_EACH_HELD_ONE = [
   'components/site/ExtraWork.tsx',
   'components/shares/PayOut.tsx',
   'components/invites/WhoCanSignIn.tsx',
-  'routes/sites.$siteId.day.tsx',
+  'routes/sites.$siteId.daybook.tsx',
   'routes/sites.$siteId.index.tsx',
   'routes/sites.$siteId.shares.tsx',
-  'routes/sites.$siteId.coming-in.tsx',
+  'routes/sites.$siteId.receipts.tsx',
 ]
 
 // Where a refusal that a file above once held is asked for now, for the two whose wiring moved.
 
-// Neither route stopped refusing. Each grew a second way in -- `/daybook` beside a house's own day sheet, `/money-in/new` beside a house's own receipts -- and the reading, the sending and the refusal moved together into one component so that they are not the same forty lines twice.
+// Neither route stopped refusing. Each grew a second way in -- `/daybook` beside a house's own day sheet, `/receipts/new` beside a house's own receipts -- and the reading, the sending and the refusal moved together into one component so that they are not the same forty lines twice.
 
 // Recorded rather than dropped from the list above, because dropping it is how a rule loses its subject: the file would stop asking and nothing would say so. Held to its own successor below, so a name here cannot outlive the file it points at.
 const IT_MOVED: Record<string, string> = {
-  'routes/sites.$siteId.day.tsx': 'components/daySheet/ADayOfPayments.tsx',
-  'routes/sites.$siteId.coming-in.tsx': 'components/moneyIn/AReceiptComingIn.tsx',
+  'routes/sites.$siteId.daybook.tsx': 'components/daySheet/ADayOfPayments.tsx',
+  'routes/sites.$siteId.receipts.tsx': 'components/moneyIn/AReceiptComingIn.tsx',
 }
 
 /** Every place a screen works out its own words for a refusal. */

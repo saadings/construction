@@ -22,7 +22,7 @@ const WHERE_IT_GOES = [
     hover: 'hover:border-brass',
   },
   {
-    to: '/money-in/new',
+    to: '/receipts/new',
     said: 'Receipts',
     what: 'Partner capital, a client payment, or a house sold.',
     icon: ArrowDownToLine,

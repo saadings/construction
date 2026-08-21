@@ -51,7 +51,7 @@ describe('the latest entries on a house', () => {
     await renderWith(PUT_DOWN)
 
     const through = await screen.findByRole('link', { name: 'Open daybook' })
-    expect(through.getAttribute('href')).toBe('/sites/s1/day')
+    expect(through.getAttribute('href')).toBe('/sites/s1/daybook')
 
     // Every other list of payments in this app carries the control that takes one out. This one is a glance -- two places to remove the same row is how two people remove it twice.
     expect(screen.queryByRole('button', { name: /Remove/ })).toBeNull()

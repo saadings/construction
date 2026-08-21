@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 const repoRoot = process.cwd()
 
 const SENDER = 'frontend/src/components/owed/WhatWeOwe.tsx'
-const READER = 'frontend/src/routes/sites.$siteId.day.tsx'
+const READER = 'frontend/src/routes/sites.$siteId.daybook.tsx'
 
 function read(path: string): string {
   const text = readFileSync(join(repoRoot, path), 'utf8')
