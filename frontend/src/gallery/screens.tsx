@@ -1076,7 +1076,7 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'People',
     where: 'a house, down the screen',
     partOf: 'the house screen',
-    proves: 'People on this house',
+    proves: 'Agreed work',
     // Paid in full is `paid == billed`, so it is written as one figure used twice rather than as two that happen to agree. Typed separately they are two ideas rendering one string, and an assertion about what the tile shop was billed matches what it was paid.
     draw: () => {
       const billedToTheTileShop = paisa(742_000)

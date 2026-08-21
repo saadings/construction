@@ -85,7 +85,8 @@ export function WhoIsOnThisHouse({
 }) {
   return (
     <section className="flex flex-col gap-5">
-      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">People on this house</h2>
+      {/* `Agreed work` rather than `People on this house`. The list is not who is around -- it is what each of them was put on and for how much, which is the only reason a row is here. */}
+      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">Agreed work</h2>
 
       <TheSpread engaged={engaged} />
 
@@ -116,8 +117,8 @@ function TheSpread({ engaged }: { engaged: Array<Engaged> | null | undefined }) 
   if (engaged.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        Nobody is down on this house yet. Put somebody on a trade with what was agreed, and what they bill against it
-        reads beside it.
+        Nothing agreed on this house yet. Agree a trade with somebody for a price, and what they bill against it reads
+        beside it.
       </p>
     )
   }
@@ -201,8 +202,9 @@ function PutSomebodyOn({
   if (open === null) {
     return (
       <div className="flex flex-wrap gap-3">
+        {/* `Agree`, and the state behind it was already called `agree`. "Put money on a trade" reads like betting, which is why he could not follow it -- what this records is a person put on a job at a house at a price, and agreeing is that sentence's own verb. */}
         <Button look="beside" onClick={() => setOpen('agree')}>
-          Put somebody on a trade
+          Agree
         </Button>
         <Button look="beside" onClick={() => setOpen('raise')}>
           Somebody has billed us
