@@ -12,6 +12,8 @@ afterEach(cleanup)
 const AS_MADE: HouseAsTyped = {
   name: 'Test Site',
   coveredAreaSqft: '4,975',
+  // Empty, because it is the house as it was actually made -- before anything could ask for an estimate.
+  budgetEstimatePaisa: '',
   stage: 'building',
   builtForAClient: false,
 }
@@ -64,6 +66,7 @@ describe('correcting a house already started', () => {
       expect(onSave).toHaveBeenCalledWith({
         name: '1-A, Phase 0',
         coveredAreaSqft: '4,975',
+        budgetEstimatePaisa: undefined,
         stage: 'building',
         builtForAClient: false,
       })
@@ -79,6 +82,46 @@ describe('correcting a house already started', () => {
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ coveredAreaSqft: undefined }))
+    })
+  })
+
+  it('asks what the build is expected to cost, which nothing could ask before', async () => {
+    const { onSave } = renderIt()
+    open()
+
+    // It was stored, accepted, returned and drawn on two screens, and no form asked for it -- so every house read `No estimate set` and the bar beside it never drew at all.
+    fireEvent.change(screen.getByLabelText('Budget estimate'), { target: { value: '19400000' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ budgetEstimatePaisa: '19,400,000' }))
+    })
+  })
+
+  it('carries an estimate back out untouched when the correction was about something else', async () => {
+    // The bug this nearly shipped. `edit` patches what it is given and an absent key removes the field, so a form that opened without the estimate would clear it the moment somebody corrected the stage -- silently, with no error, on a screen that looked like it worked.
+    const { onSave } = renderIt({ ...AS_MADE, budgetEstimatePaisa: '19,400,000' })
+    open()
+
+    expect(screen.getByLabelText('Budget estimate')).toHaveProperty('value', '19,400,000')
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '1-A, Phase 0' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ budgetEstimatePaisa: '19,400,000' }))
+    })
+  })
+
+  it('sends no estimate at all when it is emptied, because unestimated is not estimated at nothing', async () => {
+    const { onSave } = renderIt({ ...AS_MADE, budgetEstimatePaisa: '19,400,000' })
+    open()
+
+    fireEvent.change(screen.getByLabelText('Budget estimate'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ budgetEstimatePaisa: undefined }))
     })
   })
 
