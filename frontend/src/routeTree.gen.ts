@@ -14,6 +14,7 @@ import { Route as PeopleRouteImport } from './routes/people'
 import { Route as OwedRouteImport } from './routes/owed'
 import { Route as MoreRouteImport } from './routes/more'
 import { Route as MoneyInRouteImport } from './routes/money-in'
+import { Route as DaybookRouteImport } from './routes/daybook'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MoreIndexRouteImport } from './routes/more.index'
@@ -23,6 +24,7 @@ import { Route as MoreWhoCanSignInRouteImport } from './routes/more.who-can-sign
 import { Route as MoreWhichAccountRouteImport } from './routes/more.which-account'
 import { Route as MoreWhatForRouteImport } from './routes/more.what-for'
 import { Route as MoreHowItLooksRouteImport } from './routes/more.how-it-looks'
+import { Route as MoneyInNewRouteImport } from './routes/money-in.new'
 import { Route as SitesSiteIdIndexRouteImport } from './routes/sites.$siteId.index'
 import { Route as SitesSiteIdSharesRouteImport } from './routes/sites.$siteId.shares'
 import { Route as SitesSiteIdDayRouteImport } from './routes/sites.$siteId.day'
@@ -51,6 +53,11 @@ const MoreRoute = MoreRouteImport.update({
 const MoneyInRoute = MoneyInRouteImport.update({
   id: '/money-in',
   path: '/money-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DaybookRoute = DaybookRouteImport.update({
+  id: '/daybook',
+  path: '/daybook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -98,6 +105,11 @@ const MoreHowItLooksRoute = MoreHowItLooksRouteImport.update({
   path: '/how-it-looks',
   getParentRoute: () => MoreRoute,
 } as any)
+const MoneyInNewRoute = MoneyInNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => MoneyInRoute,
+} as any)
 const SitesSiteIdIndexRoute = SitesSiteIdIndexRouteImport.update({
   id: '/sites/$siteId/',
   path: '/sites/$siteId/',
@@ -122,11 +134,13 @@ const SitesSiteIdComingInRoute = SitesSiteIdComingInRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/money-in': typeof MoneyInRoute
+  '/daybook': typeof DaybookRoute
+  '/money-in': typeof MoneyInRouteWithChildren
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/reports': typeof ReportsRoute
+  '/money-in/new': typeof MoneyInNewRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
@@ -142,10 +156,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/money-in': typeof MoneyInRoute
+  '/daybook': typeof DaybookRoute
+  '/money-in': typeof MoneyInRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/reports': typeof ReportsRoute
+  '/money-in/new': typeof MoneyInNewRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
@@ -162,11 +178,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
-  '/money-in': typeof MoneyInRoute
+  '/daybook': typeof DaybookRoute
+  '/money-in': typeof MoneyInRouteWithChildren
   '/more': typeof MoreRouteWithChildren
   '/owed': typeof OwedRoute
   '/people': typeof PeopleRouteWithChildren
   '/reports': typeof ReportsRoute
+  '/money-in/new': typeof MoneyInNewRoute
   '/more/how-it-looks': typeof MoreHowItLooksRoute
   '/more/what-for': typeof MoreWhatForRoute
   '/more/which-account': typeof MoreWhichAccountRoute
@@ -184,11 +202,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/daybook'
     | '/money-in'
     | '/more'
     | '/owed'
     | '/people'
     | '/reports'
+    | '/money-in/new'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
@@ -204,10 +224,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/daybook'
     | '/money-in'
     | '/owed'
     | '/people'
     | '/reports'
+    | '/money-in/new'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
@@ -223,11 +245,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/daybook'
     | '/money-in'
     | '/more'
     | '/owed'
     | '/people'
     | '/reports'
+    | '/money-in/new'
     | '/more/how-it-looks'
     | '/more/what-for'
     | '/more/which-account'
@@ -244,7 +268,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
-  MoneyInRoute: typeof MoneyInRoute
+  DaybookRoute: typeof DaybookRoute
+  MoneyInRoute: typeof MoneyInRouteWithChildren
   MoreRoute: typeof MoreRouteWithChildren
   OwedRoute: typeof OwedRoute
   PeopleRoute: typeof PeopleRouteWithChildren
@@ -291,6 +316,13 @@ declare module '@tanstack/react-router' {
       path: '/money-in'
       fullPath: '/money-in'
       preLoaderRoute: typeof MoneyInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/daybook': {
+      id: '/daybook'
+      path: '/daybook'
+      fullPath: '/daybook'
+      preLoaderRoute: typeof DaybookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -356,6 +388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MoreHowItLooksRouteImport
       parentRoute: typeof MoreRoute
     }
+    '/money-in/new': {
+      id: '/money-in/new'
+      path: '/new'
+      fullPath: '/money-in/new'
+      preLoaderRoute: typeof MoneyInNewRouteImport
+      parentRoute: typeof MoneyInRoute
+    }
     '/sites/$siteId/': {
       id: '/sites/$siteId/'
       path: '/sites/$siteId'
@@ -386,6 +425,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface MoneyInRouteChildren {
+  MoneyInNewRoute: typeof MoneyInNewRoute
+}
+
+const MoneyInRouteChildren: MoneyInRouteChildren = {
+  MoneyInNewRoute: MoneyInNewRoute,
+}
+
+const MoneyInRouteWithChildren =
+  MoneyInRoute._addFileChildren(MoneyInRouteChildren)
 
 interface MoreRouteChildren {
   MoreHowItLooksRoute: typeof MoreHowItLooksRoute
@@ -419,7 +469,8 @@ const PeopleRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
-  MoneyInRoute: MoneyInRoute,
+  DaybookRoute: DaybookRoute,
+  MoneyInRoute: MoneyInRouteWithChildren,
   MoreRoute: MoreRouteWithChildren,
   OwedRoute: OwedRoute,
   PeopleRoute: PeopleRouteWithChildren,

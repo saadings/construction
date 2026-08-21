@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { asAWeekday } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
@@ -26,6 +27,8 @@ export type Account = { _id: Id<'bankAccounts'>; label: string }
 
 export type DaySheetProps = {
   siteName: string
+  /** The house picker, where the address did not already decide which house this is. His daybook is reached from anywhere and chooses the house on the screen; a house's own day sheet has it in the address and shows the name. */
+  pickSite?: ReactNode
   day: string
   onChangeDay: (day: string) => void
   trades: Array<Named>
@@ -54,6 +57,7 @@ function nameOf(rows: Array<{ _id: string; name: string }>, id: string): string 
 
 export function DaySheet({
   siteName,
+  pickSite,
   day,
   onChangeDay,
   trades,
@@ -137,15 +141,23 @@ export function DaySheet({
       {/* Asked for rather than inherited: this screen draws its own layout instead of sitting in a `Page`, because a sticky header over a form wants its padding inside each rather than around both. So the one thing `Page` would have given it has to be requested here, where forgetting it would be visible. */}
 
       {/* Above the sticky header rather than inside it, which is the one thing that makes the heading below not a duplicate. Put in with the header it was pinned too, so `1-A, Phase 0` sat on the screen twice, thirty-three pixels apart, permanently -- on the screen he uses most. A trail is navigation and scrolls away like it does on every other screen; the header is what somebody needs in front of them while typing, so the house, the day and the running total stay. */}
+
+      {/* The house's name is handed to the trail only where the trail runs through the house. On his daybook it does not -- that screen sits under the ledger itself and its house is a thing chosen on it, so naming a `$siteId` nothing is standing at would be answering a question the trail never asks. */}
       <div className="px-5 pt-4 sm:px-7 lg:px-9">
-        <Trail named={{ siteId: siteName }} />
+        <Trail named={pickSite === undefined ? { siteId: siteName } : {}} />
       </div>
 
       <header className="border-border bg-background/95 sticky top-0 z-10 border-b backdrop-blur-sm">
         <div className="flex flex-col gap-3 px-5 pt-4 pb-4 sm:px-7 lg:px-9">
           {/* The house is the heading here: this screen has no `Page` and no title, so taking it out left nothing saying what the day sheet was. It is not a duplicate of the trail once the trail is not pinned beside it. */}
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-foreground truncate text-[0.9375rem] font-medium">{siteName}</p>
+
+          {/* And where the house is chosen rather than given, the picker stands in the same place. His drawing puts `Site` and `Date` side by side in this bar, which is what this row already was. */}
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            {pickSite === undefined ? (
+              <p className="text-foreground truncate pb-1 text-[0.9375rem] font-medium">{siteName}</p>
+            ) : (
+              <div className="min-w-[13.75rem] flex-1">{pickSite}</div>
+            )}
             {/* The control this app draws, rather than the OS one. In a CI picture it read `07/04/2026` beside `Sat 4 Jul` fifteen pixels below: the native control prints the browser's locale, which was July 4 in American order, and this app writes a day the other way round. Two dates from one variable, disagreeing, on the screen where he records what money went out that day. */}
             <Day look="beside" label="Date" value={day} onPick={onChangeDay} />
           </div>

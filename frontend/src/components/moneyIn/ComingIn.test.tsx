@@ -51,7 +51,7 @@ function renderWith(over: Partial<Parameters<typeof ComingIn>[0]> = {}) {
   return { onPutIn, onTakeBack, onAddAccount }
 }
 
-describe('money coming in', () => {
+describe('recording a receipt', () => {
   it('lists what has already come in, with what it was and who it came from', async () => {
     renderWith()
 
@@ -218,7 +218,7 @@ describe('money coming in', () => {
   })
 })
 
-describe('taking money coming in back out', () => {
+describe('taking a receipt back out', () => {
   it('takes back the one it was asked about', async () => {
     // Money going out could be taken back from the first day and money coming in could not. A partner's capital entered wrong was permanent, and capital is what the whole profit split is worked out from.
     const { onTakeBack } = renderWith()

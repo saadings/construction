@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -6,6 +7,23 @@ import type { EverythingIn, Receipt } from './EverythingThatCameIn'
 import { EverythingThatCameIn } from './EverythingThatCameIn'
 
 afterEach(cleanup)
+
+// Inside a router now, because the screen has a way in on it: `Record a receipt`, which is a `Link` and needs somewhere to point. It had none before -- `Receipts` was a screen somebody could read and not write to, which is what left the second card of the `New entry` dialog with nowhere to land.
+async function renderIt(everything: EverythingIn | null | undefined) {
+  const root = createRootRoute({ component: () => <EverythingThatCameIn everything={everything} /> })
+  const kids = ['/money-in/new'].map((path) => createRoute({ getParentRoute: () => root, path, component: () => null }))
+  const router = createRouter({
+    routeTree: root.addChildren(kids),
+    history: createMemoryHistory({ initialEntries: ['/money-in'] }),
+  })
+
+  const drawn = render(<RouterProvider router={router} />)
+
+  // Awaited, because a router draws on a tick and everything below asks its questions the moment this returns. Without it every one of them is asked of an empty body, which reads exactly like a screen that stopped drawing.
+  await screen.findByRole('heading', { name: 'Receipts' })
+
+  return drawn
+}
 
 // Two houses, because what this screen is for is the question one house cannot answer.
 
@@ -65,24 +83,24 @@ function everythingIn(over: Partial<EverythingIn> = {}): EverythingIn {
 }
 
 describe('what has come in altogether', () => {
-  it('says which house each one landed on, which is the whole reason it is read over all of them', () => {
-    render(<EverythingThatCameIn everything={everythingIn()} />)
+  it('says which house each one landed on, which is the whole reason it is read over all of them', async () => {
+    await renderIt(everythingIn())
 
     const rows = screen.getAllByRole('listitem')
     expect(within(rows[0]).getByText('1-A, Phase 0')).toBeTruthy()
     expect(within(rows[1]).getByText('204-C, Phase 6')).toBeTruthy()
   })
 
-  it('keeps a partner’s own money apart from what a client pays, in the words a house already uses', () => {
-    render(<EverythingThatCameIn everything={everythingIn()} />)
+  it('keeps a partner’s own money apart from what a client pays, in the words a house already uses', async () => {
+    await renderIt(everythingIn())
 
     // The distinction the whole profit split stands on, said on the row rather than left to the reader.
     expect(screen.getAllByText('Partner investment').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Client payment').length).toBeGreaterThan(0)
   })
 
-  it('shows the total and the three kinds it is made of, so nothing is left out of the sum', () => {
-    render(<EverythingThatCameIn everything={everythingIn()} />)
+  it('shows the total and the three kinds it is made of, so nothing is left out of the sum', async () => {
+    await renderIt(everythingIn())
 
     // Read off the tiles themselves rather than off the page: every one of these figures is also somewhere in the table, and a body-wide search cannot tell a tile from the row under it.
     const onTheTiles = screen.getAllByRole('definition').map((figure) => figure.textContent)
@@ -98,8 +116,8 @@ describe('what has come in altogether', () => {
     expect(570_000 + 235_000 + 0).toBe(805_000)
   })
 
-  it('names each figure on the tile it is on, rather than leaving four numbers in a row', () => {
-    render(<EverythingThatCameIn everything={everythingIn()} />)
+  it('names each figure on the tile it is on, rather than leaving four numbers in a row', async () => {
+    await renderIt(everythingIn())
 
     // A `dl` pairs them, so the reading is the pairing rather than the order they happen to be drawn in.
     expect(screen.getAllByRole('term').map((label) => label.textContent)).toEqual([
@@ -110,8 +128,8 @@ describe('what has come in altogether', () => {
     ])
   })
 
-  it('keeps a cheque number whole, on the screen where somebody checks one against a cheque book', () => {
-    render(<EverythingThatCameIn everything={everythingIn()} />)
+  it('keeps a cheque number whole, on the screen where somebody checks one against a cheque book', async () => {
+    await renderIt(everythingIn())
 
     expect(screen.getByText('CH-4471')).toBeTruthy()
     // And the two rows say how the money arrived, which is what the reference belongs to.
@@ -119,26 +137,26 @@ describe('what has come in altogether', () => {
     expect(screen.getByText('Transfer')).toBeTruthy()
   })
 
-  it('writes the day the way he writes it', () => {
-    render(<EverythingThatCameIn everything={everythingIn()} />)
+  it('writes the day the way he writes it', async () => {
+    await renderIt(everythingIn())
 
     expect(screen.getByText('23/07/2026')).toBeTruthy()
   })
 
-  it('says what to do when nothing has come in yet', () => {
-    render(<EverythingThatCameIn everything={everythingIn({ receipts: [] })} />)
+  it('says what to do when nothing has come in yet', async () => {
+    await renderIt(everythingIn({ receipts: [] }))
 
     expect(screen.getByText(/Nothing has come in yet/)).toBeTruthy()
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
-  it('keeps the two unknowns apart rather than folding them together', () => {
-    const { unmount } = render(<EverythingThatCameIn everything={undefined} />)
+  it('keeps the two unknowns apart rather than folding them together', async () => {
+    const { unmount } = await renderIt(undefined)
     expect(screen.getByRole('status', { name: 'Getting what has come in' })).toBeTruthy()
     unmount()
 
     // The ledger has answered and does not know this sign-in, which is not a slow read.
-    render(<EverythingThatCameIn everything={null} />)
+    await renderIt(null)
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.getByText(/sign-in/i)).toBeTruthy()
   })

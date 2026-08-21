@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa, groupWhileTyping } from '~shared/money'
@@ -55,6 +56,8 @@ const WHY: Array<{ is: WhyItCame; said: string }> = [
 // The other half of the day sheet. Money going out has had a screen since the first day; this is what came in against it.
 export function ComingIn({
   siteName,
+  title = 'Invested',
+  pickSite,
   received,
   people,
   accounts,
@@ -65,6 +68,12 @@ export function ComingIn({
   onAddAccount,
 }: {
   siteName: string
+  /** What the screen is called. `Invested` where a house's own receipts are being read; `Record a receipt` where it is reached from the ledger with the house picked on the screen, which is his own word for this screen. */
+
+  /** The two must converge: `Invested` is with him alongside the dashboard tile and `Reports`, and whatever he answers moves all three. */
+  title?: string
+  /** The house picker, where the address did not already decide which house this is. */
+  pickSite?: ReactNode
   received: Array<Received> | null | undefined
   people: Array<Person> | null | undefined
   accounts: Array<Account> | null | undefined
@@ -78,8 +87,10 @@ export function ComingIn({
   onAddAccount: (label: string, lastFourDigits: string) => Promise<string>
 }) {
   return (
-    // No house name beside the title any more: the trail above says it and links back to it.
-    <Page title="Invested" named={{ siteId: siteName }}>
+    // No house name beside the title any more: the trail above says it and links back to it -- and where the house is chosen here instead, there is no `$siteId` in the address for the trail to name.
+    <Page title={title} named={pickSite === undefined ? { siteId: siteName } : {}}>
+      {pickSite === undefined ? null : <div className="w-full max-w-md">{pickSite}</div>}
+
       <Taking
         people={people ?? []}
         accounts={accounts ?? []}

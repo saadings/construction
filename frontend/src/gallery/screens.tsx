@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
+import { WhatAreYouRecording } from '../components/entry/WhatAreYouRecording'
 import { WhoCanSignIn } from '../components/invites/WhoCanSignIn'
 import { ComingIn } from '../components/moneyIn/ComingIn'
 import { EverythingThatCameIn } from '../components/moneyIn/EverythingThatCameIn'
@@ -31,6 +32,7 @@ import { Stages } from '../components/site/Stages'
 import { WhoIsOnThisHouse } from '../components/site/WhoIsOnThisHouse'
 import { ChangeTheHouse } from '../components/sites/ChangeTheHouse'
 import { HouseDetails } from '../components/sites/HouseDetails'
+import { PickASite } from '../components/sites/PickASite'
 import { SitesList } from '../components/sites/SitesList'
 import { A_DAY, BANK, NOBODY, STILL_OWED, THE_HOUSE, TRADES, everythingAtOnce, paisa } from './fixtures'
 
@@ -322,6 +324,59 @@ export const ON_SHOW: Array<OnShow> = [
     ),
   },
   {
+    slug: 'daybook',
+    at: '/daybook',
+    name: 'Daybook',
+    where: 'the second row of the nav',
+    // His own screen, and the same sheet as `day-sheet` below with one difference: the house is chosen here rather than carried in the address. Photographed as its own entry because that difference is the whole of the screen -- the picker sits in the sticky header, and a picture of the sheet without it says nothing about whether it fits beside the date.
+
+    // The picker's own label, and not `Add another`, which is what the sheet below proves. A marker two screens share is a marker the loop passes on with either of them drawn, and this file holds every one of them to being its own -- which is what caught this.
+    proves: 'Site',
+    draw: () => (
+      <DaySheet
+        siteName={THE_HOUSE}
+        pickSite={
+          <PickASite
+            sites={[
+              { _id: 's1', name: THE_HOUSE },
+              { _id: 's2', name: '204-C, Phase 6' },
+              { _id: 's3', name: '12-B, Phase 3' },
+            ]}
+            chosen="s1"
+            onPick={() => undefined}
+          />
+        }
+        day={A_DAY}
+        onChangeDay={() => undefined}
+        trades={TRADES.map((trade) => ({ _id: trade._id as never, name: trade.name }))}
+        people={NOBODY.map((person) => ({ _id: person._id as never, name: person.name }))}
+        accounts={BANK.map((account) => ({ _id: account._id as never, label: account.label }))}
+        saving={false}
+        refusal={null}
+        onPutIn={nothingTrue}
+        onAddAccount={() => Promise.resolve('b1' as never)}
+        onAddTrade={() => Promise.resolve('t1' as never)}
+      />
+    ),
+  },
+  {
+    slug: 'what-are-you-recording',
+    at: '/dashboard',
+    name: 'What are you recording?',
+    where: 'the header, behind New entry',
+    partOf: 'the frame around every screen',
+    // Opened before the picture is taken. A dialog at rest is a picture of a button, and the two cards inside it are the whole of what this proves.
+    tapFirst: ['New entry'],
+    // Radix puts a dialog in a portal on `body`, outside the element the gallery draws screens into. Nothing was wrong with the marker or the timing the first time this happened: the camera was looking inside an element the screen had left.
+    shownIn: '[role="dialog"]',
+    proves: 'The two ledgers are kept apart',
+    draw: () => (
+      <div className="p-3">
+        <WhatAreYouRecording />
+      </div>
+    ),
+  },
+  {
     slug: 'day-sheet',
     at: '/sites/$siteId/day',
     name: 'Expenses',
@@ -348,7 +403,7 @@ export const ON_SHOW: Array<OnShow> = [
     slug: 'coming-in',
     at: '/sites/$siteId/coming-in',
     name: 'Invested',
-    where: 'a house, then money coming in',
+    where: 'a house, then its receipts',
     proves: 'Invested',
     draw: () => (
       <ComingIn
