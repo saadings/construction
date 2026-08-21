@@ -747,7 +747,16 @@ export const ON_SHOW: Array<OnShow> = [
           how: 'payOrder' as const,
           reference: 'PO-2288',
         },
-        { day: '2026-06-02', rupees: 900_000, from: 1, house: 1, why: 'partnerMoney' as const, how: 'cash' as const },
+        // The one with a note on it, and it is the cash one on purpose: cash carries no cheque number, so this is the row where a note is the only thing saying what the money was. A receipt line that ships undrawn is a line nobody has ever looked at, and this fixture had four receipts and no note between them.
+        {
+          day: '2026-06-02',
+          rupees: 900_000,
+          from: 1,
+          house: 1,
+          why: 'partnerMoney' as const,
+          how: 'cash' as const,
+          note: 'Handed over on site, against the steel order',
+        },
       ]
 
       const byWhy = {
@@ -769,6 +778,8 @@ export const ON_SHOW: Array<OnShow> = [
               why: one.why,
               method: one.how,
               reference: one.reference,
+              // Passed through rather than dropped here, which is the half a fixture alone would not have fixed: the note could have been written on every row and still reached no screen.
+              note: one.note,
               siteId: one.house === 0 ? 's1' : 's2',
               siteName: one.house === 0 ? THE_HOUSE : '204-C, Phase 6',
               fromName: NOBODY[one.from]?.name ?? 'Somebody else',
