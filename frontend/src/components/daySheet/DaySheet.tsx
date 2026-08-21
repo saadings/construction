@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { asAWeekday } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 import { whatIsWrongWith } from '~shared/validation/payment'
@@ -42,6 +42,36 @@ export type DaySheetProps = {
   onAddTrade: (trade: { name: string; countsAsBuildingCost: boolean }) => Promise<Named['_id']>
   /** Where this sitting is kept while it is being typed: the house and the day, so another house never shows this one's half-typed payment. Left out only where there is nowhere to keep it, which is the gallery. */
   keptUnder?: string
+  /** Somebody to open on, from a link that already knew who was owed. Honoured once, and never over a choice somebody has made. */
+  paying?: string
+  /** Said once that has been decided either way, so the address can stop carrying a person it may since have stopped being right about. */
+  onPayingTaken?: () => void
+}
+
+/** What this sheet opens on, given somebody a link asked for, and what it owes him by way of explanation if it declined. */
+export function whatToOpenOn(
+  draft: Draft,
+  paying: string | undefined,
+  people: Array<Person>
+): { draft: Draft; heldBack: string | null } {
+  if (paying === undefined) return { draft, heldBack: null }
+
+  // Ignored rather than fatal, and one rule for every way it can be wrong -- hidden, removed, or belonging to another house. A URL outlives the row it was copied from, so somebody's bookmark will outlive somebody's row, and a link that breaks a screen is worse than one that quietly does nothing. Said nothing about because no button here can produce it: only a stale bookmark or a hand-edited address can.
+  const who = people.find((person) => person._id === paying)
+  if (who === undefined) return { draft, heldBack: null }
+
+  // Already him, so there is nothing to do and nothing to say. Without this the sentence below names the same man twice and explains that he was held back in favour of himself.
+  if (draft.paidToId === who._id) return { draft, heldBack: null }
+
+  // Never over somebody already being paid. An unposted sitting can be waiting on this screen with a payee in it, half-typed, and a link that rewrites who is being paid midway through is the sitting-carry bug wearing another hat -- one house's payment landing under another's, on money.
+  const alreadyThere = draft.paidToId === '' ? draft.newPerson.trim() : (nameOf(people, draft.paidToId) ?? 'somebody')
+
+  // And it says so, because deferring in silence is the thing this whole arrangement exists to prevent: a link that navigates and changes nothing is indistinguishable from one that worked. An instrument that cannot act must still be able to speak.
+  if (alreadyThere !== '') {
+    return { draft, heldBack: `A payment to ${alreadyThere} is part-written here, so ${who.name} has not been put in.` }
+  }
+
+  return { draft: { ...draft, paidToId: who._id }, heldBack: null }
 }
 
 /** What a line already put down is worth, or the words he typed when that cannot be read. Never a zero standing in for either. */
@@ -69,6 +99,8 @@ export function DaySheet({
   onAddAccount,
   onAddTrade,
   keptUnder,
+  paying,
+  onPayingTaken,
 }: DaySheetProps) {
   // The lists as read, plus anything added from a picker since this sheet opened. A row created mid-sitting is not in the query's answer yet, and every picked id here is checked against the list it was drawn from -- so without this the field goes blank the moment it is added.
   const everyTrade = useWhatWasAdded(trades)
@@ -77,14 +109,25 @@ export function DaySheet({
   // A sitting is eight payments typed standing on a site. It lived in React state alone: the phone locks, iOS discards the tab, and the ledger loses the thing it exists to record without ever having said so.
   const kept = useTheSittingKept(keptUnder ?? '')
 
+  // Decided at the first render rather than in an effect. `ADayOfPayments` does not draw this sheet until the people have come back, so the list is already here to check a link's person against -- and a choice made a tick later would be a field somebody watches fill itself in.
+  const [arrivedOn] = useState(() => whatToOpenOn(kept.restored?.draft ?? anEmptyDraft(), paying, people))
+
   const [done, setDone] = useState<Array<Draft>>(kept.restored?.done ?? [])
-  const [draft, setDraft] = useState<Draft>(kept.restored?.draft ?? anEmptyDraft())
+  const [draft, setDraft] = useState<Draft>(arrivedOn.draft)
   const [problem, setProblem] = useState<string | null>(null)
+
+  // Held in state and not read back off the address, because the address is about to stop saying it. Strip the parameter while the explanation still comes from it and a refresh loses the sentence, leaving exactly the unexplained no-op it was written to prevent.
+  const [heldBack, setHeldBack] = useState<string | null>(arrivedOn.heldBack)
 
   // Said once, until he sends. Restored and sent must not look the same: eight rows on a screen he has just reopened say nothing about whether they are in the ledger, and that is a worse lie than losing them.
   const [pickedUp, setPickedUp] = useState(kept.restored !== null)
 
   useKeepingIt(keptUnder ?? '', { done, draft }, keptUnder !== undefined)
+
+  // Said once the choice above has been made or declined, so the address stops asserting a person it may no longer be right about: a refresh or a back-button would otherwise put them back over whatever has been chosen since.
+  useEffect(() => {
+    if (paying !== undefined) onPayingTaken?.()
+  }, [paying, onPayingTaken])
 
   const runningTotal = sittingTotalPaisa([...done, draft])
   const change = (part: Partial<Draft>) => setDraft((was) => ({ ...was, ...part }))
@@ -246,15 +289,27 @@ export function DaySheet({
             }}
           />
 
-          <WhoWasPaid
-            who={{ paidToId: draft.paidToId, newPerson: draft.newPerson }}
-            people={people}
-            problem={whatIsWrongWith('paidTo', asTyped(draft, draft.parts[0]))}
-            onChange={(who) => {
-              // Looked up in the list it was drawn from rather than trusted, the same as every other picked answer here.
-              change({ paidToId: pickedFrom(people, who.paidToId), newPerson: who.newPerson })
-            }}
-          />
+          {/* Held in one box with the field it is about, and the reason is the photograph. Left as a sibling it sat halfway between `Category` and `Paid to` -- the same distance from each, since every field here is spaced alike -- and read as a hint about the wrong one. `yarn columns` passed it: nothing was cut, squeezed or overlapping, and it was still attached to the wrong question. */}
+          <div className="flex flex-col gap-1.5">
+            {/* Why the person a link asked for is not in the field below. Not an alert: nothing has gone wrong and nothing was lost -- his own half-written payment is still here, which is the point being made. */}
+            {heldBack === null ? null : (
+              <p className="text-muted-foreground text-sm" role="status">
+                {heldBack}
+              </p>
+            )}
+
+            <WhoWasPaid
+              who={{ paidToId: draft.paidToId, newPerson: draft.newPerson }}
+              people={people}
+              problem={whatIsWrongWith('paidTo', asTyped(draft, draft.parts[0]))}
+              onChange={(who) => {
+                // Looked up in the list it was drawn from rather than trusted, the same as every other picked answer here.
+                change({ paidToId: pickedFrom(people, who.paidToId), newPerson: who.newPerson })
+                // He has answered the question the sentence was about, so the sentence goes.
+                setHeldBack(null)
+              }}
+            />
+          </div>
 
           <MoneyLine
             value={draft.amount}

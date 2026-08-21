@@ -22,6 +22,8 @@ export function ADayOfPayments({
   onChangeDay: dayChangedAbove,
   pickSite,
   whereToAfterwards,
+  paying,
+  onPayingTaken,
 }: {
   siteId: string
   // Which day, when something above needs to move it. The daybook does: opening a sitting from the waiting list has to move the house and the day together, and a day held down here could only be told about one of them.
@@ -33,6 +35,9 @@ export function ADayOfPayments({
   pickSite?: ReactNode
   /** Where to go once a sitting is in. From a house it is that house, because the figure he has just moved is that house's and watching it move is the whole reason the day was entered. */
   whereToAfterwards: (siteId: string) => Promise<void>
+  /** Somebody a link already knew was owed, to open the sheet on. Sent by `Pay` from the payables rail; absent from the daybook, which is reached without anybody in mind. */
+  paying?: string
+  onPayingTaken?: () => void
 }) {
   const forSite = { siteId: siteId as Id<'sites'> }
 
@@ -104,6 +109,8 @@ export function ADayOfPayments({
       accounts={accounts}
       saving={saving}
       refusal={refusal}
+      paying={paying}
+      onPayingTaken={onPayingTaken}
       onPutIn={putThemIn}
       // Another house never shows this one's half-typed payment, and yesterday's sheet never shows today's.
       keptUnder={keptUnder}

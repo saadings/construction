@@ -1,6 +1,10 @@
 import { CLIENT_SITE_SPEND, MARKET_PAYABLES } from '~shared/fixtures/oneClientSite'
 import { rupeesToPaisa } from '~shared/money'
 
+import { anEmptyDraft } from '../components/daySheet/sitting'
+import { whereASittingIsKept } from '../components/daySheet/theSittingKept'
+import { keepOnThisDevice } from '../lib/keptOnThisDevice'
+
 // Everyone in the gallery is invented. The figures are not: they come from `oneClientSite`, which carries what a real workbook records and no person's name, mobile, account or cheque number, because the sheets hold all four.
 
 // This file ends up on a screen somebody photographs, so the rule is stricter here than anywhere else in the repository: nothing copied out of a workbook that names anybody.
@@ -33,6 +37,19 @@ export const THE_HOUSE = '1-A, Phase 0'
 
 /** A day in the middle of the work, fixed rather than today's, so two screenshots a week apart are the same picture. */
 export const A_DAY = '2026-07-23'
+
+/** A payment already part-written on this device, so the gallery can photograph a `Pay` link arriving over one. */
+
+// Seeded the way a returning device really holds it, rather than by handing the sheet its own answer: a picture of a state the real path cannot reach is a picture that lies, and this branch exists precisely because a link that quietly does nothing photographs like a link that worked.
+
+// Kept here rather than in `screens.tsx`, which may only import components -- a rule that exists because a gallery drifts by drawing things this app does not have.
+export function aPaymentAlreadyStartedFor(paidToId: string): string {
+  const keptUnder = whereASittingIsKept('s1', A_DAY)
+
+  keepOnThisDevice(keptUnder, { done: [], draft: { ...anEmptyDraft(), paidToId, amount: '84,500' } })
+
+  return keptUnder
+}
 
 export const paisa = rupeesToPaisa
 
