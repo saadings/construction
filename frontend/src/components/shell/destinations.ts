@@ -10,8 +10,15 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
+import type { FileRouteTypes } from '../../routeTree.gen'
+
 export type Destination = {
-  to: string
+  // A route this app actually has, rather than any string at all. The generated tree already exports this union and the field said `string`, so a nav row could point at a screen that does not exist and compile: `to: '/daybookk'` typechecked clean, and the only thing that noticed was a test.
+
+  // Found while moving three addresses across thirty files, where a green typecheck was about to be read as covering the rename. It covered the imports, which are modules, and said nothing at all about the targets, which were strings -- two levels of protection in one tree, and one of them was none.
+
+  // `to` rather than `fullPaths`, which is the neighbouring union and the wrong one: it carries `/sites/$siteId/` with a trailing slash, which a `Link` does not accept, so every row would have failed against the very component that draws it.
+  to: FileRouteTypes['to']
   label: string
   icon: LucideIcon
   /** Which heading it sits under in the rail, or nothing for the ones outside the headings entirely. */
