@@ -70,8 +70,19 @@ export function ADayOfPayments({
     }
   }
 
+  // Where this sitting is kept while it is typed: this house, this day.
+  const keptUnder = whereASittingIsKept(siteId, day)
+
   return (
     <DaySheet
+      // Remounted when the house or the day changes, and this one line is load-bearing.
+
+      // `DaySheet` reads what was kept **once**, on mount, and writes on every change under whatever key it currently has. So a key that changed under a mounted sheet wrote the rows already typed to the *new* key and never read the new key's own sitting -- one house's payments landing under another house's, silently, on money.
+
+      // Reachable on `main` through the date picker and rarely hit, because a date is corrected by one step now and then. His daybook puts a house picker in the sticky header, which turns that into the ordinary way to use the screen.
+
+      // What falls out is the right behaviour rather than the lesser evil: every house and day keeps its own sitting, and switching between them restores each. `Form` takes a `key` for the same reason one level down.
+      key={keptUnder}
       siteName={site.name}
       pickSite={pickSite}
       day={day}
@@ -82,8 +93,8 @@ export function ADayOfPayments({
       saving={saving}
       refusal={refusal}
       onPutIn={putThemIn}
-      // Where this sitting is kept while it is typed: this house, this day. Another house never shows this one's half-typed payment, and yesterday's sheet never shows today's.
-      keptUnder={whereASittingIsKept(siteId, day)}
+      // Another house never shows this one's half-typed payment, and yesterday's sheet never shows today's.
+      keptUnder={keptUnder}
       onAddAccount={async (label, lastFourDigits) => await addAccount({ label, lastFourDigits })}
       onAddTrade={async (trade) => await addTrade(trade)}
     />
