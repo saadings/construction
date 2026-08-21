@@ -170,8 +170,12 @@ describe('what a fixture is allowed to be made of', () => {
   })
 
   it('catches a real-looking mobile in every form a person writes one', () => {
-    // The control, and the reason shape is the test: these are the five forms the parser is fed, and each was a real number.
-    for (const written of ['03214276300', '0321-4276300', '0321 4276300', '+923214276300', '92 321 4276300']) {
+    // The control, and the reason shape is the test: these are the five forms a person writes one in.
+
+    // They were a **real number**, in this file, on a public repository, in the guard whose whole subject is keeping real people out of the suite -- and the comment above them said so in as many words. The rule reads the working tree and never its own plants' provenance, so nothing it does could have caught this.
+
+    // `0321-0000001` is real-looking by every measure the rule uses -- a live prefix and seven subscriber digits -- and is not the all-zero shape below, so both halves of this file still mean what they say. Whether it belongs to anybody is not knowable from here, which is the honest limit: the last digit is the only thing standing between an invented number and somebody's.
+    for (const written of ['03210000001', '0321-0000001', '0321 0000001', '+923210000001', '92 321 0000001']) {
       expect(realLookingMobilesIn(`const typed = '${written}'`), written).toHaveLength(1)
     }
   })

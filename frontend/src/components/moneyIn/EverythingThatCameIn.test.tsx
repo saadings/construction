@@ -36,6 +36,7 @@ const CAME_IN: Array<Receipt> = [
     why: 'clientPayment',
     method: 'cheque',
     reference: 'CH-4471',
+    note: 'Second instalment',
     siteId: 's1',
     siteName: '1-A, Phase 0',
     fromName: 'The one it is built for',
@@ -121,9 +122,9 @@ describe('what has come in altogether', () => {
 
     // A `dl` pairs them, so the reading is the pairing rather than the order they happen to be drawn in.
     expect(screen.getAllByRole('term').map((label) => label.textContent)).toEqual([
-      'Come in',
-      'Partner investment',
+      'Received',
       'Client payment',
+      'Partner investment',
       'Sale proceeds',
     ])
   })
@@ -135,6 +136,57 @@ describe('what has come in altogether', () => {
     // And the two rows say how the money arrived, which is what the reference belongs to.
     expect(screen.getByText('Cheque')).toBeTruthy()
     expect(screen.getByText('Transfer')).toBeTruthy()
+
+    // A class, not `getComputedStyle().whiteSpace`: jsdom loads no stylesheet, so that reads `''` either way.
+
+    // It guards the mechanism; `scripts/columns.ts` photographs the page and guards the effect.
+    expect(screen.getByText('CH-4471').className).toContain('whitespace-nowrap')
+    expect(screen.getByText('CH-4471').className).not.toContain('truncate')
+  })
+
+  it('gives `How` a column of its own rather than folding it under the day', async () => {
+    await renderIt(everythingIn())
+
+    // Six headings, in the drawing's order: `How` had been a second line under the day.
+    const headings = screen.getByText('Day').parentElement
+    expect([...(headings?.children ?? [])].map((cell) => cell.textContent)).toEqual([
+      'Day',
+      'House',
+      'From',
+      'What it is',
+      'How',
+      'Amount',
+    ])
+
+    // A column in the rows too, asserted from both ends: one `not.toContain` passes when the query found nothing.
+    const first = screen.getAllByRole('listitem')[0]
+    const day = within(first).getByText('23/07/2026')
+    const how = within(first).getByText('Cheque').closest('span')
+
+    expect(day).toBeTruthy()
+    expect(how).toBeTruthy()
+    expect(day.contains(how)).toBe(false)
+    expect(how?.contains(day)).toBe(false)
+
+    // One cell per heading: without this, hiding the cell left every assertion above true. Found by planting it.
+    expect(first.children).toHaveLength(6)
+
+    // Nothing here may be dropped at a width: the row reflows on a phone rather than hiding.
+    for (const cell of first.children) {
+      expect(cell.className.split(/\s+/)).not.toContain('hidden')
+    }
+  })
+
+  it('keeps what somebody wrote against a receipt, which the drawing has nowhere for', async () => {
+    await renderIt(everythingIn())
+
+    const first = screen.getAllByRole('listitem')[0]
+    expect(within(first).getByText('Second instalment')).toBeTruthy()
+
+    // A receipt with nothing written against it says nothing, rather than drawing an empty line under its kind.
+    const withoutOne = screen.getAllByRole('listitem')[1]
+    expect(within(withoutOne).queryByText('Second instalment')).toBeNull()
+    expect(within(withoutOne).getByText('Partner investment')).toBeTruthy()
   })
 
   it('writes the day the way he writes it', async () => {
