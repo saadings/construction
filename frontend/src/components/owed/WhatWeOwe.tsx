@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { formatPaisa } from '~shared/money'
 
+import { cn } from '../../lib/utils'
 import { WayOut } from '../form/WayOut'
 import { NotKnownHere } from '../shell/NotKnownHere'
 import { Figure, Page } from '../shell/Page'
@@ -123,11 +124,14 @@ function OnePerson({ person }: { person: Standing }) {
 
   return (
     <li className={`${ROW} border-border hover:bg-row-hover border-b px-5 py-3.5 transition-colors last:border-0`}>
-      <span className="flex min-w-0 items-baseline gap-2">
+      {/* The control goes under the name on a phone rather than beside it. Sharing one track, `2 houses` is a fixed width and the name is what gives way -- `The steel supplier` came out 15px wide, a letter and a full stop, on the only row that can carry the control at all. Nothing had ever drawn one: every person in every fixture was owed on exactly one house. */}
+
+      {/* The row gap has to clear a negative margin rather than look right. `ROOM_FOR_A_THUMB` is `py-3 -my-3`, so the control keeps a 44px target without stretching the row it sits in -- and stacked under the name that pulls its box 12px up, over the name's, by 8px at `gap-y-1`. Invisible on screen and a real tap landing on the wrong one of two things. */}
+      <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-4">
         <Link
           to="/people/$personId"
           params={{ personId: person.personId }}
-          className="text-foreground min-w-0 truncate text-[1.0625rem] underline-offset-4 hover:underline"
+          className="text-foreground min-w-0 basis-full truncate text-[1.0625rem] underline-offset-4 hover:underline sm:basis-auto"
         >
           {person.name}
         </Link>
@@ -147,9 +151,12 @@ function OnePerson({ person }: { person: Standing }) {
       <Cell label="Outstanding" tone={holding ? 'text-foreground' : 'text-green'}>
         {holding ? `${formatPaisa(-person.outstandingPaisa)} adv` : formatPaisa(person.outstandingPaisa)}
       </Cell>
-      <Cell label="Billed">{formatPaisa(person.billedPaisa)}</Cell>
+      {/* A line each on a phone rather than two in a two-column row. Sharing those tracks, `883,701` ran straight into the `PAID` beside it with nothing between them -- and before the figures were told not to break, the same squeeze drew `BILLED` as `BILLE` over `D`. Fewer columns, not narrower ones. */}
+      <Cell label="Billed" className="col-span-full sm:col-span-1">
+        {formatPaisa(person.billedPaisa)}
+      </Cell>
       {/* Brass, because it is money that has gone out. */}
-      <Cell label="Paid" tone="text-brass">
+      <Cell label="Paid" tone="text-brass" className="col-span-full sm:col-span-1">
         {formatPaisa(person.paidPaisa)}
       </Cell>
 
@@ -157,10 +164,11 @@ function OnePerson({ person }: { person: Standing }) {
         <ul className="text-muted-foreground col-span-full flex flex-col gap-1 pt-2 pl-4 text-sm">
           {person.onHouses.map((house) => (
             <li key={house.siteId} className="flex items-baseline justify-between gap-4">
+              {/* 24px rather than a bare 20px line, reached with padding and left inline. `inline-flex` was tried first and moved these out of the rule for a link in a line and into the 44px one for a control -- a remedy that carries its target into a stricter bar than the one that judged it. The expansion is shut until asked, so no picture had ever held one of these to measure. */}
               <Link
                 to="/sites/$siteId"
                 params={{ siteId: house.siteId }}
-                className="min-w-0 truncate underline-offset-4 hover:underline"
+                className="min-w-0 truncate py-0.5 underline-offset-4 hover:underline"
               >
                 {house.name}
               </Link>
@@ -177,11 +185,24 @@ function OnePerson({ person }: { person: Standing }) {
   )
 }
 
-function Cell({ label, tone, children }: { label: string; tone?: string; children: string }) {
+function Cell({
+  label,
+  tone,
+  className,
+  children,
+}: {
+  label: string
+  tone?: string
+  className?: string
+  children: string
+}) {
+  // Neither of these may break. A phone was drawing `BILLED` as `BILLE` over `D`, and `883,701` as `883,7` over `01` -- a label a letter a line, and a figure that reads as a smaller figure rather than an incomplete one. Both are silent: `columns` measures what a cell occupies, and a wrapped cell occupies its box neatly, so the screen it was asked about came back clean while it drew that. Refusing the break is what turns it into something an instrument can see.
   return (
-    <span className="flex items-baseline justify-between gap-2 sm:justify-end">
-      <span className="text-faint text-[0.6875rem] tracking-[0.06em] uppercase sm:hidden">{label}</span>
-      <Figure className={`${tone ?? 'text-foreground'} text-right`}>{children}</Figure>
+    <span className={cn('flex items-baseline justify-between gap-2 sm:justify-end', className)}>
+      <span className="text-faint text-[0.6875rem] tracking-[0.06em] whitespace-nowrap uppercase sm:hidden">
+        {label}
+      </span>
+      <Figure className={`${tone ?? 'text-foreground'} text-right whitespace-nowrap`}>{children}</Figure>
     </span>
   )
 }

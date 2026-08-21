@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { advancedPaisa, payablePaisa } from '~shared/validation/owed'
 
 import { Dashboard } from '../components/dashboard/Dashboard'
 import { DaySheet } from '../components/daySheet/DaySheet'
@@ -132,6 +133,65 @@ function TheSearchAsDrawn() {
       />
     </div>
   )
+}
+
+/** One person's standing, worked out from his houses rather than written twice. A balance stated beside the houses it is made of is two claims about one figure, and a fixture is exactly where those come to differ. */
+function owedAcross(
+  personId: string,
+  name: string,
+  houses: Array<{ siteId: string; name: string; billed: number; paid: number }>
+) {
+  const onHouses = houses.map((house) => ({
+    siteId: house.siteId,
+    name: house.name,
+    billedPaisa: paisa(house.billed),
+    paidPaisa: paisa(house.paid),
+    outstandingPaisa: paisa(house.billed) - paisa(house.paid),
+  }))
+
+  const summing = (what: 'billedPaisa' | 'paidPaisa' | 'outstandingPaisa') =>
+    onHouses.reduce((total, house) => total + house[what], 0)
+
+  return {
+    personId,
+    name,
+    billedPaisa: summing('billedPaisa'),
+    paidPaisa: summing('paidPaisa'),
+    outstandingPaisa: summing('outstandingPaisa'),
+    onHouses,
+  }
+}
+
+// Everyone the partnership owes, drawn twice: once shut, once with a supplier opened. Written here rather than in either screen so the two pictures are of one set of figures and cannot drift apart.
+function whatIsStillOwed() {
+  // What each of the three from the sheet has been paid: figures nobody can confuse for each other or for a total.
+  const paidToEach = [120_000, 96_500, 73_400]
+
+  const fromTheSheet = STILL_OWED.map((row, at) =>
+    owedAcross(`p${at + 3}`, NOBODY[at + 2]?.name ?? 'Somebody else', [
+      { siteId: 's1', name: THE_HOUSE, billed: row.rupees + (paidToEach[at] ?? 0), paid: paidToEach[at] ?? 0 },
+    ])
+  )
+
+  // Owed on one house and holding an advance on another, which is the only shape that opens the expansion -- and the only place `adv` appears on a house line rather than on a man.
+  const steel = owedAcross('p6', NOBODY[5].name, [
+    { siteId: 's1', name: THE_HOUSE, billed: 118_000, paid: 96_000 },
+    { siteId: 's2', name: '204-C, Phase 6', billed: 45_000, paid: 209_000 },
+  ])
+
+  // Net in advance on one house, so `adv` is read on the man himself. Two of them rather than one, or the advance total would be one person's figure and `nothingMeansTwoThings` cannot tell those two ideas apart.
+  const paint = owedAcross('p7', NOBODY[6].name, [
+    { siteId: 's2', name: '204-C, Phase 6', billed: 26_800, paid: 71_800 },
+  ])
+
+  const everyone = [...fromTheSheet, steel, paint]
+
+  return {
+    // The app's own two functions rather than a figure written here. Both used to be hand-written claims about these rows -- and `advancedPaisa` was `41,250`, chosen when not one row held an advance, so the screen showed an advance total belonging to nobody on it.
+    payablePaisa: payablePaisa(everyone),
+    advancedPaisa: advancedPaisa(everyone),
+    everyone,
+  }
 }
 
 export const ON_SHOW: Array<OnShow> = [
@@ -638,41 +698,19 @@ export const ON_SHOW: Array<OnShow> = [
     // What is chosen and what is worked out, kept apart. `58,000` was the advance held against one supplier and also, by arithmetic, what the kitchen people were left standing -- two ideas, one string, and either could have been broken with both tests still green.
 
     // Every payment was also `120,000`, so an assertion about one supplier's payment matched all three rows.
-    draw: () => {
-      // What each of them has been paid: three figures nobody can confuse for each other or for a total.
-      const paidToEach = [120_000, 96_500, 73_400]
+    draw: () => <WhatWeOwe owed={whatIsStillOwed()} />,
+  },
+  {
+    slug: 'payables-across-houses',
+    at: '/owed',
+    name: 'Payables',
+    where: 'the payables rail, with a supplier opened',
+    // The expansion drawn rather than merely reachable. It is shut until somebody asks, so a picture of this screen has never contained it -- and the only person it can open for is one owed on more than one house, which no fixture had.
 
-      return (
-        <WhatWeOwe
-          owed={{
-            payablePaisa: paisa(STILL_OWED.reduce((running, row) => running + row.rupees, 0)),
-            // Chosen rather than derived, and chosen not to land on anything: an advance is money held against a supplier and has nothing to do with what any of them is owed.
-            advancedPaisa: paisa(41_250),
-            everyone: STILL_OWED.map((row, at) => {
-              const paid = paisa(paidToEach[at] ?? 0)
-              const outstanding = paisa(row.rupees)
-
-              return {
-                personId: `p${at + 3}`,
-                name: NOBODY[at + 2]?.name ?? 'Somebody else',
-                billedPaisa: outstanding + paid,
-                paidPaisa: paid,
-                outstandingPaisa: outstanding,
-                onHouses: [
-                  {
-                    siteId: 's1',
-                    name: THE_HOUSE,
-                    billedPaisa: outstanding + paid,
-                    paidPaisa: paid,
-                    outstandingPaisa: outstanding,
-                  },
-                ],
-              }
-            }),
-          }}
-        />
-      )
-    },
+    // Not a figure and not the house's name. `nothingMeansTwoThings` nudges every amount on the screen it is measuring, so a `proves` holding one is a `proves` that cannot be found on any round but the first -- and the house's name is already what another screen proves. The expander's own words are stable under the nudges and exist only for somebody owed on more than one house, which is the branch this screen was added for.
+    proves: '2 houses',
+    tapFirst: ['Which houses The steel supplier is owed on'],
+    draw: () => <WhatWeOwe owed={whatIsStillOwed()} />,
   },
   {
     slug: 'money-in',
