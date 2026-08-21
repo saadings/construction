@@ -26,9 +26,11 @@ function isExecutable(path: string): boolean {
   }
 }
 
-// `build` is on this list and stays, at 12.3 seconds -- third-cheapest of the five. It is the only stage that proves this compiles as a program rather than as a pile of files: vitest runs no React Compiler, so a hook named wrong is green in every suite and dies in a browser. `whileSending` was exactly that, 218 passing tests over a component that died on the second tap.
+// `build` is on this list and stays. It is the only stage that proves this compiles as a program rather than as a pile of files: vitest runs no React Compiler, so a hook named wrong is green in every suite and dies in a browser. `whileSending` was exactly that, 218 passing tests over a component that died on the second tap.
 
-// `lint:fix` is 98.8 seconds of the same measurement and stays whole. Scoping it to the staged files was written and taken back out: the cost is `recommendedTypeChecked` building its own TypeScript program with no cache, into a `mktemp -d` discarded every commit -- so a stable gate directory removes nothing and weakens no check, where scoping trades coverage for speed.
+// It was once nearly dropped as the expensive one, on a timing of 12.3 seconds against 98.8 for `lint:fix` in a 218-second hook. Those seconds are one draw from another session's harness and the stages have been seen to move by around 3.5x with what else the machine is doing, so they are quoted here as the reason a proposal was withdrawn and are not a fact about this repository. The argument for keeping `build` does not rest on them: it is the only stage that runs the compiler, at any price.
+
+// `lint:fix` stays whole. Scoping it to the staged files was written and taken back out, and the reason is structural rather than a number: the cost is `recommendedTypeChecked` building its own TypeScript program with no cache, into a `mktemp -d` discarded every commit -- so a stable gate directory removes nothing and weakens no check, where scoping trades coverage for speed.
 const GATES = ['yarn lint:fix', 'yarn format:fix', 'yarn typecheck', 'yarn build', 'yarn test', 'yarn test:scenario']
 
 describe('the gate every commit has to pass', () => {
