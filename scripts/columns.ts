@@ -126,6 +126,12 @@ const WHERE_THE_COLUMNS_ARE = `(() => {
 
 // Text may truncate; a figure may not. A name cut with an ellipsis reads as incomplete and the reader swipes. `9,310,000` cut to `9,3` reads as a different, smaller number, and nothing on the screen says otherwise -- on a table of house totals that is a wrong figure presented as a right one.
 
+// WHAT EACH OTHER ANSWER WOULD HAVE MEANT, because this pair was wrong in three different ways before it was right and each way printed a number that had to be read rather than a colour. Three states are built on one screen -- a figure too big for its own box, a figure too big for its cell inside a scrolling table, and a table drawn wider than its own panel, which is a design and not a fault.
+
+// `12/27/0` is correct. `0/0/0` is blind, or a plant that built nothing, or a file that did not compile. `12/0/0` is an exemption too broad, which has swallowed the case inside the table. `12/27/40` is the exemption gone, and every wide table reporting every run for ever.
+
+// A single count of zero is all four of the first row's causes at once, which is how a blind survey was nearly published as a finding, twice.
+
 // A FIGURE ON TWO LINES IS THE SAME LIE WITHOUT A BOX TO BLAME. `883,701` broken after `883,7` reads as a smaller figure, and there is even less saying otherwise than when a container clips it: nothing is hidden, so nothing is clipping, so the question above answers no. The question below answers no too, because a wrapped cell occupies its box neatly and a column of them is still a column. On the payables rail a phone drew exactly that for as long as the screen has existed, and this file called it clean at four widths every time it was asked.
 
 // Asked of the page as first drawn rather than of what a scroll could reveal, because what a person sees is the first state. And a figure with no box answers 0 for every edge, which is the same not-there-reading-as-a-value the sweep above already skips.
@@ -137,6 +143,7 @@ const WHAT_IS_CUT_IN_HALF = `(() => {
 
   const cut = []
   const broken = []
+  const spilling = []
   let figures = 0
 
   for (const figure of document.querySelectorAll('.tabular-nums')) {
@@ -144,34 +151,80 @@ const WHAT_IS_CUT_IN_HALF = `(() => {
     if (box.width === 0 && box.height === 0) continue
     figures += 1
 
+    // Where the text really is, which is not where its element is. A figure that overflows sits outside its own box, so the box answers for the space it was given rather than the space it takes.
+    const over = document.createRange()
+    over.selectNodeContents(figure)
+    const rects = [...over.getClientRects()]
+    if (rects.length === 0) continue
+
+    const textLeft = Math.min(...rects.map((rect) => rect.left))
+    const textRight = Math.max(...rects.map((rect) => rect.right))
+
     // The worst of them and not one line each: a figure can sit inside several things that clip, and the same figure reported three times reads as three defects.
     let worst = 0
 
-    for (let above = figure.parentElement; above !== null; above = above.parentElement) {
-      if (!clipping(above)) continue
+    // Held rather than reported, because whether it counts depends on something the walk has not reached yet.
+    let candidate = null
+    let scrolls = false
 
+    // What is too big, carried up the tree. It starts as the text and becomes whatever box failed to hold it, because the thing that overflows is not always the text: a cell floored at its own content fits its figure exactly and is itself the thing that lands on the column beside it. Asking only about the text reports that clean.
+    let inside = { left: textLeft, right: textRight }
+
+    // Starting at the figure itself and not at its parent. The first box that can fail to hold a figure's text is the figure's own: give one a fixed width and the text leaves it while every ancestor still contains it comfortably, so a walk that begins one level up finds nothing to report and says so.
+    for (let above = figure; above !== null; above = above.parentElement) {
       const holds = above.getBoundingClientRect()
+
+      if (!clipping(above)) {
+        // Nothing is hiding it, so every pixel is on the screen -- lying on whatever is drawn beside it. The nearest one only: further out everything contains it again, and naming them all would report one spill six times.
+        const outside = Math.round(Math.max(0, holds.left - inside.left) + Math.max(0, inside.right - holds.right))
+
+        if (outside > 1 && holds.width > 0 && candidate === null) {
+          candidate = {
+            said: figure.textContent.trim().slice(0, 24),
+            outside,
+            width: Math.round(holds.width),
+            // Whether the thing that got out is still the figure's own text, measured exactly rather than counted in levels: the extent is the text's until some box on the way up is wider than it.
+            wasText: inside.left === textLeft && inside.right === textRight,
+            // Which level gave way, because a figure too big for its cell and a cell too big for its column are different bugs with different fixes.
+            over: above.tagName.toLowerCase() + (above.className ? '.' + String(above.className).trim().split(/\\s+/)[0] : ''),
+          }
+        }
+
+        inside = { left: Math.min(inside.left, holds.left), right: Math.max(inside.right, holds.right) }
+        continue
+      }
+
+      // SOMETHING ABOVE IT SCROLLS. That does not excuse everything underneath: a figure whose own text has left its cell is a defect inside a wide table exactly as it is outside one. What it excuses is a BOX deliberately wider than the box above it -- \`TablePanel\` is \`overflow-x-auto\` wrapping a \`min-w-full\` div precisely so a table may be wider than the panel, and reporting that is reporting the pattern working.
+
+      // So the two are told apart by what left the box: still the figure's own text, or a box that grew. Clamping the extent was the first attempt and changed nothing, because the box being overflowed sits inside the scroller and is judged long before the walk reaches it.
+      scrolls = true
+
+      inside = { left: Math.max(inside.left, holds.left), right: Math.min(inside.right, holds.right) }
+
       const hidden = Math.round(Math.max(0, holds.left - box.left) + Math.max(0, box.right - holds.right))
 
       // A whole figure outside the container is off-screen rather than cut in half, and that is the pattern working: nothing of it is being read.
       if (hidden > 0 && hidden < Math.round(box.width)) worst = Math.max(worst, hidden)
     }
 
+    // A figure whose own text has left its box is a defect wherever it happens. A box deliberately wider than the one above it, inside something built to scroll, is the pattern working -- so only that combination is let through.
+    if (candidate !== null && (candidate.wasText || !scrolls)) {
+      spilling.push({ said: candidate.said, outside: candidate.outside, width: candidate.width, over: candidate.over })
+    }
+
     if (worst > 0) {
       cut.push({ said: figure.textContent.trim().slice(0, 24), hidden: worst, width: Math.round(box.width) })
     }
 
-    // Counted off a range over the figure's own text rather than off the element's height, because height answers for whatever box the figure happens to sit in and the lines are a property of the text. One rect per line box, so the tops are the lines.
-    const over = document.createRange()
-    over.selectNodeContents(figure)
-    const lines = new Set([...over.getClientRects()].map((rect) => Math.round(rect.top))).size
+    // Counted off the same range, because height answers for whatever box the figure happens to sit in and the lines are a property of the text. One rect per line box, so the tops are the lines.
+    const lines = new Set(rects.map((rect) => Math.round(rect.top))).size
 
     if (lines > 1) {
       broken.push({ said: figure.textContent.trim().slice(0, 24), lines, width: Math.round(box.width) })
     }
   }
 
-  return { figures, cut, broken }
+  return { figures, cut, broken, spilling }
 })()`
 
 // The third question, and the one that found a screen every other check had cleared. `Stages` passed the two above — no column moved, no figure was cut — while its first column was 38px wide and 189 tall, wrapping `On signing` to one letter a line. A date box beside a button took 289 of the table's 490px and starved everything else.
@@ -526,6 +579,9 @@ type Cut = { said: string; hidden: number; width: number }
 /** A figure the browser drew on more than one line, which no box is hiding and no column is squeezing. */
 type Broken = { said: string; lines: number; width: number }
 
+/** A figure whose content left the box meant to hold it, with nothing hiding the part that got out. */
+type Spilling = { said: string; outside: number; width: number; over: string }
+
 type Crushed = { said: string; wide: number; tall: number }
 
 type Pinned = { said: string; how: string; held: string }
@@ -563,18 +619,49 @@ function whatItMeasured(said: unknown): { rows: number; moved: Array<Moved> } {
 }
 
 /** The other half of what came back, checked the same way and for the same reason. */
-function whatIsCut(said: unknown): { figures: number; cut: Array<Cut>; broken: Array<Broken> } {
-  if (typeof said !== 'object' || said === null || !('figures' in said) || !('cut' in said) || !('broken' in said)) {
+function whatIsCut(said: unknown): {
+  figures: number
+  cut: Array<Cut>
+  broken: Array<Broken>
+  spilling: Array<Spilling>
+} {
+  if (
+    typeof said !== 'object' ||
+    said === null ||
+    !('figures' in said) ||
+    !('cut' in said) ||
+    !('broken' in said) ||
+    !('spilling' in said)
+  ) {
     throw new Error('The page answered something that is not a count of figures.')
   }
 
-  const { figures, cut, broken } = said
-  if (typeof figures !== 'number' || !Array.isArray(cut) || !Array.isArray(broken)) {
+  const { figures, cut, broken, spilling } = said
+  if (typeof figures !== 'number' || !Array.isArray(cut) || !Array.isArray(broken) || !Array.isArray(spilling)) {
     throw new Error('The page answered a count with no figures or no findings in it.')
   }
 
   return {
     figures,
+    spilling: spilling.map((one: unknown) => {
+      if (
+        typeof one !== 'object' ||
+        one === null ||
+        !('said' in one) ||
+        !('outside' in one) ||
+        !('width' in one) ||
+        !('over' in one)
+      ) {
+        throw new Error('The page answered a spilling figure with nothing in it.')
+      }
+
+      const { said: text, outside, width, over } = one
+      if (typeof text !== 'string' || typeof outside !== 'number' || typeof width !== 'number') {
+        throw new Error('The page answered a spilling figure of the wrong shape.')
+      }
+
+      return { said: text, outside, width, over: String(over) }
+    }),
     broken: broken.map((one: unknown) => {
       if (typeof one !== 'object' || one === null || !('said' in one) || !('lines' in one) || !('width' in one)) {
         throw new Error('The page answered a broken figure with nothing in it.')
@@ -828,6 +915,12 @@ async function main(): Promise<void> {
           )
         }
 
+        for (const spill of figures.spilling) {
+          wrong.push(
+            `${screen.slug} at ${String(size.width)}: ${spill.said} is ${String(spill.outside)}px outside the ${spill.over} that holds it — nothing hides it, so it is lying on whatever is drawn beside it`
+          )
+        }
+
         for (const broken of figures.broken) {
           wrong.push(
             `${screen.slug} at ${String(size.width)}: ${broken.said} is drawn on ${String(broken.lines)} lines in ${String(broken.width)}px — the first line reads as the whole figure and nothing says there is more`
@@ -986,7 +1079,9 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `Every column holds, no figure is cut, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, no two controls in one plane stand on each other, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.`
+    `Every column holds, no figure is cut, no figure is drawn on two lines or lying outside the box that holds it, nothing is squeezed, nothing that must be read is cut off, no trail is pinned, every control clears ${String(A_THUMB_NEEDS)}px under a thumb and every link in a line clears ${String(A_LINE_NEEDS)} with ${String(A_LINE_NEEDS)} kept clear around it, no two controls in one plane stand on each other, across ${String(rowsSeen)} rows, ${String(figuresSeen)} figures, ${String(cellsSeen)} cells, ${String(linesSeen)} lines that must be read, ${String(trailsSeen)} trails, ${String(tappedSeen)} controls (${String(navRowsSeen)} of them nav rows), ${String(removesSeen)} controls that remove something and ${String(choicesSeen)} choices, at ${String(SCREENS_READ_ON.length)} widths.` +
+      // The levers, beside the number, permanently. A zero read on its own says nothing about whether anything was looked at -- this file has produced a zero from a blind instrument, a zero from a plant that built nothing, and a zero from a program that did not compile, and all three read exactly like a clean run.
+      `\nThe three about a figure were last seen to answer 12 for a figure out of its own box, 27 for a figure out of its cell inside a scrolling table, and 0 for a table drawn wider than its own panel -- which is the pattern working, and which answered 40 before this file could tell the two apart.`
   )
 }
 
