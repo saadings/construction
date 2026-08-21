@@ -61,8 +61,14 @@ export function Form({
 }
 
 // Every figure in the app: the mono face and lining digits are what make a column of amounts read as a column rather than as a list of different-width strings.
+
+// A FIGURE MAY NOT BE DRAWN ON TWO LINES, which is a property of the thing rather than of any screen it appears on. `1,625,000` broken after the comma reads as `1,625,` -- a smaller figure, with nothing saying there is more -- and a date broken after the month is a different day.
+
+// A comma is a break opportunity, which is the whole reason this is needed and the thing that is easy to get wrong: a formatted figure has no spaces, so it looks unbreakable and is not. `min-content` on one of these is `1,625,` until this line exists.
+
+// What it trades: a figure that no longer fits now overflows instead of wrapping, and `columns` already asks what a container is hiding. Overflowing is the loud failure and wrapping is the quiet one, and this file's rule is that a wrong figure must never be the quiet one.
 export function Figure({ className, children }: { className?: string; children: ReactNode }) {
-  return <span className={cn('font-mono tabular-nums', className)}>{children}</span>
+  return <span className={cn('font-mono tabular-nums whitespace-nowrap', className)}>{children}</span>
 }
 
 // What the word `Hide` used to carry on its own. Five screens take a row off a list and every one of them is a signed soft hide -- `removed: true` with who and when -- so nothing is destroyed and the record answers for itself forever.

@@ -29,7 +29,11 @@ export type WhatThePartnersHave = {
 // The same markup at every width. A phone gets the name and what is left; a desk gets what he put in, his share, what he is owed and what he has had as well.
 
 // One grid for the whole list, and every row takes its columns from it. Written per row, each row sized its own `auto` track to its own content -- not seen to move today, and not defended against it either: every last cell happens to be a figure of much the same width.
-const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))]'
+
+// The five figure columns may not be narrower than the figures in them. `minmax(0,1fr)` lets a track go below its own content, and at 768 that drew `1,625,000` on two lines in 83px -- a partner's balance, read as `1,625,` with nothing saying there is more.
+
+// This alone did not fix it, and the reason is worth keeping: a comma is a break opportunity, so `min-content` on `1,625,000` was `1,625,` and the floor was the broken figure rather than the whole one. `Figure` refuses the break now, which is what makes `min-content` here mean what this line always claimed it meant.
+const GRID = 'grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(min-content,1fr))]'
 
 /** A row: it takes the columns above rather than declaring any. */
 const ROW = 'col-span-full grid grid-cols-subgrid items-baseline gap-x-4 gap-y-1'
