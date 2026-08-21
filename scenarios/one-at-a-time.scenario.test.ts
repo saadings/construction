@@ -40,7 +40,9 @@ function run(where: string, argv: Array<string>): { out: string; code: number } 
 
   // Put into what the assertions read, because a wrapper that never came back is otherwise indistinguishable from one that came back saying the wrong thing.
   const gaveUp =
-    answered.signal === null ? '' : `\n[the wrapper was still waiting after ${LONGER_THAN_ANY_HONEST_WAIT}ms and was killed]`
+    answered.signal === null
+      ? ''
+      : `\n[the wrapper was still waiting after ${LONGER_THAN_ANY_HONEST_WAIT}ms and was killed]`
 
   return { out: `${answered.stdout}${answered.stderr}${gaveUp}`, code: answered.status ?? 1 }
 }
@@ -117,7 +119,7 @@ describe('one heavy thing at a time', () => {
     expect(answered.out).toContain('took it')
   }, 30_000)
 
-  it('waits for a lock that has only just been made, rather than taking it', async () => {
+  it('waits for a lock that has only just been made, rather than taking it', () => {
     // This assertion used to say the opposite, and the old expectation was itself the bug: it required an empty lock to be taken on sight. `mkdir` claims the lock and the pid is written on the next line, so every live lock is empty for that moment, and a caller that took it then ran alongside the holder -- the one thing this wrapper exists to prevent, with a green test saying it was intended.
     const where = aLockOfItsOwn()
     mkdirSync(where, { recursive: true })

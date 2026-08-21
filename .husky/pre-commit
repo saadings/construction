@@ -1,5 +1,8 @@
 # The whole of this, once, with the machine to itself.
 
+# SET HERE RATHER THAN INHERITED, because inheriting it is how it was lost. husky runs this as `sh -e`, but the lock below re-execs the file through a fresh `sh`, and POSIX shells do not pass `-e` on: measured at `[ehB]` on the first pass and `[hB]` on the second, which is the pass that does all the work. Every stage below is a subshell rather than a link in an `&&` chain, so without this a failing typecheck, build or test suite did not stop anything, and the hook exited with whatever the last command returned. A gate that cannot refuse reports green for exactly as long as nobody looks.
+set -e
+
 # Two sessions work on this repository at once in separate worktrees and neither knows the other exists. Gating together took the machine from a resting load of 9 to 42, with `userEvent` tests that take one second taking twenty-two -- and a failure set that changed on every run while the code did not: 0, then 3, then 13, then 2, every one a timeout. The same commit with one suite running passed 1258 and 191.
 
 # Taken by re-running this file through the wrapper rather than by wrapping the stages, because the expensive part turned out to be the fixers -- `lint:fix` alone was 75% of everything measured -- and a lock around the checks would have left the expensive half outside it.
