@@ -63,6 +63,19 @@ const TILE_SHOP: Standing = {
   ],
 }
 
+// On two houses, owed on one and holding an advance on the other. This is the case a photograph found and no fixture here had: `Pay` was drawn on his row *and* against the same house inside his expansion.
+const PLUMBER: Standing = {
+  personId: 'p4',
+  name: 'A plumber',
+  billedPaisa: 120_000_00,
+  paidPaisa: 90_000_00,
+  outstandingPaisa: 30_000_00,
+  onHouses: [
+    { siteId: 's1', name: '1-A, Phase 0', billedPaisa: 120_000_00, paidPaisa: 40_000_00, outstandingPaisa: 80_000_00 },
+    { siteId: 's2', name: '2-B, Phase 0', billedPaisa: 0, paidPaisa: 50_000_00, outstandingPaisa: -50_000_00 },
+  ],
+}
+
 function whatIsOwed(over: Partial<WhatIsOwed> = {}): WhatIsOwed {
   return {
     everyone: [STEEL, MASON, TILE_SHOP],
@@ -145,6 +158,22 @@ describe('what is owed altogether', () => {
     expect(onFirst.getAttribute('href')).toContain('/sites/s2/day')
     expect(onSecond.getAttribute('href')).toContain('/sites/s1/day')
     expect(onFirst.getAttribute('href')).toContain('paying=p1')
+  })
+
+  it('offers one way to pay a man, never a row and an expansion for the same house', async () => {
+    renderWith(whatIsOwed({ everyone: [PLUMBER], payablePaisa: 80_000_00, advancedPaisa: 50_000_00 }))
+
+    const rows = await screen.findAllByRole('listitem')
+
+    // He is on two houses and owed on one of them. Asked as *owed on one*, the row drew a `Pay` and the expansion drew another against the same house -- two controls doing one thing, which a picture found and no fixture here could.
+    expect(within(rows[0]).queryByRole('link', { name: /^Pay A plumber/ })).toBeNull()
+    expect(within(rows[0]).getByText('A plumber')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Which houses A plumber is owed on' }))
+
+    // One, against the house he is actually owed on, and none against the one he is holding an advance on.
+    expect(screen.getAllByRole('link', { name: /^Pay A plumber/ })).toHaveLength(1)
+    expect(screen.getByRole('link', { name: 'Pay A plumber on 1-A, Phase 0' })).toBeTruthy()
   })
 
   it('offers nothing to a man who is holding an advance, on a house or at all', async () => {

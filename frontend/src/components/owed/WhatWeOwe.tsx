@@ -164,15 +164,21 @@ function OnePerson({ person }: { person: Standing }) {
         {formatPaisa(person.paidPaisa)}
       </Cell>
 
-      {/* A payment belongs to a house, because `payments.record` is a site mutation. So the house is never guessed: a man owed on one house gets the way to pay him here, and a man owed on several gets one against each house, under the list that already names them. */}
+      {/* A payment belongs to a house, because `payments.record` is a site mutation. So the house is never guessed: a man on one house gets the way to pay him here, and a man on several gets one against each house, under the list that already names them. */}
+
+      {/* Asked of how many houses he is **on**, not how many he is owed on. Owed-on-one was the first rule and it put a `Pay` on the row *and* one in the expansion for the same house, on any man owed on one of two -- which is the steel supplier, and which a photograph found because no fixture of mine had a man owed on one house and holding an advance on another. */}
       <span className="col-span-full flex justify-end sm:col-span-1">
-        {owingOn(person).length === 1 ? <Pay person={person} house={owingOn(person)[0]} /> : null}
+        {person.onHouses.length === 1 && owingOn(person).length === 1 ? (
+          <Pay person={person} house={owingOn(person)[0]} />
+        ) : null}
       </span>
 
+      {/* Allowed to wrap, because `Pay` joined this line. The row gap is 6 rather than the 4 beside it: the house name is a link in a line, and `columns` wants 24px kept clear around one rather than merely nothing sitting on it -- overlap and clearance are two checks and passing the first says nothing about the second. */}
+
+      {/* Said plainly: no width this app is photographed at actually wraps this line, so the 6 is reasoned rather than measured. `gap-y-2` passes `columns` for the same reason. It is the figure a wrap would need, not a figure anything has checked. */}
       {open ? (
         <ul className="text-muted-foreground col-span-full flex flex-col gap-1 pt-2 pl-4 text-sm">
           {person.onHouses.map((house) => (
-            {/* Wrapping, because `Pay` joined this line and a 44px control beside a name on a phone does not fit beside it. The row gap is not the 4 above: what has to be cleared is the house-name link, which is a link in a line and wants 24px kept around it rather than merely not being sat on. Overlap and clearance are two checks and passing the first says nothing about the second. */}
             <li key={house.siteId} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-6">
               {/* 24px rather than a bare 20px line, reached with padding and left inline. `inline-flex` was tried first and moved these out of the rule for a link in a line and into the 44px one for a control -- a remedy that carries its target into a stricter bar than the one that judged it. The expansion is shut until asked, so no picture had ever held one of these to measure. */}
               <Link
