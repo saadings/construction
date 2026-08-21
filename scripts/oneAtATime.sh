@@ -5,7 +5,9 @@
 
 # The cost that matters is not the minutes. A machine wastes minutes; an unreadable failure set wastes a person, and twice in one evening somebody went hunting for a bug in unrelated code because of one. A gate that queues costs the few minutes the other one takes.
 
-# THE NUMBER THIS EXISTS FOR, so nobody removes it as ceremony. `yarn test` is 68.4 seconds of wall clock and **251.8 seconds of CPU** -- about 3.7 processes flat out. Two gates at once is 7.4 of them on a ten-core machine already carrying other tenants.
+# THE NUMBER THIS EXISTS FOR, so nobody removes it as ceremony. `yarn test` is about **251.8 seconds of CPU**, over 68.4 seconds of wall clock -- roughly 3.7 processes flat out, and two gates at once is 7.4 of them on a ten-core machine already carrying other tenants.
+
+# READ THE CPU FIGURE AND DISTRUST THE WALL ONE, because contention adds wall clock and does not add CPU. The seconds of CPU survive a busy machine; the wall time and anything divided by it do not, so 3.7 is a floor on how parallel this is and was measured with other tenants running. Anybody re-timing any of this must do it with nothing else running -- ours or anybody else's -- and take the minimum of several runs, because contention only ever adds.
 
 # It is not that the machine is busy. **Our suite is a four-core job and we were running two.** `test:scenario` by contrast is 30.3s CPU over 18.8s wall: barely parallel, and nearly free.
 
@@ -30,6 +32,11 @@ fi
 
 # A directory rather than a file, because `mkdir` either creates it or fails, in one step. Two sessions that both check-then-write can both pass the check; two that both `mkdir` cannot both succeed.
 said=""
+
+# How long a lock may sit with nobody in it before it is believed abandoned rather than half-made. This is not a guess about how long a gate takes -- the empty-lock branch below says why those are different questions.
+LONG_ENOUGH_TO_BE_ABANDONED=10
+emptyFor=0
+
 while :; do
   if mkdir "$WHERE" 2>/dev/null; then
     break
@@ -39,18 +46,49 @@ while :; do
   since=$(cat "$WHERE/since" 2>/dev/null)
 
 # A run that was killed leaves its lock behind, and a session waiting on a dead holder is worse than the contention it was avoiding. Asked of the process rather than of a timestamp: an age is a guess about how long something ought to take, and this is not.
-  if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
-    echo "one-at-a-time: $holder is gone and left its lock behind. Taking it." >&2
+
+# ASKED OF `ps` AND NOT OF `kill -0`, because a process that has exited and has not been collected by whatever started it is a zombie that still owns its pid, and `kill -0` reports it as alive. A holder dying while its parent is busy elsewhere would leave a lock that never looks stale, and every run on this machine afterwards would wait on a corpse for ever -- a worse failure than the contention this exists to prevent. Measured on one this suite made by accident: `kill -0` succeeded, `ps -o stat=` said `Z`, and the run sat for eight minutes using no processor time at all.
+
+# Empty is a pid that is gone, `Z` is one that has exited and not been collected, and anything else is really running.
+  if [ -n "$holder" ]; then
+    state=$(ps -o stat= -p "$holder" 2>/dev/null | tr -d '[:space:]')
+
+    case "$state" in
+      '' | Z*)
+        case "$state" in
+          Z*) went="has exited and was never collected by whatever started it" ;;
+          *) went="is no longer a process on this machine" ;;
+        esac
+
+        echo "one-at-a-time: pid $holder $went, and left its lock behind. Taking it." >&2
+        rm -rf "$WHERE"
+        emptyFor=0
+        continue
+        ;;
+    esac
+  fi
+
+# AN EMPTY LOCK IS NOT AN ABANDONED LOCK. It is almost always a lock two milliseconds old: `mkdir` claims it and the pid is written on the next line, so for that moment every lock alive is empty. This branch used to take it on sight, and that was a race -- the maker carries on, the taker removes the directory and makes its own, the maker's pid write lands inside it, and afterwards the lock looks perfectly normal while two gates run. Nothing is left to find, only a failure set nobody can read, which is the thing this whole file exists to abolish.
+
+# So an empty lock is waited out and looked at again, and taken only if it is still empty long after any shell could have finished a redirect it had already started.
+
+# THIS IS AN AGE AND THE REST OF THIS FILE REFUSES AGES, so the difference matters or somebody will remove it as inconsistent. Asking `ps` above replaces "how long ought a gate to take", a question with no answer. This asks how long a shell takes to finish a write it has already begun, which has a very short answer -- and ten seconds is that answer against a `date` fork on a machine we have watched turn a one-second keystroke into twenty.
+  if [ -z "$holder" ]; then
+    if [ "$emptyFor" -lt "$LONG_ENOUGH_TO_BE_ABANDONED" ]; then
+      emptyFor=$((emptyFor + 2))
+      sleep 2
+      continue
+    fi
+
+# Said out loud, like the stale takeover above. Reaching here means something really did die between making the lock and claiming it, and a recovery nobody is told about is one nobody ever learns happened.
+    echo "one-at-a-time: a lock still empty after ${LONG_ENOUGH_TO_BE_ABANDONED}s. Whatever made it never claimed it. Taking it." >&2
     rm -rf "$WHERE"
+    emptyFor=0
     continue
   fi
 
-# An empty lock directory with no pid in it is a write that did not finish. Same treatment, said differently, because the two are different accidents.
-  if [ -z "$holder" ]; then
-    echo "one-at-a-time: a lock with nobody in it. Taking it." >&2
-    rm -rf "$WHERE"
-    continue
-  fi
+# There is a pid in it now, so any emptiness seen a moment ago was the claim being written rather than an abandonment, and the count starts again.
+  emptyFor=0
 
 # Said once rather than every two seconds. A wait that prints forever is a wait somebody interrupts, and interrupting is how this becomes the thing nobody uses.
   if [ -z "$said" ]; then
