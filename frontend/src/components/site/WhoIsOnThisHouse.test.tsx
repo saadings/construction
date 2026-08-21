@@ -99,17 +99,26 @@ describe('who is on a house', () => {
     expect(screen.getByText('45 a square foot')).toBeTruthy()
   })
 
-  it('says what to do about a house nobody is down on yet', () => {
-    renderWith({ engaged: [], claimed: [] })
+  it('calls the list what the rows in it are, rather than who is in them', () => {
+    renderWith()
 
-    expect(screen.getByText(/Nobody is down on this house yet/)).toBeTruthy()
+    // `People on this house` described who was around; the rows are what each of them was put on and for how much. Nothing in this file named the heading, so the rename was caught only by a photograph -- five minutes away rather than one second.
+    expect(screen.getByRole('heading', { name: 'Agreed work' })).toBeTruthy()
   })
 
-  it('puts somebody on a trade with a whole figure', async () => {
+  it('says what to do about a house nothing is agreed on yet', () => {
+    renderWith({ engaged: [], claimed: [] })
+
+    // The sentence names the control beside it. It said `Put somebody on a trade` under a button now saying `Agree`, which is an empty state pointing at something that is not on the screen.
+    expect(screen.getByText(/Nothing agreed on this house yet/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Agree' })).toBeTruthy()
+  })
+
+  it('agrees a trade with somebody for a whole figure', async () => {
     const user = userEvent.setup()
     const { onAgree } = renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     await pick(user, 'Who', 'A mason')
     await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
@@ -130,7 +139,7 @@ describe('who is on a house', () => {
     const user = userEvent.setup()
     const { onAgree } = renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     await pick(user, 'Who', 'A tile fixer')
     await pick(user, 'Trade', 'Tiles')
     fireEvent.change(screen.getByLabelText('Or a rate'), { target: { value: '45' } })
@@ -153,7 +162,7 @@ describe('who is on a house', () => {
     const user = userEvent.setup()
     const { onAgree } = renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     await useTheName(user, 'Who', 'A new mason')
     await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
@@ -173,7 +182,7 @@ describe('who is on a house', () => {
     const user = userEvent.setup()
     const { onAddTrade } = renderWith()
 
-    await user.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    await user.click(screen.getByRole('button', { name: 'Agree' }))
     await useTheName(user, 'Trade', 'Waterproofing')
 
     expect(onAddTrade).not.toHaveBeenCalled()
@@ -187,7 +196,7 @@ describe('who is on a house', () => {
   it('says nothing is missing about the figure once a rate has been put in instead', () => {
     renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     fireEvent.change(screen.getByLabelText('Or a rate'), { target: { value: '45' } })
     fireEvent.blur(screen.getByLabelText('What was agreed'))
 
@@ -221,7 +230,7 @@ describe('who is on a house', () => {
     expect(screen.queryByLabelText('Or a rate')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     expect(screen.getByLabelText('Or a rate')).toBeTruthy()
     expect(screen.queryByLabelText('Date')).toBeNull()
   })
@@ -230,7 +239,7 @@ describe('who is on a house', () => {
     const user = userEvent.setup()
     renderWith({ refusal: 'Put in what was agreed, either a whole figure or a rate.' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     await pick(user, 'Who', 'A mason')
 
     expect(screen.getByRole('alert').textContent).toBe('Put in what was agreed, either a whole figure or a rate.')
@@ -242,7 +251,7 @@ describe('who is on a house', () => {
     const user = userEvent.setup()
     renderWith()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     await pick(user, 'Who', 'A mason')
     await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })
@@ -251,7 +260,7 @@ describe('who is on a house', () => {
     await waitFor(() => {
       expect(screen.queryByLabelText('Who')).toBeNull()
     })
-    expect(screen.getByRole('button', { name: 'Put somebody on a trade' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Agree' })).toBeTruthy()
   })
 
   it('leaves the form open when it did not go in, so nothing typed is lost', async () => {
@@ -259,7 +268,7 @@ describe('who is on a house', () => {
     const { onAgree } = renderWith()
     onAgree.mockResolvedValue(false)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Put somebody on a trade' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Agree' }))
     await pick(user, 'Who', 'A mason')
     await pick(user, 'Trade', 'Civil labour')
     fireEvent.change(screen.getByLabelText('What was agreed'), { target: { value: '300000' } })

@@ -214,7 +214,8 @@ function Cell({ label, tone, children }: { label: string; tone?: string; childre
 function Profit({ what }: { what: WhatThePartnersHave }) {
   return (
     <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <Tile label="Invested">
+      {/* `Put in` rather than `Invested`. It names a person's total on a screen about partners, not a screen he can open -- `Receipts` here would read as somewhere to go, and `Invested` is a bookkeeping word for the plainest thing on the page. */}
+      <Tile label="Put in">
         <Figure>{formatPaisa(what.broughtInPaisa)}</Figure>
       </Tile>
       <Tile label="Expenses" tone="text-brass">

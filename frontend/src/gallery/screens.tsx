@@ -586,9 +586,10 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'coming-in',
     at: '/sites/$siteId/coming-in',
-    name: 'Invested',
+    // Named apart from the ledger-wide one below. The app calls both `Receipts` and is right to -- the button, the trail and the title all say it -- but the picker shows only this name, so two entries reading `Receipts` are two buttons nobody can tell apart.
+    name: 'Receipts on a house',
     where: 'a house, then its receipts',
-    proves: 'Invested',
+    proves: 'Receipts',
     draw: () => (
       <ComingIn
         siteName={THE_HOUSE}
@@ -1075,7 +1076,7 @@ export const ON_SHOW: Array<OnShow> = [
     name: 'People',
     where: 'a house, down the screen',
     partOf: 'the house screen',
-    proves: 'People on this house',
+    proves: 'Agreed work',
     // Paid in full is `paid == billed`, so it is written as one figure used twice rather than as two that happen to agree. Typed separately they are two ideas rendering one string, and an assertion about what the tile shop was billed matches what it was paid.
     draw: () => {
       const billedToTheTileShop = paisa(742_000)

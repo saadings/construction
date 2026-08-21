@@ -243,4 +243,11 @@ describe('a house that has not been sold', () => {
     expect(screen.queryByText('If this sold today')).toBeNull()
     expect(screen.queryByText(/an estimate/)).toBeNull()
   })
+
+  it('names the three totals over the table, which nothing had ever asked', () => {
+    render(<Positions what={TWO_PARTNERS} />)
+
+    // The tile said `Invested` and no test named it, so the rename to `Put in` was a change nothing was holding. These are `dt`s in a `dl`, so the reading is the pairing rather than the order they happen to be drawn in.
+    expect(screen.getAllByRole('term').map((label) => label.textContent)).toEqual(['Put in', 'Expenses', 'Profit'])
+  })
 })

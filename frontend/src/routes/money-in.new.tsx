@@ -40,7 +40,7 @@ function RecordAReceipt() {
   return (
     <AReceiptComingIn
       siteId={siteId}
-      // His own title for this screen. The house's own version of it is still called `Invested`, which is one of the words with him -- and whatever he answers moves both, plus the dashboard tile and `Reports`.
+      // His own title for this screen. The house's own version of it is called `Receipts`, which is the word the button opening it always used.
       title="Record a receipt"
       pickSite={<PickASite sites={sites} chosen={siteId} onPick={setChosen} />}
     />

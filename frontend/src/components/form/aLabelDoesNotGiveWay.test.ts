@@ -89,6 +89,12 @@ describe('a label beside a control that takes the rest', () => {
   it('is asked of the screens this app really lays out', () => {
     // The floor. A reader that stopped opening screens would report the same clean sweep as an app with nothing wrong in it.
     expect(screens.length).toBeGreaterThan(20)
+
+    // What this floor does and does not say, because the file it names reads like the live example and is not one.
+
+    // `MoneyLine` is the row the rule was written about, and the rule cannot fire on it: the sweep looks for a control asking `w-full`, and the `amount` look asks `min-w-0 flex-1` instead. Taking `shrink-0` off its `PKR` was planted and the sweep stayed green.
+
+    // So this asserts the file is **read**, not that it is still the case being watched. The shipped defect is held by the fixture below, written the way it was really written -- break that and the suite reddens. It is the specimen, and it is what to keep alive.
     expect(screens.map(({ path }) => path)).toContain('components/daySheet/MoneyLine.tsx')
   })
 
