@@ -62,7 +62,7 @@ function OneHouse() {
       said={<WhatThisHouseIs site={site} />}
       beside={
         <span className="flex flex-wrap items-center gap-2">
-          {/* Money in and money out, the two halves of the house, reached the same way -- and each named after the screen it opens, so the button, the rail row and the page title all say one word. `Invested` and `Date` were neither the screen's name nor plain English; he read them off the live site and said so. */}
+          {/* Money in and money out, the two halves of the house, reached the same way -- and each named after the screen it opens, so the button, the rail row and the page title all say one word. `Invested` and `Date` were neither the screen's name nor plain English; he read them off the live site and said so. This button said `Receipts` while the screen it opened said `Invested`, which is the pair it was written about. */}
           <Link
             to="/sites/$siteId/coming-in"
             params={{ siteId }}

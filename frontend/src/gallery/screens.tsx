@@ -586,9 +586,10 @@ export const ON_SHOW: Array<OnShow> = [
   {
     slug: 'coming-in',
     at: '/sites/$siteId/coming-in',
-    name: 'Invested',
+    // Named apart from the ledger-wide one below. The app calls both `Receipts` and is right to -- the button, the trail and the title all say it -- but the picker shows only this name, so two entries reading `Receipts` are two buttons nobody can tell apart.
+    name: 'Receipts on a house',
     where: 'a house, then its receipts',
-    proves: 'Invested',
+    proves: 'Receipts',
     draw: () => (
       <ComingIn
         siteName={THE_HOUSE}
