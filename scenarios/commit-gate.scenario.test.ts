@@ -26,6 +26,9 @@ function isExecutable(path: string): boolean {
   }
 }
 
+// `build` is on this list and stays, at 12.3 seconds -- third-cheapest of the five. It is the only stage that proves this compiles as a program rather than as a pile of files: vitest runs no React Compiler, so a hook named wrong is green in every suite and dies in a browser. `whileSending` was exactly that, 218 passing tests over a component that died on the second tap.
+
+// `lint:fix` is 98.8 seconds of the same measurement and stays whole. Scoping it to the staged files was written and taken back out: the cost is `recommendedTypeChecked` building its own TypeScript program with no cache, into a `mktemp -d` discarded every commit -- so a stable gate directory removes nothing and weakens no check, where scoping trades coverage for speed.
 const GATES = ['yarn lint:fix', 'yarn format:fix', 'yarn typecheck', 'yarn build', 'yarn test', 'yarn test:scenario']
 
 describe('the gate every commit has to pass', () => {

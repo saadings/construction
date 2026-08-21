@@ -1,3 +1,16 @@
+# The whole of this, once, with the machine to itself.
+
+# Two sessions work on this repository at once in separate worktrees and neither knows the other exists. Gating together took the machine from a resting load of 9 to 42, with `userEvent` tests that take one second taking twenty-two -- and a failure set that changed on every run while the code did not: 0, then 3, then 13, then 2, every one a timeout. The same commit with one suite running passed 1258 and 191.
+
+# Taken by re-running this file through the wrapper rather than by wrapping the stages, because the expensive part turned out to be the fixers -- `lint:fix` alone was 75% of everything measured -- and a lock around the checks would have left the expensive half outside it.
+
+# `ONE_AT_A_TIME_HELD` is exported by the wrapper, so the second pass falls through to the work. Found from this file rather than from the working directory. `sh scripts/oneAtATime.sh` only resolves when the hook happens to be run from the repository root -- true under husky and false under the scenario that runs this hook from somewhere else to prove it touches nothing there.
+here=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+if [ -z "$ONE_AT_A_TIME_HELD" ]; then
+  exec sh "$here/scripts/oneAtATime.sh" sh "$0" "$@"
+fi
+
 # Only the already-staged paths are re-staged after the fixers: a bare `git add -u` sweeps in every other modified file.
 staged=$(git diff --cached --name-only --diff-filter=ACMR)
 
@@ -44,6 +57,11 @@ for path in $staged; do
   git update-index --cacheinfo "$mode,$blob,$path"
 done
 
+# The whole of the heavy half under one lock rather than each stage taking its own: taken and released nine times, another session slips in between two of them and both suites run anyway.
+
+# Two sessions gating together took the machine from a resting load of 9 to 42, with `userEvent` tests that take one second taking twenty-two -- and a failure set that changed on every run while the code did not: 0, then 3, then 13, then 2, every one of them a timeout. The same commit on the same machine with one suite running passed 1258 and 191.
+
+# The cost that matters is not the minutes. A machine wastes minutes; an unreadable failure set wastes a person, and twice in one evening one of us went hunting a bug in unrelated code because of one. `build` stays, and it is the third-cheapest stage at 12.3 seconds. It is also the only one that proves this compiles as a program rather than as a pile of files: vitest runs no React Compiler, so a hook named wrong is green in every suite and dies in a browser. `whileSending` was exactly that -- 218 passing tests over a component that died on the second tap.
 (cd "$gate" && yarn typecheck && yarn build && yarn test)
 
 # Run here rather than in the throwaway: this suite's subject is the repository itself, and reads git history and the index directly.
