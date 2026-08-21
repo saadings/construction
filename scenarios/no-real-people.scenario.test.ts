@@ -136,6 +136,14 @@ describe('what a fixture is allowed to be made of', () => {
 
   it('cannot reach an ignored file, which is what the workbooks are', () => {
     // They hold account numbers, mobile numbers and named clients' records, and they are ignored rather than absent. `git ls-files` lists the index alone; asking it for ignored or untracked files takes a flag, and this asserts that flag is not there.
+
+    // Two other sweeps here take `--others --exclude-standard`, because a sweep of tracked files cannot see the file you just wrote. This one deliberately does not, and the reason is not that the flags would reach the workbooks -- `--exclude-standard` keeps the ignore rules, so mechanically they would not.
+
+    // It is that this guard **reports what it finds**, naming the file and quoting the offending words, and this repository is public. A version able to reach those files would print an excerpt of a real client's record into a CI log on the day it matched: the guard doing its job would be the leak.
+
+    // So the blindness is a property rather than a limitation. `it cannot ask` is a sentence that cannot be half-true; the alternative rests on a flag combination staying right forever, on the one sweep here whose failure mode is publishing.
+
+    // What that costs is only the hand-run: husky stages before the hook runs, so at the moment this is enforced the file is tracked and is swept. Somebody will arrive with the widening argument -- two of us did -- and this is the answer to it.
     const guard = readFileSync(join(repoRoot, 'scenarios', 'no-real-people.scenario.test.ts'), 'utf8')
     const everyGitCall = [...guard.matchAll(/execFileSync\('git', \[([^\]]*)\]/g)].map((call) => call[1])
     const asksGitFor = everyGitCall.find((call) => call.includes("'ls-files'")) ?? ''
