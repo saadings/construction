@@ -129,11 +129,11 @@ export function HouseDetails({
           hint="What you expect the build to cost. Spending is measured against this."
           problem={budgetEstimatePaisa.trim() === '' ? null : whatIsWrong(budgetEstimate, budgetEstimatePaisa)}
         >
-          {/* `Rs` and not the drawn `PKR`: every other figure this app asks for is asked in `Rs`, and one money under two names is two moneys to whoever is reading. */}
+          {/* `PKR`, as drawn, and now the one word this app asks money in. */}
 
           {/* Inside the box as drawn, rather than beside it. Beside it, the word took its width out of the input -- so this box and `Covered area` next to it were different widths, which reads as a broken form rather than a deliberate pair. */}
           <span className="relative flex items-center">
-            <span className="text-faint pointer-events-none absolute left-3 text-sm">Rs</span>
+            <span className="text-faint pointer-events-none absolute left-3 text-sm">PKR</span>
             <Line
               value={budgetEstimatePaisa}
               onChange={(event) => {
@@ -142,7 +142,7 @@ export function HouseDetails({
               inputMode="numeric"
               aria-label="Budget estimate"
               autoComplete="off"
-              className="w-full pl-10"
+              className="w-full pl-12"
             />
           </span>
         </Field>

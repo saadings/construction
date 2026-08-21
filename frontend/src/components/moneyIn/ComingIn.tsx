@@ -56,7 +56,7 @@ const WHY: Array<{ is: WhyItCame; said: string }> = [
 // The other half of the day sheet. Money going out has had a screen since the first day; this is what came in against it.
 export function ComingIn({
   siteName,
-  title = 'Invested',
+  title = 'Receipts',
   pickSite,
   received,
   people,
@@ -68,9 +68,9 @@ export function ComingIn({
   onAddAccount,
 }: {
   siteName: string
-  /** What the screen is called. `Invested` where a house's own receipts are being read; `Record a receipt` where it is reached from the ledger with the house picked on the screen, which is his own word for this screen. */
+  /** What the screen is called. `Receipts` where a house's own are being read; `Record a receipt` where it is reached from the ledger with the house picked on the screen. */
 
-  /** The two must converge: `Invested` is with him alongside the dashboard tile and `Reports`, and whatever he answers moves all three. */
+  /** It was `Invested`, and the button that opens it already said `Receipts` -- so the button, the rail row and the page title now say one word, which is what the pair of them were meant to. */
   title?: string
   /** The house picker, where the address did not already decide which house this is. */
   pickSite?: ReactNode
