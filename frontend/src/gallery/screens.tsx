@@ -922,6 +922,8 @@ export const ON_SHOW: Array<OnShow> = [
         what={{
           trades: TRADES,
           accounts: BANK,
+          // Named people rather than a bare count, so the card photographs with a figure on it instead of the shape it has while it waits.
+          people: NOBODY.map((person) => ({ _id: person._id })),
           looksLike: 'Auto',
         }}
       />
