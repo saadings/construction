@@ -271,6 +271,16 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
   let tapped = 0
   let navRows = 0
 
+  // Which plane a control sits on: the nearest ancestor that positions itself. Two controls on different planes are not near each other in any stable way -- one of them moves independently of the other as the page scrolls, so the gap between them is a fact about a scroll position rather than about the layout.
+  const stuckTo = (el) => {
+    for (let up = el.parentElement; up !== null && up !== document.body; up = up.parentElement) {
+      const how = getComputedStyle(up).position
+      if (how === 'fixed' || how === 'sticky') return up
+    }
+
+    return null
+  }
+
   for (const control of document.querySelectorAll(asked)) {
     // The gallery's own chrome is not the app. Its screen picker is thirty-odd buttons on every screen, which is most of what an unscoped sweep finds -- and counting them is how the recorded reason for not doing this got its number.
     if (control.closest('[data-slug]') !== null) continue
@@ -320,7 +330,7 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
     const inALine =
       isALink && !boxed && !control.hasAttribute('data-nav-row') && Math.round(box.height - padding) <= Math.round(line) + 1
 
-    targets.push({ x: box.x + box.width / 2, y: box.y + box.height / 2, said, inALine })
+    targets.push({ x: box.x + box.width / 2, y: box.y + box.height / 2, said, inALine, stuck: stuckTo(control) })
 
     // WCAG 2.5.5 and Apple's guidance arrive at 44 separately, and it is what a standalone control is held to here.
 
@@ -333,6 +343,10 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
   }
 
   // The spacing half, and only for the ones sitting in a line. Asked of every one of them rather than only of the undersized, which is where this parts company with 2.5.8 on purpose: there, clearance is the concession offered to a target under 24, so a rule read faithfully would apply to nothing once everything reaches 24.
+
+  // Pairs on the same plane only, and that is a correction rather than an exemption. A sticky footer is pinned to the viewport and passes over every link on the page as somebody scrolls -- so it comes within 24px of one of them at some scroll position, always, and holding it to clearance from the things it scrolls past measures the scroll rather than the layout.
+
+  // Found when a one-word change to a footer button made it one line shorter, and its centre moved 12px into range of a trail link 770px above it in the document. Nothing about that pair could collide under a thumb: the trail scrolls and the footer does not.
   const crowded = []
 
   for (let one = 0; one < targets.length; one += 1) {
@@ -340,6 +354,7 @@ const WHAT_A_THUMB_CANNOT_HIT = `(() => {
 
     for (let other = 0; other < targets.length; other += 1) {
       if (one === other) continue
+      if (targets[one].stuck !== targets[other].stuck) continue
 
       const apart = Math.hypot(targets[one].x - targets[other].x, targets[one].y - targets[other].y)
 

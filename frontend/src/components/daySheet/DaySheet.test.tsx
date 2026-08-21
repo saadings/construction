@@ -116,9 +116,13 @@ describe('a day of payments', () => {
     }
   })
 
-  // Seen once, on 17 August 2026: this failed in a full gate and passed on two reruns and the gate after. Not chased and not reproduced -- written here rather than left in a message, because a flake nobody can find the second time is one that gets called a fluke twice.
+  // Seen on 17 August 2026, chased on 21 August, and it is not this test.
 
-  // If it comes back, it is real, and it is in the flow that becomes `/daybook`.
+  // Same code, three full runs in a row: 0 failures, then 3, then 13 -- every one of them in this file, and all 38 passing when the file is run on its own. **A failure set that changes while the code does not is timing.**
+
+  // `uptime` said a load average of 31.86 on a machine two sessions gate on at once. This file is the slowest in the suite -- `userEvent` typing through comboboxes, one keystroke at a time -- so it is the first to run out of the time `findBy` waits, and it will not be the last.
+
+  // Which is the same root as the rule about ports and markers, with the shared resource being the processor rather than a name. Left here rather than fixed by a longer timeout: a timeout raised until a loaded machine passes is a timeout that no longer measures anything, and the real answer is not gating two branches on one machine at the same moment.
   it('takes a payment back out of the sitting before any of it goes in', async () => {
     // Nothing here has been written yet, so this is a row leaving the sitting rather than a payment leaving the ledger. Without it, a figure typed wrong five payments ago can only be fixed by putting the whole sitting in wrong and taking one out afterwards.
     const user = userEvent.setup()

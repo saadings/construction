@@ -49,8 +49,7 @@ export function WhatAreYouRecording() {
 
       {/* Written without naming the class, which is not squeamishness: that sweep reads source and cannot tell a comment from a class list, so a comment explaining the rule trips it. Fourth time in this repository -- the better the comment, the more likely the false positive. */}
       <DialogContent>
-        {/* Left, which is where he drew it. shadcn's `DialogHeader` is `text-center sm:text-left`, so on a phone it centred a heading his drawing has flush left -- the generator's default showing through on the one width he uses. */}
-        <DialogHeader className="text-left">
+        <DialogHeader>
           <DialogTitle>What are you recording?</DialogTitle>
           <DialogDescription>The two ledgers are kept apart. Pick the direction the money moved.</DialogDescription>
         </DialogHeader>

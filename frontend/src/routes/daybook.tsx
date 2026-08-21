@@ -4,6 +4,8 @@ import { useState } from 'react'
 
 import { api } from '../../../convex/_generated/api'
 import { ADayOfPayments } from '../components/daySheet/ADayOfPayments'
+import { WhatIsWaiting } from '../components/daySheet/WhatIsWaiting'
+import { whatIsStillWaiting, whereASittingIsKept } from '../components/daySheet/theSittingKept'
 import { NothingToOpen } from '../components/shell/NothingToOpen'
 import { Skeleton, WhileWaiting } from '../components/shell/Skeleton'
 import { PickASite } from '../components/sites/PickASite'
@@ -20,6 +22,12 @@ function TheDaybook() {
   // Nothing chosen yet, rather than a guess. Which house it opens on is decided once the list has arrived, because a default picked before there is a list is a default of nothing.
   const [chosen, setChosen] = useState<string | null>(null)
 
+  // The day the sheet is pointed at, held here rather than inside it, because opening a waiting sitting has to move both the house and the day at once.
+  const [day, setDay] = useState<string | null>(null)
+
+  // Read on the way in and whenever a sitting is opened from the list, rather than while somebody types. A same-tab write to this store raises no event, and telling the shell on every keystroke would redraw it on every keystroke -- so it is read where it is about to be looked at.
+  const [waiting, setWaiting] = useState(whatIsStillWaiting)
+
   if (sites === undefined) {
     return <Waiting />
   }
@@ -32,14 +40,32 @@ function TheDaybook() {
   const siteId = chosen ?? sites[0]._id
 
   return (
-    <ADayOfPayments
-      siteId={siteId}
-      pickSite={<PickASite sites={sites} chosen={siteId} onPick={setChosen} />}
-      // Back to the daybook rather than into a house. He came here to enter a day and the next thing he does is enter another one, which is what going somewhere else would interrupt.
-      whereToAfterwards={async () => {
-        await router.navigate({ to: '/daybook' })
-      }}
-    />
+    <>
+      {/* Placed here rather than by the block itself: the day sheet under it draws its own padding, so this matches it rather than inventing one. */}
+      <div className="px-5 pt-4 sm:px-7 lg:px-9">
+        <WhatIsWaiting
+          waiting={waiting}
+          hereNow={day === null ? '' : whereASittingIsKept(siteId, day)}
+          onOpen={(one) => {
+            setChosen(one.siteId)
+            setDay(one.day)
+          }}
+        />
+      </div>
+
+      <ADayOfPayments
+        siteId={siteId}
+        day={day}
+        onChangeDay={setDay}
+        pickSite={<PickASite sites={sites} chosen={siteId} onPick={setChosen} />}
+        // Back to the daybook rather than into a house. He came here to enter a day and the next thing he does is enter another one, which is what going somewhere else would interrupt.
+        whereToAfterwards={async () => {
+          // Read again, because what was just posted has stopped waiting -- and this is the one moment on this screen when that number certainly changed.
+          setWaiting(whatIsStillWaiting())
+          await router.navigate({ to: '/daybook' })
+        }}
+      />
+    </>
   )
 }
 

@@ -63,6 +63,8 @@ const PIECES = new Set([
   'LatestEntries',
   // Drawn under a house's name rather than as a screen: a stage, who it is for, how big it is and when it started.
   'Pill',
+  // A block above the day sheet rather than a screen: the sheet draws its own layout and is named as doing so below, and this sits over it inside the same padding. It is photographed on its own entry all the same, because it is only ever on the screen when there is something in it -- which is not the state anybody would catch by accident.
+  'WhatIsWaiting',
 ])
 
 /** Drawn by a route, but not from the gallery. `TheSearch` calls `useQuery`, which throws outside a Convex client, and `ADayOfPayments` and `AReceiptComingIn` are the same thing one layer up -- each is the reading and the sending for a screen with two ways in, so that the forty lines under `/daybook` and under a house's own day sheet are not the same forty lines twice. What they draw is `DaySheet` and `ComingIn`, and both of those are on show. `Shell` was here and is not any more -- it held Clerk's own control, so the header was never drawn at any width, and the account is a prop now. `WayIn` was in this list and is not any more -- the whole screen was exempt for the sake of one wrapper around one button, and that wrapper is a prop now, which is the fix the nav had when its rows turned out to be 32px. The exemption is the size of its reason again, and the test below is what keeps it that size. */
