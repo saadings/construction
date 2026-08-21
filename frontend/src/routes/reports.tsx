@@ -22,7 +22,13 @@ function TheQuestionsTheBooksAnswer() {
 /** The two readings folded into what the cards need, keeping the three states apart: still coming, refused, and answered. */
 export function whatTheBooksAnswer(
   happening:
-    | { goneOutPaisa: number; comeIn: { ownMoneyPaisa: number }; whereItWent: Array<unknown> }
+    | {
+        goneOutPaisa: number
+        comeIn: { ownMoneyPaisa: number }
+        whereItWent: Array<unknown>
+        thisMonth: { paidOutPaisa: number }
+        houses: Array<{ goneOutPaisa: number }>
+      }
     | null
     | undefined,
   owed: { everyone: Array<{ outstandingPaisa: number }>; payablePaisa: number } | null | undefined
@@ -34,9 +40,15 @@ export function whatTheBooksAnswer(
   if (happening === null || owed === null) return null
 
   return {
+    // Counted off the same list the houses screen is drawn from, and summed from the houses rather than taken from the ledger total -- so the figure on the card is the figure the screen behind it adds up to.
+    houses: {
+      count: happening.houses.length,
+      goneOutPaisa: happening.houses.reduce((total, house) => total + house.goneOutPaisa, 0),
+    },
+    // Both figures this month, because `whereItWent` is. It read `{this month's trades} trades · {all time spent}` -- one sentence holding two different spans of time, which is the same defect as a tile echoing a row and reads as a working card.
     spending: {
       trades: happening.whereItWent.length,
-      goneOutPaisa: happening.goneOutPaisa,
+      thisMonthPaisa: happening.thisMonth.paidOutPaisa,
       ownMoneyPaisa: happening.comeIn.ownMoneyPaisa,
     },
     owed: {
