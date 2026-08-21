@@ -34,7 +34,7 @@ export const ABOVE = new Map<string, { name: string; under?: string }>(
     '/sites/new': { name: 'Add a site', under: '/' },
     '/sites/$siteId': { name: 'The house', under: '/' },
     '/sites/$siteId/day': { name: 'Expenses', under: '/sites/$siteId' },
-    '/sites/$siteId/coming-in': { name: 'Invested', under: '/sites/$siteId' },
+    '/sites/$siteId/coming-in': { name: 'Receipts', under: '/sites/$siteId' },
     '/sites/$siteId/shares': { name: 'Partner shares', under: '/sites/$siteId' },
   })
 )

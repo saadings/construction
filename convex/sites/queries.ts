@@ -44,8 +44,24 @@ export const all = ledgerQuery({
 })
 
 // What a site's own screen opens with. Nothing comes back for a house that is not there.
+
+// The client comes with it, derived from this house's own roles rather than stored on the person -- the same derivation the list uses, so the name under a house on one screen is the name under it on the other.
 export const one = siteQuery({
   handler: async (ctx) => {
-    return await ctx.db.get('sites', ctx.siteId)
+    const site = await ctx.db.get('sites', ctx.siteId)
+
+    if (site === null) {
+      return null
+    }
+
+    const roles = await ctx.db
+      .query('siteRoles')
+      .withIndex('bySite', (q) => q.eq('siteId', ctx.siteId))
+      .collect()
+
+    const client = roles.find((role) => role.capacity === 'client')
+    const named = client === undefined ? null : await ctx.db.get('people', client.personId)
+
+    return { ...site, clientName: named?.name }
   },
 })

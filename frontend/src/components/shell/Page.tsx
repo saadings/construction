@@ -17,7 +17,9 @@ export function Page({
 }: {
   title: string
   // What this screen is, in a sentence, which every drawn screen has under its title. Capped at the width a line of prose is read at rather than at the page's, because the table under it is deliberately uncapped.
-  said?: string
+
+  // Markup rather than a string, because a house says what it is in a line that carries a stage pill: `Building · For the buyer · 5,400 sqft · Started 4 January 2026`. Every other screen hands it a sentence, and both go in the same place under the same cap.
+  said?: ReactNode
   beside?: ReactNode
   // What a `$param` in this screen's address is really called. The router knows there is a house; only the screen knows it is `1-A, Phase 0`.
   named?: Named

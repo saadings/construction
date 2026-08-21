@@ -108,8 +108,17 @@ async function theTopOnceItHasMoved(on: Page): Promise<{ y: number } | null> {
   const givingUp = 40
 
   let box = await on.locator('[data-testid="the-screen"]').boundingBox()
+  let before: number | null = null
 
-  for (let waited = 0; waited < givingUp && box !== null && box.y > -WORTH_A_SECOND_PICTURE; waited += 1) {
+  // Waited for **stillness** rather than for a number far enough up. A screen that starts below the fold passes through every value between its own top and the target, so a reading taken while it is still moving is a real position of a state nobody sees -- the same frame problem as photographing a dialog mid-animation, one page down.
+
+  // It reported `spent-by-trade` as a screen that did not scroll, at a top of `0`, on a page that had in fact scrolled from 814 to -392. Zero was simply on the way past.
+  for (let waited = 0; waited < givingUp; waited += 1) {
+    if (box !== null && box.y === before) {
+      return box
+    }
+
+    before = box?.y ?? null
     await on.waitForTimeout(50)
     box = await on.locator('[data-testid="the-screen"]').boundingBox()
   }
@@ -253,9 +262,8 @@ async function main(): Promise<void> {
         const lowerHalf = `${screen.slug}-${String(size.width)}-lower.png`
         tooTall.push(lowerHalf)
 
-        // Moved onto the page first: a wheel is delivered to whatever is under the pointer, and the pointer starts at 0,0 where nothing scrollable is.
-        await on.mouse.move(size.width / 2, size.height / 2)
-        await on.mouse.wheel(0, box.height)
+        // The window, told where to go, rather than a wheel aimed at whatever happens to be under the pointer. A wheel is delivered to the element beneath it, so what it scrolls depends on what a screen happens to draw in the middle -- and asking for the bottom is what the second picture is of.
+        await on.evaluate(`window.scrollTo(0, document.documentElement.scrollHeight)`)
 
         // Waited for by the thing that has to be true, not by a sleep. `mouse.wheel` returns when the event is dispatched rather than when the page has moved, so reading the position straight afterwards reports zero on a page that is about to scroll -- which it did, on a different screen each run, which is what a race looks like.
         const after = await theTopOnceItHasMoved(on)

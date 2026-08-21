@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { asDayHeWrites } from '~shared/calendarDate'
 import { formatPaisa } from '~shared/money'
 
+import { across } from '../dashboard/Bar'
 import { Button } from '../form/Button'
 import { WayOut } from '../form/WayOut'
 import { Figure, NothingIsDeleted, SaidUnderneath } from '../shell/Page'
+import { Panel } from '../shell/Panel'
 import { Skeleton, WhileWaiting } from '../shell/Skeleton'
 import { Table, TableBody, TableCell, TableRow } from '../ui/table'
 
@@ -51,12 +53,18 @@ export function SpentByTrade({
     return <p className="text-muted-foreground">Nothing spent on this house yet.</p>
   }
 
+  // Against the largest rather than against the total, which is `Bar`'s rule and the reason it is shared: five categories where one is most of the spend leaves the other four a few percentage points apart, which is four bars nobody can compare.
+  const largest = Math.max(...byTrade.map((trade) => trade.paisa))
+
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-faint text-[0.75rem] font-medium tracking-[0.08em] uppercase">What it went on</h2>
+    <Panel className="flex flex-col gap-5 p-5">
+      <div className="flex flex-col gap-1">
+        <h2 className="leading-none font-semibold">Cost by category</h2>
+        <p className="text-muted-foreground text-[0.8125rem]">Everything paid on this site since it started</p>
+      </div>
 
       {/* `Table` scrolls inside itself rather than pushing the page sideways, which is what a narrow phone does to a table. The size is set back because shadcn's table is `text-sm` and a trade and its figure are the thing on this screen, not an aside from it. */}
-      <Table className="min-w-[22rem] text-base">
+      <Table className="min-w-[19rem] text-base">
         <TableBody>
           {byTrade.map((trade) => {
             const open = opened?.tradeId === trade.tradeId
@@ -71,12 +79,13 @@ export function SpentByTrade({
                 onTakeOut={onTakeOut}
                 takingOut={takingOut}
                 refusal={open ? refusal : null}
+                largest={largest}
               />
             )
           })}
         </TableBody>
       </Table>
-    </section>
+    </Panel>
   )
 }
 
@@ -88,6 +97,7 @@ function Trade({
   onTakeOut,
   takingOut,
   refusal,
+  largest,
 }: {
   trade: TradeSpend
   open: boolean
@@ -96,6 +106,8 @@ function Trade({
   onTakeOut: (paymentId: string) => Promise<boolean>
   takingOut: string | null
   refusal: string | null
+  /** What the biggest category on this house comes to, so every bar is drawn against the same thing. */
+  largest: number
 }) {
   return (
     <>
@@ -106,6 +118,19 @@ function Trade({
             {trade.name}
           </Button>
         </TableCell>
+        {/* The bar he drew. The row stays a control -- opening a category is where a wrong figure is found and taken back out, which his drawing has no equivalent of -- so this is his shape inside our behaviour rather than either one replacing the other. */}
+
+        {/* Gone on a phone rather than squeezed into it. Three things across 390 left the category at 73px and eight lines tall -- a column squeezed to a letter a line is a column that should have left the row, which is what the sweep says about it. The name and the figure are what a person reads; the bar is what makes them comparable at a glance, and a glance is a desk. */}
+        <TableCell className="hidden w-[38%] py-2.5 sm:table-cell">
+          <span className="bg-muted flex h-4 overflow-hidden rounded-sm">
+            <span
+              data-bar=""
+              className="bg-brass/85 block h-full"
+              style={{ width: `${String(across(trade.paisa, largest))}%` }}
+            />
+          </span>
+        </TableCell>
+
         {/* Brass is money going out. */}
         <TableCell className="py-2.5 text-right">
           <Figure className="text-brass">{formatPaisa(trade.paisa)}</Figure>
@@ -114,7 +139,7 @@ function Trade({
 
       {open ? (
         <TableRow>
-          <TableCell colSpan={2} className="pb-3 whitespace-normal">
+          <TableCell colSpan={3} className="pb-3 whitespace-normal">
             {refusal === null ? null : (
               <p className="text-destructive pb-2 text-sm" role="alert">
                 {refusal}

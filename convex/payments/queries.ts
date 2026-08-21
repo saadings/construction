@@ -49,6 +49,41 @@ export const onTrade = siteQuery({
   },
 })
 
+// The last few payments on this house, as the drawn `Latest entries` card shows them: a day, what it was for, who was paid, and how much. It is the day sheet's own rows read from the house rather than from the day, which is why it carries no way to change one -- what it offers instead is the way through to the sheet that does.
+const HOW_MANY_IS_LATEST = 5
+
+export const latest = siteQuery({
+  handler: async (ctx) => {
+    const standing = await standingOn(ctx)
+
+    // Newest first, and steady on the ties for the same reason `onTrade` is: a cheque run puts eight on one day and the order they came back in is not an order.
+    const newestFirst = standing.sort(
+      (one, other) =>
+        other.day.localeCompare(one.day) || other.amountPaisa - one.amountPaisa || one._id.localeCompare(other._id)
+    )
+
+    const rows = []
+    for (const payment of newestFirst.slice(0, HOW_MANY_IS_LATEST)) {
+      const [trade, paidTo] = await Promise.all([
+        ctx.db.get('trades', payment.tradeId),
+        payment.paidToId === undefined ? Promise.resolve(null) : ctx.db.get('people', payment.paidToId),
+      ])
+
+      rows.push({
+        _id: payment._id,
+        day: payment.day,
+        amountPaisa: payment.amountPaisa,
+        // Hidden is never deleted, so neither of these can go missing; if one ever does it says so rather than showing a blank.
+        category: trade?.name ?? 'No longer on the list',
+        paidToName: paidTo?.name ?? 'A one-off',
+      })
+    }
+
+    // How many there are altogether, so the card can say what it is showing five of rather than implying the house has five.
+    return { rows, standing: standing.length }
+  },
+})
+
 // Every figure here is the sum of the rows behind it. There is nowhere to type one, which is the whole difference from the workbooks.
 export const totals = siteQuery({
   handler: async (ctx) => {
