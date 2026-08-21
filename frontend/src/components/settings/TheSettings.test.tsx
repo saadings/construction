@@ -19,8 +19,11 @@ const ACCOUNTS = [
   { _id: 'b2', label: 'Bank 7788' },
 ]
 
+// Three, so the count on the card is not also the number of accounts or of trades beside it.
+const PEOPLE = [{ _id: 'p1' }, { _id: 'p2' }, { _id: 'p3' }]
+
 function whatIsOnIt(over: Partial<WhatIsOnIt> = {}): WhatIsOnIt {
-  return { trades: TRADES, accounts: ACCOUNTS, looksLike: 'Auto', ...over }
+  return { trades: TRADES, accounts: ACCOUNTS, people: PEOPLE, looksLike: 'Auto', ...over }
 }
 
 // The cards carry ways through, so they need somewhere to point.
@@ -52,7 +55,13 @@ describe('the lists the rest of the app picks from', () => {
     await renderWith(whatIsOnIt())
 
     const goes = screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href'))
-    expect(goes).toEqual(['/more/what-for', '/more/which-account', '/more/who-can-sign-in', '/more/how-it-looks'])
+    expect(goes).toEqual([
+      '/more/what-for',
+      '/more/which-account',
+      '/people',
+      '/more/who-can-sign-in',
+      '/more/how-it-looks',
+    ])
   })
 
   it('says which trades are not part of building cost, and only where one is', async () => {
@@ -100,7 +109,7 @@ describe('the lists the rest of the app picks from', () => {
     expect(screen.queryByRole('status')).toBeNull()
 
     // And the cards are all still there with their ways through, rather than the screen having quietly emptied.
-    expect(screen.getAllByRole('link', { name: 'Open' })).toHaveLength(4)
+    expect(screen.getAllByRole('link', { name: 'Open' })).toHaveLength(5)
   })
 
   it('says what to do when a list is empty, which is not the same as one still coming', async () => {
@@ -119,5 +128,34 @@ describe('the lists the rest of the app picks from', () => {
 
     // The account control moved into the phone header. Two places to sign out is worse than either.
     expect(document.body.textContent).not.toMatch(/sign out/i)
+  })
+
+  it('names the accounts card for the several it holds, rather than for one', async () => {
+    await renderWith(whatIsOnIt())
+
+    // It read `Account` over a card listing two of them -- a heading disagreeing with its own contents about how many there are.
+    expect(screen.getByRole('heading', { name: 'Bank accounts' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Account' })).toBeNull()
+  })
+
+  it('puts People on it, because it is a list the rest of the app picks from', async () => {
+    await renderWith(whatIsOnIt())
+
+    // Three people, two accounts, four trades: the count on this card cannot be read off either of the others.
+    const said = screen.getByText('People').parentElement?.textContent ?? ''
+    expect(said).toContain('People')
+    expect(said).toContain('3')
+
+    const goes = screen.getAllByRole('link', { name: 'Open' }).map((link) => link.getAttribute('href'))
+    expect(goes).toContain('/people')
+  })
+
+  it('says nothing about how many people there are until it has been told', async () => {
+    await renderWith(whatIsOnIt({ people: undefined }))
+
+    // A count is a claim. A card that says nothing while it waits has not made one, which is not a card claiming nobody is on the books.
+    expect(screen.getByText('People').parentElement?.textContent).not.toContain('0')
+    // And the card is drawn, so the absence above is an absence rather than a query that found nothing.
+    expect(screen.getByText('People')).toBeTruthy()
   })
 })

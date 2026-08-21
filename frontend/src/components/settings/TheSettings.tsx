@@ -15,6 +15,8 @@ export type WhatIsOnIt = {
   trades: Array<{ _id: string; name: string; countsAsBuildingCost: boolean }> | null | undefined
   /** The accounts a cheque or transfer says it left. */
   accounts: Array<{ _id: string; label: string }> | null | undefined
+  /** Everybody the ledger names, for the count on the card. */
+  people: Array<{ _id: string }> | null | undefined
   /** What the app is set to look like, which is known without reading anything. */
   looksLike: string
 }
@@ -38,14 +40,25 @@ export function TheSettings({ what }: { what: WhatIsOnIt }) {
           <Trades trades={what.trades} />
         </Section>
 
+        {/* `Bank accounts`, as drawn. It was `Account`, singular, over a card listing several of them -- a heading disagreeing with its own contents about how many there are. */}
         <Section
-          name="Account"
+          name="Bank accounts"
           what="The accounts a cheque or transfer says it left. Only the last four figures are kept."
           count={what.accounts === undefined || what.accounts === null ? undefined : what.accounts.length}
           to="/more/which-account"
         >
           <Accounts accounts={what.accounts} />
         </Section>
+
+        {/* Drawn here and missing, and it belongs: this screen is the lists the rest of the app picks from, and People is one of them -- it is what a day sheet, a bill and a receipt all pick a name out of. */}
+
+        {/* The drawing puts `Add` beside `Open`. Nothing can open the People screen with its form already up, so there is one way through rather than two buttons to the same place. */}
+        <Section
+          name="People"
+          what="Everybody the ledger names. Nobody is ever deleted — hiding one keeps whatever he was part of."
+          count={what.people === undefined || what.people === null ? undefined : what.people.length}
+          to="/people"
+        />
 
         <Section
           name="Who can sign in"
