@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { everyFileHere } from './everyFileHere'
 import { gitIn, inThrowaway } from './throwaway'
 import { jobsIn, readWorkflow } from './workflowFile'
 
@@ -139,7 +140,8 @@ describe('every path the two sides are built from is claimed by the filter', () 
   const COMPILED_BY_NEITHER = ['docs', 'scenarios', 'workbooks']
 
   it('leaves no directory that convex or the bundle imports unclaimed', () => {
-    const tracked = execFileSync('git', ['ls-files'], { cwd: repoRoot, encoding: 'utf8' }).split('\n')
+    // Untracked too: a new top-level directory arrives as an untracked file first, which is exactly when nobody has claimed it yet.
+    const tracked = everyFileHere(repoRoot)
     const imported = new Set<string>()
 
     for (const file of tracked) {
