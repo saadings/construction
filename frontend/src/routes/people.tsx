@@ -9,6 +9,8 @@ export const Route = createFileRoute('/people')({ component: Everyone })
 
 function Everyone() {
   const people = useQuery(api.people.queries.list, {})
+  // The two sides, read on their own: who is owed something and who has put money in. Handed over as it came, so a refusal stays a refusal.
+  const sides = useQuery(api.people.queries.bothSides, {})
   const add = useMutation(api.people.mutations.add)
   const edit = useMutation(api.people.mutations.edit)
   const hide = useMutation(api.people.mutations.hide)
@@ -35,6 +37,7 @@ function Everyone() {
     <People
       // Handed over as it came: `undefined` is a read still in flight, `null` is the ledger saying it does not know this sign-in. Answering the second on its behalf is what left somebody watching "Looking…" with nothing on the way.
       people={people}
+      sides={sides}
       onAdd={async (person) => {
         await add(person)
       }}
